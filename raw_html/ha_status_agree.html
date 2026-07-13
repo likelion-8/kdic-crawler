@@ -1,0 +1,1435 @@
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta http-equiv="Content-Script-Type" content="text/javascript"/>
+<meta http-equiv="Content-Style-Type" content="text/css"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="format-detection" content="telephone=no, address=no, email=no">
+
+<script>
+// 	var gfn_contextPath = '/voc/';
+// 	var gfn_httpClntTimeoutSec = Number('');
+// 	var gfn_sesnTimeoutSec = Number('');
+</script>
+<title>예금보험공사</title>
+<link rel="icon" href="/voc/assets/images/common/favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="/voc/assets/css/style.css?ver=202607101803">
+<script src="/voc/assets/js/jquery-3.6.3.js"></script>
+<script src="/voc/assets/js/jquery-ui.js"></script>
+<script src="/voc/assets/js/scrollbar.js?ver=202607101803"></script>
+<script src="/voc/assets/js/swiper.js?ver=202607101803"></script>
+<script src="/voc/assets/js/common.js?ver=202607101803"></script>
+<script src="/voc/common/js/common_dev.js?ver=202607101803"></script>
+<!-- 개발 스크립트 소스 -->
+<script src="/voc/developerJs/developer.js?ver=202607101803"></script>
+<script src="/voc/developerJs/dev_leb.js?ver=202607101803"></script>
+<script src="/voc/developerJs/dev_pjm.js?ver=202607101803"></script>
+<script src="/voc/developerJs/dev_sjd.js?ver=202607101803"></script>
+<script src="/voc/developerJs/util.js?ver=202607101803"></script>
+<!-- // 개발 스크립트 소스 -->
+
+<!-- TODO request 기본값으로 설정되도록 항목 설정할것. PJM -->
+
+
+<!-- // TODO request 기본값으로 설정되도록 항목 설정할것. PJM -->
+</head>
+
+<body>
+<!-- pageMoveForm -->
+<form id="pageMoveForm">
+</form>
+<!--// pageMoveForm -->
+
+<style>
+.non-active{
+	font-color: red;
+}
+</style>
+<script>
+	function doPageMove(url, dataJson) {
+		$('#pageMoveForm').submit();
+	}
+
+	function openNewWindow(url) {
+		window.open(url);
+	}
+
+	$(document).ready(function(){
+		$(".non-active").on("click", function(e) {
+			if ($(this).attr("href").indexOf("localhost") == -1) {
+				e.preventDefault();
+				alert('개발중에는 외부 사이트는 연결할수 없습니다.');
+				return;
+			}
+		});
+	});
+
+	/**뒤로가기 대응: refresh 각form에 있는 것은 동작을 안해서 추가**/
+	$(window).on("pageshow", function(event) {
+	var formCheck = document.getElementById('frm');
+
+	if ((event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") && formCheck) {
+		if (!sessionStorage.getItem('reloaded')) {
+			sessionStorage.setItem('reload','true');
+			location.reload();
+		}
+		else {
+		}
+	}
+});
+</script>
+	<div id="wrap">
+	
+
+
+
+
+
+
+
+
+
+
+
+<script>
+var sysMessage = {};
+sysMessage = {"COMMI039":"SMS인증ID가 유효하지 않습니다.","COMMI038":"[{0}]번호로 SMS 2차인증 메세지가 전송되었습니다.","COMMI037":"SMS인증번호가 잘못되었습니다.","COMMI036":"[통합로그인시스템] SMS 2차인증","COMMI035":"[통합로그인시스템] 2차인증 인증번호 [{0}]를 입력하세요.","COMMI034":"OTP사용여부가 사용일 경우\\r\\n모바일사원증OTP 또는 PCOTP는 최소 하나는 사용이어야 합니다.","COMMI033":"변경할 수 없습니다.\\r\\n\\r\\n- ID/PW인증 시\\r\\n   OTP 사용 또는(OR) 생체인증 사용\\r\\n- ID또는ID/PW 인증 시\\r\\n    OTP 사용 그리고(AND) 생체인증 사용\\r\\n이어야 합니다.","COMMI032":"생체인증 요청이 수신되었습니다.","COMMI031":"로그인 시도 회수가 초과 되었습니다.\\r\\n보안 계정정책에 의해 계정이 차단 되었습니다.","COMMI030":"비밀번호 변경일자가 만료되었습니다.\\r\\n비밀번호를 변경해 주세요.","COMMI029":"비밀번호가 초기화 되었습니다.\\r\\n비밀번호를 변경해 주세요.","COMMI028":"결재가 반려되었습니다.","COMMI027":"결재가 반려되었습니다.\\r\\n제목 : {0}\\r\\n상신자 : {1}","COMMI026":"결재가 완료되었습니다.","COMMI025":"결재가 완료되었습니다.\\r\\n제목 : {0}\\r\\n상신자 : {1}","COMMI024":"결재승인건이 있습니다.","COMMI023":"결재 요청건이 도착했습니다.\\r\\n제목 : {0}\\r\\n상신자 : {1}","COMMI022":"PC OTP 단말기가 등록 되었습니다.\\r\\n\\r\\n고유번호 : {0}\\r\\nPC OTP에서 고유번호를 입력하세요.","VOCME012":"오류가 발생하였습니다.","COMMI021":"PC OTP 장치의 유효기간이 만료 되었습니다.\\r\\n\\r\\nPC에 설치 된 [PC OTP]의 고유인증번호를 갱신하세요.\\r\\n※  [신청] 버튼 클릭 하시어 [등록 및 갱신] 진행하세요.","VOCME011":"해당 파일은 등록이 허용되지 않는 형식의 파일입니다. 다시 선택해주세요.","COMMI020":"PC OTP 인증을 처리 할 수 없습니다. \\r\\n\\r\\n본인 PC에 [PC OTP]를 설치 하시고, \\r\\n인증장치를 등록 하세요. \\r\\n우측의 설치버튼클릭을 클릭하세요.","VOCME010":"파일이 존재하지 않습니다.","VOCME015":"VOC의 등록자ID와 로그인ID가 일치하지 않습니다.","VOCME014":"처리연장횟수{0}를 넘어서 처리예정일자를 연장할 수 없습니다.","VOCME013":"HTML 페이지가 로드되지 않았습니다.","COMME017":"생체인증(FIDO) 인증 시 오류가 발생되었습니다.\\r\\nFIDO 거래코드: {0}\\r\\nFIDO 거래메시지: {1}","COMMW088":"조회조건을 하나 이상 입력해주세요.","COMME016":"[{0}]에 접근 권한이 없습니다. \\r\\n[{1}] 사이의 시간은 접근 차단 되었습니다.","COMMW087":"{0} 선택 후 {1} 버튼을 클릭하세요.","COMME019":"{0} 관련 테이블이 없습니다.","COMME018":"2차 인증을 {0}회 실패 하셨습니다.\\r\\n계정 활성화 후 다시 인증하세요.\\r\\n\\r\\n([확인]클릭시 계정 활성화 화면으로 이동합니다.)","COMMW089":"{0}할 건을(를) 선택해 주세요.","COMME013":"{0}","COMMW084":"결재 중인 경우 저장이 불가합니다.","COMME012":"엑셀 다운로드 시 오류가 발생되었습니다.","COMMW083":"결재 중인 경우 삭제가 불가합니다.","COMME015":"[{0}]에 접근 권한이 없습니다. \\r\\n[{1}] 사이의 시간만 접근 가능 합니다.","COMMW086":"수정할 {0}을(를) 선택 후 수정하세요.","COMME014":"{0}은(는) 수정 할 수 없습니다.","COMMW085":"삭제할 {0}을(를) 선택 후 삭제하세요.","COMME011":"처리가능한 파일 형식이 아닙니다. \\r\\n문서보안(DRM)해제된 *.xlsx 파일 형식만 가능합니다.","COMME010":"사용자[{0}]님은 시스템 사용 권한이 없습니다.\\r\\n\\r\\n우측 업무문의 화면을 참고하셔서 담당자에게 문의 부탁드립니다.","VOCME001":"{0} 정보가 존재하지 않습니다.","VOCME005":"업로드 확정전 체크처리중 오류가 발생했습니다.[전산실 문의하세요]","VOCME004":"{0} 중 에러가 발생했습니다.","VOCME003":"{0}이(가) 불가합니다.","VOCME002":"{0}을(를) 찾을 수 없습니다.","VOCME009":"더 이상 추가할 수 없습니다.","VOCME008":"용량 초과\\n 업로드 가능용량 :","VOCME007":"등록이 불가능한 파일 입니다.","VOCME006":"폴더는 업로드 불가합니다.","COMMW091":"{0)을(를) 입력하고 실행하십시오.","COMMW090":"{0}을(를) 조회 후 선택해 주세요.","COMMW093":"동일한 {0}에 등록된 {1}정보가 있습니다.","COMMW092":"이미 등록된 {0}이(가) 있습니다.","COMME009":"파일이 존재 하지 않습니다.","COMME006":"파일 등록 시 오류가 발생되었습니다.","COMMW099":"비밀번호내 적용 할 수 없는 특수문자 [%,&,+]가 포함 되었습니다.\\n\\n비밀번호를 새로 입력 해주세요.","COMME005":"삭제시 오류가 발생되었습니다.","COMMW098":"화면이 새로고침 됩니다.\\n계속하시겠습니까?","COMME008":"비밀번호를 변경할 수 없습니다.\\n({0})","COMME007":"파일 삭제 시 오류가 발생되었습니다.","COMME002":"조회시 오류가 발생되었습니다.","COMMW095":"{0}건 만 선택 가능 합니다.","COMME001":"처리 시 오류가 발생되었습니다.","COMMW094":"삭제할 수 없습니다.","COMME004":"수정 시 오류가 발생되었습니다.","COMMW097":"[{0}] 번째 행과 [{1}] 번째 행의 값이 중복되었습니다.","COMME003":"저장 시 오류가 발생되었습니다.","COMMW096":"{0} 은(는) {1} 자리 문자여야 합니다.","COMMI040":"현재 화면은 시스템 처리 시간이 길어 질 수 있습니다.","COMMC014":"삭제 하시겠습니까 ? \\n※ 삭제 처리 시 재조회됩니다.","COMMW066":"업로드 가능한 파일 용량이 아닙니다.\\r\\n업로드 가능한 용량은 [{0}]~[{1}] 입니다.","COMMC015":"{0} 화면을 닫으시겠습니까?","COMMW065":"업로드 가능한 파일 종류가 아닙니다.\\r\\n업로드 가능한 파일종류 [{0}]","COMMC016":"개인정보가 포함된 엑셀의 경우 다운로드 시\\r\\n결재가 필요합니다.\\r\\n결재요청 하시겠습니까 ?","COMMW068":"{0} 할 수 없습니다.","COMMC017":"개인정보가 포함된 엑셀의 경우 1회 다운로드 후 바로 삭제됩니다\\r\\n다운로드 하시겠습니까 ?","COMMW067":"출력 데이타가 2건 이상일 경우만 엑셀 다운로드 가능 합니다.","COMMC010":"{0}을(를) 실행 하시겠습니까?","COMMS020":"비밀번호가 변경 되었습니다.\\n로그인 후 이용 가능 합니다.","COMMW062":"{0} 은(는) {1} 이여야 합니다.","COMMC011":"종료 하시겠습니까 ?","COMMW061":"사용하지 않는 게시판입니다.","COMMC012":"{0} 하시겠습니까 ?","COMMW064":"본 결재는 더이상 승인할 수 없는 상태입니다.","COMMC013":"확정 하시겠습니까 ?","COMMW063":"{0}을(를) 선택해주세요.","VOCMW007":"{0}을(를) 확인해주세요.","VOCMW006":"{0}을(를) 입력해주세요.","COMMS022":"성공적으로 {0} 되었습니다.","VOCMW005":"{0}을(를) 선택해주세요.","COMMS021":"정상적으로 엑셀 다운로드 되었습니다.","VOCMW004":"{0}MB 이하의 파일만 업로드 가능합니다.","COMMW069":"사용자 정보가 존재하지 않습니다.","VOCMW009":"{0}일자 {1} 후 {2} 할 수 있습니다.","VOCMW008":"{0}이(가) 유효하지 않습니다.","VOCMW010":"{0}이(가) 없습니다.","VOCMW014":"{0}은(는) 필수 입력 항목입니다.","VOCMW013":"{0} 대상이 아닙니다.","VOCMW012":"{0} 대상입니다.","VOCMW011":"{0}을(를) 할 수 있습니다.","COMMW071":"[{0}] 행의 [{1}] 항목이 입력되지 않았습니다.","COMMW070":"결재 정보가 존재하지 않습니다.","COMMC007":"엑셀파일을 생성 하시겠습니까 ?","COMMC008":"모든 화면을 닫겠습니까 ?","COMMC009":"{0}을(를) 진행 하시겠습니까?","COMMC003":"삭제 하시겠습니까 ?","COMMW077":"{0} 이(가) 아직 저장되지 않았습니다.\\n저장 후 다시 시도해주시기 바랍니다.","COMMC004":"등록 하시겠습니까 ?","COMMW076":"[{0}] 하나의 [{1}] 만 등록할 수 있습니다.","COMMC005":"수정 하시겠습니까 ?","COMMW079":"로그인 정보가 없습니다.(로그인 사용시간 만료)\\n\\n로그인 후 이용 가능 합니다.","COMMC006":"취소 하시겠습니까 ?","COMMW078":"{0} 이(가) 선택되지 않았습니다.\\n조회 후 다시 시도해주시기 바랍니다.","COMMW073":"내용을 입력해주세요.","COMMW072":"본 결재는 아직 상신되지 않았습니다.\\n먼저 상신처리 하십시오.","COMMC001":"저장 하시겠습니까 ?","COMMW075":"[{0}] 행의 [{1}] 은(는) [{2}] 보다 커야 합니다.","COMMC002":"처리 하시겠습니까 ?","COMMW074":"[{0}] 행의 [{1}]항목이 정상적이지 않습니다.","VOCMW003":"{0} 후 {1}하세요.","VOCMW002":"{0} 을(를) 하나 이상 선택해 주세요.","VOCMW001":"{0} 때문에 {1}이(가) 없습니다.","COMMW080":"이미 등록된 역할이 있는 경우 함께 삭제됩니다.\\n계속하시겠습니까?","COMMW082":"결재 진행 중인 경우 불가합니다.","COMMW081":"결재선이 없습니다.","COMMW044":"화면 최대 갯수[{0}]를 초과 하였습니다.\\r\\n열린 화면을 닫으시겠습니까 ?","COMMW043":"{0} 을(를) 하나 이상 선택해 주세요.","COMMW046":"아직 저장되지 않은 {0} (이)가 있습니다. 조회 하시겠습니까 ? ","COMMW045":"\\r\\n해당 메뉴에 대한 사용 권한이 없습니다.\\r\\n로그인 후 사용해 주시기 바랍니다.","COMMI019":"PC OTP 파일이 다운로드 되었습니다.\\r\\n\\r\\n다운로드 한 파일을 압축 해제 하시고,\\r\\n매뉴얼 대로 설치 하시기 바랍니다.\\r\\n\\r\\n※ 설치 시 문의번호 : 02-123-1234","COMMW040":"등록되지 않은 파일 형식입니다.","COMMI018":"웹필터 내역이 존재합니다.","COMMI017":"2차 인증을 처리 할 수 없습니다. \\r\\n본인의 휴대폰에 [모바일사원증] 앱을 설치 하시고, \\r\\n인증장치를 등록 하세요.","COMMW042":"해당 업로드 작업은 현재 진행중입니다. 작업 완료 후 업로드 하세요.","COMMI016":"{0} 않습니다.","COMMW041":"이전 업로드 내역이 존재합니다. 해당내역을 조회하시겠습니까?","COMMI015":"{0}은(는) EAM시스템에서 반영 후에 적용 됩니다.","COMMS002":"정상적으로 조회 되었습니다.","COMMI014":"역할 삭제는 EAM시스템에서 반영 후에 적용 됩니다.","COMMS001":"정상적으로 처리 되었습니다.","COMMI013":"역할 수정은 EAM시스템에서 반영 후에 적용 됩니다.","COMMI012":"중복된 {0}은(는) 제외되었습니다.","COMMI011":"{0}이(가) 선택되지 않았습니다.","COMMS006":"총 [{0}] 건이 정상적으로 처리 되었습니다.","COMMW048":"중복된 {0} (이)가 존재합니다.","COMMI010":"{0}건은(는) 선택이 불가합니다.","COMMS005":"정상적으로 삭제 되었습니다.","COMMW047":"{0} (이)가 없습니다","COMMS004":"정상적으로 수정 되었습니다.","COMMS003":"정상적으로 등록 되었습니다.","COMMW049":"추가하려는 {0}가 이미 추가되어 있습니다.\\n확인 후 다시 추가해주세요.","COMMS009":"총 [{0}] 건이 정상적으로 삭제 되었습니다.","COMMS008":"총 [{0}] 건이 정상적으로 수정 되었습니다.","COMMS007":"총 [{0}] 건이 정상적으로 등록 되었습니다.","COMMW055":"{0} 을(를) 확인해주세요.\\n이미 {1} 되었습니다.","COMMW054":"상신되지 않았습니다.\\n결재 상신 후 승인 가능합니다.","COMMW057":"{0} 을(를) 확인해주세요.","COMMI009":"{0} 은(는) 필수 입력 사항 입니다. {1}을(를) 조회하여 주십시오.","COMMW056":"결재자가 아닙니다.\\n결재자만 {0} 가능합니다.","COMMC021":"PC OTP 미등록 사용자 입니다. (등록후 24시간 초과시 초기화됩니다.) \\r\\nPC OTP 신청 하시겠습니까 ?","COMMI008":"{0} 정보가 아니기에 수정이 불가합니다.","COMMW051":"이미 {0} 되었습니다.","COMMC022":"모든 파일을 다운로드 하시겠습니까 ?","COMMI007":"역할 생성은 EAM시스템에서 반영 후에 적용 됩니다.","COMMW050":"먼저 결재자를 등록하세요.","COMMC023":"텍스트파일을 생성 하시겠습니까 ?\\r\\n전체 데이타의 텍스트 생성시 대기시간이 길어 질 수 있습니다.","COMMI006":"선택 결재건이 진행중입니다.\\r\\n개인정보조회(엑셀다운)파일을 다운 로드 하실 수 없습니다.","COMMW053":"제외할 수 없는 상태입니다.","COMMC024":"test ","COMMI005":"해당 메뉴에 대한 사용권한이 없습니다.","COMMW052":"승인된 결재자가 있어 결재상신 취소할 수 없습니다.","COMMI004":"준비중 입니다.","COMMS013":"파일이 삭제 되었습니다.","COMMI003":"출력할 내용이 없습니다","COMMS012":"파일이 수정 되었습니다.","COMMI002":"권한이 없습니다.","COMMS011":"파일이 등록 되었습니다.","COMMC020":"인증 유효 시간이 초과되었습니다.\\r\\n인증을 다시 시도 하시겠습니까 ?","COMMI001":"조회 데이터가 없습니다.","COMMS010":"등록 [{0}] 건, 수정 [{1}] 건, 삭제 [{2}] 건이 처리 되었습니다.","COMMS017":"[{0}] 건이 승인 처리 되었습니다.","COMMW059":"답글 대상이 올바르지 않습니다.","COMMS016":"정상적으로 저장 되었습니다.","COMMW058":"결재의견이 없습니다.\\n결재의견 작성 후 {0} 가능합니다.","COMMS015":"{0}이(가) 완료되었습니다.","COMMS014":"파일이 다운로드 되었습니다.","COMMS019":"정상적으로 생성 되었습니다.","COMMS018":"반려 처리 되었습니다.","COMMW060":"관련 답글이 존재하여 삭제할 수 없습니다.","COMMC018":"로그아웃 하시겠습니까 ?\\r\\n\\r\\n※ 전체 로그아웃의 경우 사번 + 2차인증 \\r\\n으로 로그인을 새로 하셔야 합니다.","COMMC019":"엑셀파일을 생성 하시겠습니까 ?\\r\\n전체 데이타의 엑셀 생성시 대기시간이 길어 질 수 있습니다.","COMMW022":"저장 할 수 없습니다. 변경된 정보가 없습니다.","VOCMS009":"접수되었습니다.","COMMW021":"비밀번호 {0} 회 잘못 입력 하셨습니다. {1} 회 잘못 입력시 계정이 잠금상태로 변경 됩니다.","VOCMS008":"정상적으로 {0}되었습니다.","COMMW024":"아직 저장되지 않은 {0} (이)가 있습니다. 저장을 원하지 않을 시 [재조회] 해주시기 바랍니다.","COMMW023":"추가 할 수 없습니다. {0} (은)는 이미 추가 되어 있습니다.","COMMW020":"로그인 할 수 없습니다. 계정이 {0} 상태입니다.","VOCMS001":"{0} 되었습니다.","COMMW029":"{0} 은(는) {1} 보다 이전 일자이어야 합니다.","VOCMS003":"{0}이(가) 완료되었습니다.","VOCMW049":"아이디는 4자리 이상 12자리 이하이여야 합니다.","VOCMS002":"{0}이(가) 조회되었습니다.","VOCMW048":"파일 다운로드 중 오류가 발생했습니다.","COMMW026":"아직 저장되지 않은 {0} (이)가 있습니다. 화면을 닫으시겠습니까 ? ","VOCMS005":"{0}이(가) {1}되었습니다.","COMMW025":"아직 저장되지 않은 {0} (이)가 있습니다. 저장 하시겠습니까 ?","VOCMS004":"{0}이(가) 완료되었습니다.[{1}]","COMMW028":"선택한 대상이 없습니다.","VOCMS007":"{0} 또는 {1}되었습니다.","COMMW027":"{0} 은(는) 정의되지 않았습니다.","VOCMS006":"{0} 화면으로 이동합니다.","VOCMC002":"정상적으로 저장되었습니다.","VOCMW054":"우편수령은 주소지입력이 필수입니다.","VOCMC003":"{0}을(를) 엑셀파일로 생성하시겠습니까?","VOCMW053":"수령방법은 필수입니다.","VOCMW052":"용도(기타 사유)를 입력해주세요.","VOCMC001":"저장하시겠습니까?","VOCMW051":"발급대상 기관을 선택해주세요.","VOCMC006":"{0}을(를) 저장하시겠습니까?","VOCMW058":"유효하지 않은 이메일입니다.","VOCMC007":"{0}을(를) 진행하시겠습니까?","VOCMW057":"유효하지 않은 휴대전화번호입니다.","VOCMC004":"{0}을(를) {1} 하시겠습니까?","VOCMS010":"처리기한 연장 신청이 완료되었습니다.","VOCMW056":"휴대전화번호는 필수입니다.","VOCMC005":"{0}을(를) 하시겠습니까?","VOCMW055":"팩스수령은 FAX번호입력이 필수입니다.","VOCMC008":"{0}을(를) 취소하시겠습니까?","VOCMC009":"변경된 정보가 있습니다.\\n계속 진행하시겠습니까?","VOCMW050":"비밀번호는 영문, 숫자, 특수문자를 모두 조합하여 9자리 이상 12자리 이하이여야 합니다.","COMMW033":"{0} 은(는) {1} 타입이어야 합니다.","COMMW032":"{0} 은(는) 문자만 입력 가능합니다.","COMMW035":"{0} 보다 작거나 같을 수 없습니다.","COMMW034":"{0} 보다 크거나 같을 수 없습니다.","COMMW031":"{0} 은(는) 유효하지 않은 연도 형식입니다.","COMMW030":"{0} 은(는) {1} 보다 이후 일자이어야 합니다.","VOCMW039":"패스워드는 9자리 이상 사용해야 합니다.","VOCMW038":"이메일 형식을 맞춰주세요.","VOCMW037":"더 이상 축소할 수 없습니다.","COMMW037":"변경된 정보가 없습니다.","COMMW036":"{0} 을(를) 초과 할 수 없습니다.","COMMW039":"지정된 파일 갯수[최대 {0}건]를 초과하였습니다.","COMMW038":"지정된 파일 용량을 초과하였습니다.","VOCMW043":"패스워드에 허용된 특수문자를 포함해야 합니다.","VOCMW042":"패스워드에 숫자를 포함해야 합니다.","VOCMW041":"패스워드에 영문자를 포함해야 합니다.","VOCMW040":"패스워드는 15자리 이하 사용해야 합니다.","VOCMW047":"검색어는 필수 입력 항목입니다.","VOCMW046":"허용되지 않는 문자가 포함되어 있습니다.","VOCMW045":"패스워드에 동일 문자를 연속해서 4번 이상 사용할 수 없습니다.","VOCMW044":"패스워드는 영문자와 숫자, 허용된 특수문자 조합으로 9자리 이상 사용해야 합니다.","COMMW121":"해당 파일에 대한 사용 권한이 없습니다.","COMMW120":"{0} 대상이 존재하지 않습니다.","COMMW002":"{0} 은(는) 최대 자릿수 {1} 까지 가능합니다.","COMMW001":"{0} 은(는) 필수 입력 사항 입니다.","COMMW008":"{0} 은(는) {1} 이하의 숫자만 입력 가능합니다.","VOCMW029":"변경 후 예정 일자는 변경 전 예정 일자보다 빠를 수 없습니다.","COMMW007":"{0} 은(는) {1} 이상의 숫자만 입력 가능합니다.","VOCMW028":"유효하지 않은 {0} 형식입니다.","VOCMW027":"해당 업로드 작업은 현재 진행 중입니다. 작업 완료 후 업로드 하세요","COMMW009":"{0} 은(는) 소숫점 {1} 자리로 구성되어야 합니다.","VOCMW026":"결재가 진행 중이거나 승인된 건이 존재합니다.\\n수정 대상을 확인하세요.","COMMW004":"{0} 은(는) {1} 와(과) {2} 사이의 자릿수를 가지는 문자이어야 합니다.","COMMW003":"{0} 의 입력값의 길이는 {1} 이하이어야 합니다.","COMMW006":"{0} 은(는) 숫자만 입력 가능합니다.","COMMW005":"{0} 의 입력값의 길이는 {1} 이상이어야 합니다.","VOCMW032":"영문,숫자만 입력하실 수 있습니다.","VOCMW031":"숫자만 입력하실 수 있습니다.","VOCMW030":"한글만 입력하실 수 있습니다.","VOCMW036":"더 이상 확대할 수 없습니다.","VOCMW035":"공백 및 특수문자는 사용할 수 없습니다.","VOCMW034":"한글은 사용할 수 없습니다.","VOCMW033":"특수문자는 < > ; ' 은 사용이 불가합니다.","COMMW011":"{0} 은(는) 유효하지 않은 년월 형식입니다.","COMMW010":"{0} 은(는) 유효하지 않은 날짜 형식입니다.","COMMW013":"{0} 은(는) {1} 중 하나의 값이어야 합니다.","COMMW012":"{0} 은(는) {1} 와(과) {2} 사이의 값만 가능합니다.","COMMW019":"로그인 할 수 없습니다.\\r\\n로그인 정보를 다시 확인 하세요.","VOCMW018":"{0}일 경우 {0}은(는) 필수입력 항목입니다.","COMMW018":"유효하지 않은 {0} 형식입니다.","VOCMW017":"{0}을(를) {1}한 후 {2}을(를) {3}하세요.","VOCMW016":"{0}을(를) {1}하세요.","VOCMW015":"{0}은(는) 필수 입력 항목입니다. {1}을(를) 조회하여 주십시오.","COMMW015":"{0} 의 날짜가 {1} 의 날짜보다 작습니다.","COMMW014":"{0} 이(가) {1} 와(과) 일치하지 않습니다.","COMMW017":"{0} 이(가) {1} 보다 큽니다.","COMMW016":"{0} 이(가) {1} 보다 작습니다.","VOCMW019":"{0} 상태입니다. {1}만 가능합니다.","VOCMW021":"{0}와(과) {1}이(가) 일치하지 않습니다.","VOCMW020":"{0}을(를) 검색하여 주세요.","VOCMW025":"{0}을(를) 초과합니다.","VOCMW024":"{0} 후 {1}을(를) 눌러주세요.","VOCMW023":"{0}만 {1}할 수 있습니다.","VOCMW022":"{0}은(는) {1}할 수 없습니다.","COMMW101":"최대 조회 가능한 기간은 30일 입니다.","COMMW100":"[{0}] 기간은 [{1}]일 이내의 기간만 가능 합니다.","COMMW107":"{0} 은(는) 필수 입력값입니다.","COMMW106":"{0}은(는) 폴더이므로 팝업 화면으로 설정할 수 없습니다.","COMMF001":"시스템 오류가 발생 하였습니다.\\r\\n관리자에게 문의하세요.","COMMW109":"로그인 할 수 없습니다.\\r\\n해당 사용자는 [{0}]입니다.\\r\\n오류코드 [{1}]","COMMW103":"신규 작성된 메뉴에는 하위추가 할 수 없습니다.\\n저장 후 다시 시도해주시기 바랍니다.","COMMW102":"[{0}] 기간은 [{1}]일 이외의 기간만 가능 합니다.","COMMW105":"{0} 은(는) {1} 자리 숫자여야 합니다.","COMMW104":"{0} 이(가) 존재합니다.","COMMW110":"해당 역할에 강제할당된 사용자가 있습니다.\\r\\n강제할당된 사용자를 삭제 한 뒤 재시도 해주세요.","COMMW112":"[{0}] 항목이 입력되지 않았습니다.","COMMW111":"사용자[{0}]님은\\r\\n현재 [{1}]에서 로그인중입니다.\\r\\n\\r\\n강제 종료 후 로그인 하시겠습니까?","COMME024":"{0}에서 오류가 발생되었습니다.","COMME023":"[{0}] 이(가) 없습니다.","COMME025":"응답시간이 초과 되었습니다.[{0}]","COMME020":"작성된 도움말이 없습니다.","COMMW118":"비정상적인 접근이 감지되었습니다.","VOCMI014":"[예금보험공사] {0}님의 소중한 의견이 접수되었습니다.","COMMW117":"현재 시스템에 대한 권한이 존재하지 않습니다. ","VOCMI013":"요구 유형이 입력되지 않은 민원입니다. 요구유형을 선택해주세요.","COMME022":"사용자 계정이 차단 되었습니다.\\r\\n계정 활성화 처리 해주세요.","VOCMI016":"[예금보험공사] {0}님의 소중한 의견이 등록되었습니다.","COMME021":"EAM에 미등록된 팝업 화면입니다.","COMMW119":"인증요청이 되지 않았습니다. 인증요청 버튼을 클릭하세요.","VOCMI015":"[예금보험공사] {0}님의 소중한 의견이 처리되었습니다. 감사합니다.","COMMW114":"[{0}] 은(는) [{1}] 보다 커야 합니다.","VOCMI010":"{0}이(가) {1}입니다. {2} 후 {3}하세요.","COMMW113":"[{0}] 항목이 정상적이지 않습니다.","COMMW116":"현재 파일이 생성중입니다. ","VOCMI012":"사용안함","COMMW115":"사용자의 핸드폰 번호가 존재하지 않습니다.","VOCMI011":"{0}이(가) {1}중입니다. {2} 후 {3}하세요.","VOCMI018":"[예금보험공사] {0}님의 민원(정보공개청구)이 처리되었습니다. 감사합니다.","VOCMI017":"{0}님의 소중한 의견이 등록되었습니다.","VOCMI019":"Y2","VOCMI003":"{0}전용 기능입니다.","VOCMI002":"{0} 은(는) {1} 가능합니다.","VOCMI005":"{0}중 입니다.","VOCMI004":"{0}이(가) 존재합니다.","VOCMC020":"반려하시겠습니까?","VOCMC021":"결재하시겠습니까?","VOCMI001":"{0} 보다 커야 합니다.","VOCMC024":"선택한 {0} 중 결재 반려된 건이 존재합니다.\\r\\n신규 결재를 상신하시겠습니까?","VOCMW076":"{0}(상세)을(를) 선택하세요.","VOCMC025":"사전정보공표 항목 전체가 삭제됩니다. \\n삭제 하시겠습니까? ","VOCMW075":"{0}을(를) 선택하세요.","VOCMC022":"접수하시겠습니까?","VOCMW074":"변경 예정일자가 현재일보다 이전입니다.","VOCMC023":"{0}","VOCMW073":"{0} 을 입력하세요.","VOCMI007":"{0}이(가) 처리 중입니다.","VOCMI006":"선택된 {0}의 전체 내역이 조회됩니다.","VOCMC026":"결재상신하시겠습니까","VOCMI009":"{0}을(를) 실행하세요.","VOCMC027":"변경하시겠습니까?","VOCMI008":"{0}이(가) 진행 중입니다.","VOCMW077":"이미 등록된 STT가 있습니다.","VOCMW072":"결재가 진행 중이거나 승인된 건이 존재합니다.\\n수정 대상을 확인하세요.","VOCMW071":"정보공개청구포털 연계일 경우 모든 복합 VOC의 결재가 완료되어야 처리할 수 있습니다.","VOCMW070":"정보공개포털 연계인 경우 복합 VOC 최상단 처리자는 예금보험교육실 입니다.","VOCMW059":"필수항목 개인정보 수집에 동의하시기 바랍니다.","VOCMC010":"데이터가 더 있습니다.\\n계속 조회하시겠습니까?","VOCMC013":"이전 업로드 데이터[확정 이전 데이터]는 모두 삭제됩니다 계속 진행하시겠습니까?","VOCMW065":"결재상태를 반영하려면 전자문서번호 또는 전자결재 문서 아이디가 필요합니다.","VOCMC014":"{0} 하시겠습니까?","VOCMW064":"전자문서제목을 입력하지 않으면 기안할 수 없습니다.","VOCMC011":"마스킹 해제를 위해 결재가 필요합니다. 결재자를 지정하시겠습니까?","VOCMW063":"{0}","VOCMC012":"모든 화면을 닫으시겠습니까?","VOCMW062":"테스트","VOCMC017":"작성하신 민원을 수정하시겠습니까?","VOCMW069":"결재 완료 시에 국민신문고 담당자(부서 서무)에게 해당 민원의 답변을 국민신문고 사이트에 입력하여야 함을 반드시 안내 바랍니다.","VOCMC018":"파일을 다운로드 하시겠습니까?","VOCMW068":"민원인 정보 등 개인정보와 민원내용은 민원처리 목적으로만 사용하여야 하며, 정보주체의 동의없이 무단으로 제3자에게 제공한 경우에는 5년이하의 징역 또는 5천만원 이하의 벌금에 처할 수 있습니다. (개인정보보호법 제17조 및 제71조, 민원처리에 관한 법률 제7조)","VOCMC015":"삭제된 글은 복구되지 않습니다. 정말 삭제하시겠습니까?","VOCMW067":"요구유형이 {0}인 경우 {1}을(를) 선택하시기 바랍니다.","VOCMC016":"업로드 되지 않은 {0}이(가) 있습니다. 정말 등록하시겠습니까?","VOCMW066":"회신방법이 {0}일 경우 {1}을(를) 입력하세요.","VOCMC019":"test","VOCMW061":"{0}","VOCMW060":"선택항목에 동의하지 않으실 경우 SMS(휴대폰문자)와 이메일 외에 우편, FAX 등으로는 회신받으실 수 없습니다."};
+//F12 막기(개발자 도구 막기)
+$(document).ready(function() {
+	$(document).bind('keydown', function(e) {
+		if (e.keyCode == 123) {
+			e.preventDefault();
+			e.returnValue = false;
+		}
+	});
+});
+</script>
+<script>
+	var gfn_httpClntTimeoutSec = Number('');
+</script>
+<script>
+	var gfn_contextPath = '/voc/';
+	var gfn_httpClntTimeoutSec = Number('');
+	var gfn_sesnTimeoutSec = Number('');
+</script>
+<script>
+
+</script>
+<script>
+
+var globalDrType = 'N';
+
+function dRMsgAlert() {
+	alert(getDRMsg());
+	return false;
+}
+
+function moveRequest(url) {
+	location.href = url;
+}
+
+function goSubPage(menuType) {
+	var url;
+
+	// 나의민원
+	if (menuType == '01')
+		url = "/voc/myComplaints";									// 나의민원
+	// 민원상담
+	else if (menuType == '02')
+		url = "/voc/complaint/info";								// 민원상담안내
+	else if (menuType == '03')
+		url = "/voc/complaint/example/list";						// 민원상담사례
+	else if (menuType == '04') {
+		
+		url = "/voc/complaint/request";								// 민원상담신청
+		
+	}
+	// 국민제안
+	else if (menuType == '05')
+		url = "/voc/citizenProposal/info";							// 국민제안안내
+	else if (menuType == '06') {
+		
+		url = "/voc/citizenProposal/post";							// 국민제안등록
+		
+	}
+	// 정보공개청구
+	else if (menuType == '07')
+		url = "/voc/infoDisclosure/info";							// 정보공개청구
+	else if (menuType == '08')
+		url = "/voc/infoDisclosure/list";							// 정보목록
+	else if (menuType == '09')
+		url = "/voc/infoDisclosure/preDisclosure/list";				// 사전정보공표
+	else if (menuType == '50')
+		url = "/voc/infoDisclosure/preDisclosure/survey";			// 사전정보공표 건의함(모니터링)
+	else if (menuType == '10')
+		url = "/voc/infoDisclosure/openData/info";					// 데이터개방목록
+	else if (menuType == '11')
+		url = "/voc/infoDisclosure/demandServey";					// 공공데이터수요조사
+	else if (menuType == '12')
+		url = "/voc/infoDisclosure/post/info";						// 정보공개청구서작성
+	else if (menuType == '13') {
+		
+		url = "/voc/infoDisclosure/citizen/post";					// 개인(내국인) 정보공개청구서 작성
+		
+	}
+	else if (menuType == '14') {
+		
+		url = "/voc/infoDisclosure/foreigner/post";					// 개인(외국인) 정보공개청구서 작성
+		
+	}
+	else if (menuType == '15') {
+		
+		url = "/voc/infoDisclosure/domesticCorporation/post";		// 법인(국내) 정보공개청구서 작성
+		
+	}
+	else if (menuType == '16') {
+		
+		url = "/voc/infoDisclosure/foreignCorporation/post";		// 법인(외국) 정보공개청구서 작성
+		
+	}
+	else if (menuType == '17') {
+		
+		url = "/voc/infoDisclosure/organization/post";				// 단체
+		
+	}
+	else if (menuType == '18') {
+		
+		url = "/voc/infoDisclosure/verification/list";				// 사업실명제
+		
+	}
+	else if (menuType == '52') {
+		
+		url = "/voc/infoDisclosure/verification/detail";			// 사업실명제(상세)
+		
+	}
+	// 신고센터
+	else if (menuType == '19') {
+		
+		url = "/voc/reportCenter/absurdity/info";					// 부조리신고
+		
+	}
+	else if (menuType == '20') {
+		
+		url = "/voc/reportCenter/publicReport/info";				// 공익신고
+		
+	}
+	else if (menuType == '21') {
+		
+		url = "/voc/reportCenter/budgetWaste/info";					// 예산낭비신고
+		
+	}
+	else if (menuType == '22') {
+		
+		url = "/voc/reportCenter/passiveAdministration/info";		// 소극행정신고
+		
+	}
+	else if (menuType == '23') {
+		
+		url = "/voc/reportCenter/solicitation/info";				// 청탁금지법위반신고
+		
+	}
+	else if (menuType == '24') {
+		
+		url = "/voc/reportCenter/bullyingReport/info";				// 갑질피해신고
+		
+	}
+	else if (menuType == '25') {
+		
+		url = "/voc/reportCenter/clean/info";						// 클린신고
+		
+	}
+	else if (menuType == '26') {
+		
+		url = "/voc/reportCenter/humanRightsViolation/info";		// 인권침해신고
+		
+	}
+	else if (menuType == '27') {
+		
+		url = "/voc/reportCenter/contract/info";					// 계약업무개선방안
+		
+	}
+	else if (menuType == '28') {
+		
+		url = "/voc/complaint/corporateGrowthResponse/info";		// 기업성장응답센터
+		
+	}
+	else if (menuType == '29') {
+		
+		url = "/voc/reportCenter/danger/info";						// 위험상황신고센터
+		
+	}
+	else if (menuType == '30') {
+		
+		url = "/voc/reportCenter/bankRuptcyFoundation/info";		// 파산재단의견접수
+		
+	}
+	else if (menuType == '31') {
+		
+		url = "/voc/reportCenter/kindness/info";					// 친절불친절직원신고
+		
+	}
+	// 부보금융회사조사
+	else if (menuType == '32')
+		url = "/voc/financialInvestigation/info";					// 부보금융회사조사안내
+	else if (menuType == '33') {
+		
+		url = "/voc/financialInvestigation/objection/request";		// 부보금융회사소명및이의제기신청
+		
+	}
+	else if (menuType == '34')
+		url = "/voc/financialInvestigation/list";					// 부보금융회사조사진행상황조회
+	// 부실책임조사
+	else if (menuType == '35')
+		url = "/voc/responsibility/info";							// 금융부실관련자책임추궁
+	else if (menuType == '36')
+		url = "/voc/protect/info";									// 권익보호제도
+	else if (menuType == '37') {
+		
+		url = "/voc/protect/objection/request";						// 부실책임조사소명신청
+		
+	}
+	else if (menuType == '38') {
+		
+		url = "/voc/protect/explain/request";						// 부실책임조사이의제기신청
+		
+	}
+	else if (menuType == '39') {
+		
+		url = "/voc/protect/objectionCounsel/request";				// 부실책임조사소명상담신청
+		
+	}
+	else if (menuType == '40') {
+		
+		url = "/voc/protect/explainCounsel/request";				// 부실책임조사이의제기상담신청
+		
+	}
+	else if (menuType == '41') {
+		
+		url = "/voc/protect/CareerRegistAction/list";				// 부실책임조사진행현황조회
+		
+	}
+	// 발간자료신청
+	else if (menuType == '42')
+		url = "/voc/pamphlet/search";								// 브로슈어/리플렛신청안내
+	else if (menuType == '55') {
+		
+		url = "/voc/pamphlet/request";								// 브로슈어/리플렛신청
+		
+	}
+	else if (menuType == '43')
+		url = "/voc/pamphlet/list";									// 브로슈어/리플렛목록
+	else if (menuType == '44')
+		url = "/voc/square/find";									// 예보광장신청안내
+	else if (menuType == '56') {
+		
+		url = "/voc/square/request";								// 예보광장신청
+		
+	}
+	else if (menuType == '45')
+		url = "/voc/square/list";									// 예보광장목록
+	else if (menuType == '46') {
+		
+		url = "/voc/pamphlet/requestList";							// 발간자료신청조회
+		
+	}
+	// 규제개혁포털
+	else if (menuType == '47')
+		url = "/voc/regulationStatus/info";							// 규제개혁포털 / 규제현황
+	else if (menuType == '48')
+		url = "/voc/regulationStatus/organization/info";			// 규제심의기구
+	else if (menuType == '49') {
+		
+		url = "/voc/regulationStatus/suggestion";					// 규제개혁건의하기
+		
+	}
+
+	//if (menuType == '50') {
+	//	alert('서비스 준비 중입니다.');
+	//	return false;
+	//}
+	//else {
+		location.href = url;
+		return false;
+	//}
+}
+</script>
+<!-- TODO request 기본값으로 설정되도록 항목 설정할것. PJM -->
+
+
+<!-- ***************************************************************************************************** -->
+<!-- ***************************************************************************************************** -->
+<!-- 세션종료 알림 및 시간연장 안내 팝업 -->
+<div class="layerPop popClose mypagePop notice" id="session01"
+	style="z-index: 1111;">
+	<!-- style="display:block" -->
+	<div class="inner">
+		<strong class="tit">시간연장 안내</strong>
+		<div class="cont">
+			<!-- conBox -->
+			<div class="conBox">
+				<div class="conTit txtC">
+					<strong class="cBlue">자동 로그아웃 및 시간연장 안내</strong>
+					<p>
+						자동 로그아웃까지 남은 시간은 <span class="cRed" id="sesnRemnPop"></span> 입니다.<br>
+						<br> 사용자 인증 후 30분 동안 서비스 이용이 없을 경우,<br/> 개인정보보호를 위해 자동 로그아웃됩니다.<br>
+						<br> 이용시간을 연장하시겠습니까?
+					</p>
+				</div>
+				<!-- rowTable -->
+				<!-- btnBottomArea -->
+				<div class="btnBottomArea">
+					<button type="button" class="btn btnLightblue"
+						onclick="fn_layer_close(this); gfn_sesnTimeoutJob_default();">연장하기</button>
+					<a href="/voc/mm/lgt/processMbrLgt.do" class="btn btnBlue" onclick="fn_layer_close(this);" title="자동로그아웃" >자동로그아웃</a>
+				</div>
+				<!--// btnBottomArea -->
+			</div>
+			<!--// conBox -->
+		</div>
+	</div>
+</div>
+<!--// 세션종료 알림 및 시간연장 안내 팝업 -->
+<!-- ***************************************************************************************************** -->
+
+<!-- ***************************************************************************************************** -->
+<!-- 웹필터 contents -->
+<style>
+	#wfDenyLayer {
+		display: none;
+		position: fixed;
+		top: 0; left: 0;
+		width: 100%; height: 100%;
+		background: rgba(0,0,0,0.65);
+		z-index: 9999;
+		align-items: center;
+		justify-content: center;
+	}
+	#wfDenyBox {
+		background: #f0f2f5;
+		width: 580px;
+		max-width: 90vw;
+		max-height: 85vh;
+		overflow-y: auto;
+		border-radius: 4px;
+		box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+		box-sizing: border-box;
+		font-family: 맑은고딕, sans-serif;
+	}
+	#wfDenyBox .wf-header {
+		background: #2f6dd4;
+		color: #fff;
+		padding: 13px 18px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border-radius: 4px 4px 0 0;
+	}
+	#wfDenyBox .wf-header span { font-size: 15px; font-weight: bold; }
+	#wfDenyBox .wf-header .wf-help { font-size: 13px; color: #ccc; cursor: pointer; }
+	#wfDenyBox .wf-body { padding: 22px 22px 10px; }
+	#wfDenyBox .wf-top-wrap {
+		display: flex; align-items: flex-start;
+		gap: 16px; margin-bottom: 20px;
+	}
+	#wfDenyBox .wf-logo-wrap { text-align: center; min-width: 72px; }
+	#wfDenyBox .wf-logo {
+		border: 2px solid #c00; padding: 6px 8px; display: inline-block; margin-bottom: 5px;
+	}
+	#wfDenyBox .wf-org-name { color: #fff; font-size: 11px; margin-top: 4px; }
+	#wfDenyBox .wf-guide-title { font-size: 15px; font-weight: bold; margin: 0 0 8px; color: #111; }
+	#wfDenyBox .wf-guide-desc { font-size: 13px; color: #444; line-height: 1.7; margin: 0; }
+	#wfDenyBox .wf-content-wrap {
+		background: #ffffff; border: 1px solid #ccc;
+		border-radius: 4px; padding: 14px 16px; margin-bottom: 10px; min-height: 80px;
+	}
+	#wfDenyBox .wf-content-label {
+		color: #1b3a6b; font-size: 13px; margin: 0 0 10px;
+		padding-bottom: 8px; border-bottom: 1px solid #555;
+	}
+	#wfDenyBox .wf-detect-content { color: #000000; font-size: 13px; line-height: 1.9; word-break: break-all; }
+	#wfDenyBox .wf-footer { padding: 12px 18px; text-align: right; border-top: 1px solid #ccc; background:#e8eaed}
+	#wfDenyBox .wf-btn {
+		padding: 7px 22px; font-size: 13px;
+		cursor: pointer; border: none; border-radius: 3px; margin-left: 6px;
+	}
+	#wfDenyBox .wf-btn-close { background: #555; color: #fff; }
+	#wfDenyBox .wf-btn-close:hover { background: #777; }
+	#wfDenyBox .wf-btn-save { background: #1b3a6b; color: #fff; }
+	#wfDenyBox .wf-btn-save:hover { background: #2a5298; }
+
+	/* 토스트 메시지 */
+	#wfToast {
+		display: none;
+		position: fixed;
+		bottom: 40px; left: 50%;
+		transform: translateX(-50%);
+		background: rgba(0,0,0,0.78);
+		color: #fff;
+		padding: 10px 24px;
+		border-radius: 20px;
+		font-size: 13px;
+		z-index: 99999;
+		white-space: nowrap;
+	}
+</style>
+
+
+<div id="wfDenyLayer">
+	<div id="wfDenyBox">
+		<div class="wf-header">
+			<img src="/voc/webfilter/layer_pop/images/icon_bi.png" alt="예금보험공사" />
+		</div>
+
+		<div class="wf-body">
+			<div class="wf-top-wrap">
+				<div class="wf-guide-wrap">
+					<p class="wf-guide-title">개인정보가 아래와 같이 검출되었습니다.</p>
+					<p id="wfMsg" class="wf-guide-desc"></p>
+				</div>
+			</div>
+
+			<div class="wf-content-wrap">
+				<p class="wf-content-label">[본문]</p>
+				<div id="wfDetectContent" class="wf-detect-content"></div>
+			</div>
+		</div>
+
+		<div class="wf-footer">
+			<button class="wf-btn wf-btn-close" onclick="wfBtnClose()">닫기</button>
+			<button class="wf-btn wf-btn-save" onclick="wfBtnSave()">저장</button>
+		</div>
+	</div>
+</div>
+
+
+<div id="wfToast"></div>
+
+<script type="text/javascript">
+	/* ================================================
+	* 팝업 열기 - webfilterLayer.jsp 에서 호출
+	* ================================================ */
+	function showWebfilterDenyPopup(detectResult, wfMsg) {
+		var content = detectResult || wfMsg || '개인정보가 검출되었습니다.';
+		//console.log('wfMsg = ' + wfMsg);
+		//console.log('content = ' + content);
+		document.getElementById('wfMsg').innerHTML = wfMsg;
+		document.getElementById('wfDetectContent').innerHTML = detectResult;
+
+		var layer = document.getElementById('wfDenyLayer');
+		layer.style.display			= 'flex';
+		layer.style.alignItems		= 'center';
+		layer.style.justifyContent	= 'center';
+	}
+
+	/* ================================================
+	* 닫기 버튼 - 팝업만 닫고 현재 페이지 유지
+	* ================================================ */
+	function wfBtnClose() {
+		closeWfLayer();
+		showWfToast('개인정보 검출로 인해 등록이 제한되었습니다.');
+	}
+
+	/* ================================================
+	* 저장 버튼 - 확인 후 원래 폼 submit
+	* ================================================ */
+	function wfBtnSave() {
+		if (!confirm('개인정보가 포함된 내용을 저장하시겠습니까?\n개인정보보호법에 따라 책임이 발생할 수 있습니다.')) {
+			return;
+		}
+		closeWfLayer();
+
+		// 원래 frm 폼 submit
+		var frm = document.forms['frm'];
+		if (frm) {
+			frm.target = '';
+			frm.submit();
+		}
+		else {
+			showWfToast('폼을 찾을 수 없습니다.');
+		}
+	}
+
+	/* ================================================
+	* 팝업 닫기 공통
+	* ================================================ */
+	function closeWfLayer() {
+		document.getElementById('wfDenyLayer').style.display = 'none';
+		document.getElementById('wfDetectContent').innerHTML = '';
+	}
+
+	/* ================================================
+	* 토스트 메시지
+	* ================================================ */
+	function showWfToast(msg) {
+		var toast = document.getElementById('wfToast');
+		toast.innerText = msg;
+		toast.style.display = 'block';
+		setTimeout(function() {
+			toast.style.display = 'none';
+		}, 2500);
+	}
+
+	/* 오버레이 클릭 시 닫기 */
+	document.getElementById('wfDenyLayer').addEventListener('click', function(e) {
+		if (e.target === this)	wfBtnClose();
+	});
+</script>
+<!-- // 웹필터 contents -->
+<!-- ***************************************************************************************************** -->
+
+<!-- ***************************************************************************************************** -->
+<!-- skipNav -->
+<dl id="skipNav">
+	<dt>바로가기 메뉴</dt>
+	<dd>
+		<a href="#container">본문 바로가기</a>
+	</dd>
+	<dd>
+		<a href="#gnb">주메뉴 바로가기</a>
+	</dd>
+	<dd>
+		<a href="#footer">풋터 바로가기</a>
+	</dd>
+</dl>
+<!-- //skipNav -->
+	<!-- header -->
+	<!-- 로그아웃상태 : logOut / 로그인상태 : logIn -->
+	
+		
+		
+	<div id="header" class="logOut">
+		
+	
+		<!-- inner -->
+		<div class="inner">
+			<h1 class="logo"><a href="/voc/" alt="예금보험공사 고객의소리">예금보험공사 고객의소리</a></h1>
+
+			<div class="switchZidx">
+				<!-- util -->
+				<div class="util">
+					
+					
+					
+						
+						
+							<button type="button" class="btn btnIco btnBlue" onclick="window.open('https://www.kdic.or.kr')" title="홈페이지 새창열림"><span class="icoLink">홈페이지</span></button>
+							<button type="button" class="btn btnIco btnLightBlue2" onclick="window.open('https://fins.kdic.or.kr')" title="금융안심포털 새창열림"><span class="icoLink">금융안심포털</span></button>
+							<button type="button" class="btn btnIco btnRed" onclick="window.open('https://www.kdic.or.kr/di/bzpblnt/PbcrItslPblntCustRgul/selectScrn.do')" title="고객헌장 새창열림"><span class="icoLink">고객헌장</span></button>
+							<a href="/voc/agree" class="btn btnGreen btnIco" title="본인인증 바로가기"><span class="icoLink">본인인증</span></a>
+						
+					
+				</div>
+				<!--// util -->
+				<a href="javascript:void(0);" class="allMenuBtn" title="전체메뉴 열기">전체메뉴열기</a>
+			</div>
+			<!-- allMenu -->
+			<div class="allMenu">
+				<!-- mSitemove 2022-12-30 수정 -->
+				<div class="mSitemove">
+					<a class="" target="_blank" title="고객의 소리 새창열기"><span>고객의 소리</span></a>
+				</div>
+				<!--// mSitemove 2023-01-13 수정 -->
+				<div class="allMenuList">
+					<div class="inner scrollArea">
+						<div>
+							<h2 class="on" tabindex="0"><span class="accoIcon red txtL">나의민원</span></h2>
+							<div class="allMenuInner" style="display:block;">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(1);">나의민원</a></li>
+								</ul>
+							</div>
+						</div>
+						<div>
+							<h2 tabindex="0"><span class="accoIcon red txtL">민원상담</span></h2>
+							<div class="allMenuInner">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(2);">민원상담안내</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(3);">민원상담사례</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(4);">민원상담신청</a></li>
+								</ul>
+							</div>
+						</div>
+						<div>
+							<h2 tabindex="0"><span class="accoIcon red txtL">국민제안</span></h2>
+							<div class="allMenuInner">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(5);">국민제안안내</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(6);">국민제안등록</a></li>
+								</ul>
+							</div>
+						</div>
+						<div>
+							<h2 tabindex="0"><span class="accoIcon red txtL">정보공개청구</span></h2>
+							<div class="allMenuInner">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(7);">정보공개제도안내</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(8);">정보목록</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(9);">사전정보공표</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(50);">사전정보공표 건의함(모니터링)</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(10);">데이터개방목록</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(11);">공공데이터수요조사</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(12);">정보공개청구서작성</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(18);">사업실명제</a></li>
+								</ul>
+							</div>
+						</div>
+						<div>
+							<h2 tabindex="0"><span class="accoIcon red txtL">신고센터</span></h2>
+							<div class="allMenuInner">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(19);">부조리신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(20);">공익신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(21);">예산낭비신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(22);">소극행정신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(23);">청탁금지법위반신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(24);">갑질피해신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(25);">클린신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(26);">인권침해신고</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(27);">계약업무개선방안</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(28);">기업성장응답센터</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(29);">위험상황신고센터</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(20);">파산재단의견접수</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(31);">친절불친절직원신고</a></li>
+								</ul>
+							</div>
+						</div>
+						<div>
+							<h2 tabindex="0"><span class="accoIcon red txtL">부실책임조사</span></h2>
+							<div class="allMenuInner">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(32);">금융부실관련자책임추궁</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(33);">권익보호제도</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(34);">부실책임조사진행현황조회</a></li>
+								</ul>
+							</div>
+						</div>
+						<div>
+							<h2 tabindex="0"><span class="accoIcon red txtL">발간자료신청</span></h2>
+							<div class="allMenuInner">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(42);">브로슈어/리플렛신청안내</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(43);">브로슈어/리플렛신청목록</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(44);">예보광장신청안내</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(45);">예보광장목록</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(46);">발간자료신청조회</a></li>
+								</ul>
+							</div>
+						</div>
+						<div>
+							<h2 tabindex="0"><span class="accoIcon red txtL">규제개혁포털</span></h2>
+							<div class="allMenuInner">
+								<ul>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(47);">규제현황</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(48);">규제심의기구</a></li>
+									<li class="noAcco"><a href="javascript:;" onclick="goSubPage(49);">규제개혁건의하기</a></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<div class="dim">
+						<div class="son"></div>
+					</div>
+				</div>
+				<div class="allMenuBtnWrap">
+					<a href="javascript:void(0);" class="allMenuBtn close">전체메뉴닫기</a>
+				</div>
+			</div>
+			<!--// allmenu -->
+			<div class="dim"></div>
+		</div>
+		<!--// inner -->
+		<!-- gnbWrap -->
+		<div class="gnbWrap">
+			<!-- gnb -->
+			<div id="gnb">
+				<ul class="depthList">
+					<li title="나의 민원"><a href="javascript:;" onclick="goSubPage(1);">나의민원</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2 >나의민원</h2>
+									<p>예금보험공사의<br/>나의민원에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>나의민원</dt>
+												<dd title="나의 민원"><a href="javascript:;" onclick="goSubPage(1);">나의민원</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC-" title="민원상담"><a href="javascript:;" onclick="goSubPage(2);">민원상담</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>민원상담</h2>
+									<p>예금보험공사의<br/>민원상담에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>민원상담</dt>
+												<dd title="민원상담안내"><a href="javascript:;" onclick="goSubPage(2);">민원상담안내</a></dd>
+												<dd title="민원상담사례"><a href="javascript:;" onclick="goSubPage(3);">민원상담사례</a></dd>
+												<dd title="민원상담신청"><a href="javascript:;" onclick="goSubPage(4);">민원상담신청</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC-" title="국민제안"><a href="javascript:;" onclick="goSubPage(5);">국민제안</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>국민제안</h2>
+									<p>예금보험공사의<br/>국민제안에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt title="국민제안">국민제안</dt>
+												<dd title="국민제안안내"><a href="javascript:;" onclick="goSubPage(5);">국민제안안내</a></dd>
+												<dd title="국민제안등록"><a href="javascript:;" onclick="goSubPage(6);">국민제안등록</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC-" title="정보공개청구"><a href="javascript:;" onclick="goSubPage(7);">정보공개청구</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>정보공개청구</h2>
+									<p>예금보험공사의<br/>정보공개청구에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>정보공개청구</dt>
+												<dd title="정보공개제도안내"><a href="javascript:;" onclick="goSubPage(7);">정보공개제도안내</a></dd>
+												<dd title="정보목록"><a href="javascript:;" onclick="goSubPage(8);">정보목록</a></dd>
+												<dd title="사전정보공표"><a href="javascript:;" onclick="goSubPage(9);">사전정보공표</a></dd>
+												<dd title="사전정보공표 건의함(모니터링)"><a href="javascript:;" onclick="goSubPage(50);">사전정보공표 건의함(모니터링)</a></dd>
+												<dd title="데이터 개방목록"><a href="javascript:;" onclick="goSubPage(10);">데이터개방목록</a></dd>
+											</dl>
+										</li>
+										<li>
+											<dl>
+												<dt>&nbsp;</dt>
+												<dd title="공공데이터수요조사"><a href="javascript:;" onclick="goSubPage(11);">공공데이터수요조사</a></dd>
+												<dd title="정보공개청구서작성"><a href="javascript:;" onclick="goSubPage(12);">정보공개청구서작성</a></dd>
+												<dd title="사업실명제"><a href="javascript:;" onclick="goSubPage(18);">사업실명제</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC-" title="신고센터"><a href="javascript:;" onclick="goSubPage(19);">신고센터</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>신고센터</h2>
+									<p>예금보험공사의<br/>신고센터에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>신고센터</dt>
+												<dd title="부조리신고"><a href="javascript:;" onclick="goSubPage(19);">부조리신고</a></dd>
+												<dd title="공익신고"><a href="javascript:;" onclick="goSubPage(20);">공익신고</a></dd>
+												<dd title="예산낭비신고"><a href="javascript:;" onclick="goSubPage(21);">예산낭비신고</a></dd>
+												<dd title="소극행정신고"><a href="javascript:;" onclick="goSubPage(22);">소극행정신고</a></dd>
+											</dl>
+										</li>
+										<li>
+											<dl>
+												<dt>&nbsp;</dt>
+												<dd title="청탁금지법위반신고"><a href="javascript:;" onclick="goSubPage(23);">청탁금지법위반신고</a></dd>
+												<dd title="갑질피해신고"><a href="javascript:;" onclick="goSubPage(24);">갑질피해신고</a></dd>
+												<dd title="클린신고"><a href="javascript:;" onclick="goSubPage(25);">클린신고</a></dd>
+												<dd title="인권침해신고"><a href="javascript:;" onclick="goSubPage(26);">인권침해신고</a></dd>
+											</dl>
+										</li>
+										<li>
+											<dl>
+												<dt>&nbsp;</dt>
+												<dd title="계약업무개선방안"><a href="javascript:;" onclick="goSubPage(27);">계약업무개선방안</a></dd>
+												<dd title="기업성장응답센터"><a href="javascript:;" onclick="goSubPage(28);">기업성장응답센터</a></dd>
+												<dd title="위험상황신고센터"><a href="javascript:;" onclick="goSubPage(29);">위험상황신고센터</a></dd>
+												<dd title="파산재단의견접수"><a href="javascript:;" onclick="goSubPage(30);">파산재단의견접수</a></dd>
+												<dd title="친절불친절직원신고"><a href="javascript:;" onclick="goSubPage(31);">친절불친절직원신고</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC-"><a href="javascript:;" onclick="goSubPage(32);">부보금융회사조사</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>부보금융회사조사</h2>
+									<p>예금보험공사의<br/>부보금융회사조사에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>부보금융회사조사</dt>
+												<dd><a href="javascript:;" onclick="goSubPage(32);">부보금융회사조사안내</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(33);">부보금융회사소명및이의제기신청</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(34);">부보금융회사조사진행상황조회</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC-"><a href="javascript:;" onclick="goSubPage(35);">부실책임조사</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>부실책임조사</h2>
+									<p>예금보험공사의<br/>부실책임조사 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>부실책임조사</dt>
+												<dd><a href="javascript:;" onclick="goSubPage(35);">금융부실관련자책임추궁</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(36);">권익보호제도</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(37);">부실책임조사소명신청</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(38);">부실책임조사이의제기신청</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(39);">부실책임조사소명상담신청</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(40);">부실책임조사이의제기상담신청</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(41);">부실책임조사진행현황조회</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC-"><a href="javascript:;" onclick="goSubPage(42);">발간자료신청</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>발간자료신청</h2>
+									<p>예금보험공사의<br/>발간자료신청에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>발간자료신청</dt>
+												<dd><a href="javascript:;" onclick="goSubPage(42);">브로슈어/리플렛신청안내</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(43);">브로슈어/리플렛목록</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(44);">예보광장신청안내</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(45);">예보광장목록</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(46);">발간자료신청조회</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+					<li class="txtC"><a href="javascript:;" onclick="goSubPage(47);">규제개혁포털</a>
+						<div class="subArea">
+							<div class="inner">
+								<div class="titArea">
+									<h2>규제개혁포털</h2>
+									<p>예금보험공사의<br/>규제개혁포털에 대해<br/>알려드립니다.</p>
+								</div>
+								<div class="scrollArea">
+									<ul class="depth01 txtL">
+										<li>
+											<dl>
+												<dt>규제개혁포털</dt>
+												<dd><a href="javascript:;" onclick="goSubPage(47);">규제현황</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(48);">규제심의기구</a></dd>
+												<dd><a href="javascript:;" onclick="goSubPage(49);">규제개혁건의하기</a></dd>
+											</dl>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+				</ul>
+			</div>
+			<!--// gnb -->
+		</div>
+		<!--// gnbWrap -->
+	</div>
+	<!--// header -->
+
+		<!-- container -->
+		<div id="container">
+			<!-- contents  -->
+			
+
+
+
+
+	<!-- container -->
+	<div id="containeragree">
+		<!-- contents -->
+		<div class="contents">
+			<script>
+			var previousUrl = 'null';
+			var titleText = '';
+			console.log('previousUrl = ' + previousUrl);
+
+			switch(previousUrl) {
+				case '/myComplaints':
+					titleText += '개인정보 수집이용 동의서 나의 민원';
+					break;
+				case '/complaint/request':
+					titleText += '개인정보 수집이용 동의서 민원 상담 신청';
+					break;
+				case '/citizenProposal/post':
+					titleText += '개인정보 수집이용 동의서 국민 제안';
+					break;
+				case '/infoDisclosure/citizen/post':
+					titleText += '개인정보 수집이용 동의서 정보공개청구 개인(내국인)';
+					break;
+				case '/infoDisclosure/foreigner/post':
+					titleText += '개인정보 수집이용 동의서 정보공개청구 개인(외국인)';
+					break;
+				case '/infoDisclosure/domesticCorporation/post':
+					titleText += '개인정보 수집이용 동의서 정보공개청구 법인(국내)';
+					break;
+				case '/infoDisclosure/foreignCorporation/post':
+					titleText += '개인정보 수집이용 동의서 정보공개청구 법인(외국)';
+					break;
+				case '/infoDisclosure/organization/post':
+					titleText += '개인정보 수집이용 동의서 정보공개청구 단체';
+					break;
+				case '/reportCenter/absurdity/realName/report':
+					titleText += '개인정보 수집이용 동의서 부조리 신고 (실명)';
+					break;
+				case '/reportCenter/publicReport/report':
+					titleText += '개인정보 수집이용 동의서 공익 신고';
+					break;
+				case '/reportCenter/budgetWaste/report':
+					titleText += '개인정보 수집이용 동의서 예산 낭비 신고';
+					break;
+				case '/reportCenter/passiveAdministration/report':
+					titleText += '개인정보 수집이용 동의서 소극 행정 신고';
+					break;
+				case '/reportCenter/bullyingReport/report':
+					titleText += '개인정보 수집이용 동의서 갑질 피해 신고';
+					break;
+				case '/reportCenter/clean/report':
+					titleText += '개인정보 수집이용 동의서 클린 신고';
+					break;
+				case '/reportCenter/contract/report':
+					titleText += '개인정보 수집이용 동의서 계약업무 개선방안 의견 접수';
+					break;
+				case '/complaint/corporateGrowthResponse/request':
+					titleText += '개인정보 수집이용 동의서 기업성장 응답센터 의견 접수';
+					break;
+				case '/reportCenter/bankRuptcyFoundation/report':
+					titleText += '개인정보 수집이용 동의서 파산재단 의견 접수';
+					break;
+				case '/reportCenter/kindness/report':
+					titleText += '개인정보 수집이용 동의서 친절불친절 직원 신고';
+					break;
+				case '/financialInvestigation/objection/request':
+					titleText += '개인정보 수집이용 동의서 부보금융회사조사 소명 및 이의제기신청';
+					break;
+				case '/financialInvestigation/list':
+					titleText += '개인정보 수집이용 동의서 부보금융회사조사 진행상황 조회';
+					break;
+				case '/protect/objection/request':
+					titleText += '개인정보 수집이용 동의서 부실책임조사 소명 신청';
+					break;
+				case '/protect/explain/request':
+					titleText += '개인정보 수집이용 동의서 부실책임조사 이의제기 신청';
+					break;
+				case '/protect/objectionCounsel/request':
+					titleText += '개인정보 수집이용 동의서 부실책임조사 소명상담 신청';
+					break;
+				case '/protect/explainCounsel/request':
+					titleText += '개인정보 수집이용 동의서 부실책임조사 이의제기상담 신청';
+					break;
+				case '/protect/CareerRegistAction/list':
+					titleText += '개인정보 수집이용 동의서 부실책임조사 진행현황 조회';
+					break;
+				case '/pamphlet/request':
+					titleText += '개인정보 수집이용 동의서 브로슈어 리플렛 신청';
+					break;
+				case '/square/request':
+					titleText += '개인정보 수집이용 동의서 예보광장 신청';
+					break;
+				case '/pamphlet/requestList':
+					titleText += '개인정보 수집이용 동의서 발간자료 신청조회 ';
+					break;
+				case '/regulationStatus/suggestion':
+					titleText += '개인정보 수집이용 동의서 규제개혁 신청';
+					break;
+			}
+			console.log('titleText = ' + titleText);
+
+			$(function() {
+				$("title").text(titleText);
+			})
+			</script>
+
+			<!-- signupStep -->
+			<div class="signupStep step" style="display:none;">
+				<ul>
+					<li class="curr">
+						<div>
+							<span>STEP1</span>
+							<p>이용<br class="mShow">동의</p>
+						</div>
+					</li>
+					<li>
+						<div>
+							<span>STEP2</span>
+							<p>가입<br class="mShow">방법</p>
+						</div>
+					</li>
+					<li>
+						<div>
+							<span>STEP3</span>
+							<p>정보<br class="mShow">입력</p>
+						</div>
+					</li>
+					<li>
+						<div>
+							<span>STEP4</span>
+							<p>가입<br class="mShow">완료</p>
+						</div>
+					</li>
+				</ul>
+			</div>
+			<!--// signupStep -->
+
+			<!-- pageTit -->
+			<div class="pageTit">
+				<ol>
+					
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+					
+				</ol>
+			</div>
+			<!-- pageTit -->
+
+			<!-- boxTit -->
+			<!-- termWrap -->
+			<div class="termWrap">
+				<strong>개인정보 수집 · 이용 동의서</strong>
+				<!-- termArea -->
+				<div class="termArea">
+					<div>
+						<div class="scrollArea">
+							<ol>
+							
+								
+								
+								
+								
+								
+								
+								
+								
+								
+									<li>
+										<p>1. 개인정보의 수집ㆍ이용 목적</p>
+											「민원처리 에 관한 법률」에 근거한 민원사무 및 국민제안업무,「공공기관의 정보공개에 관한 법률」에 근거한 정보공개업무, 「개인정보 보호법」에 근거한 개인정보 보호업무를 위해 귀하의 개인정보를 수집 등 처리합니다.
+									</li>
+									<li>
+										<p>2. 수집하는 개인정보의 항목</p>
+										 &nbsp;&nbsp;  가. 필수항목 : 성명, 휴대전화번호, 이메일, 생년월일(부실책임조사 업무에 한정)<br/>
+										 &nbsp;&nbsp;  나. 선택항목 : 주소, 전화번호, 팩스번호 (※ 선택항목을 제공하지 않으셔도 해당 서비스를 이용하실 수 있습니다.)
+									</li>
+									<li>
+										<p>3. 개인정보의 보유 및 이용기간 <u style="font-size: 1.2rem; color: #3b6dde;">10년</u></p>
+									</li>
+									<li>
+										<p>4. 동의를 거부할 권리가 있다는 사실 및 동의 거부에 따른 불이익 내용</p>
+										&nbsp;&nbsp; 귀하께서는 민원사무 등에 필요한 최소한의 정보 외의 개인정보 수집에 동의를 거부할 권리가 있으나 최소한의 개인정보 수집동의 거부 시에는 해당 서비스가 제한될 수 있음을 알려드립니다.
+									</li>
+								
+							
+							</ol>
+						</div>
+					</div>
+				</div>
+				<!--// termArea -->
+
+				<strong>* 필수 및 선택항목 수집ㆍ이용 동의여부 선택</strong>
+				<!-- rowTable -->
+				<form action="userDataUsingAgree" method="post" id="frm">
+				<div class="table rowTable">
+					<table>
+						<caption>구분[필수항목, 선택항목], 개인정보 항목, 개인정보 수집 및 이용 동의 여부 항목으로 구성된 필수항목 제공 동의여부 선택표</caption>
+						<colgroup>
+							<col style="width:15%">
+							<col style="width:auto">
+							<col style="width:auto">
+						</colgroup>
+						<thead>
+							<tr>
+								<th scope="col">구분</th>
+								<th scope="col">개인정보 항목</th>
+								<th scope="col">개인정보 수집 및 이용 동의 여부</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<th scope="row">필수항목</th>
+								<td>성명, 휴대전화번호, 이메일, 생년월일(부실책임조사 업무에 한정)</td>
+								<td class="txtC">
+									<div class="checkboxWrap">
+										<span class="checkbox">
+											<input type="radio" id="chk0101" checked="checked" required="required" name="chk01" value="Y" />
+											<label for="chk0101">동의함</label>
+										</span>
+										<span class="checkbox">
+											<input type="radio" id="chk0102" name="chk01" value="N" />
+											<label for="chk0102">동의하지 않음</label>
+										</span>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">선택항목</th>
+								<td>주소, 전화번호, 팩스번호</td>
+								<td class="txtC">
+									<div class="checkboxWrap" onchange="selectOptionAlert()">
+										<span class="checkbox">
+											<input type="radio" id="chk0201" name="chk02" value="Y" checked="checked"/>
+											<label for="chk0201">동의함</label>
+										</span>
+										<span class="checkbox">
+											<input type="radio" id="chk0202" name="chk02" value="N"/>
+											<label for="chk0202">동의하지 않음</label>
+										</span>
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<p class="iconTxt blueCheck">* 필수항목 제공에 대한 동의를 거부할 시 해당 서비스가 제한될 수 있으며, 선택항목 제공에 대한 동의는 하지 않으셔도 해당 서비스를 이용하실 수 있습니다.</p>
+				<p class="iconTxt blueCheck">* 만 14세 미만의 경우 법정대리인을 통해 민원을 제기하여 주시기 바랍니다.</p>
+
+				<!-- btnBottomArea -->
+				<div class="btnBottomArea txtR">
+					<!-- <button type="button" class="btn btnGray9">취소</button> -->
+					<button type="submit" id="submitBtn" onclick="isAgreeAlert(event)" class="btn btnBlue" title="다음단계로">다음단계로</button>
+				</div>
+				<!--// btnBottomArea -->
+				</form>
+				<!--// rowTable -->
+			</div>
+			<!--// termWrap -->
+
+			<script>
+				// 제출 시 ㅇ
+				function isAgreeAlert(e) {
+					// 필수항목이 동의하지 않음이라면 이용불가함을 alert
+					if ($('input[name=chk01]:checked')) {
+						if ($('input[name=chk01]:checked').val() == 'N') {
+							alert('필수항목 개인정보 수집에 동의하시기 바랍니다.');		// 필수항목 개인정보 수집에 동의하시기 바랍니다.
+							e.preventDefault();
+						}
+					}
+				}
+
+				// 선택항목 값 변경 시
+				function selectOptionAlert() {
+					if ($('input[name=chk02]:checked')) {
+						if ($('input[name=chk02]:checked').val() == 'N') {
+							alert('선택항목에 동의하지 않으실 경우 SMS(휴대폰문자)와 이메일 외에 우편,FAX등으로는 회신받으실 수 없습니다.');		// {0} 할 수 없습니다.
+						}
+					}
+				}
+
+				function goBack() {
+					window.history.back();
+				}
+			</script>
+		</div>
+		<!--// contents -->
+	</div>
+	<!--// container -->
+
+			<!-- // contents  -->
+		</div>
+		<!-- // container -->
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- footer -->
+	<div id="footer">
+		<!-- inner -->
+		<div class="inner">
+			<!-- footUtil -->
+			<div class="footUtil">
+				<ul class="link">
+					<li><a href="https://www.kdic.or.kr/cm/gudn/PbcrHmpgPrvcPrcsGudn/selectScrn.do" class="cRed" target="_blank" title="개인정보처리방침 새창열기">개인정보처리방침</a></li>
+					<!--
+					<li><a href="">저작권 보호방침</a></li>
+					<li><a href="">이메일주소 무단수집거부</a></li>
+					<li><a href="">이용안내</a></li>
+					-->
+				</ul>
+				<ul>
+					<li>04521 서울시 중구 청계천로 30</li>
+					<li>대표전화 02-758-0114</li>
+					<li>고객센터 1588-0037</li>
+					<li>팩스 02-758-0040</li>
+				</ul>
+				<p class="copy">Copyright(c)KDIC.All Rights Reserved.</p>
+			</div>
+			<!--// footUtil -->
+			<div class="footVOC">
+				<p class="logo">예금보험공사</p>
+				<!--<a href="javascript:void(0);" onClick="gfn_openUrl('/voc/html/waqc.html', 660, 450, false);" title="웹접근성 인증획득 마크 새창열기"><img src="/voc/assets/images/common/ico-footer04.png" alt="웹접근성 인증획득 마크"><span>웹접근성<br>인증획득</span></a>-->
+			</div>
+		</div>
+		<!--// inner -->
+	</div>
+	<!--// footer -->
+
+    <!-- 공통 팝업 -->
+	<div class="layerPop popClose small noTit cmPop" id="confirm01">
+		<div class="inner">
+			<div class="cont">
+				<!-- conBox -->
+				<div class="conBox txtC">
+					<p id="confirmMessage"></p>
+				</div>
+				<!--// conBox -->
+                <!-- btnBottomArea -->
+                <div class="btnBottomArea">
+                    <button type="button" class="btn btnMint close_alert confirm" onclick="fn_layer_close(this)">확인</button>
+                    <button type="button" class="btn btnMint" onclick="fn_layer_close(this)">닫기</button>
+                </div>
+                <!--// btnBottomArea -->
+			</div>
+			<a href="javascript:void(0)" onclick="fn_layer_close(this)">닫기</a>
+		</div>
+	</div>
+	<!--// 공통 팝업-->
+
+    <!-- 공통 팝업 -->
+	<div class="layerPop popClose small noTit cmPop" id="alert01">
+		<div class="inner">
+			<div class="cont">
+				<!-- conBox -->
+				<div class="conBox txtC">
+					<p id="alertMessage"></p>
+				</div>
+				<!--// conBox -->
+                <!-- btnBottomArea -->
+                <div class="btnBottomArea">
+                    <button type="button" class="btn btnMint close_alert alert" onclick="fn_layer_close(this)">닫기</button>
+                </div>
+                <!--// btnBottomArea -->
+			</div>
+			<a href="javascript:void(0)" class="close_alert alert" onclick="fn_layer_close(this)">닫기</a>
+		</div>
+	</div>
+	<!--// 공통 팝업-->
+<script>
+/**
+ * url 새창열기
+ **/
+var gfn_openUrlW = function (url) {
+    window.open(url);
+}
+</script>
+
+	</div>
+</body>
+</html>
