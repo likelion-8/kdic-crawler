@@ -1,0 +1,14 @@
+{
+  "doc_id": "F2-03",
+  "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do",
+  "business_function": "예금보험금 안내",
+  "sub_category": "예금보험금 안내 > 예금보험금이란?",
+  "page_title": "예금보험금이란?",
+  "required": "필수",
+  "summary": "예금보험금(가지급금·개산지급금)의 정의 설명",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "char_count": 2523,
+  "raw_path": "data/raw_html/F2-03.html",
+  "text_path": "data/text/F2-03.txt"
+}
