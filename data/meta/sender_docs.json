@@ -1,0 +1,184 @@
+{
+  "doc_id": "sender_docs",
+  "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+  "business_function": "착오송금 반환 신청",
+  "sub_category": "구비서류_착오송금인",
+  "page_title": "구비서류안내 - 착오송금인",
+  "required": true,
+  "note": "예솜24 착오송금인 신청방법 하위 구비서류 항목과 개념 일치 (첨부파일)",
+  "summary": "착오송금인 신청인 유형별(본인·대리인·법인 등) 구비서류를 표로 정리한다. 반환지원 신청서, 금융거래정보 제공 요구(동의)서, 채권양도통지 위임장 등 서식의 HWP·PDF 다운로드와 유형별 신청서 샘플을 제공한다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [
+    {
+      "label": "신청서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "신청서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "금융거래정보 제공 요구(동의)서 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "금융거래정보 제공 요구(동의)서 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "본인 신청서 샘플 다운로드",
+      "file_type": null,
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "채권양도통지 위임장 양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "채권양도통지 위임장 양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "신청서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "신청서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "대리인 신청서 샘플 다운로드",
+      "file_type": null,
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "금융거래정보 제공 요구(동의)서 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "금융거래정보 제공 요구(동의)서 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "착오송금반환지원 신청등위임장양식 양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "착오송금반환지원 신청등위임장양식 양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "채권양도통지 위임장 양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "채권양도통지 위임장 양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "친권합의서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "친권합의서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "취소신청서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "취소신청서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "매입계약해제신청서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "매입계약해제신청서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "수령계좌변경신청서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "수령계좌변경신청서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "위임해지통지서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "위임해지통지서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "착오송금반환지원 신청등위임장양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "착오송금반환지원 신청등위임장양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    }
+  ],
+  "videos": [],
+  "images": []
+}

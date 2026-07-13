@@ -20,7 +20,9 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup, NavigableString
 
-from inventory_yj import PAGES
+from inventory import pages_for
+
+PAGES = pages_for("yj")
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"

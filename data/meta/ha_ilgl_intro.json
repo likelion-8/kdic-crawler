@@ -1,0 +1,28 @@
+{
+  "doc_id": "ha_ilgl_intro",
+  "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
+  "business_function": "은닉재산 신고",
+  "sub_category": "금융부실관련자 불법행위신고",
+  "page_title": "신고센터 소개",
+  "required": false,
+  "note": "횡령·배임 등 별도 신고대상을 다루는 인접 제도 안내",
+  "summary": "금융부실관련자의 횡령·배임 등 불법행위 신고센터 소개. 신고 방식(상담전화 02-758-0797, 우편·방문(중구 청계천로 30 조사국), 팩스 02-758-0798, 이메일 invest@kdic.or.kr)과 신고서 양식 다운로드를 제공하며, 접수 시 부실책임조사·검찰 수사의뢰로 이어진다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [
+    {
+      "label": "신고서 다운로드(한글양식)",
+      "file_type": "hwp",
+      "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "신고서 다운로드(워드양식)",
+      "file_type": "word",
+      "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
+      "resolved_url": null
+    }
+  ],
+  "videos": [],
+  "images": []
+}

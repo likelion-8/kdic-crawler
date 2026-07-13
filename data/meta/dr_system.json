@@ -1,0 +1,24 @@
+{
+  "doc_id": "dr_system",
+  "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do",
+  "business_function": "채무조정 안내",
+  "sub_category": "채무조정제도",
+  "page_title": "채무조정제도",
+  "required": true,
+  "note": "예솜24 기능5 대표항목과 개념 일치 (신청자격, 구비서류 등)",
+  "summary": "예금보험공사의 채무조정 제도(2001년부터 운영) 개요. 파산 금융회사 채무자 중 변제를 기대할 수 없는 주채무자·보증채무자의 신청자격, 본인·대리인 신청 시 구비서류, 신청 불가 사유(총 회수가능액이 총 채무액 이상, 재산 도피·은닉 등)를 안내한다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": [
+    {
+      "alt": "지원내용",
+      "url": "https://www.kdic.or.kr/assets/images/img-RB-AB0-000-01-pc.png"
+    },
+    {
+      "alt": "채무조정 절차",
+      "url": "https://www.kdic.or.kr/assets/images/img-RB-AB0-000-02-pc.png"
+    }
+  ]
+}

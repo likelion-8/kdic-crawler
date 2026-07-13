@@ -1,0 +1,15 @@
+{
+  "doc_id": "dp_protlmts",
+  "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do",
+  "business_function": "예금자보호제도",
+  "sub_category": "예금자보호제도 > 보호한도",
+  "page_title": "보호한도",
+  "required": true,
+  "note": "예솜24 1.3 보호한도 항목",
+  "summary": "예금자 1인당 보호한도(원금+소정이자 1억원)와 초과금액 비보호 원칙, 대출 상계 규정, 별도한도(DC·IRP·연금저축·사고보험금 각 1억원)를 설명한다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": []
+}

@@ -1,0 +1,15 @@
+{
+  "doc_id": "ha_status_agree",
+  "source_url": "https://www.kdic.or.kr/voc/userDataUsingAgree",
+  "business_function": "은닉재산 신고",
+  "sub_category": "부실책임조사",
+  "page_title": "부실책임조사 진행현황 조회 (개인정보 동의)",
+  "required": false,
+  "note": "조사 진행현황 조회를 위한 동의 화면 (동적/로그인 여부 실측 필요)",
+  "summary": "부실책임조사 진행현황 조회를 위한 개인정보 수집·이용 동의 화면. 수집 목적(민원처리·정보공개·개인정보 보호업무), 수집 항목(필수: 성명·휴대전화·이메일·생년월일 / 선택: 주소·전화·팩스), 보유기간(10년), 동의 거부 권리와 불이익을 고지한다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": []
+}

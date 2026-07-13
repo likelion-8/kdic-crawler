@@ -1,0 +1,46 @@
+{
+  "doc_id": "dr_debt_cert",
+  "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+  "business_function": "채무조정 안내",
+  "sub_category": "부채증명원 및 금융거래정보신청",
+  "page_title": "부채증명원/금융거래정보신청",
+  "required": false,
+  "note": "파산금융회사 채무자의 부채증명원 공식 발급 절차",
+  "summary": "파산금융회사 채무자의 부채증명원·금융거래정보 발급 서비스 안내. 인터넷 신청 원칙(공인인증서·휴대폰 인증), 방문 신청 시 본인·대리인 구비서류와 신청서 양식 다운로드, 법적 종결된 파산재단은 부채증명원만 신청 가능함을 안내한다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [
+    {
+      "label": "부채증명원 발급신청서 다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "금융거래정보 발급신청서 다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "부채증명원 발급신청서 다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "금융거래정보 발급신청서 다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "위임장 다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+      "resolved_url": null
+    }
+  ],
+  "videos": [],
+  "images": []
+}

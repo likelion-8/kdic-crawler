@@ -1,0 +1,40 @@
+{
+  "doc_id": "receiver_docs",
+  "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+  "business_function": "착오송금 반환 신청",
+  "sub_category": "구비서류_수취인",
+  "page_title": "구비서류안내 - 착오송금수취인",
+  "required": true,
+  "note": "예솜24 이의제기·환급신청 구비서류 항목과 개념 일치 (첨부파일)",
+  "summary": "착오송금 수취인용 서식 안내. 반환요구 이의제기서와 이체수수료 환급신청서의 온라인·방문 신청 방법, HWP·PDF 서식 다운로드, 신청 기한(자진반환 기한인 양도통지서 송달 후 2주 내)을 표로 정리한다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [
+    {
+      "label": "착오송금액반환요구에대한 이의제기서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "착오송금액반환요구에대한 이의제기서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "착오송금액반환관련 이체수수료환급신청서양식 다운로드",
+      "file_type": "hwp",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "착오송금액반환관련 이체수수료환급신청서양식 다운로드",
+      "file_type": "pdf",
+      "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+      "resolved_url": null
+    }
+  ],
+  "videos": [],
+  "images": []
+}

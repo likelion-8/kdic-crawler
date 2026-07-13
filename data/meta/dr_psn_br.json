@@ -1,0 +1,20 @@
+{
+  "doc_id": "dr_psn_br",
+  "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do",
+  "business_function": "채무조정 안내",
+  "sub_category": "파산면책",
+  "page_title": "파산면책",
+  "required": false,
+  "note": "법원을 통한 개인파산 절차 안내 (예솜24 원본 외 범위)",
+  "summary": "법원을 통한 개인파산·면책 제도 안내. 파산절차(채무자 재산으로 파산재단을 형성해 채권자 배당)와 면책절차(잔여 채무의 변제책임을 재판으로 면제해 경제적 재출발 도모)의 개념, 파산·면책 동시 신청, 파산선고의 불이익(공무원·부동산중개업자 등 자격 제한)과 소멸을 설명한다.",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": [
+    {
+      "alt": "개인파산 및 면책절차 흐름도",
+      "url": "https://www.kdic.or.kr/assets/images/img-RB-AD0-002-pc.png"
+    }
+  ]
+}

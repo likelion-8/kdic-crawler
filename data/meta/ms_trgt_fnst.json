@@ -1,0 +1,15 @@
+{
+  "doc_id": "ms_trgt_fnst",
+  "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do",
+  "business_function": "예금보험금 안내",
+  "sub_category": "예금보험금 안내 > 보험금 지급대상 금융회사",
+  "page_title": "보험금 지급대상 금융회사",
+  "required": false,
+  "note": "파산금융회사별 검색 기능은 예솜24에 없던 내용 — 팀 협의로 포함 확정 (2026-07-13)",
+  "summary": "파산금융회사별 예금보험금 지급대상 여부 검색 가능",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": []
+}

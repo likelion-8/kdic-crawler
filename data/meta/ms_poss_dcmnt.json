@@ -1,0 +1,76 @@
+{
+  "doc_id": "ms_poss_dcmnt",
+  "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+  "business_function": "예금보험금 안내",
+  "sub_category": "예금보험금 안내 > 신청시 구비서류",
+  "page_title": "신청시 구비서류",
+  "required": true,
+  "note": "예솜24 2.1 신청서류 항목과 개념 일치",
+  "summary": "본인·대리인·미성년자 등 신청인 유형별 구비서류 안내",
+  "collected_at": "2026-07-13",
+  "attachments": [],
+  "form_attachments": [
+    {
+      "label": "다운로드",
+      "file_type": "hwp",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "pdf",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "hwp",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "pdf",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "hwp",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "pdf",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "hwp",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "pdf",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "hwp",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    },
+    {
+      "label": "다운로드",
+      "file_type": "pdf",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+      "resolved_url": null
+    }
+  ],
+  "videos": [],
+  "images": []
+}

@@ -20,8 +20,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-from crawler_yj import DATA, HEADERS, now_iso
-from inventory_yj import PAGES
+from crawler_yj import DATA, HEADERS, now_iso, PAGES
 
 BY_ID = {p["id"]: p for p in PAGES}
 # 페이지네이션 상한. 20이면 200행에서 잘린다 — 보호대상 금융회사는 289행이라 그보다 많다(실측).
