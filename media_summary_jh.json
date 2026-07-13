@@ -1,0 +1,85 @@
+{
+  "kmrs_itrd": {
+    "videos": [
+      "https://www.kdic.or.kr/assets/images/ci.mp4"
+    ],
+    "attachments": [],
+    "external_links": [],
+    "form_attachments": [],
+    "login_options": [],
+    "embedded_documents": []
+  },
+  "kmrs_proc": {
+    "videos": [],
+    "attachments": [],
+    "external_links": [],
+    "form_attachments": [],
+    "login_options": [],
+    "embedded_documents": []
+  },
+  "kmrs_apply_mthd": {
+    "videos": [],
+    "attachments": [],
+    "external_links": [],
+    "form_attachments": [],
+    "login_options": [],
+    "embedded_documents": []
+  },
+  "faq_msdr_apply": {
+    "videos": [],
+    "attachments": [],
+    "external_links": [],
+    "form_attachments": [],
+    "login_options": [],
+    "embedded_documents": []
+  },
+  "faq_top10": {
+    "videos": [],
+    "attachments": [],
+    "external_links": [],
+    "form_attachments": [],
+    "login_options": [],
+    "embedded_documents": []
+  },
+  "receiver_attention": {
+    "videos": [],
+    "attachments": [],
+    "external_links": [],
+    "form_attachments": [],
+    "login_options": [],
+    "embedded_documents": []
+  },
+  "receiver_docs": {
+    "videos": [],
+    "attachments": [],
+    "external_links": [],
+    "form_attachments": [
+      {
+        "label": "착오송금액반환요구에대한 이의제기서양식 다운로드",
+        "file_type": "hwp",
+        "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+        "resolved_url": null
+      },
+      {
+        "label": "착오송금액반환요구에대한 이의제기서양식 다운로드",
+        "file_type": "pdf",
+        "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+        "resolved_url": null
+      },
+      {
+        "label": "착오송금액반환관련 이체수수료환급신청서양식 다운로드",
+        "file_type": "hwp",
+        "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+        "resolved_url": null
+      },
+      {
+        "label": "착오송금액반환관련 이체수수료환급신청서양식 다운로드",
+        "file_type": "pdf",
+        "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+        "resolved_url": null
+      }
+    ],
+    "login_options": [],
+    "embedded_documents": []
+  }
+}
