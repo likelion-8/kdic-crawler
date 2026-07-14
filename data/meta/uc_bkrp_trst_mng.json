@@ -1,0 +1,21 @@
+{
+  "doc_id": "uc_bkrp_trst_mng",
+  "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+  "business_function": "고객 미수령금 신청",
+  "sub_category": "미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산관리체계",
+  "page_title": "신탁부동산관리체계",
+  "required": false,
+  "note": "uc_gudn '파산금융기관 정보 검색' 연결 페이지 — 팀 검수로 범위 확장 확정 (2026-07-14)",
+  "summary": "신탁부동산 책임회수관리시스템과 단계별 관리절차 안내",
+  "collected_at": "2026-07-14",
+  "links": [],
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": [
+    {
+      "alt": "PF대출채권 관리 절차",
+      "url": "https://www.kdic.or.kr/assets/images/img-SP-CEB-600-pc.png"
+    }
+  ]
+}

@@ -8,8 +8,18 @@
   "note": "상호가 바뀐 저축은행 추적 — 미수령금 조회와 연결된다",
   "summary": "저축은행의 상호 변경이력을 현 회사명·변경일자·구명칭(또는 저축은행명) 표로 제공한다(2022/4/20 기준, 엑셀 다운로드 가능). 상상인←공평(2018-06-04), 애큐온←HK(2017-12-18), 다올←유진(2022-03-21) 등 옛 이름으로 거래하던 저축은행의 현재 상호를 확인할 수 있다.",
   "collected_at": "2026-07-13",
+  "links": [],
   "attachments": [],
-  "form_attachments": [],
+  "form_attachments": [
+    {
+      "label": "저축은행변경이력 엑셀 다운로드",
+      "file_type": "excel",
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+      "resolved_url": "https://www.kdic.or.kr/api/sp/dpstrprot/selectProtSystSvbkChgHstryExcel.do",
+      "download_method": "POST",
+      "download_params": {}
+    }
+  ],
   "videos": [],
   "images": []
 }

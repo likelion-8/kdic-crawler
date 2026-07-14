@@ -8,6 +8,24 @@
   "note": "예솜24 기능3 대표항목과 제목·개념 일치",
   "summary": "미수령금의 정의와 인터넷·방문 신청 방법 안내",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "파산금융기관 정보 검색",
+      "url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do"
+    },
+    {
+      "text": "지급대행점 조회하기",
+      "url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveInq.do"
+    },
+    {
+      "text": "구비서류 바로가기",
+      "url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do"
+    },
+    {
+      "text": "미수령금 통합신청시스템 바로가기",
+      "url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do"
+    }
+  ],
   "attachments": [],
   "form_attachments": [],
   "videos": [],

@@ -8,6 +8,32 @@
   "note": "예솜24 착오송금인·수취인 분기 구조와 일치 (세부링크 로그인 필요 — 진입화면만 수집, 세부는 링크 안내)",
   "summary": "착오송금인('돈을 잘못 보냈어요' — 신청자격 확인·바로 신청)과 착오송금수취인('모르는 돈을 받았어요' — 이의제기·채무잔액 확인·이체수수료 환급신청·반환 확인)으로 메뉴를 분기하는 진입화면.",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "신청자격 확인",
+      "url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do"
+    },
+    {
+      "text": "바로 신청",
+      "url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyChc.do"
+    },
+    {
+      "text": "이의제기",
+      "url": "https://fins.kdic.or.kr/ir/addrse/selectPrtsList.do"
+    },
+    {
+      "text": "채무잔액 확인",
+      "url": "https://fins.kdic.or.kr/ir/addrse/selectLbltBlncIdntyList.do"
+    },
+    {
+      "text": "이체수수료 환급신청",
+      "url": "https://fins.kdic.or.kr/ir/addrse/selectTracFeeRmbrAplyList.do"
+    },
+    {
+      "text": "반환 확인",
+      "url": "https://fins.kdic.or.kr/ir/addrse/selectGvbkIdntyList.do"
+    }
+  ],
   "attachments": [],
   "form_attachments": [],
   "videos": [],

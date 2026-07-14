@@ -8,19 +8,43 @@
   "note": "예솜24 4.4 방문 신청 항목과 개념·주소 일치",
   "summary": "방문접수 안내. 운영시간(평일 09:00~17:00, 점심 12~13시), 5단계 절차(센터방문 → 신청서 제출 → 접수 → 반환지원대상 심사·채권매입 → 반환지원 진행), 본사 고객센터(서울 중구 청계천로 30 지하1층) 위치와 지하철·버스 교통편을 담는다.",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "구비서류 안내",
+      "url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do"
+    },
+    {
+      "text": "신청대상여부 확인하기",
+      "url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do"
+    },
+    {
+      "text": "반환지원절차 확인",
+      "url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsGvbkSprtProc/selectScrn.do"
+    }
+  ],
   "attachments": [],
   "form_attachments": [
     {
       "label": "신청서 다운로드",
       "file_type": "hwp",
       "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://fins.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3aKBGpesQ6zYz3niIEhOkstmofBKi8Rl4AJGkE5DwEM+/Zo7JnKGyITTi2pk2zes5A==",
+        "encOrgnlFileNm": "nXSt084EYAk4T4YesCDLOivGXiLBTSa6hfOm9wilHZo="
+      }
     },
     {
       "label": "신청서 다운로드",
       "file_type": "pdf",
       "page_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://fins.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3aKBGpesQ6zYz3niIEhOkstTzqcEGILdLWW6hqKWNkRFzF3lZwWGzTQnmL4bl6XExQ==",
+        "encOrgnlFileNm": "nXSt084EYAk4T4YesCDLOs35KTL5gtf6OZoupkkvFGY="
+      }
     }
   ],
   "videos": [],

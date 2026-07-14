@@ -8,8 +8,527 @@
   "note": "예금자보호 안내자료 서식 제공",
   "summary": "예금자보호제도 안내책자·가이드라인 등 자료 31건을 제목·소관부서·내용으로 검색해 내려받는 게시판이다. 예금자보호제도 안내자료(PDF, 2025.9), 예금보험관계 표시·설명·확인제도 가이드라인(2024.2), 예금자보호안내문(제1종·제2종) 영문 번역본, 표시·설명·확인 의무 관련 규정 일체 등이 등록돼 있고 개인·부보금융회사가 다운로드해 영업점에 비치할 수 있다.",
   "collected_at": "2026-07-13",
+  "links": [],
   "attachments": [],
-  "form_attachments": [],
+  "form_attachments": [
+    {
+      "label": "예금자보호법 시행령 개정에 따른 퇴직연금 예금자보호안내문 변경 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3SR0JK+6v4LAfQIy3B1kCI/iJEtJNwaha/u5JUUm8bVm0wVp6t8oPfw4TUX6ZhunNOOhaP2DXYze/9YD6SUhcNw=",
+        "encOrgnlFileNm": "vq+mF7V+p+lm4iJl3JKJb53oS49+/3MhZ3omvGUZqjAsGWaG0jNAtgH5qepnFS/2VmQrr9/6fMYcNaS7DGKvpg=="
+      }
+    },
+    {
+      "label": "개인종합자산관리계좌(ISA) 예금자보호안내문 공지 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3YADCUGTN/Vt2hbEAdrru6UkX4xtIQ5/Kf9FMon87SK0pWriKrNsZfrkhoObA8cr4MexEO8QCjpbzJ0VBoNv1Qk=",
+        "encOrgnlFileNm": "yH/EYE/s4mw7Lq5ElhB0IWXG17q4Bc27mB4ADGaaFoG9roC15hvsAlr9BSl7iXV4s/wboYUNWXdaYsD7ypFghkLtpWRC+sbVMrZBOwxvVF0="
+      }
+    },
+    {
+      "label": "개인종합자산관리계좌(ISA) 예금자보호안내문 공지 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3YADCUGTN/Vt2hbEAdrru6UkX4xtIQ5/Kf9FMon87SK0pWriKrNsZfrkhoObA8cr4G7hRwaZsB4tljBCjf/pNsA=",
+        "encOrgnlFileNm": "EVDcqM5gObuX1p3/13J0rJW+zPdgYcT8SgwCb4A8d2tp9Wc27rkNiGKRw4tDCSGq"
+      }
+    },
+    {
+      "label": "[보호금융상품등록부] 및 [보호금융상품등록부변동내역] 작성 서식 변경 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3aIKZ795kgT3PsOm14R0KT6nBggj/5vDUA5jpLcxlBIVo58rtDSh25qhW2G9V0dgtVtbcEolAcVTkEXQjFc3Vtw=",
+        "encOrgnlFileNm": "+zkYWjHXVtU8Pxsz3EtOlmO8oUBzE3xdga5oYgEwPqUn+EhQZY7Hr+oizF1sHGjn2WzvZ7oN9siitkcEhbB2Dfv7q8XkxMZAV2VnAETMG6k="
+      }
+    },
+    {
+      "label": "[보호금융상품등록부] 및 [보호금융상품등록부변동내역] 작성 서식 변경 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3aIKZ795kgT3PsOm14R0KT6nBggj/5vDUA5jpLcxlBIV8SfkcVUeZxKYIcgIq16DKyqlgnSRtbc0PEL5udRq82g=",
+        "encOrgnlFileNm": "HW/Hl8rgvPBGCM200iwYNFNHTGqcL1a90oJfirs0njMGwDux7svUu4CN1f93i8pr2qbaKq+MCBmRVaEqggStcXrAPzk1ibfyHSp/BrARMIE="
+      }
+    },
+    {
+      "label": "[보호금융상품등록부] 및 [보호금융상품등록부변동내역] 작성 서식 변경 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3aIKZ795kgT3PsOm14R0KT6nBggj/5vDUA5jpLcxlBIVQoKIaxhFxto8t7cLUdE2DKOSp+r7qkxgqdwh3lZxyzI=",
+        "encOrgnlFileNm": "D8lmdRMxoTn50SgWa30y+tABa7U9xIZHC5hapHUTbKm913Yj0PZtGY3CH1QPGHaduTjhZ7302ePcwzmSRBaaBcO/qOj+GOoYDM9pli7Dhmd8fONZ3d2JahN7cBSQZkg1ang0vJm/gkksXWse5uZEfnVRJxvuILp4Eqhf75cVOYPYZBnJb7rX2AISHnTOCCJvG+UxyU/odJjptCGWOBj4+w=="
+      }
+    },
+    {
+      "label": "[보호금융상품등록부] 작성 서식 수정공지 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3VoyCJjqUvHkMN0gQrmRw533zZ9qkkIgOGiMcyShgajidwhQxpfaLWjM5SuDreqe5M7rXMV244mOMu8SgCKRIVE=",
+        "encOrgnlFileNm": "hGlPNzxm296q3krFlW97Y3mh3VTAxdDODdfcZMMFiP8+ivI5wSEft0oZmf+zunUTuxL8WaJm59dwYGBsrfxzZPXOSZS6VHSZKjV0bcPmwuI="
+      }
+    },
+    {
+      "label": "[보호금융상품등록부] 작성 서식 수정공지 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3VoyCJjqUvHkMN0gQrmRw533zZ9qkkIgOGiMcyShgajiqgGnzInB2BtdjnK0m7+OYbA4vZ1p4oHDUosWvhDENqg=",
+        "encOrgnlFileNm": "ELf8xBHTAXj7ric3y9ppNNuuAcHetZcOLsHKNPGfZFVV2yjoO09YoXjwFNSwwahHAouVgLhFgdkpA/liaCHKsJYxfH9rEdiZCJM3Hm/Hl+4="
+      }
+    },
+    {
+      "label": "취약계층에 대한 우선 설명확인 의무 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3brzW6UUH7r7J06fOBdTqR4bBxNvC5h8Mas+aXvYOP3ERwB+0K84AoqDLX4VcOVJ7YtCRjZqviOzY+LdEIhgLKw=",
+        "encOrgnlFileNm": "Hsa7HP1lCDbHzwsb5g/E6NflCKqi7+PimXkplKFC+6OfJu0SK0ErBeXUhv8VONlI"
+      }
+    },
+    {
+      "label": "금융상품 홍보물 제작 및 사용 시 유의사항 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XL8RCdKBuKOyk+jfz82uZznYf+GHAP47UCfDKhQMVYWN8RpqLBBzgS+i2HQvFJRDv4VwmjuJ3PGz3Zg8W/RsLo=",
+        "encOrgnlFileNm": "aQD18IjxSG8/B0lrSynAcclvpycFBMqMWQ/M6GU2GUBfynn23M5ueWAgl17Ei2/2JjrhGDJ8Km3B/TAB5+24Lt4M4V+Mk/2WnoskLI2opzM="
+      }
+    },
+    {
+      "label": "금융상품 홍보물 제작 및 사용 시 유의사항 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XL8RCdKBuKOyk+jfz82uZznYf+GHAP47UCfDKhQMVYWN8RpqLBBzgS+i2HQvFJRDhJx/C8IruQhWkMPhOCoscY=",
+        "encOrgnlFileNm": "WSAlwyoFR3J19E9MIxNy6rABNtGLkhFhAos/CD++1zUO0xzYSdNo/vPPcB83V68dzwjrcJFQaSVKFxJBxTh19w=="
+      }
+    },
+    {
+      "label": "(보험업권) 표시 설명 확인제도 관련 유의사항 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3SXyNu4uqcZr6AY5lRw5CDrsobmKy4PDo0+OzpZ76WdooDiyDZwNnjqsM2JyPbgXv4dfg2fEq8FSDoxn76gjdX0=",
+        "encOrgnlFileNm": "Zb8jL6CQ2eebWtaI2yipiCYgQB3QVWUo8nvJlVgsSHyfJ6s7JnT+b9M8ZZ3YeVQxQBltVPEt/KbXQy9FLQwuLHTljC66JNUJDObloWiQ1znaTp6ACaO+vh/CIyn+dUP1"
+      }
+    },
+    {
+      "label": "개인형퇴직연금(IRP) 표시설명확인의무 조사실시 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3Q9w1VQ4b16RHkE3D9Wqlw5PqOGXy+vR3mSyLb9tx/+AjuztO1Z24dUCZTVOyExMnKHiVWJA6zxb4kf3knPh3y8=",
+        "encOrgnlFileNm": "OxEYLdlLsSJnUcJgBSH7B0exR7TY13dh8EsdxjolgbQH6WMqr79UbZN5rI6a6Gx2iBtihEBHzWC5iE8o4vuCWlU3M2APq2Ieov+ejM81XBtqR4H6k3e2zYMvH27QznbZ"
+      }
+    },
+    {
+      "label": "개인형퇴직연금(IRP) 표시설명확인의무 조사실시 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3Q9w1VQ4b16RHkE3D9Wqlw5PqOGXy+vR3mSyLb9tx/+AombSgG/M83PKmtli2LJxEeVc6p/NL/zkLBBgPL/fXr8=",
+        "encOrgnlFileNm": "wFQMBF6SpnkwiA2ZNktCcUUvBN7tsjJYDEbgps0kqMOWRgXgXEiEz9FBePpdUhJxoisoMHxDzLMPvKomAOy+FS4M6NsNI8befafosOuqr/o="
+      }
+    },
+    {
+      "label": "인터넷홈페이지 및 모바일 앱에 대한 표시.설명.확인의무 조사실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3TB7MzFD3iLekufnv2pfrb2zrSK+Ba70nM+EndNdrK3hiAkr+tEo6kw06jSwOd/c8PgGm3FbXwe2RqsA82pA85Y=",
+        "encOrgnlFileNm": "uAqYWDFT7IR61G+FVbpYbghhISEL9CLIOJPGBHh2TROgiy+/s+jO6xmfoMjkwQxL83GgyHOu6prQzGGKchcZsA//azl49oCmXIM+ho12PCSIr2yU2UUft5l0kmwK3lqqKh0B7N2gaLZbI5GowHye2w=="
+      }
+    },
+    {
+      "label": "인터넷홈페이지 및 모바일 앱에 대한 표시.설명.확인의무 조사실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3TB7MzFD3iLekufnv2pfrb2zrSK+Ba70nM+EndNdrK3hiCgDmDAWKN0FnhSYoNQrcWcAEkjjIAuiyJJPKgLxC8E=",
+        "encOrgnlFileNm": "x+l8ZsNvlu/zD0U7dueGmJ32TFM9eFRmIgnTjR6vAw2o1ZF+Z7eyjXkqfifDYhC3ZcklcZysxuPmRtA/Obofuw=="
+      }
+    },
+    {
+      "label": "표시설명확인시스템(DPMS) 사용자매뉴얼 게시 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3VoyCJjqUvHkMN0gQrmRw503coE8fKDPK7GvoxZ5n7goJI8eylIQWjA5LlepZBQY0DLsXYEBIp/Wo7pNtXf+6c0=",
+        "encOrgnlFileNm": "Tq0ADaNd3sjr+EXnu8KO4hR5aCirOjEHaR5CRm+wGnc1ecEX3KpXXO+NsLI08JTEF4GlftEdPj6KWUcfFcpr4ykmDI+pMMkd6w2WkZbqr0E="
+      }
+    },
+    {
+      "label": "보호금융상품등록부 관련 유의사항 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RHlZUeOXCPFDbblGoSbNlvPBtjQLb/doDXtzOTiP4LB+7F+LCRSP81+djerv9IUzuf3eP2gTWR9iHZ1N2LhcOM=",
+        "encOrgnlFileNm": "OHbczLtrlECUr8cCFtXVqCU1J3LlWPNvZa2jt8YxwvzSHlFAs/3q/DoYqdb11L8Hv1MmKDxAu3YINry2voBH4DaUHJUTex9KPi6JsWed4RM="
+      }
+    },
+    {
+      "label": "예금보험관계 표시 및 설명확인에 관한 규정 시행세칙 개정내용 공지 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3e3e8hUDCQnLZGTicQsisplHXyvqD9SoIv8PQA8IrW2FKIX71s4SCo0ojbfM1rERNcqkn2wvp2avYBuhO26Gl7o=",
+        "encOrgnlFileNm": "Zb8jL6CQ2eebWtaI2yipiAg4tHKTDBJ1w9H1FpmObefCQvU1NnIrwJ9hQUQ0GSYDV8MfgU3bwGTZqef77m61V0j3jMcHQLSw+nPDvxFWqayouNm1kyauFHNq419RVciXzd0AggqoGg2dIo1j6Fgpqg=="
+      }
+    },
+    {
+      "label": "예금보험관계 표시 및 설명확인에 관한 규정 시행세칙 개정내용 공지 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3e3e8hUDCQnLZGTicQsisplHXyvqD9SoIv8PQA8IrW2FKIX71s4SCo0ojbfM1rERNeIBDSjcPoPtuPceWuhsAwo=",
+        "encOrgnlFileNm": "Zb8jL6CQ2eebWtaI2yipiAg4tHKTDBJ1w9H1FpmObefCQvU1NnIrwJ9hQUQ0GSYDV8MfgU3bwGTZqef77m61V0j3jMcHQLSw+nPDvxFWqayouNm1kyauFHNq419RVciXEJ9aREa0UUF5Fu7jkvZ5PQ=="
+      }
+    },
+    {
+      "label": "2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XjtAi1imjtecFO8+RRAtLHcD2PwPRDcCO8K9h7OC4/JY8Uz0rTLU2LanMb59dQqEAjOcZmAALFlfSRM3RhDhk8=",
+        "encOrgnlFileNm": "ZvKjBNVBa9RbWRSVgaOlT0Zb96ILx2AVP3V8WQHUMRntoJtclElSBbq8kdUQnI/cW5C5cVnKfF59obPlcfWXscOssLHBI4kTR+2PUZ/rXGNCtB174H2FkHJkbFjGEqZC"
+      }
+    },
+    {
+      "label": "2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XjtAi1imjtecFO8+RRAtLHcD2PwPRDcCO8K9h7OC4/JS4JzFa7NHxbKF8IhzWF2oNImjzuvbXp0/lUhJK87QBs=",
+        "encOrgnlFileNm": "/wnpKtdBDg+DGSBV4+ClCF9zM4HcEppnSGnC/W8+ne3GvkK9mtNU3EU8OZ6jN6MQ"
+      }
+    },
+    {
+      "label": "2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XjtAi1imjtecFO8+RRAtLHcD2PwPRDcCO8K9h7OC4/JLMgaql3deaNyyKZvnZBtdGd+t2Yxp98iE/7UgcnokCY=",
+        "encOrgnlFileNm": "ru4g68SMG1GXTWMR8kT+58/XXieNcrnNfOp/ntAblUMnn6UZEf9VLMdI0Vkw/oXsIL5rdqiA28JJvq4mPUstdFzkOVwELbZLrwTIQxTH/kc="
+      }
+    },
+    {
+      "label": "2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XjtAi1imjtecFO8+RRAtLHcD2PwPRDcCO8K9h7OC4/JmDziaAO6thhBOqh0cVSE9OQNYRBjzvdxZA/ZgAhubuI=",
+        "encOrgnlFileNm": "FKVLvmG6W8tadT98sNADXxvwiYVeSdF2xaoAIpzdoTS81M1BKH6WtUi96i4lMNNgmOra4QnjIcWZirgN6ABlxw=="
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqy1Or/FWLhFXzkU6EG1QFn/aF3gXBeGVtBCX/yX9k1Yck=",
+        "encOrgnlFileNm": "pI6rVmmnZv3yWayLudUZlNNp6XhNUaBR4w9Crb0HCRLe/hWHyxqX+zZw+nuvOwH8PMPFNk6cFHSUbmIgQb2EIXkiKNSbjXLWSzvOH/T/czBb4oe+gTUYvZil/phYoUnZuCqpiM4rwR1+CsOFawOw7g=="
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqyYlaXtdhGB7Kw4mAzFkuF76YhFuIvMVWJIJasIRuMZ9A=",
+        "encOrgnlFileNm": "3l5QInUtZn9VyG3Bpd7Fh38G1KWHeYzY2NBQkTTwv6AxQiugqiouqDveooaKMkC5"
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqyYlaXtdhGB7Kw4mAzFkuF768YHhu7Yj5q/zzPnKoBzfU=",
+        "encOrgnlFileNm": "+mz5tLmqtnXsnW7XOM3g7mkMhAL31yplYg/GuGKx/wrgw/1QT49ASS5cY344b0MyRc/yZtzO2KmTUh5qBGTrfKR8BTin1LN6tPqQsiUGnO0="
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqyYlaXtdhGB7Kw4mAzFkuF78V0gpzSwaNEkDLsSc2qNyc=",
+        "encOrgnlFileNm": "VipKhCyTHzul0ZYegQjyHr6fLg9c31BZ39ASKg3kA/7X5K33qvBZfYcbHNeNhVPGNy1PSxgQY5c/8HGyk6U3yg=="
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqy1Or/FWLhFXzkU6EG1QFn/TQy+KVPdAKPZuCR1+/eX90=",
+        "encOrgnlFileNm": "pI6rVmmnZv3yWayLudUZlNNp6XhNUaBR4w9Crb0HCRLe/hWHyxqX+zZw+nuvOwH8PMPFNk6cFHSUbmIgQb2EIXkiKNSbjXLWSzvOH/T/czAG60OniSRYrtT0qtCzDMTwCxZ6zzGURhmFPrXRelVrUhFhU14XJDdHZJCjFS3n4IA="
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqy1Or/FWLhFXzkU6EG1QFn/R9I3f0DkMbvoeUeyKytM2c=",
+        "encOrgnlFileNm": "3l5QInUtZn9VyG3Bpd7Fh/ULV62mVLnwMO2CnWddH7dbsv1zkzswDa/BOGmTEB82"
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqy1Or/FWLhFXzkU6EG1QFn/eU19tl+JHIhmTVmUYNsgJU=",
+        "encOrgnlFileNm": "2J/Te5Vfm52SQvrUMhQzCNSpGVibeZHyt9TBLdvZN+3KFIle57MdcP625d/3ju/v"
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqy1Or/FWLhFXzkU6EG1QFn/eki6OY+vjBa42Gie/LqEs0=",
+        "encOrgnlFileNm": "VipKhCyTHzul0ZYegQjyHr6fLg9c31BZ39ASKg3kA/7X5K33qvBZfYcbHNeNhVPGNy1PSxgQY5c/8HGyk6U3yg=="
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 온라인조사 사전 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqy1Or/FWLhFXzkU6EG1QFn/bdA5aDjTbAfFAFrZGK6R98=",
+        "encOrgnlFileNm": "pI6rVmmnZv3yWayLudUZlNNp6XhNUaBR4w9Crb0HCRLe/hWHyxqX+zZw+nuvOwH87sHri3HxBrgFkJoyJ0VKF1YF2wokoX2K481OYvC7FjlGsJ5zsHljUcJgioUunpMa"
+      }
+    },
+    {
+      "label": "2019년도 예금보험관계 표시,설명,확인의무 온라인조사 사전 안내 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3XrXEQMQdol9WazkmfF3VQBR0uCSyw1UWFQ5wZvgrWqy1Or/FWLhFXzkU6EG1QFn/fXfMwooLOjX2cHB3GT8+uM=",
+        "encOrgnlFileNm": "8LWS5HwKUNr1xyUTmaQRhBlSCIoDwnq5rA4LgESqtZQoBkKXEHC/dQuLVMPVh/m0"
+      }
+    },
+    {
+      "label": "2020년도 예금보험관계 표시설명확인의무 이행여부 점검실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z7SOr/LrjHFBphidxE40JM6zRy3gokoZ3vgRerZNMGd6A==",
+        "encOrgnlFileNm": "3INEKnH59UAfnIYUoWAQVhNmeFb2UXuwsn1qVJlu3YBmEIp53rl9dWHcCyFUH72rjeSCzKb4tuI0tXZszaSJ+qIg5/KanaLbdQofezKsT3sj0tVVYErvTQbJH3PLFq4yZey7wR6jw9/1rlnlBc4AGw=="
+      }
+    },
+    {
+      "label": "2021년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보 — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z46fLMASfLlVDTwbus/kavTiLC51DXgu66GicurZWNDFg==",
+        "encOrgnlFileNm": "gr9xdn/yL6f5wapXt6qur0DRMgJTprPX4k4PnxrbjJ1Btc/A8/V+BW1PxEl8fb6APToToe6Tp+RcICZXx9rmiP4R28SipLyAPgxiSaNp1dCeevAsf+cItCqE82DUQqMk"
+      }
+    },
+    {
+      "label": "예금보호 로고 사용 안내(2021.9) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z5lYKunvueJRiny6k/q9ziApYi7YiCfnYmpHYaf3dNDLQ==",
+        "encOrgnlFileNm": "tE3/v1wIKxI71Sh5sqCQ3nrtweg8H3rsHR5N1sYElY/q307vY+LUdw/Qu2tARZql"
+      }
+    },
+    {
+      "label": "예금자보호제도 안내자료(PDF, JPG 이미지 형식)(2021.9) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z6qLDPRq9hS7xlX5dEUeVjspdo4Yo2xqGYVNnc1RzZdrg==",
+        "encOrgnlFileNm": "KC6qjT723qqjaSj7bZ34v3T92LfmolspepPPFchPjMvKwHRSvCFR6vgEtgIgixLf8jwXjSKNWb6h9wEmTLYKxhoSBB5pqSbL45/IfhkT4/0="
+      }
+    },
+    {
+      "label": "예금자보호안내문 영문 번역본(제1종, 제1종 축약문, 제2종) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z5RPBeDsECNsf/hlklI6NtVLxHlh3yyPb6de0ur8CzJHw==",
+        "encOrgnlFileNm": "YauZPL+y2jSyqQLhFvPbLZkGEXII20WgHAv1ZRXSotGB+pmhw+XGjRgBHkLLASPuuPO/i/fnWuDpwgt/Tcy4O4V7bqN2qnvpaxFpPvs3ADk="
+      }
+    },
+    {
+      "label": "퇴직연금, ISA, 변액보험 제1종 예금자보호안내문 및 축약 안내문 영문 번역본(2022.1) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z7TMjcCq25xMnLKqAeRHNTSXibfkMpqsZdKVvoeCFDRwg==",
+        "encOrgnlFileNm": "Y+gkKmkkXaJ7VmGTpibX+TiRZ/CBbtisp1VcD6INDmlZx0TS0QLLUqUPsP6ft+HrK58rAifhn9R4F7e+Y81wLdt/RXwg7DAd0cH6PiGWlVBpjf2Lf7UOgPyjJ5Rz/IErsKabM02F6nSsdtSrevPZlA=="
+      }
+    },
+    {
+      "label": "예금보험관계 표시 설명 확인 의무 관련 규정 일체(2022) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z5QFpaOiuwe8Khy9h0v6hUKiTrGEAQ3Ihr3AWy2Qe1ZOg==",
+        "encOrgnlFileNm": "Zb8jL6CQ2eebWtaI2yipiCYgQB3QVWUo8nvJlVgsSHwspZ3E68sSWRbVsG3L/wKa1UOeTrv2DEhc5JBOf4qNHRENdqt8OlUv1ssePk6R4rs="
+      }
+    },
+    {
+      "label": "예금보험관계 표시·설명·확인제도 가이드라인(2022.12) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z5QvZICg/pvCPx22zAYsHTBLVGNGjbQO9HC3FpGHoYLDA==",
+        "encOrgnlFileNm": "Hsa7HP1lCDbHzwsb5g/E6L2iqFHV1dEGk0wuUBxwh5y/cQ8On9aN/ct9vDviSga2GcXaJL0wPxLsLarb0mB13mcmhW822sinjH/SVt9XsjA="
+      }
+    },
+    {
+      "label": "예금보험관계 표시 설명 확인 의무 관련 규정 일체(2024.2) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z74Iz6YAPJ0j35DSShIxSUjOgEpMYA0VLxHiv9nyYAubA==",
+        "encOrgnlFileNm": "Zb8jL6CQ2eebWtaI2yipiCYgQB3QVWUo8nvJlVgsSHwspZ3E68sSWRbVsG3L/wKa1UOeTrv2DEhc5JBOf4qNHYPKsQWbF5GUtO5RjMsx9oQ="
+      }
+    },
+    {
+      "label": "예금자보호안내문(제1종, 제2종) 및 설명의 확인 표준문안 영문 번역본(2024.1) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z5vkZDYHWp5MGI7wSF5p6BnDp4lZJ5AR4PVRc2Lg2r7IA==",
+        "encOrgnlFileNm": "YauZPL+y2jSyqQLhFvPbLYsH1se1yXQvYaKoQt+SEbXNGkPfTE0y7egRPYhcP+5C6x0kCNJ/zyP2qBwi5MpU58z5gHxB3xxttwGf7TuDmhc="
+      }
+    },
+    {
+      "label": "예금자보호제도 안내자료(PDF 형식)(2024.2) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z5T06XsNvGCRrw1RSCZYUkR2vX8yzZW5crify7msv0A0g==",
+        "encOrgnlFileNm": "KC6qjT723qqjaSj7bZ34v3T92LfmolspepPPFchPjMs+s0PBi+hHeM/oDcm3yo9R6Gm4duyVMsHMZ8slfGY+/V5xd1ZP8E9VKUpr/1fA0oI="
+      }
+    },
+    {
+      "label": "예금보험관계 표시·설명·확인제도 가이드라인(2024.2) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3al7MmUhYEYhlWUwP8yn1Z61W/9jNJBv0IiZJThHEXHivnNcKTjpEGxYNMIl7MgQzA==",
+        "encOrgnlFileNm": "Hsa7HP1lCDbHzwsb5g/E6L2iqFHV1dEGk0wuUBxwh5wbhVTXard8Rw/ynrCnh+AQhhUwrn8RN21EwUBXGqZXUw=="
+      }
+    },
+    {
+      "label": "예금자보호제도 안내자료(PDF 형식)(2025.9) — 파일다운로드",
+      "file_type": null,
+      "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "I0vWQmOZfrUosOzJ9J7+YrXAahCYScvbbpFSYDWjZ9mqoxCoBmb7s4+x0GhPMXWDA5Oc7Er6O+k0fl4zwqtDlw==",
+        "encOrgnlFileNm": "KC6qjT723qqjaSj7bZ34v3T92LfmolspepPPFchPjMs+s0PBi+hHeM/oDcm3yo9R6Gm4duyVMsHMZ8slfGY+/V5xd1ZP8E9VKUpr/1fA0oI="
+      }
+    }
+  ],
   "videos": [],
   "images": []
 }

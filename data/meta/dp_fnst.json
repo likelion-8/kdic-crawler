@@ -8,25 +8,41 @@
   "note": "예솜24 1.1 보호 대상 금융회사",
   "summary": "보호대상 금융회사 종류(은행·보험·투자매매중개업자·종금사·상호저축은행)와 부보금융회사 수를 기준일과 함께 표로 제공한다. 농수협 지역조합·신협·새마을금고는 비대상임을 명시한다.",
   "collected_at": "2026-07-13",
+  "links": [],
   "attachments": [],
   "form_attachments": [
     {
       "label": "엑셀 다운받기",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHaOsOoYpEqSk1rT1UwcjwQIsK+qehqnKhigaTSdPMKxEnqfT3tG6l7WMmUQhaDAUbaDg5hVr3U6mnMHMJOrsyLs=",
+        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+08TCIPieizUaFkXS5VhDnJ+ZU8KS0jR+zJoAytpWz/nlEZohtTBuLTSZoizo3lu2twGhQMGOMERUWdJZuF3eYUzDIgr6Uv4+2hujH33In3VJ"
+      }
     },
     {
       "label": "엑셀 다운받기",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHQmILOrUoAcbbVw3ts1Rkv3GPIrfdAlGzJGYAkclAJ4quWzxPCvVWf5mVOHidEiyUltJgBZCrFcGdKAVfb5eN8g=",
+        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+04CoVBYM3LJbFkzhc+6JSwdVRUNkqrmICVjnKk4DyW7mDIvJQcyr12hTjPviKgbd/d8WG6dsgOwPAGw5owdMM1q4Gm0bY6D0KwC5OhyRD/b4"
+      }
     },
     {
       "label": "한글 다운받기",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHdxUSnF6W7MK+cdWN8htNnhqt4vAJ9YZ+gatnzqHYBcJTQDang5tf5L53+mKIHWRMxhQrKP1XxeA9H2RyYgnxbQ=",
+        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+04CoVBYM3LJbFkzhc+6JSwdVRUNkqrmICVjnKk4DyW7mDIvJQcyr12hTjPviKgbd/a5LCRt+3un3diS6yKIHKak4NJDlSFZSoN622cWu2w/W"
+      }
     }
   ],
   "videos": [],

@@ -8,6 +8,20 @@
   "note": "예솜24 기능3 대표항목 및 3.1·3.2 신청방법 항목과 개념 일치",
   "summary": "미수령금 종류와 온라인·오프라인 신청 방법 설명",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "미수령금 통합신청",
+      "url": "https://fins.kdic.or.kr/ua/itgraply/selectItgrInqDsctn.do"
+    },
+    {
+      "text": "지급대행점 조회하기",
+      "url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveInq.do"
+    },
+    {
+      "text": "구비서류 바로가기",
+      "url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do"
+    }
+  ],
   "attachments": [],
   "form_attachments": [],
   "videos": [],

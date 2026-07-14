@@ -1,0 +1,16 @@
+{
+  "doc_id": "uc_bkrp_fndt",
+  "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+  "business_function": "고객 미수령금 신청",
+  "sub_category": "미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단현황",
+  "page_title": "파산재단현황",
+  "required": false,
+  "note": "uc_gudn '파산금융기관 정보 검색' 연결 페이지 — 팀 검수로 범위 확장 확정 (2026-07-14)",
+  "summary": "금융권별·연도별·관할 지법별 파산재단 현황 통계표",
+  "collected_at": "2026-07-14",
+  "links": [],
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": []
+}

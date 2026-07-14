@@ -8,37 +8,68 @@
   "note": "파산금융회사 채무자의 부채증명원 공식 발급 절차",
   "summary": "파산금융회사 채무자의 부채증명원·금융거래정보 발급 서비스 안내. 인터넷 신청 원칙(공인인증서·휴대폰 인증), 방문 신청 시 본인·대리인 구비서류와 신청서 양식 다운로드, 법적 종결된 파산재단은 부채증명원만 신청 가능함을 안내한다.",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "부채증명원/금융거래정보 신청하기",
+      "url": "https://fins.kdic.or.kr/mm/lgn/selectNonMbrLgn.do"
+    }
+  ],
   "attachments": [],
   "form_attachments": [
     {
       "label": "부채증명원 발급신청서 다운로드",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3Zgp3LeBelnr3f7RWPzh422izJy8yULHNXlvNNxr73Yuy+Q0ImuXrZGTzSXfFfImcQ==",
+        "encOrgnlFileNm": "aT895kugvMDZx5vH6LWFoK9RBF8sWOt9rMBMYvIRySPCzm988toSL9/iwsFAgi6M"
+      }
     },
     {
       "label": "금융거래정보 발급신청서 다운로드",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3chVXK//fAAesMzAta1YFtUxqGm+Twe9rZKBa/KGO6BhvLYjoAdGSx2awJ3tDR23Jwnk/wmxbAxIW2wrGYJyj8c=",
+        "encOrgnlFileNm": "lrORylGlqUswt9N3XfP9pNYJBSRy0EhF4XgZQYve5BoRHZg0txPShR2Ghq1xpnCK"
+      }
     },
     {
       "label": "부채증명원 발급신청서 다운로드",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3UrI1INCELbGy7jd4UB4eKEqtFsUVAf96/aqAiP3LOBU+lkGnbAFprRnmfz9e34+0orua0g+05423qUYepxkozc=",
+        "encOrgnlFileNm": "fi9xmlQvAzCXJs1+F6KQ4UCxRtWwr/SLpkoMOd3FJH0Zh/wrR8SezGPLrvnMSPqS"
+      }
     },
     {
       "label": "금융거래정보 발급신청서 다운로드",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3UrI1INCELbGy7jd4UB4eKEIVcQ3SPzHMAnrFvNZw+klkuzHo9kHjSw8uQYJO5pXr7hvjCd4Xy+Sdn6NpnLhQYA=",
+        "encOrgnlFileNm": "+Qi8edBn/QVz8W0mS8CvPtyJJTwYrCmNf9na+R7G113kFgFM03cUOJmF4P+OL2dSus8lQcjqB3QN6dpUBVcO6A=="
+      }
     },
     {
       "label": "위임장 다운로드",
       "file_type": null,
       "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3UrI1INCELbGy7jd4UB4eKGpNYtL+//QgjRShTE4sYAJEDFii7jQhQ8qGEUWhejcKw==",
+        "encOrgnlFileNm": "0eqcSLo2ZFpR6wfAdHIqQhorEEiHzlLwubxYlPSuzf0="
+      }
     }
   ],
   "videos": [],

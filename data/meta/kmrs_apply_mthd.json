@@ -8,6 +8,16 @@
   "note": "예솜24 4.2 신청방법 항목과 개념 일치",
   "summary": "온라인 신청(fins.kdic.or.kr, PC만 지원, 공동인증서·이체확인증 필요)과 방문 신청(서울 중구 청계천로 30 1층, 1588-0037, 신분증·이체확인증 지참) 방법을 안내한다.",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "온라인 신청 사이트 : fins.kdic.or.kr (상단 아이콘 클릭 시 사이트 연결) 접속방법 : PC (모바일은 추후 지원 예정) 준비물 : 공동인증서, 이체(송금)확인증* * 본인 신청이 아닌 경우, 구비서류 확인 예금보험공사 핵심가치",
+      "url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do"
+    },
+    {
+      "text": "방문 신청 주소 : 서울시 중구 청계천로 30 1층 (상단 아이콘 클릭시 지도 연결) 연락처 : 1588-0037 준비물 : 신분증, 이체(송금)확인증* * 본인 신청이 아닌 경우, 구비서류 확인",
+      "url": "https://www.kdic.or.kr/di/pbcritrd/PbcrPath/selectScrn.do"
+    }
+  ],
   "attachments": [],
   "form_attachments": [],
   "videos": [],

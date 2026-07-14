@@ -8,6 +8,44 @@
   "note": "'내 은행이 보호대상인가요' 조회 화면",
   "summary": "보호대상 금융회사를 금융권역(은행·종합금융회사·생명보험회사·손해보험회사·투자매매업자ㆍ투자중개업자·상호저축은행·신용협동조합)과 회사명으로 검색하는 화면이다. 25.12월 기준 회사명·주소·연락처·FAX·대표자명을 표로 제공하며, 상단에 은행·증권 투자매매중개업자·보험회사·종합금융회사·상호저축은행이 예금보험 대상이라는 안내를 싣는다.",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "(주)BNK투자증권",
+      "url": "http://www.bsfn.co.kr"
+    },
+    {
+      "text": "(주)iM에셋자산운용",
+      "url": "http://www.lsasset.com/"
+    },
+    {
+      "text": "(주)리치먼드자산운용",
+      "url": "http://www.richmondam.com"
+    },
+    {
+      "text": "(주)엠유에프지은행 서울지점",
+      "url": "http://www.btm.co.jp/"
+    },
+    {
+      "text": "(주)케이비손해보험",
+      "url": "http://www.kbinsure.co.kr"
+    },
+    {
+      "text": "AIG 손해보험주식회사",
+      "url": "http://www.aig.co.kr"
+    },
+    {
+      "text": "BNP파리바",
+      "url": "http://www.bnpparibas.com/fr/home/default.asp"
+    },
+    {
+      "text": "DBS은행",
+      "url": "http://www.dbs.com/"
+    },
+    {
+      "text": "DB생명보험(주)",
+      "url": "http://www.dongbulife.co.kr"
+    }
+  ],
   "attachments": [],
   "form_attachments": [],
   "videos": [],

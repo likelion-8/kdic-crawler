@@ -8,19 +8,30 @@
   "note": "횡령·배임 등 별도 신고대상을 다루는 인접 제도 안내",
   "summary": "금융부실관련자의 횡령·배임 등 불법행위 신고센터 소개. 신고 방식(상담전화 02-758-0797, 우편·방문(중구 청계천로 30 조사국), 팩스 02-758-0798, 이메일 invest@kdic.or.kr)과 신고서 양식 다운로드를 제공하며, 접수 시 부실책임조사·검찰 수사의뢰로 이어진다.",
   "collected_at": "2026-07-13",
+  "links": [],
   "attachments": [],
   "form_attachments": [
     {
       "label": "신고서 다운로드(한글양식)",
       "file_type": "hwp",
       "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3chVXK//fAAesMzAta1YFtUJ8JsQ9ixEjBFWsy0afCf4rwWTmjqP1mK4OECWQdt12BbE2D4ssj4W18AleELRZ3E=",
+        "encOrgnlFileNm": "/cuP+2xRKwONKzaTbrHbSkX8I2YLYe3kcGrQhu6o4xrpjdx4680tGtemLgQjT6x9liR/z5TxImW24eoW6vp9+g=="
+      }
     },
     {
       "label": "신고서 다운로드(워드양식)",
       "file_type": "word",
       "page_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3chVXK//fAAesMzAta1YFtUJ8JsQ9ixEjBFWsy0afCf4rwWTmjqP1mK4OECWQdt12F2/OP4g4V6jirKYbzY/snM=",
+        "encOrgnlFileNm": "/cuP+2xRKwONKzaTbrHbSkX8I2YLYe3kcGrQhu6o4xpuvTvvQBplxv3Eb9Wae5TNwzQL7v7eOYKTZZWDg8/IoQ=="
+      }
     }
   ],
   "videos": [],

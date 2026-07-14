@@ -8,67 +8,118 @@
   "note": "예솜24 2.1 신청서류 항목과 개념 일치",
   "summary": "본인·대리인·미성년자 등 신청인 유형별 구비서류 안내",
   "collected_at": "2026-07-13",
+  "links": [],
   "attachments": [],
   "form_attachments": [
     {
       "label": "다운로드",
       "file_type": "hwp",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob+nMcaFP0xOfmFe+tg3MI+TMjUQJWrE6yuK9Lkn5l2wmw==",
+        "encOrgnlFileNm": "dXgE8yoJ5j48Sv8WiRfCO4UeFlWQnqi1zKW1jO/V62U7zge6TjHzV/dQciIxVg2QLmMCz5hN11C8AKUh/4jDrA=="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "pdf",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob+nMcaFP0xOfmFe+tg3MI+TsskNb/lGb+f9Kj4AwpxKuQ==",
+        "encOrgnlFileNm": "dXgE8yoJ5j48Sv8WiRfCO4UeFlWQnqi1zKW1jO/V62Vi4L6dJMDfowgjWM4RHY7ixyWrjipKJR1mf/HQipfXmw=="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "hwp",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob8Ekl/dUrI3jS2kYwPIgPNvfGo45R0SHY8aLo8SxS0KqA==",
+        "encOrgnlFileNm": "yA5FrfZGDL1Y0omvuXm0mQ=="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "pdf",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob8Ekl/dUrI3jS2kYwPIgPNvklWdjIyyv1dD4qN6yh60CA==",
+        "encOrgnlFileNm": "/aYVEkOYYc/c4rxo7EsyiQ=="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "hwp",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob8dBW55qhYqgOFGkJ/huSiwk46dKzkBeLobZLrKzovyVQ==",
+        "encOrgnlFileNm": "y+8mJYix5SRdUoa/CM7fp4Sa6fSBSnD2r/+poEXdZQs="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "pdf",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob8dBW55qhYqgOFGkJ/huSiw6HuARYhq8TcfOOdtodKF3A==",
+        "encOrgnlFileNm": "y+8mJYix5SRdUoa/CM7fp01GeABD5wwFfn89Vt5iJVA="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "hwp",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob+txF7jKZa8BSPGDvkRTl5OJ7jvB8ZlK5M6jXFiAT1aMg==",
+        "encOrgnlFileNm": "zC2C+1vAhfyorI6lizf+b/fzEn/QyXb2Uqfg736RkqHQDwx//ZQsJkw2Hlh3tDnq9dflNwlREMggJWyFILe6OQ=="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "pdf",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob+txF7jKZa8BSPGDvkRTl5OURMrmo2C13TTUj+P1NA0jg==",
+        "encOrgnlFileNm": "zC2C+1vAhfyorI6lizf+b/fzEn/QyXb2Uqfg736RkqHQDwx//ZQsJkw2Hlh3tDnqJdUtULJobWdDOlpNdUYHlQ=="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "hwp",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob8Pj7M5UCyA104GEBqvMObcTuQ15/r/qrmlF/4kDypPBw==",
+        "encOrgnlFileNm": "Pz+/lqpfEAZmH/sP5rL/Ag+4cTLYymHm7r1gUHWIVLA="
+      }
     },
     {
       "label": "다운로드",
       "file_type": "pdf",
       "page_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
-      "resolved_url": null
+      "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
+      "download_method": "POST",
+      "download_params": {
+        "encAtchFilePathNm": "0MPeNMADCMnnd9ok7g0v3RS+2c3PHlq3bUe3v38Vob8Pj7M5UCyA104GEBqvMObc0mbletjtSZs76KdiLiVBkQ==",
+        "encOrgnlFileNm": "Pz+/lqpfEAZmH/sP5rL/Ap8P49joIGfKZc1jTwyH9bk="
+      }
     }
   ],
   "videos": [],

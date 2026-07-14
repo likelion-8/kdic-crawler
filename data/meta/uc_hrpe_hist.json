@@ -8,6 +8,12 @@
   "note": "상속인 대상 조회 기능은 예솜24에 없던 내용 — 팀 협의로 포함 확정 (2026-07-13)",
   "summary": "사망자(피상속인) 명의 미수령금을 상속인이 조회하는 서비스",
   "collected_at": "2026-07-13",
+  "links": [
+    {
+      "text": "상속인 금융거래 조회 바로가기",
+      "url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/ https:/fins.kdic.or.kr/hr/hrpefnc/selectHrpeFncDlngInq.do"
+    }
+  ],
   "attachments": [],
   "form_attachments": [],
   "videos": [],

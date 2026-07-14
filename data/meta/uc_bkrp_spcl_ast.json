@@ -1,0 +1,16 @@
+{
+  "doc_id": "uc_bkrp_spcl_ast",
+  "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+  "business_function": "고객 미수령금 신청",
+  "sub_category": "미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산현황",
+  "page_title": "특별자산현황",
+  "required": false,
+  "note": "uc_gudn '파산금융기관 정보 검색' 연결 페이지 — 팀 검수로 범위 확장 확정 (2026-07-14)",
+  "summary": "특별자산(파산재단 보유 비정형 자산)의 정의 및 유형 안내",
+  "collected_at": "2026-07-14",
+  "links": [],
+  "attachments": [],
+  "form_attachments": [],
+  "videos": [],
+  "images": []
+}
