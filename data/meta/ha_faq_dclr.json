@@ -1,5 +1,5 @@
 {
-  "doc_id": "ha_faq_dclr",
+  "page_id": "ha_faq_dclr",
   "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do",
   "business_function": "은닉재산 신고",
   "sub_category": "고객센터 > FAQ",
@@ -8,6 +8,7 @@
   "note": "포상금 지급기준표, 신고 절차, 비밀보장 원칙 FAQ",
   "summary": "은닉재산신고 FAQ. 포상금 지급 기준표(회수기여금액 구간별 5~20%), 지급 절차(조사·회수 → 회수비용 공제 → 기여도 평가 → 법원 지급결정 → 지급), 포상 제외 사유, 상담전화(1588-0037, 02-758-0102~4)를 문답으로 안내한다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "9e72acbd7c27d0e6d80d0fc0c2e41a7b0a4d295c4d3d9790ef5eb6b9aaad5039",
   "links": [],
   "attachments": [],
   "form_attachments": [],

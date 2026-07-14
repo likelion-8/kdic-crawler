@@ -1,5 +1,5 @@
 {
-  "doc_id": "dp_josa_itrd",
+  "page_id": "dp_josa_itrd",
   "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do",
   "business_function": "예금자보호제도",
   "sub_category": "예금자보호제도 > 부보금융회사조사 > 조사업무 소개",
@@ -8,6 +8,7 @@
   "note": "공사가 부보금융회사를 조사하는 근거와 절차",
   "summary": "예금자보호법 제21조 제2항에 근거해 공사가 부보금융회사 등의 업무·재산상황을 조사하는 업무를 소개한다. 기본가치(절차의 투명성·조사의 전문성·조사원의 청렴성), 시행령 제12조의2에 따라 부실우려가 인정되거나 자료 확인이 이뤄지지 않은 경우 조사할 수 있다는 기본방향, 주요절차 4단계(조사대상 선정→현장조사→조사내용 심의→조사결과 처리), 권익보호담당역·소명 및 이의제기 제도, 조사결과의 예금보험위원회 보고와 금융감독원·금융위원회 통보·조치 요청을 담는다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a",
   "links": [],
   "attachments": [],
   "form_attachments": [],

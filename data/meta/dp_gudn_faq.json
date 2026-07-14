@@ -1,5 +1,5 @@
 {
-  "doc_id": "dp_gudn_faq",
+  "page_id": "dp_gudn_faq",
   "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do",
   "business_function": "예금자보호제도",
   "sub_category": "예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ",
@@ -8,6 +8,7 @@
   "note": "아코디언 FAQ",
   "summary": "표시·설명·확인 제도에 관한 문답을 표시제도와 설명·확인제도로 나눠 담는다. 표시 대상(홍보물·통장등·계좌조회화면등), 방카슈랑스 등 위탁판매 상품의 표시 주체, 전자금융거래 시 제1종 안내문 표시, 예금자보호대상 퇴직연금 범위(확정급여형 비보호, 확정기여형·개인퇴직계좌의 금리연동형·이율보증형 보호, 실적배당형 비보호), 신상품 보호여부 사전확인 대상 3가지, 대리인·법인 고객의 설명·확인 이행, TM·전자금융거래에서의 일괄 동의, 상속·양도·명의변경 시 이행 의무 등을 다룬다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1",
   "links": [],
   "attachments": [],
   "form_attachments": [],

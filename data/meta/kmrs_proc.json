@@ -1,5 +1,5 @@
 {
-  "doc_id": "kmrs_proc",
+  "page_id": "kmrs_proc",
   "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdProc/selectScrn.do",
   "business_function": "착오송금 반환 신청",
   "sub_category": "절차",
@@ -8,6 +8,7 @@
   "note": "예솜24 4.1 반환지원 절차 항목과 문구가 거의 동일",
   "summary": "착오송금 반환지원 5단계 절차를 설명한다: 반환지원 신청(채권매입) → 중앙행정기관·금융회사 통한 수취인 정보 확인 → 자진반환 권유 → 미반환 시 법원 지급명령 → 회수액에서 비용 차감 후 잔액 반환.",
   "collected_at": "2026-07-13",
+  "content_sha256": "0a8b549ed1fb9cde87c259751d0a5916db2b5edfc1811b7ad7413bb30deabce7",
   "links": [],
   "attachments": [],
   "form_attachments": [],

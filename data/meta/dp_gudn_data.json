@@ -1,5 +1,5 @@
 {
-  "doc_id": "dp_gudn_data",
+  "page_id": "dp_gudn_data",
   "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
   "business_function": "예금자보호제도",
   "sub_category": "예금자보호제도 > 표시·설명·확인 제도 > 안내자료 다운로드",
@@ -8,6 +8,7 @@
   "note": "예금자보호 안내자료 서식 제공",
   "summary": "예금자보호제도 안내책자·가이드라인 등 자료 31건을 제목·소관부서·내용으로 검색해 내려받는 게시판이다. 예금자보호제도 안내자료(PDF, 2025.9), 예금보험관계 표시·설명·확인제도 가이드라인(2024.2), 예금자보호안내문(제1종·제2종) 영문 번역본, 표시·설명·확인 의무 관련 규정 일체 등이 등록돼 있고 개인·부보금융회사가 다운로드해 영업점에 비치할 수 있다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d",
   "links": [],
   "attachments": [],
   "form_attachments": [

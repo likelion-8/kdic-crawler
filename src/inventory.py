@@ -128,6 +128,7 @@ PAGES = [
         "url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
         "required": True,
         "note": "'내 상품이 보호되나요' 조회 화면. 개요(dp_prdct)만으론 개별 상품 질의에 못 답한다",
+        "dyn_table": True,  # 결과표가 JS로 채워진다 — fetch_dyntable.py 로 전량 수집
         "summary": "부보금융회사별 보호금융상품 목록을 금융권역(은행·종금·보험·저축은행·신협)·회사명·상품명으로 검색하는 화면이다. 목록은 금융회사가 제출한 보호금융상품등록부를 바탕으로 작성돼 착오·오류가 있을 수 있고 기준일 이후 신규 판매 상품은 검색되지 않을 수 있다. 정부·지자체·한국은행·금융감독원·예금보험공사·부보금융회사가 가입한 상품과 법인 보험계약은 비보호이며, 변액보험은 최저보증 보험금·특약만 보호(사고보험금 별도), 확정급여형(DB) 퇴직연금 편입 상품은 비보호라고 명시한다.",
         "owner": "yj",
     },
@@ -139,6 +140,7 @@ PAGES = [
         "url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
         "required": True,
         "note": "'내 은행이 보호대상인가요' 조회 화면",
+        "dyn_table": True,  # 결과표가 JS로 채워진다 — fetch_dyntable.py 로 전량 수집
         "summary": "보호대상 금융회사를 금융권역(은행·종합금융회사·생명보험회사·손해보험회사·투자매매업자ㆍ투자중개업자·상호저축은행·신용협동조합)과 회사명으로 검색하는 화면이다. 25.12월 기준 회사명·주소·연락처·FAX·대표자명을 표로 제공하며, 상단에 은행·증권 투자매매중개업자·보험회사·종합금융회사·상호저축은행이 예금보험 대상이라는 안내를 싣는다.",
         "owner": "yj",
     },

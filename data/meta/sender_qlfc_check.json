@@ -1,5 +1,5 @@
 {
-  "doc_id": "sender_qlfc_check",
+  "page_id": "sender_qlfc_check",
   "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
   "business_function": "착오송금 반환 신청",
   "sub_category": "착오송금인 > 반환지원 신청하기 > 신청대상여부 확인",
@@ -8,6 +8,7 @@
   "note": "예솜24 문서가 직접 예상한 화면 — 7개 항목 체크로 신청대상 여부 자가진단",
   "summary": "반환지원 신청대상 여부 자가진단 화면. 착오송금액(건당 5만원~1억원), 착오송금일(2021-07-06 이후), 신청기한(1년 이내), 금융회사 반환신청 선행·미반환 통보 여부 등 7개 항목을 체크해 대상/비대상을 확인한다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05",
   "links": [],
   "attachments": [],
   "form_attachments": [],

@@ -1,5 +1,5 @@
 {
-  "doc_id": "dr_info_aply",
+  "page_id": "dr_info_aply",
   "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do",
   "business_function": "채무조정 안내",
   "sub_category": "채무정보 조회 및 상담신청",
@@ -8,6 +8,7 @@
   "note": "예솜24 5.2 채무 확인 방법 항목과 동일한 목적의 온라인 채널",
   "summary": "간편인증 등 본인인증으로 파산금융회사·㈜케이알앤씨(KR&C) 채무 보유 여부를 온라인 조회하고, 채무가 있으면 채무조정 상담을 신청하는 절차(조회 → 본인확인 → 상담신청 → 담당자 유선 상담)를 안내한다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "7a5d97ec59ed45204a22616c03f2525a1a45837f427ee43a68ebc5b16f6b7e14",
   "links": [
     {
       "text": "채무정보 조회하기",

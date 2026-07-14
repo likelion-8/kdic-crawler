@@ -17,7 +17,7 @@ def main():
     with open(ROOT / "data/corpus.jsonl") as f:
         for line in f:
             d = json.loads(line)
-            corpus[d["doc_id"]] = d["business_function"]
+            corpus[d["page_id"]] = d["business_function"]
 
     errors = []
     seen_ids = set()

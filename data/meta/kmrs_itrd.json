@@ -1,5 +1,5 @@
 {
-  "doc_id": "kmrs_itrd",
+  "page_id": "kmrs_itrd",
   "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrd/selectScrn.do",
   "business_function": "착오송금 반환 신청",
   "sub_category": "제도란",
@@ -8,6 +8,7 @@
   "note": "예솜24 기능4 대표항목과 개념 일치 (영상 데이터 — media_summary_jh.json 참조)",
   "summary": "착오송금 반환지원 제도 소개 안내영상 페이지. '잘못 보낸 돈 되찾기 서비스'가 착오송금인이 실수로 잘못 보낸 돈을 최소 비용으로 빠르게 되찾도록 돕는 제도임을 영상으로 설명한다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "78b2c5fd989beb7c83e6e5564bacf232e3ab05fe011f609ff3cb76fe6591d212",
   "links": [],
   "attachments": [],
   "form_attachments": [],

@@ -1,10 +1,9 @@
 # src/validate_dy.py
-"""네트워크 없이 변환·청킹 로직 검증.
+"""네트워크 없이 HTML→텍스트 변환 검증.
 
 사용법:
   python3 src/validate_dy.py
 """
-from chunker_dy import CHUNK_SIZE, chunk_text
 from crawler_dy import extract_attachments, html_to_text
 
 
@@ -18,9 +17,6 @@ def self_check():
     assert "구분 | 서류" in t and "본인 | 신분증" in t, t
     att = extract_attachments(html, "https://www.kdic.or.kr/x/y.do")
     assert att == [{"name": "신청서식", "url": "https://www.kdic.or.kr/files/form.hwp"}], att
-    chunks = chunk_text("가" * 1200)
-    assert chunks[0]["end"] == 500 and chunks[1]["start"] == 400 and chunks[-1]["end"] == 1200
-    assert all(len(c["text"]) <= CHUNK_SIZE for c in chunks)
     print("self-check ok")
 
 

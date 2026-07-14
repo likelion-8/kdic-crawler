@@ -1,5 +1,5 @@
 {
-  "doc_id": "dr_faq_inq",
+  "page_id": "dr_faq_inq",
   "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqLbltInfoInq.do",
   "business_function": "채무조정 안내",
   "sub_category": "채무정보조회 FAQ",
@@ -8,6 +8,7 @@
   "note": "온라인 채무정보 조회 방법을 안내하는 FAQ 게시판",
   "summary": "온라인 채무정보 조회 FAQ. 모바일 조회 방법(휴대폰인증), 서비스 운영시간 오류 시 조치(브라우저 재접속·임시파일 삭제), 공동인증서 폐기 오류 해결 등 이용 중 문제 해결법을 문답으로 안내한다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "1c899cabed5073edfacd1f0b66768b9fc9f30442f4f073126e75f4d6411f4146",
   "links": [],
   "attachments": [],
   "form_attachments": [],
