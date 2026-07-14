@@ -8,7 +8,6 @@ resume 지원: meta/<id>.json 이 있으면 건너뛴다 (--force 로 무시).
 """
 import argparse
 import copy
-import hashlib
 import json
 import re
 import sys
@@ -20,6 +19,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup, NavigableString
 
+from hashing import content_sha256
 from inventory import pages_for
 
 PAGES = pages_for("yj")
@@ -60,10 +60,6 @@ NOISE_URLS = {
 
 def now_iso():
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
-
-
-def sha1(s):
-    return hashlib.sha1(s.encode("utf-8")).hexdigest()
 
 
 # ---------------------------------------------------------------- 표 → 마크다운
@@ -227,18 +223,6 @@ def extract_external_links(body, base_url):
     return out
 
 
-def classify(body):
-    """동적/로그인 페이지 플래그. 로그인 판정은 password 입력창(구조 신호)만 쓴다."""
-    txt = body.get_text(" ", strip=True)
-    if body.select_one("input[type=password]"):
-        return "login_required"
-    paginated = "다음 페이지" in txt and "마지막 페이지" in txt
-    search_form = bool(body.select_one("select")) and "초기화" in txt
-    if paginated and search_form:
-        return "search_ui"
-    return "content"
-
-
 # ---------------------------------------------------------------------- 크롤
 class PageGone(Exception):
     """사이트에서 페이지가 사라졌다 (삭제/이동)."""
@@ -296,7 +280,8 @@ def render_stable(page, session):
 
     (DATA / "variants").mkdir(parents=True, exist_ok=True)
     for t in seen:
-        (DATA / "variants" / f"{page['id']}_{sha1(t)[:8]}.txt").write_text(t, encoding="utf-8")
+        (DATA / "variants" / f"{page['id']}_{content_sha256(t)[:8]}.txt").write_text(
+            t, encoding="utf-8")
 
     if not expect:
         raise RuntimeError(
@@ -306,7 +291,7 @@ def render_stable(page, session):
         )
     for t, (rr, ss, bb) in seen.items():
         if expect in t:
-            print(f"      판본 {len(seen)}종 관측 → expect 로 채택 ({sha1(t)[:8]})")
+            print(f"      판본 {len(seen)}종 관측 → expect 로 채택 ({content_sha256(t)[:8]})")
             return rr, ss, bb, t
     raise RuntimeError(
         f"{page['id']}: {VARIANT_TRIES}회 받았는데 expect(\"{expect}\")가 든 판본이 한 번도 안 왔습니다.\n"
@@ -321,7 +306,6 @@ def crawl(page, session, force=False):
 
     r, soup, body, text = render_stable(page, session)
     html = r.text
-    content_type = classify(body)
     meta = {
         "page_id": page["id"],
         "parent_doc_id": page["id"],
@@ -334,12 +318,9 @@ def crawl(page, session, force=False):
         "breadcrumb": extract_breadcrumb(soup, page),
         "required": page["required"],
         "note": page["note"],
-        "content_type": content_type,
-        "ingest": content_type in ("content", "search_ui"),
         "collected_at": now_iso(),
         "http_status": r.status_code,
-        "raw_sha1": sha1(html),
-        "content_sha1": sha1(text),
+        "content_sha256": content_sha256(text),
         "char_count": len(text),
         "table_count": len(body.find_all("table")),
         "image_count": len(body.find_all("img")),
@@ -350,7 +331,7 @@ def crawl(page, session, force=False):
     (DATA / "raw_html" / f"{page['id']}.html").write_text(html, encoding="utf-8")
     (DATA / "text" / f"{page['id']}.txt").write_text(text, encoding="utf-8")
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-    return f"{len(text):>5}자  {content_type:<14} 첨부{len(meta['attachments']):>2}"
+    return f"{len(text):>5}자  첨부{len(meta['attachments']):>2}"
 
 
 def main():

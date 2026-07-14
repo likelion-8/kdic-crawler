@@ -1,5 +1,5 @@
 {
-  "doc_id": "mtrs_vst_rcpt",
+  "page_id": "mtrs_vst_rcpt",
   "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
   "business_function": "착오송금 반환 신청",
   "sub_category": "소개와 방법안내 > 방문접수안내",
@@ -8,6 +8,7 @@
   "note": "예솜24 4.4 방문 신청 항목과 개념·주소 일치",
   "summary": "방문접수 안내. 운영시간(평일 09:00~17:00, 점심 12~13시), 5단계 절차(센터방문 → 신청서 제출 → 접수 → 반환지원대상 심사·채권매입 → 반환지원 진행), 본사 고객센터(서울 중구 청계천로 30 지하1층) 위치와 지하철·버스 교통편을 담는다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
   "links": [
     {
       "text": "구비서류 안내",

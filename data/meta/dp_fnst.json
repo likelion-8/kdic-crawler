@@ -1,5 +1,5 @@
 {
-  "doc_id": "dp_fnst",
+  "page_id": "dp_fnst",
   "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
   "business_function": "예금자보호제도",
   "sub_category": "예금자보호제도 > 보호대상 > 금융회사 > 개요",
@@ -8,6 +8,7 @@
   "note": "예솜24 1.1 보호 대상 금융회사",
   "summary": "보호대상 금융회사 종류(은행·보험·투자매매중개업자·종금사·상호저축은행)와 부보금융회사 수를 기준일과 함께 표로 제공한다. 농수협 지역조합·신협·새마을금고는 비대상임을 명시한다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747",
   "links": [],
   "attachments": [],
   "form_attachments": [

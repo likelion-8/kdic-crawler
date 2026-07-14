@@ -1,5 +1,5 @@
 {
-  "doc_id": "uc_bkrp_spcl_mng",
+  "page_id": "uc_bkrp_spcl_mng",
   "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
   "business_function": "고객 미수령금 신청",
   "sub_category": "미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산관리체계",
@@ -8,6 +8,7 @@
   "note": "uc_gudn '파산금융기관 정보 검색' 연결 페이지 — 팀 검수로 범위 확장 확정 (2026-07-14)",
   "summary": "특별자산에 대한 채권보전조치 및 관리강화 체계 안내",
   "collected_at": "2026-07-14",
+  "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753",
   "links": [],
   "attachments": [],
   "form_attachments": [],

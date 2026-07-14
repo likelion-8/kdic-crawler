@@ -112,19 +112,15 @@ def crawl(page_id, delay=1.0):
 
 def main():
     ap = argparse.ArgumentParser(description="동적 조회 화면의 결과표 전량 수집")
-    ap.add_argument("ids", nargs="*", help="page_id (미지정 시 content_type=search_ui 전체)")
+    ap.add_argument("ids", nargs="*", help='page_id (미지정 시 inventory 의 dyn_table 페이지 전체)')
     ap.add_argument("--delay", type=float, default=1.0)
     args = ap.parse_args()
 
-    ids = args.ids
-    if not ids:      # 지정 안 하면 meta 에서 search_ui 페이지를 찾는다
-        ids = [json.loads(p.read_text(encoding="utf-8"))["page_id"]
-               for p in (DATA / "meta").glob("*.json")
-               if json.loads(p.read_text(encoding="utf-8"))["content_type"] == "search_ui"]
+    ids = args.ids or [p["id"] for p in PAGES if p.get("dyn_table")]
     if not ids:
-        print("search_ui 페이지 없음"); return
+        print("동적 조회 페이지 없음"); return
     total = sum(crawl(i, args.delay) for i in ids)
-    print(f"\n합계 {total}행. 청크 반영: python3 chunker.py")
+    print(f"\n합계 {total}행 → data/dyn/")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 {
-  "doc_id": "dr_psn_rg",
+  "page_id": "dr_psn_rg",
   "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
   "business_function": "채무조정 안내",
   "sub_category": "개인회생",
@@ -8,6 +8,7 @@
   "note": "법원을 통한 개인회생 절차(3~5년 분할상환) 안내",
   "summary": "법원을 통한 개인회생 제도 안내. 신청자격(정기 수입이 있는 급여·영업소득자), 채무총액 한도(무담보 10억원·담보부 15억원), 변제기간(최장 5년), 지급불능 요건, 종전 면책결정 후 5년 경과 요건과 개인파산과의 비교표를 담는다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
   "links": [],
   "attachments": [],
   "form_attachments": [],

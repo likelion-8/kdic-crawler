@@ -1,5 +1,5 @@
 {
-  "doc_id": "sender_docs",
+  "page_id": "sender_docs",
   "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
   "business_function": "착오송금 반환 신청",
   "sub_category": "구비서류_착오송금인",
@@ -8,6 +8,7 @@
   "note": "예솜24 착오송금인 신청방법 하위 구비서류 항목과 개념 일치 (첨부파일)",
   "summary": "착오송금인 신청인 유형별(본인·대리인·법인 등) 구비서류를 표로 정리한다. 반환지원 신청서, 금융거래정보 제공 요구(동의)서, 채권양도통지 위임장 등 서식의 HWP·PDF 다운로드와 유형별 신청서 샘플을 제공한다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "5a480687efac403e42a51f832ccf877f1c7864290486bb4e5123caccb3577814",
   "links": [
     {
       "text": "착오송금수취인",

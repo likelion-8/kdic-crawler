@@ -22,7 +22,7 @@ from inventory import pages_for
 # 통합 inventory(표준 스키마)를 이 크롤러가 쓰던 원래 필드명으로 매핑
 PAGES = [
     {
-        "doc_id": p["id"],
+        "page_id": p["id"],
         "business_function": p["business"],
         "sub_category": p["sub_category"],
         "page_title": p["title"],
@@ -94,14 +94,14 @@ def run():
     for d in (RAW, TEXT, META):
         d.mkdir(parents=True, exist_ok=True)
     for p in PAGES:
-        doc_id = p["doc_id"]
+        doc_id = p["page_id"]
         print(f"[{doc_id}] {p['sub_category']} ... ", end="", flush=True)
         html = fetch(p["url"])
         (RAW / f"{doc_id}.html").write_text(html, encoding="utf-8")
         text = html_to_text(html)
         (TEXT / f"{doc_id}.txt").write_text(text, encoding="utf-8")
         meta = {
-            "doc_id": doc_id,
+            "page_id": doc_id,
             "source_url": p["url"],
             "business_function": p["business_function"],
             "sub_category": p["sub_category"],
@@ -119,7 +119,7 @@ def run():
         )
         print(f"ok ({len(text)}자, 첨부 {len(meta['attachments'])}건)")
         time.sleep(1)  # 공공기관 사이트 부하 방지
-    print(f"\n완료: 페이지 {len(PAGES)}건 → data/ (청킹은 src/chunker_dy.py)")
+    print(f"\n완료: 페이지 {len(PAGES)}건 → data/")
 
 
 if __name__ == "__main__":

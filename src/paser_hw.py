@@ -1,8 +1,8 @@
 import os
 import json
 import re
-import hashlib
 from bs4 import BeautifulSoup, NavigableString
+from hashing import content_sha256
 from inventory import pages_for
 
 URL_INVENTORY = pages_for("hw")
@@ -80,7 +80,7 @@ def main():
             raw_parsed = node_to_text(content_div)
             final_text = collapse(raw_parsed)
             
-            content_sha = hashlib.sha256(final_text.encode("utf-8")).hexdigest()
+            content_sha = content_sha256(final_text)
             
             # 1. JSONL에 들어갈 단일 객체 구성
             parsed_result = {
@@ -89,7 +89,7 @@ def main():
                 "business_function": item["business"],
                 "sub_category": item["sub_category"],
                 "url": item["url"],
-                "content_sha": content_sha,
+                "content_sha256": content_sha,
                 "parsed_content": final_text
             }
             
@@ -103,7 +103,7 @@ def main():
                 "sub_category": item["sub_category"],
                 "title": item["title"],
                 "url": item["url"],
-                "content_sha": content_sha,
+                "content_sha256": content_sha,
                 "required": item["required"]
             }
             with open(meta_path, "w", encoding="utf-8") as f_meta:

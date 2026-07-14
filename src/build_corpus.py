@@ -6,11 +6,14 @@ owner는 팀 내부 관리용 필드라 산출물에서 제외한다.
 
 corpus.jsonl은 페이지(문서) 단위 1줄 = 메타데이터 + 본문 텍스트. 청킹의 입력이 된다.
 
+갱신 감지는 본문 텍스트의 content_sha256 으로 한다. 직전 상태는 지난 실행이 남긴
+data/meta/<page_id>.json 이며, 해시가 같으면 collected_at 을 그대로 물려받는다.
+(원본 HTML 은 판본 혼재·세션 토큰 탓에 본문이 그대로여도 바뀌므로 기준이 못 된다.)
+
 실행: python3 src/build_corpus.py  (네트워크 불필요 — 로컬 raw_html/text 사용)
 """
 import json
 import re
-import subprocess
 from datetime import date
 from pathlib import Path
 from urllib.parse import urljoin
@@ -24,6 +27,7 @@ from crawl_mistaken_remittance_jh import (
     extract_videos,
     get_main_content,
 )
+from hashing import content_sha256
 from inventory import PAGES
 from parse_raw_html import read_html
 
@@ -38,18 +42,10 @@ CORPUS = ROOT / "data" / "corpus.jsonl"
 BOARD_DETAIL_ID = re.compile(r"detailView\((\d+)\)")
 
 
-def changed_files():
-    """HEAD 대비 변경(재수집·신규)된 파일 집합 — 이들의 수집일은 오늘이다."""
-    out = subprocess.run(["git", "status", "--porcelain", "--", "data/raw_html"],
-                         capture_output=True, text=True, cwd=ROOT).stdout
-    return {line[3:].strip().strip('"') for line in out.splitlines() if line}
-
-
-def commit_date(path):
-    """크롤 시점 ≈ 원본 HTML의 마지막 커밋일 (미커밋이면 빈 문자열)."""
-    out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(path)],
-                         capture_output=True, text=True, cwd=ROOT).stdout.strip()
-    return out
+def previous_meta(page_id):
+    """지난 실행이 남긴 메타 (최초 실행이면 None)."""
+    path = META / f"{page_id}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
 # ---- 페이지 내 이동 링크 추출 ------------------------------------------------
@@ -115,17 +111,17 @@ def extract_images(html, base_url):
     return out
 
 
-def board_detail_attachments(doc_id, page_url):
+def board_detail_attachments(page_id, page_url):
     """게시판 상세 HTML(raw_html/detail/, fetch_extra.py 수집분)의 첨부를 모은다.
 
     첨부가 어느 게시글 것인지 알 수 있도록, 목록 페이지의 detailView(bbsId) 앵커
     텍스트(게시글 제목)를 라벨 앞에 붙인다.
     """
-    files = sorted(DETAIL.glob(f"{doc_id}__*.html"))
+    files = sorted(DETAIL.glob(f"{page_id}__*.html"))
     if not files:
         return [], []
     titles = {}
-    for f in [RAW / f"{doc_id}.html", *PAGED.glob(f"{doc_id}_p*.html")]:
+    for f in [RAW / f"{page_id}.html", *PAGED.glob(f"{page_id}_p*.html")]:
         if not f.exists():
             continue
         for a in BeautifulSoup(read_html(f), "html.parser").find_all(onclick=True):
@@ -151,19 +147,27 @@ def board_detail_attachments(doc_id, page_url):
 def build():
     META.mkdir(parents=True, exist_ok=True)
     today = date.today().isoformat()
-    changed = changed_files()
-    records = []
+    records, updated, added = [], [], []
     for p in PAGES:
-        doc_id = p["id"]
-        html_path = RAW / f"{doc_id}.html"
-        html = read_html(html_path)
-        rel = str(html_path.relative_to(ROOT))
-        collected = today if rel in changed else (commit_date(rel) or today)
+        page_id = p["id"]
+        html = read_html(RAW / f"{page_id}.html")
+        text = (TEXT / f"{page_id}.txt").read_text(encoding="utf-8")
+        sha = content_sha256(text)
+        prev = previous_meta(page_id)
+        if prev is None:
+            added.append(page_id)
+            collected = today
+        # content_sha256 이 없던 기존 메타(해시 도입 전)는 변경 없음으로 보고 수집일을 지킨다
+        elif prev.get("content_sha256", sha) == sha:
+            collected = prev["collected_at"]
+        else:
+            updated.append(page_id)
+            collected = today
         soup = BeautifulSoup(html, "html.parser")
-        content = get_main_content(soup, doc_id)
-        dtl_atts, dtl_form_atts = board_detail_attachments(doc_id, p["url"])
+        content = get_main_content(soup, page_id)
+        dtl_atts, dtl_form_atts = board_detail_attachments(page_id, p["url"])
         meta = {
-            "doc_id": doc_id,
+            "page_id": page_id,
             "source_url": p["url"],
             "business_function": p["business"],
             "sub_category": p["sub_category"],
@@ -172,20 +176,23 @@ def build():
             "note": p["note"],
             "summary": p["summary"],
             "collected_at": collected,
+            "content_sha256": sha,
             "links": extract_links(content, p["url"]),
             "attachments": extract_attachments(content, p["url"]) + dtl_atts,
             "form_attachments": extract_form_attachments(content, p["url"]) + dtl_form_atts,
             "videos": extract_videos(content, p["url"]),
             "images": extract_images(html, p["url"]),
         }
-        (META / f"{doc_id}.json").write_text(
+        (META / f"{page_id}.json").write_text(
             json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        records.append({**meta, "text": (TEXT / f"{doc_id}.txt").read_text(encoding="utf-8")})
+        records.append({**meta, "text": text})
 
     with CORPUS.open("w", encoding="utf-8") as f:
         for r in records:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     print(f"완료: meta {len(records)}건 → data/meta/, corpus {len(records)}줄 → data/corpus.jsonl")
+    print(f"  갱신 {len(updated)}건{': ' + ', '.join(updated) if updated else ''}")
+    print(f"  신규 {len(added)}건{': ' + ', '.join(added) if added else ''}")
 
 
 if __name__ == "__main__":

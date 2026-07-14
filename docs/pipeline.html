@@ -1,0 +1,418 @@
+<title>KDIC 크롤러 데이터 파이프라인</title>
+<style>
+  :root {
+    --ground: #F8F9FB;
+    --raised: #FFFFFF;
+    --ink: #14171F;
+    --ink-2: #4A505E;
+    --ink-3: #7C8394;
+    --line: #E3E6EC;
+    --line-2: #CFD4DE;
+    --seal: #2B4C8C;
+    --seal-soft: #E8EDF7;
+    --updated: #C0761A;
+    --updated-soft: #FBF0E1;
+    --kept: #2E7259;
+    --kept-soft: #E4F0EA;
+    --false: #B3453A;
+    --false-soft: #FAE9E7;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #12151C; --raised: #191D26; --ink: #EDEFF3; --ink-2: #A8AEBC;
+      --ink-3: #767D8D; --line: #262B36; --line-2: #333A48;
+      --seal: #8AA9E0; --seal-soft: #1D2536;
+      --updated: #E0A055; --updated-soft: #2C2418;
+      --kept: #6FBF9A; --kept-soft: #17271F;
+      --false: #E08279; --false-soft: #2B1C1A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #12151C; --raised: #191D26; --ink: #EDEFF3; --ink-2: #A8AEBC;
+    --ink-3: #767D8D; --line: #262B36; --line-2: #333A48;
+    --seal: #8AA9E0; --seal-soft: #1D2536;
+    --updated: #E0A055; --updated-soft: #2C2418;
+    --kept: #6FBF9A; --kept-soft: #17271F;
+    --false: #E08279; --false-soft: #2B1C1A;
+  }
+  :root[data-theme="light"] {
+    --ground: #F8F9FB; --raised: #FFFFFF; --ink: #14171F; --ink-2: #4A505E;
+    --ink-3: #7C8394; --line: #E3E6EC; --line-2: #CFD4DE;
+    --seal: #2B4C8C; --seal-soft: #E8EDF7;
+    --updated: #C0761A; --updated-soft: #FBF0E1;
+    --kept: #2E7259; --kept-soft: #E4F0EA;
+    --false: #B3453A; --false-soft: #FAE9E7;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+
+  /* ---- head ---- */
+  .eyebrow {
+    font-family: var(--mono); font-size: .75rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--seal); margin-bottom: 1rem;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -.03em;
+    line-height: 1.15; text-wrap: balance; margin-bottom: 1rem;
+  }
+  .lede { font-size: 1.125rem; color: var(--ink-2); max-width: 40em; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  .facts {
+    display: flex; flex-wrap: wrap; gap: 0 2.5rem;
+    margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line);
+  }
+  .fact { display: flex; flex-direction: column; gap: .15rem; }
+  .fact b {
+    font-family: var(--mono); font-size: 1.5rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  }
+  .fact span { font-size: .8rem; color: var(--ink-3); }
+
+  /* ---- sections ---- */
+  section { margin-top: 4.5rem; }
+  h2 {
+    font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em;
+    padding-bottom: .75rem; border-bottom: 2px solid var(--ink);
+    margin-bottom: .5rem;
+  }
+  .sub { color: var(--ink-3); font-size: .9rem; margin-bottom: 2rem; }
+
+  /* ---- pipeline rail ---- */
+  .stage {
+    display: grid; grid-template-columns: 3rem 1fr; gap: 1.25rem;
+    position: relative; padding-bottom: 2.25rem;
+  }
+  .stage::before {  /* 세로 척추 */
+    content: ""; position: absolute; left: 1.4rem; top: 2.4rem; bottom: 0;
+    width: 1px; background: var(--line-2);
+  }
+  .stage:last-child::before { display: none; }
+  .num {
+    font-family: var(--mono); font-size: .8rem; font-weight: 600;
+    width: 2.8rem; height: 2rem; display: grid; place-items: center;
+    border: 1px solid var(--line-2); border-radius: 2px;
+    background: var(--raised); color: var(--seal);
+    font-variant-numeric: tabular-nums;
+  }
+  .stage h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .25rem; }
+  .stage h3 code { font-size: .95em; }
+  .stage p { color: var(--ink-2); font-size: .95rem; margin-bottom: .75rem; max-width: 46em; }
+  .net {
+    display: inline-block; font-family: var(--mono); font-size: .68rem;
+    letter-spacing: .08em; text-transform: uppercase; padding: .1rem .45rem;
+    border-radius: 2px; vertical-align: .15em; margin-left: .4rem;
+  }
+  .net.on { background: var(--updated-soft); color: var(--updated); }
+  .net.off { background: var(--kept-soft); color: var(--kept); }
+
+  .out {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+  }
+  .art {
+    font-family: var(--mono); font-size: .78rem;
+    background: var(--raised); border: 1px solid var(--line);
+    border-left: 2px solid var(--seal);
+    padding: .4rem .6rem; border-radius: 2px; color: var(--ink-2);
+  }
+  .art b { color: var(--ink); font-weight: 600; }
+
+  code {
+    font-family: var(--mono); font-size: .875em;
+    background: var(--seal-soft); color: var(--seal);
+    padding: .1em .35em; border-radius: 2px;
+  }
+
+  /* ---- 대조표 ---- */
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 34rem; }
+  th, td { text-align: left; padding: .8rem 1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+    border-bottom: 1px solid var(--line-2);
+  }
+  td:first-child { color: var(--ink-2); }
+  .verdict { font-family: var(--mono); font-size: .8rem; font-weight: 600; white-space: nowrap; }
+  .verdict.bad { color: var(--false); }
+  .verdict.good { color: var(--kept); }
+  .verdict.hit { color: var(--updated); }
+
+  /* ---- 실측 증거 ---- */
+  .evidence {
+    background: var(--raised); border: 1px solid var(--line);
+    border-radius: 3px; padding: 1.5rem; margin-top: 1.5rem;
+  }
+  .evidence h4 {
+    font-size: .95rem; font-weight: 700; margin-bottom: .75rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .evidence p { color: var(--ink-2); font-size: .9rem; margin-bottom: 1rem; }
+  pre {
+    font-family: var(--mono); font-size: .78rem; line-height: 1.6;
+    background: var(--ground); border: 1px solid var(--line);
+    padding: .9rem 1rem; border-radius: 2px; overflow-x: auto;
+    color: var(--ink-2);
+  }
+  pre .hl { color: var(--kept); font-weight: 600; }
+  pre .warn { color: var(--false); }
+  pre .cmt { color: var(--ink-3); }
+
+  /* ---- 용어 ---- */
+  .terms { display: grid; gap: 0; }
+  .term {
+    display: grid; grid-template-columns: 12rem 1fr; gap: 1.5rem;
+    padding: 1rem 0; border-bottom: 1px solid var(--line);
+  }
+  .term dt { font-family: var(--mono); font-size: .85rem; color: var(--seal); font-weight: 600; }
+  .term dd { color: var(--ink-2); font-size: .9rem; }
+  .term dd b { color: var(--ink); font-weight: 600; }
+
+  .note {
+    margin-top: 2rem; padding: 1rem 1.25rem;
+    border-left: 2px solid var(--updated); background: var(--updated-soft);
+    font-size: .9rem; color: var(--ink-2); border-radius: 0 2px 2px 0;
+  }
+  .note b { color: var(--ink); }
+
+  @media (max-width: 34rem) {
+    .term { grid-template-columns: 1fr; gap: .25rem; }
+    .stage { grid-template-columns: 2.2rem 1fr; gap: .75rem; }
+    .stage::before { left: 1rem; }
+    .num { width: 2rem; font-size: .7rem; }
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">KDIC RAG · 데이터 파이프라인</p>
+  <h1>수집에서 코퍼스까지,<br>무엇이 언제 다시 만들어지는가</h1>
+  <p class="lede">
+    58개 공개 웹페이지를 모아 <strong>근거를 인용할 수 있는 코퍼스</strong>로 만드는 4단계 파이프라인입니다.
+    핵심 규칙은 하나입니다 — <strong>모든 단계는 다시 돌려도 같은 결과가 나오고,
+    본문이 실제로 바뀐 문서만 갱신으로 잡힙니다.</strong>
+  </p>
+
+  <div class="facts">
+    <div class="fact"><b>58</b><span>페이지 (6개 업무)</span></div>
+    <div class="fact"><b>198</b><span>원본 HTML (본문·뒷페이지·게시글)</span></div>
+    <div class="fact"><b>174</b><span>평가셋 문항</span></div>
+    <div class="fact"><b>2</b><span>네트워크를 타는 단계</span></div>
+  </div>
+
+  <section>
+    <h2>파이프라인</h2>
+    <p class="sub">위에서 아래로 흐릅니다. 앞 단계의 산출물이 뒤 단계의 입력입니다.</p>
+
+    <div class="stage">
+      <div class="num">01</div>
+      <div>
+        <h3><code>src/inventory.py</code> — 수집 대상 목록<span class="net off">오프라인</span></h3>
+        <p>
+          손으로 관리하는 유일한 원천입니다. 58개 페이지의 id·URL·업무·소분류·요약을 사람이 적습니다.
+          업무 분류(<code>business_function</code>)와 계층(<code>sub_category</code>)이 여기서 정해지고,
+          검색 단계의 계층 필터가 이 값을 씁니다. <b>페이지를 추가하려면 여기부터 고칩니다.</b>
+        </p>
+        <div class="out">
+          <span class="art"><b>PAGES</b> · 58개 항목</span>
+          <span class="art"><b>dyn_table</b> 표시 · 2개 (JS 조회표)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">02</div>
+      <div>
+        <h3>크롤러 5종 + 보조 수집기 — 원본 HTML 확보<span class="net on">네트워크</span></h3>
+        <p>
+          담당자별로 크롤러가 나뉘어 있습니다(<code>crawler_yj</code>, <code>crawler_dy</code>,
+          <code>crawl_mistaken_remittance_jh</code>, <code>crawl_debt_adjustment_..._jy</code>, <code>crawler_hw</code>).
+          KDIC 사이트는 <b>같은 페이지를 두 판본으로 서빙</b>하므로 <code>crawler_yj</code>는 다시 받아 보고
+          inventory의 <code>expect</code> 문자열이 든 판본만 채택합니다. 여기까지가 유일하게 사이트를 치는 구간이고,
+          이후 단계는 전부 이 로컬 HTML만 씁니다.
+        </p>
+        <div class="out">
+          <span class="art"><b>data/raw_html/</b> · 58</span>
+          <span class="art"><b>paged/</b> · 109 (뒷페이지)</span>
+          <span class="art"><b>detail/</b> · 31 (게시글)</span>
+          <span class="art"><b>data/dyn/</b> · JS 조회표 전량</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">03</div>
+      <div>
+        <h3><code>src/parse_raw_html.py</code> — HTML을 본문 텍스트로<span class="net off">오프라인</span></h3>
+        <p>
+          규칙 기반 변환만 씁니다(LLM 없음). 본문 컨테이너만 뽑고, 표는 행으로 펴고,
+          헤더·푸터 같은 사이트 공통 UI는 <b>정확일치</b>로만 지웁니다. 뒷페이지는 새로 나온 줄만 이어 붙입니다.
+          <b>이 단계의 출력이 결정론적이라는 게 파이프라인 전체의 전제입니다</b> —
+          같은 HTML을 넣으면 언제나 바이트까지 같은 텍스트가 나옵니다.
+        </p>
+        <div class="out"><span class="art"><b>data/text/&lt;page_id&gt;.txt</b> · 58</span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">04</div>
+      <div>
+        <h3><code>src/build_corpus.py</code> — 메타 + 코퍼스 조립<span class="net off">오프라인</span></h3>
+        <p>
+          inventory의 손으로 적은 정보와, HTML에서 뽑은 링크·첨부·영상·이미지와, 본문 텍스트를 한 줄로 합칩니다.
+          <b>여기서 갱신 감지가 일어납니다</b> — 본문 텍스트의 <code>content_sha256</code>을 계산해
+          직전 메타의 해시와 비교하고, 같으면 <code>collected_at</code>을 그대로 물려받습니다.
+          실행하면 무엇이 갱신됐는지 찍어 줍니다.
+        </p>
+        <div class="out">
+          <span class="art"><b>data/meta/&lt;page_id&gt;.json</b> · 58</span>
+          <span class="art"><b>data/corpus.jsonl</b> · 58줄 (페이지 1개 = 1줄)</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <section>
+    <h2>여기서부터는 아직 없습니다</h2>
+    <p class="sub">파이프라인은 코퍼스까지입니다. 그다음은 설계만 있고 코드는 없습니다.</p>
+    <div class="note">
+      <b>청킹 단계는 비어 있습니다.</b> 500자·overlap 100으로 자르고 조각마다
+      <code>parent_doc_id</code>로 원본 페이지를 가리키게 한다는 설계는 연구계획서에 있지만,
+      구현은 아직 없습니다. 이전에 있던 시제품 청커 두 개는 잘못 만들어져 삭제했습니다.
+      <b>지금 <code>data/corpus.jsonl</code>을 소비하는 것은 평가셋 검증기 하나뿐입니다.</b>
+      청킹·임베딩·검색은 코퍼스를 입력으로 새로 만들면 됩니다.
+    </div>
+  </section>
+
+  <section>
+    <h2>갱신 감지 — 왜 원본 HTML이 아니라 본문 텍스트를 해시하는가</h2>
+    <p class="sub">이 판단 하나가 파이프라인에서 가장 자주 오해받는 지점입니다.</p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>재수집 결과</th>
+            <th>원본 HTML 기준 (예전 방식)</th>
+            <th>본문 텍스트 sha256 (지금)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>세션 토큰·주석·줄바꿈만 달라짐</td>
+            <td><span class="verdict bad">갱신으로 오탐</span></td>
+            <td><span class="verdict good">변경 없음</span></td>
+          </tr>
+          <tr>
+            <td>사이트가 다른 판본을 서빙 (문단 빈 줄 지터)</td>
+            <td><span class="verdict bad">갱신으로 오탐</span></td>
+            <td><span class="verdict good">변경 없음</span></td>
+          </tr>
+          <tr>
+            <td>보호한도 문구가 실제로 바뀜</td>
+            <td><span class="verdict hit">갱신</span></td>
+            <td><span class="verdict hit">갱신</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="evidence">
+      <h4>실측 — <code>dp_protlmts</code> 라이브 재크롤 (2026-07-14)</h4>
+      <p>
+        보호한도 페이지 하나를 실제로 다시 받아 봤습니다. 사이트는 판본 2종을 내놓았고,
+        git은 원본 HTML이 통째로 바뀌었다고 봅니다. 그런데 본문은 <b>빈 줄 하나</b> 말고는
+        글자 하나 다르지 않았습니다.
+      </p>
+      <pre>$ python3 src/crawler_yj.py dp_protlmts --force
+      판본 2종 관측 → expect 로 채택 (a4d28767)
+
+$ git diff --numstat data/raw_html/dp_protlmts.html
+30685   30672   <span class="warn">← git 은 "전부 바뀜" 이라고 말한다</span>
+
+$ python3 src/parse_raw_html.py &amp;&amp; python3 src/build_corpus.py
+완료: meta 58건 → data/meta/, corpus 58줄 → data/corpus.jsonl
+  <span class="hl">갱신 0건</span>
+  신규 0건
+  <span class="cmt">collected_at: 2026-07-13  (튀지 않았다)</span></pre>
+    </div>
+
+    <div class="note">
+      <b>그래서 규칙은 이렇습니다.</b> <code>collected_at</code>은 "크롤을 돌린 날"이 아니라
+      <b>본문이 실제로 바뀐 것을 관측한 날</b>입니다. 재크롤을 백 번 해도 내용이 그대로면 날짜는 안 움직입니다.
+      평가셋 근거가 "언제 기준인가"를 이 날짜로 말하기 때문에, 노이즈로 튀면 안 됩니다.
+    </div>
+  </section>
+
+  <section>
+    <h2>용어</h2>
+    <p class="sub">이름이 다르면 다른 것입니다. 헷갈리는 것들만 모았습니다.</p>
+    <dl class="terms">
+      <div class="term">
+        <dt>page_id</dt>
+        <dd><b>페이지 식별자.</b> <code>dp_protlmts</code>처럼 생겼습니다. inventory의 <code>id</code>가 그대로 파일명·메타·코퍼스·평가셋 정답의 기준이 됩니다.</dd>
+      </div>
+      <div class="term">
+        <dt>parent_doc_id</dt>
+        <dd><b>청크가 가리킬 원본 페이지</b>(청킹 구현 시). 값은 <code>page_id</code>와 같습니다. 청크에만 붙습니다 — 페이지 레코드에는 필요 없습니다.</dd>
+      </div>
+      <div class="term">
+        <dt>content_sha256</dt>
+        <dd><b>본문 텍스트의 지문.</b> 줄 끝 공백·CRLF·빈 줄은 무시합니다. 이 값이 같으면 내용이 안 바뀐 것이고, 그러면 <code>collected_at</code>을 물려받습니다.</dd>
+      </div>
+      <div class="term">
+        <dt>business_function</dt>
+        <dd><b>6개 업무 중 하나.</b> 예금자보호제도 · 예금보험금 안내 · 고객 미수령금 신청 · 착오송금 반환 신청 · 은닉재산 신고 · 채무조정 안내. 검색 시 이 값으로 범위를 좁힙니다.</dd>
+      </div>
+      <div class="term">
+        <dt>expect</dt>
+        <dd><b>판본 판별 문자열.</b> 사이트가 두 판본을 서빙하는 페이지에서, 맞는 판본에만 있는 문구입니다. 크롤러가 이걸로 골라 받습니다.</dd>
+      </div>
+      <div class="term">
+        <dt>dyn_table</dt>
+        <dd><b>결과표가 JS로 채워지는 조회 화면 표시.</b> 이 표시가 붙은 페이지만 <code>fetch_dyntable.py</code>가 전량 수집합니다.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>다시 돌리는 법</h2>
+    <p class="sub">대부분의 작업에는 네트워크가 필요 없습니다.</p>
+
+    <div class="evidence">
+      <h4>코퍼스만 다시 만들 때 (평소)</h4>
+      <p>이미 받아 둔 HTML로 텍스트와 코퍼스를 재생성합니다. 사이트를 치지 않고 몇 초면 끝납니다.</p>
+      <pre>python3 src/parse_raw_html.py
+python3 src/build_corpus.py     <span class="cmt"># 갱신된 문서를 찍어 준다</span>
+python3 src/validate_testset.py <span class="cmt"># 평가셋이 코퍼스와 맞는지</span></pre>
+    </div>
+
+    <div class="evidence">
+      <h4>원본을 다시 받을 때</h4>
+      <p>
+        크롤러는 이미 받은 페이지를 건너뜁니다. 다시 받으려면 <code>--force</code>가 필요합니다.
+        받은 다음에는 반드시 위의 재적재를 이어서 돌려야 코퍼스에 반영됩니다.
+      </p>
+      <pre>python3 src/crawler_yj.py dp_protlmts --force  <span class="cmt"># 한 페이지만</span>
+python3 src/fetch_extra.py                    <span class="cmt"># 뒷페이지·게시글</span>
+python3 src/fetch_dyntable.py                 <span class="cmt"># dyn_table 페이지 전량</span>
+
+python3 src/parse_raw_html.py &amp;&amp; python3 src/build_corpus.py</pre>
+    </div>
+
+    <div class="note">
+      <b>순서를 지켜야 하는 이유.</b> <code>build_corpus.py</code>는 직전 <code>data/meta/</code>를 읽어
+      해시를 비교합니다. 크롤만 하고 재적재를 안 하면 코퍼스는 옛 내용 그대로이고,
+      메타를 손으로 지우고 돌리면 전부 "신규"로 잡혀 <code>collected_at</code>이 오늘로 밀립니다.
+    </div>
+  </section>
+</div>

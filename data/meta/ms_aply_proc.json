@@ -1,5 +1,5 @@
 {
-  "doc_id": "ms_aply_proc",
+  "page_id": "ms_aply_proc",
   "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do",
   "business_function": "예금보험금 안내",
   "sub_category": "예금보험금 신청 절차 > 예금보험금 신청절차",
@@ -8,6 +8,7 @@
   "note": "예솜24 2.2 신청 절차 항목과 개념 일치",
   "summary": "보험사고 발생부터 지급공고·신청·지급까지의 절차 설명",
   "collected_at": "2026-07-13",
+  "content_sha256": "b398772e990453abd83695a258c409ec8a9dc4e6dbd19844a64aba34a498bba0",
   "links": [
     {
       "text": "예금지급시스템(https://fins.kdic.or.kr)",

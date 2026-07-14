@@ -1,5 +1,5 @@
 {
-  "doc_id": "dp_fnst_srch",
+  "page_id": "dp_fnst_srch",
   "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
   "business_function": "예금자보호제도",
   "sub_category": "예금자보호제도 > 보호대상 > 금융회사 > 보호대상금융회사검색",
@@ -8,6 +8,7 @@
   "note": "'내 은행이 보호대상인가요' 조회 화면",
   "summary": "보호대상 금융회사를 금융권역(은행·종합금융회사·생명보험회사·손해보험회사·투자매매업자ㆍ투자중개업자·상호저축은행·신용협동조합)과 회사명으로 검색하는 화면이다. 25.12월 기준 회사명·주소·연락처·FAX·대표자명을 표로 제공하며, 상단에 은행·증권 투자매매중개업자·보험회사·종합금융회사·상호저축은행이 예금보험 대상이라는 안내를 싣는다.",
   "collected_at": "2026-07-13",
+  "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1",
   "links": [
     {
       "text": "(주)BNK투자증권",

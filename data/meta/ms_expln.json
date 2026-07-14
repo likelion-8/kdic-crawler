@@ -1,5 +1,5 @@
 {
-  "doc_id": "ms_expln",
+  "page_id": "ms_expln",
   "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do",
   "business_function": "예금보험금 안내",
   "sub_category": "예금보험금 안내 > 예금보험금이란?",
@@ -8,6 +8,7 @@
   "note": "예솜24 기능2 대표항목과 개념 일치",
   "summary": "예금보험금(가지급금·개산지급금)의 정의 설명",
   "collected_at": "2026-07-13",
+  "content_sha256": "8a9ad3e4e641bff847e916ef4810d48562abc5fe0834288b074968f295c758a6",
   "links": [
     {
       "text": "예금보험금/개산지급금/가지급금 신청 바로가기",
