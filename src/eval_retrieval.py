@@ -115,6 +115,7 @@ def main():
 
     mrr, per_type, arec, arec_tail, nunits = {}, {}, {}, {}, {}
     for mode in MODES:
+        print(f"[{mode}] 색인·평가 중… (질문 인코딩에 수십 초 소요)", flush=True)
         retrievers, unit_texts, n = build_retrievers(mode)
         nunits[mode] = n
         mrr[mode] = {name: evaluate(r, questions)["MRR"] for name, r in retrievers.items()}

@@ -29,13 +29,33 @@ class BM25Retriever:
         return ranked[:k]
 
 
+_MODEL_CACHE = {}
+_QEMB_CACHE = {}
+
+
+def _encode_query(model, query):
+    """질문 임베딩 메모이즈 — 같은 질문이 evaluate·by_type_mrr·answer_recall에서 여러 번,
+    또 모드 4개에서 반복 인코딩된다(CPU라 느림). 모델이 공유되므로 질문 텍스트로 캐시하면 안전."""
+    if query not in _QEMB_CACHE:
+        _QEMB_CACHE[query] = model.encode([query], normalize_embeddings=True)[0]
+    return _QEMB_CACHE[query]
+
+
+def _get_model(name):
+    """bge-m3 모델을 프로세스당 1회만 로딩해 재사용(로딩 ~9초). 여러 모드를 한 실행에서 평가할 때
+    모델을 매번 새로 올리면 수십 초가 낭비되고 출력이 없어 멈춘 것처럼 보인다."""
+    if name not in _MODEL_CACHE:
+        from sentence_transformers import SentenceTransformer
+        print(f"  bge-m3 로딩 중… (첫 로딩 ~10초, 캐시 없으면 ~2GB 다운로드)", flush=True)
+        # CPU 강제: 8192토큰 유닛의 attention(O(n²))이 MPS 22GB 한도를 넘는다.
+        _MODEL_CACHE[name] = SentenceTransformer(name, device="cpu")
+    return _MODEL_CACHE[name]
+
+
 class DenseRetriever:
     def __init__(self, unit_ids, texts, model="BAAI/bge-m3"):
         import numpy as np
-        from sentence_transformers import SentenceTransformer
-        # CPU 강제: 8192토큰 유닛의 attention(O(n²))이 MPS 22GB 한도를 넘는다. CPU는 시스템 RAM
-        # 사용 → 통짜 8192도 그대로 인코딩(일회성 평가라 속도는 감수). 질의 인코딩에도 필요.
-        self.model = SentenceTransformer(model, device="cpu")
+        self.model = _get_model(model)
         self.unit_ids = unit_ids
         # 유닛 임베딩은 texts 해시로 캐시하며 data/dense_cache/ 는 팀 공유용으로 커밋된다
         # (src/embed_corpus.py 로 생성). 같은 코퍼스면 팀원 모두 동일 파일을 불러 써 재인코딩 불필요.
@@ -56,7 +76,7 @@ class DenseRetriever:
         return ROOT / "data" / "dense_cache" / f"{h}.npy"
 
     def search(self, query, k):
-        q = self.model.encode([query], normalize_embeddings=True)[0]
+        q = _encode_query(self.model, query)
         scores = self.doc_emb @ q
         ranked = sorted(zip(self.unit_ids, scores.tolist()), key=lambda x: x[1], reverse=True)
         return ranked[:k]
