@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from chunking import build_units
+from chunking import build_units, load_records
 from retrieval import DenseRetriever, ROOT
 
 MODES = ["page", "faq_atomic", "table_row", "all"]
@@ -37,13 +37,24 @@ def main():
     mpath.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"manifest → {mpath.relative_to(ROOT)}")
 
-    # 제품용 청크 텍스트 덤프 — all 모드 임베딩(2498028…npy)과 순서가 정확히 대응한다.
+    # 제품용 청크 덤프 — all 모드 임베딩(2498028…npy)과 순서가 정확히 대응한다.
+    # RAG가 출처 인용·필터링에 바로 쓰도록 페이지 메타데이터(source_url·title·업무)를 청크에 싣는다.
     uids, texts, u2p = all_units
+    meta = {r["page_id"]: r for r in load_records()}
     cpath = ROOT / "data" / "chunks_all.jsonl"
     with open(cpath, "w", encoding="utf-8") as f:
         for u, t in zip(uids, texts):
-            f.write(json.dumps({"chunk_id": u, "page_id": u2p[u], "text": t}, ensure_ascii=False) + "\n")
-    print(f"chunks → {cpath.relative_to(ROOT)} ({len(uids)}청크)")
+            m = meta[u2p[u]]
+            rec = {
+                "chunk_id": u,
+                "page_id": u2p[u],
+                "source_url": m["source_url"],
+                "page_title": m["page_title"],
+                "business_function": m["business_function"],
+                "text": t,
+            }
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    print(f"chunks → {cpath.relative_to(ROOT)} ({len(uids)}청크, 메타데이터 포함)")
     return 0
 
 

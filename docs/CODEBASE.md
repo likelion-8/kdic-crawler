@@ -61,6 +61,7 @@ flowchart TD
 | `chunking.py` | `build_units(mode)` — 색인 단위 결정(`page`/`faq_atomic`/`table_row`/`all`). FAQ·표 탐지는 규칙 기반 |
 | `retrieval.py` | **BM25 · Dense(bge-m3) · Hybrid(RRF)** 검색기 + `PageRanked`(유닛→페이지 접기) |
 | `eval_retrieval.py` | 문서찾기(Recall@k·MRR) + 답뽑기(AnswerRecall) 평가 + 지표 selftest |
+| `embed_corpus.py` | **임베딩 일괄 생성 단일 진입점.** 4개 모드 벡터를 `data/dense_cache/`에 저장 + `data/chunks_all.jsonl` 덤프. 한 사람이 실행·커밋하면 팀 공유 |
 
 ## 데이터 산출물 (`data/`)
 
@@ -72,7 +73,8 @@ flowchart TD
 | **`corpus.jsonl`** (58줄) | **문서 코퍼스** = 메타+본문. 검색의 입력 | 3단계 |
 | `testset/testset_all.jsonl` (174) | 통합 평가셋(질문·정답 page_id·must_include) | 사람 작성 |
 | `testset/testset_tail_probe.jsonl` (4) | 잘린 표 꼬리 겨냥 프로브 | 5단계 |
-| `dense_cache/*.npy` | Dense 임베딩 캐시 (gitignore, 자동 재생성) | 5단계 |
+| **`chunks_all.jsonl`** (494줄) | **제품용 청크** = `all` 모드 유닛. `{chunk_id, page_id, source_url, page_title, business_function, text}` — 출처 인용·필터링까지 self-contained. 임베딩과 순서 일치 | 5단계 |
+| `dense_cache/*.npy` (4) + `manifest.json` | **팀 공유 Dense 임베딩**(커밋됨). 파일명=내용 해시 → 코퍼스 변경 시 자동 무효화. `embed_corpus.py`로 생성 | 5단계 |
 
 ## 처음 보는 사람 — 읽기 순서
 
@@ -97,12 +99,21 @@ python3 src/validate_testset.py
 # 검색기 비교 평가 (BM25/Dense/Hybrid × 색인단위) — 첫 실행 시 bge-m3 다운로드
 python3 src/eval_retrieval.py
 
+# 임베딩 + 제품 청크 재생성 (코퍼스 갱신 후 실행 → data/dense_cache/ 와 chunks_all.jsonl 재커밋)
+python3 src/embed_corpus.py
+
 # 개별 모듈 자가검증
 python3 src/chunking.py      # 청킹 단위 수 확인
 python3 src/hashing.py       # 해시 자체검사
 ```
 
+## 제품(챗봇)이 실제로 쓰는 것
+검색 실험 산출물 중 **챗봇 런타임이 쓰는 건 `all` 모드 한 세트**다:
+- `data/dense_cache/2498028…npy` (494 벡터) + `data/chunks_all.jsonl` (494 청크 텍스트) + bge-m3 모델(질문 인코딩용).
+- 나머지 3개 모드(page/faq_atomic/table_row)는 "청킹이 왜 필요한지" 증명한 **실험 비교군**이지 제품용이 아니다. 근거는 `docs/retrieval_experiment_results.md`.
+
 ## 참고
 - 크롤러가 담당자별로 나뉜 건 팀원 5명이 업무 기능을 나눠 수집했기 때문 (`inventory.py` 상단 owner 매핑 참고).
 - 변환은 **전부 규칙 기반**(LLM 미사용) — 원문 보존·재현성이 원칙.
-- 파이프라인 시각 자료는 `docs/pipeline.html` 에도 있음.
+- **크로스 플랫폼(맥·윈도우):** 모든 텍스트 파일 I/O는 `encoding="utf-8"` 명시(윈도우 기본 cp949로 한글 깨짐 방지), `.gitattributes`가 `.jsonl` 줄바꿈을 LF로 고정(CRLF면 공유 임베딩 캐시 해시가 틀어짐).
+- 파이프라인 시각 자료는 `docs/pipeline.html`, 검색 실험 결과는 `docs/retrieval_experiment_results.md` 에 있음.
