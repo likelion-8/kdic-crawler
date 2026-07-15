@@ -194,9 +194,10 @@
 
 <div class="wrap">
   <p class="eyebrow">KDIC RAG · 데이터 파이프라인</p>
-  <h1>수집에서 코퍼스까지,<br>무엇이 언제 다시 만들어지는가</h1>
+  <h1>수집에서 챗봇 입력까지,<br>무엇이 언제 다시 만들어지는가</h1>
   <p class="lede">
-    58개 공개 웹페이지를 모아 <strong>근거를 인용할 수 있는 코퍼스</strong>로 만드는 4단계 파이프라인입니다.
+    58개 공개 웹페이지를 모아 <strong>근거를 인용할 수 있는 코퍼스</strong>로 만들고,
+    검색·평가를 거쳐 <strong>챗봇이 쓸 임베딩·청크까지</strong> 뽑는 5단계 파이프라인입니다.
     핵심 규칙은 하나입니다 — <strong>모든 단계는 다시 돌려도 같은 결과가 나오고,
     본문이 실제로 바뀐 문서만 갱신으로 잡힙니다.</strong>
   </p>
@@ -244,6 +245,7 @@
           <span class="art"><b>paged/</b> · 109 (뒷페이지)</span>
           <span class="art"><b>detail/</b> · 31 (게시글)</span>
           <span class="art"><b>data/dyn/</b> · JS 조회표 전량</span>
+          <span class="art"><b>data/media_summary_jh.json</b> · 착오송금 영상·첨부 위치</span>
         </div>
       </div>
     </div>
@@ -279,17 +281,37 @@
       </div>
     </div>
 
+    <div class="stage">
+      <div class="num">05</div>
+      <div>
+        <h3>검색·평가 + 제품 산출물 — 코퍼스를 챗봇 입력으로<span class="net off">오프라인</span></h3>
+        <p>
+          <code>chunking.py</code>가 코퍼스를 색인 단위로 자르고(<code>build_units</code> — 통짜 페이지 / FAQ QA쌍 /
+          표 행묶음), <code>retrieval.py</code>가 BM25·Dense(bge-m3)·Hybrid로 검색합니다. 여기서 갈래가 둘로 나뉩니다 —
+          <b>연구용</b>은 <code>eval_retrieval.py</code>가 Recall·MRR로 청킹 전략을 비교하고,
+          <b>제품용</b>은 <code>embed_corpus.py</code>가 챗봇이 실제로 로드할 임베딩·청크를 뽑아 커밋합니다.
+          사이트를 치지 않습니다(첫 실행 시 bge-m3 모델 ~2GB만 내려받음).
+        </p>
+        <div class="out">
+          <span class="art"><b>docs/retrieval_experiment_results.md</b> · 연구·비교 결과</span>
+          <span class="art"><b>data/dense_cache/*.npy</b> · 팀 공유 Dense 임베딩</span>
+          <span class="art"><b>data/chunks_all.jsonl</b> · 494 청크 (메타 포함, 챗봇 런타임 입력)</span>
+        </div>
+      </div>
+    </div>
+
   </section>
 
   <section>
     <h2>여기서부터는 아직 없습니다</h2>
-    <p class="sub">파이프라인은 코퍼스까지입니다. 그다음은 설계만 있고 코드는 없습니다.</p>
+    <p class="sub">파이프라인은 챗봇 입력(임베딩·청크)까지입니다. 그다음 응답 생성은 설계만 있고 코드는 없습니다.</p>
     <div class="note">
-      <b>청킹 단계는 비어 있습니다.</b> 500자·overlap 100으로 자르고 조각마다
-      <code>parent_doc_id</code>로 원본 페이지를 가리키게 한다는 설계는 연구계획서에 있지만,
-      구현은 아직 없습니다. 이전에 있던 시제품 청커 두 개는 잘못 만들어져 삭제했습니다.
-      <b>지금 <code>data/corpus.jsonl</code>을 소비하는 것은 평가셋 검증기 하나뿐입니다.</b>
-      청킹·임베딩·검색은 코퍼스를 입력으로 새로 만들면 됩니다.
+      <b>챗봇 응답 생성 계층은 비어 있습니다.</b> 검색·평가·임베딩(5단계)까지는 구현돼
+      <code>data/dense_cache/</code>와 <code>data/chunks_all.jsonl</code>이 나와 있지만, 이 청크를 받아
+      질문에 답을 생성하는 RAG 런타임(LLM 호출·근거 인용·<code>media_summary_jh.json</code>으로 위치 안내)은
+      아직 없습니다. <b>실측 근거는 <code>docs/retrieval_experiment_results.md</code></b> — 어떤 청킹이
+      어떤 유형 질문을 올리는지 비교해 <code>all</code> 모드를 제품용으로 골랐습니다. 응답 생성은 이 청크를
+      입력으로 새로 만들면 됩니다.
     </div>
   </section>
 
@@ -362,8 +384,9 @@ $ python3 src/parse_raw_html.py &amp;&amp; python3 src/build_corpus.py
         <dd><b>페이지 식별자.</b> <code>dp_protlmts</code>처럼 생겼습니다. inventory의 <code>id</code>가 그대로 파일명·메타·코퍼스·평가셋 정답의 기준이 됩니다.</dd>
       </div>
       <div class="term">
-        <dt>parent_doc_id</dt>
-        <dd><b>청크가 가리킬 원본 페이지</b>(청킹 구현 시). 값은 <code>page_id</code>와 같습니다. 청크에만 붙습니다 — 페이지 레코드에는 필요 없습니다.</dd>
+        <dt>chunk_id / page_id</dt>
+        <dd><b>청크가 가리키는 원본 페이지.</b> <code>chunks_all.jsonl</code>의 각 청크는 <code>chunk_id</code>(색인 단위)와
+        그것이 속한 <code>page_id</code>를 함께 싣습니다 — 검색 결과를 페이지로 접고 출처를 인용하기 위해서입니다.</dd>
       </div>
       <div class="term">
         <dt>content_sha256</dt>
@@ -394,6 +417,16 @@ $ python3 src/parse_raw_html.py &amp;&amp; python3 src/build_corpus.py
       <pre>python3 src/parse_raw_html.py
 python3 src/build_corpus.py     <span class="cmt"># 갱신된 문서를 찍어 준다</span>
 python3 src/validate_testset.py <span class="cmt"># 평가셋이 코퍼스와 맞는지</span></pre>
+    </div>
+
+    <div class="evidence">
+      <h4>검색·임베딩까지 다시 만들 때</h4>
+      <p>
+        코퍼스가 바뀌면 임베딩 캐시(파일명 = 내용 해시)가 자동 무효화됩니다. 아래를 돌려 비교 결과와
+        챗봇 입력을 재생성하고 재커밋합니다. 첫 실행 시 bge-m3 ~2GB를 내려받습니다.
+      </p>
+      <pre>python3 src/eval_retrieval.py   <span class="cmt"># BM25/Dense/Hybrid × 청킹 비교표</span>
+python3 src/embed_corpus.py     <span class="cmt"># dense_cache/ + chunks_all.jsonl 재생성 → 재커밋</span></pre>
     </div>
 
     <div class="evidence">

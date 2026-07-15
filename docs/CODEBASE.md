@@ -12,17 +12,22 @@ flowchart TD
       CRAWL[crawler_dy/yj/hw · crawl_*_jh/jy<br/>fetch_dyntable · fetch_extra]
     end
     CRAWL --> RAW[(data/raw_html/*.html)]
+    CRAWL --> MEDIA[(data/media_summary_jh.json<br/>착오송금 영상·첨부 위치)]
     RAW --> PARSE[2. 변환<br/>parse_raw_html.py]
     PARSE --> TXT[(data/text/*.txt)]
     TXT --> BUILD[3. 코퍼스<br/>build_corpus.py + hashing.py]
     BUILD --> CORP[(data/corpus.jsonl<br/>+ data/meta/*.json)]
     CORP --> VAL[4. 검증<br/>validate_*.py]
-    CORP --> RET[5. 검색·평가]
+    CORP --> RET
+    CORP --> EMB
     TESTSET[(data/testset/*.jsonl)] --> RET
-    subgraph S5[5. 검색·평가]
-      RET[chunking.py → retrieval.py → eval_retrieval.py]
+    subgraph S5[5. 검색·평가 · 제품 산출물 생성]
+      RET[chunking.py → retrieval.py<br/>→ eval_retrieval.py]
+      EMB[chunking.py → retrieval.py<br/>→ embed_corpus.py]
     end
-    RET --> DOCS[(docs/retrieval_experiment_results.md)]
+    RET --> DOCS[(docs/retrieval_experiment_results.md<br/>연구·비교 결과)]
+    EMB --> PROD[(dense_cache/*.npy + chunks_all.jsonl<br/>= 챗봇 런타임 입력)]
+    MEDIA --> PROD
 ```
 
 ## 단계별 파일
@@ -70,6 +75,7 @@ flowchart TD
 | `raw_html/*.html` (58) | 수집한 원본 HTML | 1단계 |
 | `text/*.txt` (58) | 정규화 본문 텍스트 | 2단계 |
 | `meta/*.json` (58) | 페이지별 메타(URL·카테고리·수집일·해시 등) | 3단계 |
+| `media_summary_jh.json` | 착오송금 페이지의 **영상·첨부 위치** 추출. 챗봇이 "어디서 보라" 안내에 사용(코퍼스 본문과 별개). `crawl_mistaken_remittance_jh.py` 산출 | 1단계 |
 | **`corpus.jsonl`** (58줄) | **문서 코퍼스** = 메타+본문. 검색의 입력 | 3단계 |
 | `testset/testset_all.jsonl` (174) | 통합 평가셋(질문·정답 page_id·must_include) | 사람 작성 |
 | `testset/testset_tail_probe.jsonl` (4) | 잘린 표 꼬리 겨냥 프로브 | 5단계 |
