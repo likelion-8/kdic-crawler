@@ -1,0 +1,6 @@
+# 크로스 플랫폼(맥/윈도우) 일관성.
+# .jsonl 은 LF 고정 — 줄바꿈이 CRLF로 바뀌면 임베딩 캐시 해시가 틀어져 공유 벡터를 못 찾는다.
+*.jsonl text eol=lf
+*.txt text eol=lf
+# 바이너리는 git이 손대지 않도록 명시.
+*.npy binary

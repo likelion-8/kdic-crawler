@@ -24,15 +24,26 @@ MODES = ["page", "faq_atomic", "table_row", "all"]
 
 def main():
     manifest = {}
+    all_units = None
     for mode in MODES:
-        uids, texts, _ = build_units(mode)
+        uids, texts, u2p = build_units(mode)
         DenseRetriever(uids, texts)  # 캐시 없으면 인코딩+저장, 있으면 그대로 재사용
         fname = DenseRetriever._cache_path(texts).name
         manifest[mode] = {"file": fname, "units": len(uids)}
         print(f"{mode:<12} {len(uids):>4}유닛 → dense_cache/{fname}")
+        if mode == "all":
+            all_units = (uids, texts, u2p)
     mpath = ROOT / "data" / "dense_cache" / "manifest.json"
-    mpath.write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
+    mpath.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"manifest → {mpath.relative_to(ROOT)}")
+
+    # 제품용 청크 텍스트 덤프 — all 모드 임베딩(2498028…npy)과 순서가 정확히 대응한다.
+    uids, texts, u2p = all_units
+    cpath = ROOT / "data" / "chunks_all.jsonl"
+    with open(cpath, "w", encoding="utf-8") as f:
+        for u, t in zip(uids, texts):
+            f.write(json.dumps({"chunk_id": u, "page_id": u2p[u], "text": t}, ensure_ascii=False) + "\n")
+    print(f"chunks → {cpath.relative_to(ROOT)} ({len(uids)}청크)")
     return 0
 
 

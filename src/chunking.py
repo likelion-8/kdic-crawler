@@ -16,7 +16,9 @@ CORPUS = ROOT / "data" / "corpus.jsonl"
 
 
 def load_records():
-    return [json.loads(l) for l in open(CORPUS)]
+    # encoding 명시 필수 — 미지정 시 윈도우 기본(cp949)이 UTF-8 한글을 못 읽는다.
+    with open(CORPUS, encoding="utf-8") as f:
+        return [json.loads(l) for l in f]
 
 
 def is_faq(text):

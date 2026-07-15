@@ -16,7 +16,8 @@ KS = [1, 3, 5, 10]
 def load_testset(path=TESTSET):
     """expected_sources 있는 질문만 (out_of_scope 제외) → [(q, {page_id,...}, qtype, [must_include]), ...]."""
     qs = []
-    with open(path) as f:
+    # encoding 명시 필수 — 윈도우 기본(cp949)은 UTF-8 한글 테스트셋을 못 읽는다.
+    with open(path, encoding="utf-8") as f:
         for line in f:
             d = json.loads(line)
             if d["expected_sources"]:
