@@ -37,7 +37,8 @@ class DenseRetriever:
         # 사용 → 통짜 8192도 그대로 인코딩(일회성 평가라 속도는 감수). 질의 인코딩에도 필요.
         self.model = SentenceTransformer(model, device="cpu")
         self.unit_ids = unit_ids
-        # 유닛 임베딩은 texts 해시로 캐시 — 색인 단위(page/faq_atomic)가 바뀌면 자동 새 캐시.
+        # 유닛 임베딩은 texts 해시로 캐시하며 data/dense_cache/ 는 팀 공유용으로 커밋된다
+        # (src/embed_corpus.py 로 생성). 같은 코퍼스면 팀원 모두 동일 파일을 불러 써 재인코딩 불필요.
         cache = self._cache_path(texts)
         if cache.exists():
             self.doc_emb = np.load(cache)

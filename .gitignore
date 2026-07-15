@@ -218,5 +218,5 @@ __marimo__/
 .streamlit/secrets.toml
 .DS_Store
 
-# Dense 임베딩 캐시(코퍼스 해시 기반, 재생성 가능)
-data/dense_cache/
+# Dense 임베딩 캐시는 팀 공유용으로 커밋한다(src/embed_corpus.py 로 생성). 파일명=내용 해시라
+# 코퍼스가 바뀌면 새 파일이 생기고, 정식본만 남겨 커밋하면 모든 팀원이 동일 벡터를 공유한다.
