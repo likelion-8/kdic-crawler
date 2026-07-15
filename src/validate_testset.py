@@ -14,14 +14,14 @@ QUESTION_TYPES = {"fact", "faq", "table_lookup", "link_guide", "file_download", 
 
 def main():
     corpus = {}
-    with open(ROOT / "data/corpus.jsonl") as f:
+    with open(ROOT / "data/corpus.jsonl", encoding="utf-8") as f:
         for line in f:
             d = json.loads(line)
             corpus[d["page_id"]] = d["business_function"]
 
     errors = []
     seen_ids = set()
-    with open(ROOT / "data/testset/testset_all.jsonl") as f:
+    with open(ROOT / "data/testset/testset_all.jsonl", encoding="utf-8") as f:
         for n, line in enumerate(f, 1):
             d = json.loads(line)
             where = f"L{n} {d.get('test_id')}"
