@@ -32,8 +32,9 @@ MODELS = [
     {"key": "qwen3-0.6b", "id": "Qwen/Qwen3-Embedding-0.6B", "batch_size": 4,
      "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"},
     {"key": "bge-m3-ko",  "id": "dragonkue/bge-m3-ko",       "query_prompt": None, "batch_size": 16},
-    # {"key": "nemotron", "id": "<확정 필요: nvidia/NV-Embed-v2 등>", "query_prompt": None,
-    #  "trust_remote_code": True, "batch_size": 4},  # NV-Embed는 인코딩 API가 달라 별도 처리 필요할 수 있음
+    {"key": "nv-embed-v2", "id": "nvidia/NV-Embed-v2", "batch_size": 2,
+     "trust_remote_code": True, "fp16": True, "padding_side": "right",  # 7B — A100서 fp16, ST 예제가 padding_side=right 요구
+     "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"},
 ]
 
 INDEX_MODE = "all"  # 제품과 동일한 색인 단위(494청크)
@@ -50,9 +51,13 @@ def load_model(cfg):
     kw = {"device": _device()}
     if cfg.get("trust_remote_code"):
         kw["trust_remote_code"] = True
+    if cfg.get("fp16"):
+        kw["model_kwargs"] = {"torch_dtype": "float16"}  # 7B급을 40GB에 올리려면 필수
     model = SentenceTransformer(cfg["id"], **kw)
     cur = getattr(model, "max_seq_length", None) or MAX_SEQ
     model.max_seq_length = min(cur, MAX_SEQ)  # 긴 문서 하나가 배치 전체를 폭주시키는 것 방지
+    if cfg.get("padding_side"):
+        model.tokenizer.padding_side = cfg["padding_side"]  # NV-Embed ST 예제 요구사항
     return model
 
 
