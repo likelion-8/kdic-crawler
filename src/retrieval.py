@@ -86,6 +86,29 @@ class DenseRetriever:
         return ranked[:k]
 
 
+class QdrantDenseRetriever:
+    """DenseRetriever와 동일한 search(query,k)->[(unit_id,score)] 계약이지만,
+    numpy 브루트포스 대신 로컬 Qdrant(임베디드 파일 모드) 컬렉션에 쿼리한다.
+
+    Qdrant 포인트 id는 정수(순번)라 payload의 chunk_id로 원래 unit_id를 되짚는다.
+    코사인 거리 컬렉션이라 반환 score가 곧 코사인 유사도(내적)와 동일하다.
+    """
+    def __init__(self, path, collection, model=DEFAULT_DENSE_MODEL):
+        from qdrant_client import QdrantClient
+        self.client = QdrantClient(path=path)
+        self.collection = collection
+        self.model = _get_model(model)
+        # PageRanked가 len(inner.unit_ids)로 "전체 랭킹 요청 개수"를 정하므로 필요
+        # (내용은 안 쓰이고 개수만 참조됨).
+        self.unit_ids = list(range(self.client.count(collection).count))
+
+    def search(self, query, k):
+        q = _encode_query(self.model, query)
+        hits = self.client.query_points(
+            self.collection, query=q.tolist(), limit=k).points
+        return [(h.payload["chunk_id"], h.score) for h in hits]
+
+
 class QuestionTypeClassifier:
     """새 질문의 유형(qtype)을 예시 질문과의 코사인 유사도로 분류(1-최근접).
 

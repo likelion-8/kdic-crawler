@@ -220,3 +220,7 @@ __marimo__/
 
 # Dense 임베딩 캐시는 팀 공유용으로 커밋한다(src/embed_corpus.py 로 생성). 파일명=내용 해시라
 # 코퍼스가 바뀌면 새 파일이 생기고, 정식본만 남겨 커밋하면 모든 팀원이 동일 벡터를 공유한다.
+
+# Qdrant 로컬(임베디드) 저장소는 커밋 안 함 — .lock 파일 포함이라 버전관리에 안 맞고,
+# 이미 커밋된 dense_cache에서 python3 src/index_qdrant.py 한 번이면 재생성된다(재인코딩 불필요).
+data/qdrant_local/

@@ -90,13 +90,33 @@ def by_type_mrr(retriever, questions):
     return {t: evaluate(retriever, qs)["MRR"] for t, qs in groups.items()}
 
 
+QDRANT_PATH = str(ROOT / "data" / "qdrant_local")
+QDRANT_COLLECTION = "kdic_chunks_all"
+
+
 def build_retrievers(mode):
-    """색인 단위(mode)로 BM25/Dense/Hybrid 페이지 랭킹 검색기 + 유닛 텍스트(답변평가용) 구성."""
+    """색인 단위(mode)로 BM25/Dense/Hybrid 페이지 랭킹 검색기 + 유닛 텍스트(답변평가용) 구성.
+
+    프로덕션 모드(all)는 Qdrant(로컬 임베디드)를 쓴다 — data/chunks_all.jsonl과 순서가
+    대응하는 실제 서비스 산출물이 거기 있으므로. 나머지 3개 모드(page/faq_atomic/table_row)는
+    "청킹이 왜 필요한지" 증명한 실험 비교군일 뿐 제품용이 아니라(docs/CODEBASE.md 참고)
+    Qdrant 색인 대상이 아니고, 기존 numpy DenseRetriever를 그대로 쓴다.
+    """
+    from pathlib import Path
+
     from chunking import build_units
-    from retrieval import BM25Retriever, DenseRetriever, HybridRetriever, PageRanked
+    from retrieval import BM25Retriever, DenseRetriever, HybridRetriever, PageRanked, QdrantDenseRetriever
     uids, texts, u2p = build_units(mode)
     bm25 = PageRanked(BM25Retriever(uids, texts), u2p)
-    dense = PageRanked(DenseRetriever(uids, texts), u2p)
+    if mode == "all":
+        if not Path(QDRANT_PATH).exists():
+            raise RuntimeError(
+                f"Qdrant 컬렉션이 없습니다: {QDRANT_PATH}\n"
+                "먼저 `python3 src/index_qdrant.py`를 실행해 색인을 만드세요.")
+        dense_inner = QdrantDenseRetriever(QDRANT_PATH, QDRANT_COLLECTION)
+    else:
+        dense_inner = DenseRetriever(uids, texts)
+    dense = PageRanked(dense_inner, u2p)
     hybrid = HybridRetriever(bm25, dense)
     return {"BM25": bm25, "Dense": dense, "Hybrid": hybrid}, dict(zip(uids, texts)), len(uids)
 
