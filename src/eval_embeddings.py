@@ -77,44 +77,61 @@ def encode_docs(model, texts):
     return emb, time.time() - t0
 
 
+def _free_vram():
+    try:
+        import gc
+        import torch
+        gc.collect()
+        torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+
 def run():
     import numpy as np
+    import traceback
     uids, texts, u2p = build_units(INDEX_MODE)
     questions = load_testset()
     print(f"코퍼스 {len(uids)}청크({INDEX_MODE}) · 평가 {len(questions)}건 · device={_device()}\n", flush=True)
 
+    outdir = ROOT / "data" / "embedding_eval"
+    outdir.mkdir(exist_ok=True)
+    out = outdir / "dy.json"  # 팀원별 파일(dy/yj/jy/hw)로 합쳐 비교
     rows = []
+
+    def save():  # 매 모델 후 저장 — 뒤 모델이 죽어도 앞 결과는 남는다
+        out.write_text(json.dumps({"owner": "dy", "device": _device(), "index_mode": INDEX_MODE,
+                                   "n_questions": len(questions), "results": rows},
+                                  ensure_ascii=False, indent=2), encoding="utf-8")
+
     for cfg in MODELS:
         print(f"[{cfg['key']}] {cfg['id']} 로딩·인코딩…", flush=True)
-        model = load_model(cfg)
-        doc_emb, sec = encode_docs(model, texts)
-        doc_emb = np.asarray(doc_emb, dtype=np.float32)
-        ret = PageRanked(DenseModelRetriever(model, cfg, uids, doc_emb), u2p)
-        m = evaluate(ret, questions)
-        m |= {"key": cfg["key"], "id": cfg["id"], "dim": int(doc_emb.shape[1]), "encode_s": round(sec, 1)}
-        rows.append(m)
-        print(f"  → MRR {m['MRR']:.3f} · Recall@5 {m['Recall@5']:.3f} · dim {m['dim']} · {m['encode_s']}s\n", flush=True)
-        del model  # VRAM 반환 — 대형 모델을 순차로 올리므로 필수
         try:
-            import gc
-            import torch
-            gc.collect()
-            torch.cuda.empty_cache()
-        except Exception:
-            pass
+            model = load_model(cfg)
+            doc_emb, sec = encode_docs(model, texts)
+            doc_emb = np.asarray(doc_emb, dtype=np.float32)
+            ret = PageRanked(DenseModelRetriever(model, cfg, uids, doc_emb), u2p)
+            m = evaluate(ret, questions)
+            m |= {"key": cfg["key"], "id": cfg["id"], "dim": int(doc_emb.shape[1]), "encode_s": round(sec, 1)}
+            rows.append(m)
+            print(f"  → MRR {m['MRR']:.3f} · Recall@5 {m['Recall@5']:.3f} · dim {m['dim']} · {m['encode_s']}s\n", flush=True)
+            del model  # VRAM 반환 — 대형 모델을 순차로 올리므로 필수
+        except Exception as e:
+            # 한 모델 실패가 전체를 죽이지 않도록. 이유를 남겨 어떤 모델이 왜 실패했는지 보이게.
+            rows.append({"key": cfg["key"], "id": cfg["id"], "error": f"{type(e).__name__}: {e}"})
+            print(f"  ✗ 실패: {type(e).__name__}: {e}\n{traceback.format_exc()}", flush=True)
+        _free_vram()
+        save()
 
+    ok = [m for m in rows if "error" not in m]
     cols = [f"Recall@{k}" for k in KS] + ["MRR"]
     print(f"=== 임베딩 모델 비교 ({INDEX_MODE} {len(uids)}청크 · 순수 dense · 필터 없음 · 평가 {len(questions)}건) ===")
     print("model".ljust(13) + "".join(c.rjust(11) for c in cols) + "dim".rjust(7) + "enc(s)".rjust(9))
-    for m in rows:
+    for m in ok:
         print(m["key"].ljust(13) + "".join(f"{m[c]:>11.3f}" for c in cols) + f"{m['dim']:>7}{m['encode_s']:>9}")
-
-    outdir = ROOT / "data" / "embedding_eval"
-    outdir.mkdir(exist_ok=True)
-    out = outdir / "dy.json"  # 팀원별 파일(dy/yj/jy/hw/yj)로 합쳐 비교
-    out.write_text(json.dumps({"owner": "dy", "device": _device(), "index_mode": INDEX_MODE,
-                               "n_questions": len(questions), "results": rows},
-                              ensure_ascii=False, indent=2), encoding="utf-8")
+    for m in rows:
+        if "error" in m:
+            print(f"{m['key'].ljust(13)}✗ {m['error']}")
     print(f"\n결과 저장 → {out.relative_to(ROOT)}")
     return 0
 
