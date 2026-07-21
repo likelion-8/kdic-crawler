@@ -112,35 +112,45 @@ def eval_one(cfg, uids, texts, u2p, questions):
     return m | {"key": cfg["key"], "id": cfg["id"], "dim": int(doc_emb.shape[1]), "encode_s": round(sec, 1)}
 
 
-def run():
+def run(only=None):
+    """only: 실행할 key 집합(None이면 전체). NV-Embed처럼 버전 충돌로 별도 런타임이 필요한
+    모델은 `--only nv-embed-v2`로 따로 돌린다. 결과는 key별로 기존 dy.json에 병합(다른 모델 보존)."""
     import traceback
     uids, texts, u2p = build_units(INDEX_MODE)
     questions = load_testset()
-    print(f"코퍼스 {len(uids)}청크({INDEX_MODE}) · 평가 {len(questions)}건 · device={_device()}\n", flush=True)
+    todo = [c for c in MODELS if not only or c["key"] in only]
+    print(f"코퍼스 {len(uids)}청크({INDEX_MODE}) · 평가 {len(questions)}건 · device={_device()} · 대상 {[c['key'] for c in todo]}\n", flush=True)
 
     outdir = ROOT / "data" / "embedding_eval"
     outdir.mkdir(exist_ok=True)
     out = outdir / "dy.json"  # 팀원별 파일(dy/yj/jy/hw)로 합쳐 비교
-    rows = []
 
-    def save():  # 매 모델 후 저장 — 뒤 모델이 죽어도 앞 결과는 남는다
+    # 기존 결과를 key로 읽어 이번 실행분만 덮어쓴다 → 별도 런타임 실행이 앞 결과를 지우지 않음
+    by_key = {}
+    if out.exists():
+        by_key = {r["key"]: r for r in json.loads(out.read_text(encoding="utf-8")).get("results", [])}
+
+    def save():  # 매 모델 후 저장. MODELS 순서로 정렬하되 목록 밖 key는 뒤에 보존
+        order = {c["key"]: i for i, c in enumerate(MODELS)}
+        rows = sorted(by_key.values(), key=lambda r: order.get(r["key"], len(order)))
         out.write_text(json.dumps({"owner": "dy", "device": _device(), "index_mode": INDEX_MODE,
                                    "n_questions": len(questions), "results": rows},
                                   ensure_ascii=False, indent=2), encoding="utf-8")
 
-    for cfg in MODELS:
+    for cfg in todo:
         print(f"[{cfg['key']}] {cfg['id']} 로딩·인코딩…", flush=True)
         try:
             m = eval_one(cfg, uids, texts, u2p, questions)
-            rows.append(m)
+            by_key[cfg["key"]] = m
             print(f"  → MRR {m['MRR']:.3f} · Recall@5 {m['Recall@5']:.3f} · dim {m['dim']} · {m['encode_s']}s\n", flush=True)
         except Exception as e:
             # 한 모델 실패가 전체를 죽이지 않도록. 이유를 남겨 어떤 모델이 왜 실패했는지 보이게.
-            rows.append({"key": cfg["key"], "id": cfg["id"], "error": f"{type(e).__name__}: {e}"})
+            by_key[cfg["key"]] = {"key": cfg["key"], "id": cfg["id"], "error": f"{type(e).__name__}: {e}"}
             print(f"  ✗ 실패: {type(e).__name__}: {e}\n{traceback.format_exc()}", flush=True)
         _free_vram()  # eval_one 리턴으로 참조가 사라진 뒤라야 실제로 비워짐
         save()
 
+    rows = json.loads(out.read_text(encoding="utf-8"))["results"]
     ok = [m for m in rows if "error" not in m]
     cols = [f"Recall@{k}" for k in KS] + ["MRR"]
     print(f"=== 임베딩 모델 비교 ({INDEX_MODE} {len(uids)}청크 · 순수 dense · 필터 없음 · 평가 {len(questions)}건) ===")
@@ -178,4 +188,7 @@ if __name__ == "__main__":
     if "--selftest" in sys.argv:
         _selftest()
     else:
-        sys.exit(run())
+        only = None
+        if "--only" in sys.argv:  # 예: --only nv-embed-v2 (쉼표로 여러 개)
+            only = set(sys.argv[sys.argv.index("--only") + 1].split(","))
+        sys.exit(run(only))
