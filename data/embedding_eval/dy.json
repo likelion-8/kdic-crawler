@@ -1,0 +1,12 @@
+{
+  "owner": "dy",
+  "device": "cuda",
+  "index_mode": "all",
+  "n_questions": 557,
+  "results": [
+    {"Recall@1": 0.5888689407540395, "Recall@3": 0.8384201077199281, "Recall@5": 0.9138240574506283, "Recall@10": 0.9694793536804309, "MRR": 0.723890028782308, "key": "bge-m3", "id": "BAAI/bge-m3", "dim": 1024, "encode_s": 8.0},
+    {"Recall@1": 0.6409335727109515, "Recall@3": 0.8833034111310593, "Recall@5": 0.9515260323159784, "Recall@10": 0.9766606822262118, "MRR": 0.7700507252571879, "key": "bge-m3-ko", "id": "dragonkue/BGE-m3-ko", "dim": 1024, "encode_s": 7.7},
+    {"Recall@1": 0.6427289048473968, "Recall@3": 0.874326750448833, "Recall@5": 0.9371633752244165, "Recall@10": 0.9784560143626571, "MRR": 0.7671247613348144, "key": "qwen3-embedding-8b", "id": "Qwen/Qwen3-Embedding-8B", "dim": 4096, "encode_s": 19.0},
+    {"Recall@1": 0.7522441651705566, "Recall@3": 0.9299820466786356, "Recall@5": 0.9694793536804309, "Recall@10": 0.9874326750448833, "MRR": 0.8458728733863379, "key": "nemotron-3-embed-8b", "id": "nvidia/Nemotron-3-Embed-8B-BF16", "dim": 4096, "encode_s": 17.7}
+  ]
+}

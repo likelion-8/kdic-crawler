@@ -1,0 +1,213 @@
+"""임베딩 모델 후보 비교 — 동일 코퍼스·테스트셋으로 Recall@k·MRR·인코딩 속도 측정.
+
+팀원 전원이 이 스크립트를 동일 모델 ID로 돌려 결과를 맞대고 한 모델을 고른다. 그래서
+색인 단위·평가 산식은 프로젝트1 것을 그대로 재사용한다(build_units('all') 494청크,
+페이지 단위 Recall@k·MRR). 검색은 순수 dense(업무 필터 없음) — 모델 자체의 검색력만 격리한다.
+
+공유 프로덕션 캐시(retrieval.DenseRetriever)는 건드리지 않는다. 그 캐시는 텍스트 해시로만
+키를 잡아 모델이 달라도 같은 파일을 재사용하므로(모델 충돌), 비교용으로는 부적합하다.
+여기서는 모델마다 문서를 새로 인코딩한다(494청크는 GPU에서 초 단위라 캐시 불필요).
+
+실행(Colab GPU 권장): python3 src/eval_embeddings.py
+자가검증(모델 로드 불필요):   python3 src/eval_embeddings.py --selftest
+"""
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+# torch import(어느 함수든) 이전에 설정해야 효과 있음 — CUDA 단편화로 인한 가짜 OOM 완화.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from chunking import build_units
+from eval_retrieval import KS, ROOT, evaluate, load_testset
+from retrieval import PageRanked
+
+# 후보 4종 — 팀(embedding_test_yj)과 동일 ID·API 스타일로 맞춰 결과를 비교 가능하게 유지.
+# api_style: 모델카드별 질의/문서 인코딩 방식 차이.
+#   plain                  = 문서·질의 모두 encode() 그대로 (bge류)
+#   prompt_name            = 문서 그대로, 질의만 encode(prompt_name="query") (Qwen3)
+#   query_document_methods = encode_document()/encode_query() 전용 메서드(접두어 자동) (Nemotron)
+# 8B 2종은 bf16, batch 작게. A100 등 넉넉한 GPU 권장.
+MODELS = [
+    {"key": "bge-m3",             "id": "BAAI/bge-m3",         "api_style": "plain", "batch_size": 8},
+    {"key": "bge-m3-ko",          "id": "dragonkue/BGE-m3-ko", "api_style": "plain", "batch_size": 8},
+    {"key": "qwen3-embedding-8b", "id": "Qwen/Qwen3-Embedding-8B", "api_style": "prompt_name",
+     "batch_size": 2, "model_kwargs": {"torch_dtype": "bfloat16"}, "tokenizer_kwargs": {"padding_side": "left"}},
+    {"key": "nemotron-3-embed-8b", "id": "nvidia/Nemotron-3-Embed-8B-BF16", "api_style": "query_document_methods",
+     "batch_size": 2, "trust_remote_code": True},
+]
+
+INDEX_MODE = "all"  # 제품과 동일한 색인 단위(494청크)
+MAX_SEQ = 8192  # 시퀀스 길이 캡 — 우리 청크는 모두 그 이하라 무손실이며 8B 모델의 대형 기본값 폭주만 막음
+
+
+def _device():
+    import torch
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def load_model(cfg):
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer(
+        cfg["id"], device=_device(),
+        trust_remote_code=cfg.get("trust_remote_code", False),
+        model_kwargs=cfg.get("model_kwargs", {}),        # 예: bf16
+        tokenizer_kwargs=cfg.get("tokenizer_kwargs", {}),  # 예: padding_side=left
+    )
+    cur = getattr(model, "max_seq_length", None) or MAX_SEQ
+    model.max_seq_length = min(cur, MAX_SEQ)
+    return model
+
+
+def _l2(a):
+    """행 단위 L2 정규화 → 내적이 코사인. api_style별 encode 경로가 normalize 인자를 다르게
+    받아서(encode_document 등), 인코딩 후 여기서 일괄 정규화해 경로 차이를 없앤다."""
+    import numpy as np
+    a = np.asarray(a, dtype=np.float32)
+    return a / np.clip(np.linalg.norm(a, axis=-1, keepdims=True), 1e-12, None)
+
+
+class DenseModelRetriever:
+    """모델 하나로 문서 임베딩을 받아 유닛 단위 [(unit_id, score)]를 반환. 질문 임베딩은 메모이즈."""
+
+    def __init__(self, model, cfg, unit_ids, doc_emb):
+        self.model, self.cfg = model, cfg
+        self.unit_ids, self.doc_emb = unit_ids, doc_emb
+        self._qcache = {}
+
+    def _encode_query(self, q):
+        if q not in self._qcache:
+            style = self.cfg.get("api_style", "plain")
+            if style == "query_document_methods":
+                e = self.model.encode_query([q])[0]       # 접두어 자동
+            elif style == "prompt_name":
+                e = self.model.encode([q], prompt_name="query")[0]  # 질의 전용 프롬프트
+            elif self.cfg.get("query_prompt"):
+                e = self.model.encode([q], prompt=self.cfg["query_prompt"])[0]
+            else:
+                e = self.model.encode([q])[0]
+            self._qcache[q] = _l2(e)
+        return self._qcache[q]
+
+    def search(self, query, k):
+        scores = self.doc_emb @ self._encode_query(query)
+        ranked = sorted(zip(self.unit_ids, scores.tolist()), key=lambda x: x[1], reverse=True)
+        return ranked[:k]
+
+
+def encode_docs(model, texts, cfg):
+    """문서 임베딩 + 소요시간(초). L2 정규화 → 내적이 코사인."""
+    t0 = time.time()
+    bs = cfg.get("batch_size", 16)
+    if cfg.get("api_style") == "query_document_methods":
+        emb = model.encode_document(texts, batch_size=bs, show_progress_bar=True)
+    else:
+        emb = model.encode(texts, batch_size=bs, show_progress_bar=True)
+    return _l2(emb), time.time() - t0
+
+
+def _free_vram():
+    try:
+        import gc
+        import torch
+        gc.collect()
+        torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+
+def eval_one(cfg, uids, texts, u2p, questions):
+    """모델 하나 로딩→인코딩→평가 후 지표 dict 반환. 함수 스코프라 리턴 즉시 model·doc_emb·ret
+    참조가 사라진다 — 이후 _free_vram()이 GPU를 실제로 비울 수 있다(리트리버가 모델을 붙들던 leak 해결)."""
+    import numpy as np
+    model = load_model(cfg)
+    doc_emb, sec = encode_docs(model, texts, cfg)
+    doc_emb = np.asarray(doc_emb, dtype=np.float32)
+    ret = PageRanked(DenseModelRetriever(model, cfg, uids, doc_emb), u2p)
+    m = evaluate(ret, questions)
+    return m | {"key": cfg["key"], "id": cfg["id"], "dim": int(doc_emb.shape[1]), "encode_s": round(sec, 1)}
+
+
+def run(only=None):
+    """only: 실행할 key 집합(None이면 전체). NV-Embed처럼 버전 충돌로 별도 런타임이 필요한
+    모델은 `--only nv-embed-v2`로 따로 돌린다. 결과는 key별로 기존 dy.json에 병합(다른 모델 보존)."""
+    import traceback
+    uids, texts, u2p = build_units(INDEX_MODE)
+    questions = load_testset()
+    todo = [c for c in MODELS if not only or c["key"] in only]
+    print(f"코퍼스 {len(uids)}청크({INDEX_MODE}) · 평가 {len(questions)}건 · device={_device()} · 대상 {[c['key'] for c in todo]}\n", flush=True)
+
+    outdir = ROOT / "data" / "embedding_eval"
+    outdir.mkdir(exist_ok=True)
+    out = outdir / "dy.json"  # 팀원별 파일(dy/yj/jy/hw)로 합쳐 비교
+
+    # --only(부분 실행)만 기존 결과에 병합. 전체 실행은 깨끗이 새로 써 stale key가 안 남게 한다.
+    by_key = {}
+    if only and out.exists():
+        by_key = {r["key"]: r for r in json.loads(out.read_text(encoding="utf-8")).get("results", [])}
+
+    def save():  # 매 모델 후 저장. MODELS 순서로 정렬하되 목록 밖 key는 뒤에 보존
+        order = {c["key"]: i for i, c in enumerate(MODELS)}
+        rows = sorted(by_key.values(), key=lambda r: order.get(r["key"], len(order)))
+        out.write_text(json.dumps({"owner": "dy", "device": _device(), "index_mode": INDEX_MODE,
+                                   "n_questions": len(questions), "results": rows},
+                                  ensure_ascii=False, indent=2), encoding="utf-8")
+
+    for cfg in todo:
+        print(f"[{cfg['key']}] {cfg['id']} 로딩·인코딩…", flush=True)
+        try:
+            m = eval_one(cfg, uids, texts, u2p, questions)
+            by_key[cfg["key"]] = m
+            print(f"  → MRR {m['MRR']:.3f} · Recall@5 {m['Recall@5']:.3f} · dim {m['dim']} · {m['encode_s']}s\n", flush=True)
+        except Exception as e:
+            # 한 모델 실패가 전체를 죽이지 않도록. 이유를 남겨 어떤 모델이 왜 실패했는지 보이게.
+            by_key[cfg["key"]] = {"key": cfg["key"], "id": cfg["id"], "error": f"{type(e).__name__}: {e}"}
+            print(f"  ✗ 실패: {type(e).__name__}: {e}\n{traceback.format_exc()}", flush=True)
+        _free_vram()  # eval_one 리턴으로 참조가 사라진 뒤라야 실제로 비워짐
+        save()
+
+    rows = json.loads(out.read_text(encoding="utf-8"))["results"]
+    ok = [m for m in rows if "error" not in m]
+    cols = [f"Recall@{k}" for k in KS] + ["MRR"]
+    print(f"=== 임베딩 모델 비교 ({INDEX_MODE} {len(uids)}청크 · 순수 dense · 필터 없음 · 평가 {len(questions)}건) ===")
+    print("model".ljust(13) + "".join(c.rjust(11) for c in cols) + "dim".rjust(7) + "enc(s)".rjust(9))
+    for m in ok:
+        print(m["key"].ljust(13) + "".join(f"{m[c]:>11.3f}" for c in cols) + f"{m['dim']:>7}{m['encode_s']:>9}")
+    for m in rows:
+        if "error" in m:
+            print(f"{m['key'].ljust(13)}✗ {m['error']}")
+    print(f"\n결과 저장 → {out.relative_to(ROOT)}")
+    return 0
+
+
+def _selftest():
+    """검색기 배선 검증 — 가짜 문서 임베딩으로 PageRanked+evaluate 경로를 못 박는다(모델 불필요)."""
+    import numpy as np
+    # 유닛 3개, 페이지 2개(u1,u2→pA / u3→pB). 질문이 u2와 정렬되게 임베딩 구성.
+    uids = ["u1", "u2", "u3"]
+    u2p = {"u1": "pA", "u2": "pA", "u3": "pB"}
+    doc_emb = np.array([[1, 0], [0, 1], [-1, 0]], dtype=np.float32)
+
+    class FakeModel:
+        def encode(self, xs, **kw):
+            return np.array([[0, 1]], dtype=np.float32)  # 질문 = u2 방향 → pA가 1위
+
+    ret = PageRanked(DenseModelRetriever(FakeModel(), {}, uids, doc_emb), u2p)
+    got = ret.search("q", 2)
+    assert got[0][0] == "pA", got  # 최근접 유닛 u2 → 페이지 pA
+    r = evaluate(ret, [("q", {"pA"})], ks=[1])
+    assert r["Recall@1"] == 1.0 and r["MRR"] == 1.0, r
+    print("selftest ok")
+
+
+if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        _selftest()
+    else:
+        only = None
+        if "--only" in sys.argv:  # 예: --only nv-embed-v2 (쉼표로 여러 개)
+            only = set(sys.argv[sys.argv.index("--only") + 1].split(","))
+        sys.exit(run(only))
