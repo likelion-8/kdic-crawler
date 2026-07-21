@@ -123,3 +123,32 @@ class HybridRetriever:
 
     def search(self, query, k):
         return rrf([self.bm25.search(query, self.n), self.dense.search(query, self.n)])[:k]
+
+
+class RoutedRetriever:
+    """질문 유형(qtype)별로 Hybrid/Dense 중 하나로 라우팅.
+
+    2026-07-21 route_eval.py 비교(all 모드, bge-m3-ko 기준) — 유형별 MRR:
+        유형            BM25    Dense  Hybrid
+        fact           0.694   0.729   0.737
+        table_lookup   0.434   0.893   0.638   ← BM25가 약해 Hybrid가 확실히 손해
+        faq            0.912   0.887   0.903
+        link_guide     0.609   0.592   0.693
+        file_download  0.882   1.000   1.000
+    table_lookup만 빼면 Hybrid가 Dense와 같거나 근소하게 낫다. 그래서 예외를 하나로
+    최소화해 "기본 Hybrid, table_lookup만 Dense"로 라우팅한다(가중평균 MRR 0.784,
+    Dense 단일 0.770·Dense 기본+예외 방식 0.777보다 높음).
+
+    qtype을 실시간으로 아는 방법(휴리스틱/분류기)은 이 클래스의 책임이 아니다 — 평가 시엔
+    테스트셋 라벨을 그대로 넘기고, 실서비스에선 호출부에서 채워 넣어야 한다. qtype이
+    없거나 모르는 값이면 안전하게 기본값(Hybrid)으로 처리한다.
+    """
+    DENSE_ONLY_TYPES = {"table_lookup"}
+
+    def __init__(self, hybrid, dense):
+        self.hybrid = hybrid
+        self.dense = dense
+
+    def search(self, query, k, qtype=None):
+        retriever = self.dense if qtype in self.DENSE_ONLY_TYPES else self.hybrid
+        return retriever.search(query, k)
