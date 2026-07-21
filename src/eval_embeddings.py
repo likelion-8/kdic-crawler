@@ -25,20 +25,23 @@ from chunking import build_units
 from eval_retrieval import KS, ROOT, evaluate, load_testset
 from retrieval import PageRanked
 
-# 후보 모델 — 팀원과 동일해야 비교 가능. 추천 기본값으로 시작(2026-07-21 합의 전 잠정).
-# batch_size는 메모리 안전용(모델별 상이). Nemotron은 오픈웨이트 ID·구동방식 확정 후 주석 해제.
+# 후보 4종 — 팀(embedding_test_yj)과 동일 ID·API 스타일로 맞춰 결과를 비교 가능하게 유지.
+# api_style: 모델카드별 질의/문서 인코딩 방식 차이.
+#   plain                  = 문서·질의 모두 encode() 그대로 (bge류)
+#   prompt_name            = 문서 그대로, 질의만 encode(prompt_name="query") (Qwen3)
+#   query_document_methods = encode_document()/encode_query() 전용 메서드(접두어 자동) (Nemotron)
+# 8B 2종은 bf16, batch 작게. A100 등 넉넉한 GPU 권장.
 MODELS = [
-    {"key": "bge-m3",     "id": "BAAI/bge-m3",               "query_prompt": None, "batch_size": 16},
-    {"key": "qwen3-0.6b", "id": "Qwen/Qwen3-Embedding-0.6B", "batch_size": 4,
-     "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"},
-    {"key": "bge-m3-ko",  "id": "dragonkue/bge-m3-ko",       "query_prompt": None, "batch_size": 16},
-    {"key": "nv-embed-v2", "id": "nvidia/NV-Embed-v2", "batch_size": 2,
-     "trust_remote_code": True, "fp16": True, "padding_side": "right",  # 7B — A100서 fp16, ST 예제가 padding_side=right 요구
-     "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"},
+    {"key": "bge-m3",             "id": "BAAI/bge-m3",         "api_style": "plain", "batch_size": 8},
+    {"key": "bge-m3-ko",          "id": "dragonkue/BGE-m3-ko", "api_style": "plain", "batch_size": 8},
+    {"key": "qwen3-embedding-8b", "id": "Qwen/Qwen3-Embedding-8B", "api_style": "prompt_name",
+     "batch_size": 2, "model_kwargs": {"torch_dtype": "bfloat16"}, "tokenizer_kwargs": {"padding_side": "left"}},
+    {"key": "nemotron-3-embed-8b", "id": "nvidia/Nemotron-3-Embed-8B-BF16", "api_style": "query_document_methods",
+     "batch_size": 2, "trust_remote_code": True},
 ]
 
 INDEX_MODE = "all"  # 제품과 동일한 색인 단위(494청크)
-MAX_SEQ = 8192  # 시퀀스 길이 캡 — bge-m3는 원래 8192(baseline 불변), Qwen3의 32k 기본값 폭주 방지
+MAX_SEQ = 8192  # 시퀀스 길이 캡 — 우리 청크는 모두 그 이하라 무손실이며 8B 모델의 대형 기본값 폭주만 막음
 
 
 def _device():
@@ -48,17 +51,23 @@ def _device():
 
 def load_model(cfg):
     from sentence_transformers import SentenceTransformer
-    kw = {"device": _device()}
-    if cfg.get("trust_remote_code"):
-        kw["trust_remote_code"] = True
-    if cfg.get("fp16"):
-        kw["model_kwargs"] = {"torch_dtype": "float16"}  # 7B급을 40GB에 올리려면 필수
-    model = SentenceTransformer(cfg["id"], **kw)
+    model = SentenceTransformer(
+        cfg["id"], device=_device(),
+        trust_remote_code=cfg.get("trust_remote_code", False),
+        model_kwargs=cfg.get("model_kwargs", {}),        # 예: bf16
+        tokenizer_kwargs=cfg.get("tokenizer_kwargs", {}),  # 예: padding_side=left
+    )
     cur = getattr(model, "max_seq_length", None) or MAX_SEQ
-    model.max_seq_length = min(cur, MAX_SEQ)  # 긴 문서 하나가 배치 전체를 폭주시키는 것 방지
-    if cfg.get("padding_side"):
-        model.tokenizer.padding_side = cfg["padding_side"]  # NV-Embed ST 예제 요구사항
+    model.max_seq_length = min(cur, MAX_SEQ)
     return model
+
+
+def _l2(a):
+    """행 단위 L2 정규화 → 내적이 코사인. api_style별 encode 경로가 normalize 인자를 다르게
+    받아서(encode_document 등), 인코딩 후 여기서 일괄 정규화해 경로 차이를 없앤다."""
+    import numpy as np
+    a = np.asarray(a, dtype=np.float32)
+    return a / np.clip(np.linalg.norm(a, axis=-1, keepdims=True), 1e-12, None)
 
 
 class DenseModelRetriever:
@@ -71,10 +80,16 @@ class DenseModelRetriever:
 
     def _encode_query(self, q):
         if q not in self._qcache:
-            kw = {"normalize_embeddings": True}
-            if self.cfg.get("query_prompt"):
-                kw["prompt"] = self.cfg["query_prompt"]  # ST가 질문 앞에 붙임(비대칭 검색 모델용)
-            self._qcache[q] = self.model.encode([q], **kw)[0]
+            style = self.cfg.get("api_style", "plain")
+            if style == "query_document_methods":
+                e = self.model.encode_query([q])[0]       # 접두어 자동
+            elif style == "prompt_name":
+                e = self.model.encode([q], prompt_name="query")[0]  # 질의 전용 프롬프트
+            elif self.cfg.get("query_prompt"):
+                e = self.model.encode([q], prompt=self.cfg["query_prompt"])[0]
+            else:
+                e = self.model.encode([q])[0]
+            self._qcache[q] = _l2(e)
         return self._qcache[q]
 
     def search(self, query, k):
@@ -83,11 +98,15 @@ class DenseModelRetriever:
         return ranked[:k]
 
 
-def encode_docs(model, texts, batch_size):
-    """문서 임베딩 + 소요시간(초). normalize → 내적이 코사인."""
+def encode_docs(model, texts, cfg):
+    """문서 임베딩 + 소요시간(초). L2 정규화 → 내적이 코사인."""
     t0 = time.time()
-    emb = model.encode(texts, normalize_embeddings=True, batch_size=batch_size, show_progress_bar=True)
-    return emb, time.time() - t0
+    bs = cfg.get("batch_size", 16)
+    if cfg.get("api_style") == "query_document_methods":
+        emb = model.encode_document(texts, batch_size=bs, show_progress_bar=True)
+    else:
+        emb = model.encode(texts, batch_size=bs, show_progress_bar=True)
+    return _l2(emb), time.time() - t0
 
 
 def _free_vram():
@@ -105,7 +124,7 @@ def eval_one(cfg, uids, texts, u2p, questions):
     참조가 사라진다 — 이후 _free_vram()이 GPU를 실제로 비울 수 있다(리트리버가 모델을 붙들던 leak 해결)."""
     import numpy as np
     model = load_model(cfg)
-    doc_emb, sec = encode_docs(model, texts, cfg.get("batch_size", 16))
+    doc_emb, sec = encode_docs(model, texts, cfg)
     doc_emb = np.asarray(doc_emb, dtype=np.float32)
     ret = PageRanked(DenseModelRetriever(model, cfg, uids, doc_emb), u2p)
     m = evaluate(ret, questions)
@@ -125,9 +144,9 @@ def run(only=None):
     outdir.mkdir(exist_ok=True)
     out = outdir / "dy.json"  # 팀원별 파일(dy/yj/jy/hw)로 합쳐 비교
 
-    # 기존 결과를 key로 읽어 이번 실행분만 덮어쓴다 → 별도 런타임 실행이 앞 결과를 지우지 않음
+    # --only(부분 실행)만 기존 결과에 병합. 전체 실행은 깨끗이 새로 써 stale key가 안 남게 한다.
     by_key = {}
-    if out.exists():
+    if only and out.exists():
         by_key = {r["key"]: r for r in json.loads(out.read_text(encoding="utf-8")).get("results", [])}
 
     def save():  # 매 모델 후 저장. MODELS 순서로 정렬하되 목록 밖 key는 뒤에 보존
