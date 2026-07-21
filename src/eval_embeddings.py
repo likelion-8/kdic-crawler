@@ -12,9 +12,13 @@
 자가검증(모델 로드 불필요):   python3 src/eval_embeddings.py --selftest
 """
 import json
+import os
 import sys
 import time
 from pathlib import Path
+
+# torch import(어느 함수든) 이전에 설정해야 효과 있음 — CUDA 단편화로 인한 가짜 OOM 완화.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from chunking import build_units
@@ -22,17 +26,18 @@ from eval_retrieval import KS, ROOT, evaluate, load_testset
 from retrieval import PageRanked
 
 # 후보 모델 — 팀원과 동일해야 비교 가능. 추천 기본값으로 시작(2026-07-21 합의 전 잠정).
-# Nemotron은 오픈웨이트 ID·구동방식 확정 후 아래 주석을 풀어 활성화한다.
+# batch_size는 메모리 안전용(모델별 상이). Nemotron은 오픈웨이트 ID·구동방식 확정 후 주석 해제.
 MODELS = [
-    {"key": "bge-m3",     "id": "BAAI/bge-m3",               "query_prompt": None},
-    {"key": "qwen3-0.6b", "id": "Qwen/Qwen3-Embedding-0.6B",
+    {"key": "bge-m3",     "id": "BAAI/bge-m3",               "query_prompt": None, "batch_size": 16},
+    {"key": "qwen3-0.6b", "id": "Qwen/Qwen3-Embedding-0.6B", "batch_size": 4,
      "query_prompt": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"},
-    {"key": "bge-m3-ko",  "id": "dragonkue/bge-m3-ko",       "query_prompt": None},
+    {"key": "bge-m3-ko",  "id": "dragonkue/bge-m3-ko",       "query_prompt": None, "batch_size": 16},
     # {"key": "nemotron", "id": "<확정 필요: nvidia/NV-Embed-v2 등>", "query_prompt": None,
-    #  "trust_remote_code": True},  # NV-Embed는 인코딩 API가 달라 별도 처리 필요할 수 있음
+    #  "trust_remote_code": True, "batch_size": 4},  # NV-Embed는 인코딩 API가 달라 별도 처리 필요할 수 있음
 ]
 
 INDEX_MODE = "all"  # 제품과 동일한 색인 단위(494청크)
+MAX_SEQ = 8192  # 시퀀스 길이 캡 — bge-m3는 원래 8192(baseline 불변), Qwen3의 32k 기본값 폭주 방지
 
 
 def _device():
@@ -45,7 +50,10 @@ def load_model(cfg):
     kw = {"device": _device()}
     if cfg.get("trust_remote_code"):
         kw["trust_remote_code"] = True
-    return SentenceTransformer(cfg["id"], **kw)
+    model = SentenceTransformer(cfg["id"], **kw)
+    cur = getattr(model, "max_seq_length", None) or MAX_SEQ
+    model.max_seq_length = min(cur, MAX_SEQ)  # 긴 문서 하나가 배치 전체를 폭주시키는 것 방지
+    return model
 
 
 class DenseModelRetriever:
@@ -70,10 +78,10 @@ class DenseModelRetriever:
         return ranked[:k]
 
 
-def encode_docs(model, texts):
+def encode_docs(model, texts, batch_size):
     """문서 임베딩 + 소요시간(초). normalize → 내적이 코사인."""
     t0 = time.time()
-    emb = model.encode(texts, normalize_embeddings=True, batch_size=32, show_progress_bar=True)
+    emb = model.encode(texts, normalize_embeddings=True, batch_size=batch_size, show_progress_bar=True)
     return emb, time.time() - t0
 
 
@@ -87,8 +95,19 @@ def _free_vram():
         pass
 
 
-def run():
+def eval_one(cfg, uids, texts, u2p, questions):
+    """모델 하나 로딩→인코딩→평가 후 지표 dict 반환. 함수 스코프라 리턴 즉시 model·doc_emb·ret
+    참조가 사라진다 — 이후 _free_vram()이 GPU를 실제로 비울 수 있다(리트리버가 모델을 붙들던 leak 해결)."""
     import numpy as np
+    model = load_model(cfg)
+    doc_emb, sec = encode_docs(model, texts, cfg.get("batch_size", 16))
+    doc_emb = np.asarray(doc_emb, dtype=np.float32)
+    ret = PageRanked(DenseModelRetriever(model, cfg, uids, doc_emb), u2p)
+    m = evaluate(ret, questions)
+    return m | {"key": cfg["key"], "id": cfg["id"], "dim": int(doc_emb.shape[1]), "encode_s": round(sec, 1)}
+
+
+def run():
     import traceback
     uids, texts, u2p = build_units(INDEX_MODE)
     questions = load_testset()
@@ -107,20 +126,14 @@ def run():
     for cfg in MODELS:
         print(f"[{cfg['key']}] {cfg['id']} 로딩·인코딩…", flush=True)
         try:
-            model = load_model(cfg)
-            doc_emb, sec = encode_docs(model, texts)
-            doc_emb = np.asarray(doc_emb, dtype=np.float32)
-            ret = PageRanked(DenseModelRetriever(model, cfg, uids, doc_emb), u2p)
-            m = evaluate(ret, questions)
-            m |= {"key": cfg["key"], "id": cfg["id"], "dim": int(doc_emb.shape[1]), "encode_s": round(sec, 1)}
+            m = eval_one(cfg, uids, texts, u2p, questions)
             rows.append(m)
             print(f"  → MRR {m['MRR']:.3f} · Recall@5 {m['Recall@5']:.3f} · dim {m['dim']} · {m['encode_s']}s\n", flush=True)
-            del model  # VRAM 반환 — 대형 모델을 순차로 올리므로 필수
         except Exception as e:
             # 한 모델 실패가 전체를 죽이지 않도록. 이유를 남겨 어떤 모델이 왜 실패했는지 보이게.
             rows.append({"key": cfg["key"], "id": cfg["id"], "error": f"{type(e).__name__}: {e}"})
             print(f"  ✗ 실패: {type(e).__name__}: {e}\n{traceback.format_exc()}", flush=True)
-        _free_vram()
+        _free_vram()  # eval_one 리턴으로 참조가 사라진 뒤라야 실제로 비워짐
         save()
 
     ok = [m for m in rows if "error" not in m]
