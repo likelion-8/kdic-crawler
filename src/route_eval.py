@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from eval_retrieval import KS, build_retrievers, by_type_mrr, load_testset  # noqa: E402
-from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever  # noqa: E402
+from retrieval import DEFAULT_DENSE_MODEL, QuestionTypeClassifier, RoutedRetriever  # noqa: E402
 
 MARGIN = 0.03  # 이 이상 차이 나야 "유의미하게 낫다"로 판단
 MODE = "all"   # 프로덕션이 실제로 쓰는 청킹 모드로 고정 (docs/CODEBASE.md 참고)
@@ -51,6 +51,32 @@ def by_type_mrr_routed(routed, questions):
     for item in questions:
         groups[item[2]].append(item)
     return {t: evaluate_routed(routed, qs)["MRR"] for t, qs in groups.items()}
+
+
+def leave_one_out_predictions(classifier):
+    """분류기 정확도의 진짜 검증 — 자기 자신을 예시 풀에서 빼고 분류한다.
+    안 빼면 모든 질문이 자기 자신과 유사도 1.0으로 매칭돼 정확도가 허위로 100%가 된다."""
+    import numpy as np
+    sims = classifier.emb @ classifier.emb.T  # (N, N) 자기 자신 포함 전체 유사도
+    np.fill_diagonal(sims, -1)  # 자기 자신 제외
+    best = sims.argmax(axis=1)
+    return [classifier.types[i] for i in best]
+
+
+def evaluate_routed_with_predicted_types(routed, questions, predicted_types, ks=KS):
+    """evaluate_routed와 같지만, 정답 라벨 대신 분류기가 예측한 qtype으로 라우팅한다.
+    실서비스에서 실제로 겪을 성능(라벨을 모르고 분류기에 의존)을 재는 것."""
+    maxk = max(ks)
+    rr_sum = 0.0
+    for (q, gold, *_), pred_t in zip(questions, predicted_types):
+        ranked = [pid for pid, _ in routed.search(q, maxk, qtype=pred_t)]
+        rr = 0.0
+        for i, pid in enumerate(ranked, 1):
+            if pid in gold:
+                rr = 1.0 / i
+                break
+        rr_sum += rr
+    return rr_sum / len(questions)
 
 
 def main():
@@ -92,7 +118,31 @@ def main():
 
     print(f"\n전체 MRR — Dense단독: {mrr_overall(retrievers['Dense'], questions):.3f}"
           f" / Hybrid단독: {mrr_overall(retrievers['Hybrid'], questions):.3f}"
-          f" / 라우팅: {routed_overall:.3f}")
+          f" / 라우팅(정답라벨): {routed_overall:.3f}")
+
+    print("\n=== 질문 유형 분류기 검증 (실서비스 조건 — qtype 모름, 자동 분류) ===")
+    classifier = QuestionTypeClassifier()
+    preds = leave_one_out_predictions(classifier)
+    truth = classifier.types
+
+    # 라우팅 결정에 실제로 영향을 주는 건 "table_lookup이냐 아니냐" 이진 판단뿐
+    tp = sum(1 for p, t in zip(preds, truth) if p == "table_lookup" and t == "table_lookup")
+    fp = sum(1 for p, t in zip(preds, truth) if p == "table_lookup" and t != "table_lookup")
+    fn = sum(1 for p, t in zip(preds, truth) if p != "table_lookup" and t == "table_lookup")
+    tn = sum(1 for p, t in zip(preds, truth) if p != "table_lookup" and t != "table_lookup")
+    n_lookup = tp + fn
+    precision = tp / (tp + fp) if (tp + fp) else 0.0
+    recall = tp / n_lookup if n_lookup else 0.0
+    acc5way = sum(1 for p, t in zip(preds, truth) if p == t) / len(truth)
+
+    print(f"5유형 전체 정확도(leave-one-out): {acc5way:.3f}")
+    print(f"table_lookup 이진 판별 — precision: {precision:.3f}, recall: {recall:.3f}"
+          f" (TP={tp} FP={fp} FN={fn} TN={tn}, 실제 table_lookup {n_lookup}건)")
+
+    routed_predicted_overall = evaluate_routed_with_predicted_types(routed, questions, preds)
+    print(f"\n라우팅(분류기 예측): {routed_predicted_overall:.3f}"
+          f"  (참고 — 라우팅(정답라벨): {routed_overall:.3f}, Dense단독: "
+          f"{mrr_overall(retrievers['Dense'], questions):.3f})")
 
 
 def mrr_overall(retriever, questions):
