@@ -17,18 +17,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from chunking import build_units, load_records
-from retrieval import DenseRetriever, ROOT
+from retrieval import DEFAULT_DENSE_MODEL, DenseRetriever, ROOT
 
 MODES = ["page", "faq_atomic", "table_row", "all"]
 
 
 def main():
-    manifest = {}
+    manifest = {"model": DEFAULT_DENSE_MODEL}
     all_units = None
     for mode in MODES:
         uids, texts, u2p = build_units(mode)
         DenseRetriever(uids, texts)  # 캐시 없으면 인코딩+저장, 있으면 그대로 재사용
-        fname = DenseRetriever._cache_path(texts).name
+        fname = DenseRetriever._cache_path(texts, DEFAULT_DENSE_MODEL).name
         manifest[mode] = {"file": fname, "units": len(uids)}
         print(f"{mode:<12} {len(uids):>4}유닛 → dense_cache/{fname}")
         if mode == "all":

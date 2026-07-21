@@ -11,6 +11,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# 프로덕션 Dense 임베딩 모델. 2026-07-21 팀 비교 결과 bge-m3-ko 채택(project_context.md 9.1).
+DEFAULT_DENSE_MODEL = "dragonkue/BGE-m3-ko"
+
 
 class BM25Retriever:
     def __init__(self, unit_ids, texts):
@@ -46,20 +49,20 @@ def _get_model(name):
     모델을 매번 새로 올리면 수십 초가 낭비되고 출력이 없어 멈춘 것처럼 보인다."""
     if name not in _MODEL_CACHE:
         from sentence_transformers import SentenceTransformer
-        print(f"  bge-m3 로딩 중… (첫 로딩 ~10초, 캐시 없으면 ~2GB 다운로드)", flush=True)
+        print(f"  {name} 로딩 중… (첫 로딩 ~10초, 캐시 없으면 ~2GB 다운로드)", flush=True)
         # CPU 강제: 8192토큰 유닛의 attention(O(n²))이 MPS 22GB 한도를 넘는다.
         _MODEL_CACHE[name] = SentenceTransformer(name, device="cpu")
     return _MODEL_CACHE[name]
 
 
 class DenseRetriever:
-    def __init__(self, unit_ids, texts, model="BAAI/bge-m3"):
+    def __init__(self, unit_ids, texts, model=DEFAULT_DENSE_MODEL):
         import numpy as np
         self.model = _get_model(model)
         self.unit_ids = unit_ids
-        # 유닛 임베딩은 texts 해시로 캐시하며 data/dense_cache/ 는 팀 공유용으로 커밋된다
-        # (src/embed_corpus.py 로 생성). 같은 코퍼스면 팀원 모두 동일 파일을 불러 써 재인코딩 불필요.
-        cache = self._cache_path(texts)
+        # 유닛 임베딩은 (모델+texts) 해시로 캐시하며 data/dense_cache/ 는 팀 공유용으로 커밋된다
+        # (src/embed_corpus.py 로 생성). 같은 코퍼스·같은 모델이면 팀원 모두 동일 파일을 불러 써 재인코딩 불필요.
+        cache = self._cache_path(texts, model)
         if cache.exists():
             self.doc_emb = np.load(cache)
             return
@@ -70,9 +73,10 @@ class DenseRetriever:
         np.save(cache, self.doc_emb)
 
     @staticmethod
-    def _cache_path(texts):
+    def _cache_path(texts, model=DEFAULT_DENSE_MODEL):
+        # 모델명을 키에 포함 — 안 하면 모델을 바꿔도 이전 모델 벡터를 재사용하는 조용한 버그가 난다.
         import hashlib
-        h = hashlib.sha256("\x00".join(texts).encode()).hexdigest()[:16]
+        h = hashlib.sha256((model + "\x00" + "\x00".join(texts)).encode()).hexdigest()[:16]
         return ROOT / "data" / "dense_cache" / f"{h}.npy"
 
     def search(self, query, k):
