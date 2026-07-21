@@ -36,6 +36,11 @@
       "id": "dragonkue/bge-m3-ko",
       "dim": 1024,
       "encode_s": 9.9
+    },
+    {
+      "key": "nv-embed-v2",
+      "id": "nvidia/NV-Embed-v2",
+      "error": "AttributeError: 'NVEmbedModel' object has no attribute 'all_tied_weights_keys' (transformers 신버전 비호환 — NV-Embed는 4.42.4 요구, Qwen3는 4.51+ 요구 → 별도 런타임 필요)"
     }
   ]
 }
