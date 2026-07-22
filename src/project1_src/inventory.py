@@ -724,7 +724,7 @@ def pages_for(owner):
 
 
 if __name__ == "__main__":
-    # 자체검증 — 항목 추가·수정 후 python3 src/inventory.py 로 실행
+    # 자체검증 — 항목 추가·수정 후 python3 src/project1_src/inventory.py 로 실행
     ids = [p["id"] for p in PAGES]
     dup_ids = {i for i in ids if ids.count(i) > 1}
     assert not dup_ids, f"id 중복: {dup_ids}"

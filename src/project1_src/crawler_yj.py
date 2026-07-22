@@ -24,7 +24,7 @@ from inventory import pages_for
 
 PAGES = pages_for("yj")
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 DATA = ROOT / "data"
 HEADERS = {
     "User-Agent": (

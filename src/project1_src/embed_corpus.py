@@ -9,13 +9,15 @@
 주의: 검색 시 질문(query) 인코딩은 각 실행에서 bge-m3로 이뤄지므로 모델 다운로드는 여전히 필요하다.
 여기서 공유되는 것은 '문서 임베딩'이다.
 
-실행: python3 src/embed_corpus.py   (첫 실행 시 bge-m3 ~2GB 다운로드)
+실행: python3 src/project1_src/embed_corpus.py   (첫 실행 시 bge-m3 ~2GB 다운로드)
 """
 import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+_HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(_HERE))          # project1_src/ 자기 자신 (chunking 등)
+sys.path.insert(0, str(_HERE.parent))   # src/ (retrieval.py — 다른 폴더로 옮겨짐)
 from chunking import build_units, load_records
 from retrieval import DEFAULT_DENSE_MODEL, DenseRetriever, ROOT
 
