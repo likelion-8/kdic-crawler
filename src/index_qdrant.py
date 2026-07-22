@@ -33,6 +33,24 @@ def load_chunk_meta():
     return meta
 
 
+def validate_business_functions(meta):
+    """business_function이 inventory.BUSINESSES(정식 6개 값)와 정확히 일치하는지 검증.
+
+    Qdrant는 이 필드를 payload 필터링에 쓰므로("예금보험금 안내"로 필터 → 정확히 그
+    문자열인 문서만 나옴), 공백 차이·오타·null이 하나라도 있으면 그 문서가 필터에서
+    조용히 누락된다. 색인 직전에 걸러서 조용한 데이터 누락을 막는다.
+    """
+    from inventory import BUSINESSES
+    bad = {uid: m.get("business_function") for uid, m in meta.items()
+           if m.get("business_function") not in BUSINESSES}
+    if bad:
+        detail = "\n".join(f"  {uid}: {bf!r}" for uid, bf in bad.items())
+        raise ValueError(
+            f"business_function이 BUSINESSES 정식값과 안 맞는 청크 {len(bad)}건:\n{detail}\n"
+            f"정식값: {BUSINESSES}"
+        )
+
+
 def main():
     from qdrant_client import QdrantClient
     from qdrant_client.models import Distance, PointStruct, VectorParams
@@ -40,6 +58,7 @@ def main():
     uids, texts, u2p = build_units("all")
     dense = DenseRetriever(uids, texts)  # 캐시 있으면 그대로 로드, 없으면 인코딩+저장
     meta = load_chunk_meta()
+    validate_business_functions(meta)  # payload 필터링 깨지는 걸 색인 전에 미리 차단
 
     client = QdrantClient(path=QDRANT_PATH)
     dim = dense.doc_emb.shape[1]
