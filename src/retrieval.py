@@ -232,7 +232,8 @@ def _build_engines():
     hybrid = HybridRetriever(bm25, dense)
     routed = RoutedRetriever(hybrid, dense, QuestionTypeClassifier(), BusinessFunctionClassifier())
 
-    _engines.update(bm25=bm25, dense=dense, hybrid=hybrid, routed=routed)
+    _engines.update(bm25=bm25, dense=dense, hybrid=hybrid, routed=routed,
+                     unit_texts=dict(zip(uids, texts)))
     return _engines
 
 
@@ -256,3 +257,27 @@ def route_search(query, k):
     Dense/Hybrid를 고르고, business_function도 자동 판별해 필터링까지 적용한 검색 실행.
     질문 하나만 넘기면 되는, 실서비스가 실제로 부르는 최종 진입점."""
     return _build_engines()["routed"].search(query, k)
+
+
+def route_search_chunks(query, k):
+    """route_search()와 같은 라우팅 판단(Dense 전용 vs Hybrid)을 쓰되, 페이지 단위가 아니라
+    청크 단위로 (chunk_id, score, text)를 반환한다. reranker.rerank()는 실제 본문
+    텍스트가 있어야 질문과 재비교할 수 있으므로, PageRanked로 접기 전의 청크 단위 결과가
+    필요해 이 함수를 따로 둔다 — route_search()의 페이지 접기(.inner 우회)만 빼면 로직은
+    RoutedRetriever.search()와 동일하다."""
+    e = _build_engines()
+    routed = e["routed"]
+    qtype = routed.classifier.classify(query) if routed.classifier else None
+    bf = routed.bf_classifier.classify(query) if routed.bf_classifier else None
+
+    bm25_inner, dense_inner = e["bm25"].inner, e["dense"].inner
+    if qtype in RoutedRetriever.DENSE_ONLY_TYPES:
+        ranked = dense_inner.search(query, k, business_function=bf)
+    else:
+        n = len(bm25_inner.unit_ids)
+        bm25_ranked = bm25_inner.search(query, n, business_function=bf)
+        dense_ranked = dense_inner.search(query, n, business_function=bf)
+        ranked = rrf([bm25_ranked, dense_ranked])[:k]
+
+    unit_texts = e["unit_texts"]
+    return [(cid, score, unit_texts[cid]) for cid, score in ranked]
