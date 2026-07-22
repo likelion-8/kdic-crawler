@@ -198,3 +198,61 @@ class RoutedRetriever:
             business_function = self.bf_classifier.classify(query)
         retriever = self.dense if qtype in self.DENSE_ONLY_TYPES else self.hybrid
         return retriever.search(query, k, business_function=business_function)
+
+
+# ---- 함수형 진입점 — pipeline.py 등 실서비스 호출부는 이 4개 함수만 알면 된다 ----------
+# 클래스(BM25Retriever 등)는 route_eval.py/eval_retrieval.py/index_qdrant.py가 여전히
+# 직접 쓰므로 이름·구조를 바꾸지 않는다. 여기서는 그 클래스들을 "한 번만 조립해 재사용"하는
+# 얇은 래퍼만 추가한다 — 매 질문마다 BM25 토크나이저·Qdrant 연결·분류기를 새로 만들면
+# 느려지므로, query_classifier.py의 _classifiers 캐시와 같은 방식으로 싱글턴을 둔다.
+_engines = {}
+
+
+def _build_engines():
+    """all 모드(제품이 실제로 쓰는 색인) 검색 엔진 일체를 한 번만 조립한다.
+    eval_retrieval.build_retrievers("all")와 하는 일은 같지만, retrieval.py는 평가
+    스크립트(project1_src/)에 의존하면 안 되므로 필요한 조립 로직만 여기 자체적으로 둔다."""
+    if _engines:
+        return _engines
+
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "src" / "project1_src"))
+    from chunking import build_units, load_records
+    from query_classifier import BusinessFunctionClassifier, QuestionTypeClassifier
+
+    QDRANT_PATH = str(ROOT / "data" / "qdrant_local")
+    QDRANT_COLLECTION = "kdic_chunks_all"
+
+    uids, texts, u2p = build_units("all")
+    page2bf = {r["page_id"]: r["business_function"] for r in load_records()}
+    unit2bf = {u: page2bf.get(p) for u, p in u2p.items()}
+
+    bm25 = PageRanked(BM25Retriever(uids, texts, unit2bf), u2p)
+    dense = PageRanked(QdrantDenseRetriever(QDRANT_PATH, QDRANT_COLLECTION), u2p)
+    hybrid = HybridRetriever(bm25, dense)
+    routed = RoutedRetriever(hybrid, dense, QuestionTypeClassifier(), BusinessFunctionClassifier())
+
+    _engines.update(bm25=bm25, dense=dense, hybrid=hybrid, routed=routed)
+    return _engines
+
+
+def bm25_search(query, k, business_function=None):
+    """단어 통계(BM25) 검색 실행."""
+    return _build_engines()["bm25"].search(query, k, business_function=business_function)
+
+
+def dense_search(query, k, business_function=None):
+    """Qdrant 벡터(의미) 검색 실행."""
+    return _build_engines()["dense"].search(query, k, business_function=business_function)
+
+
+def hybrid_search(query, k, business_function=None):
+    """dense + bm25 결과를 RRF로 결합해 검색 실행."""
+    return _build_engines()["hybrid"].search(query, k, business_function=business_function)
+
+
+def route_search(query, k):
+    """classify_query_type()/classify_intent() 격의 자동분류(RoutedRetriever 내부)로
+    Dense/Hybrid를 고르고, business_function도 자동 판별해 필터링까지 적용한 검색 실행.
+    질문 하나만 넘기면 되는, 실서비스가 실제로 부르는 최종 진입점."""
+    return _build_engines()["routed"].search(query, k)
