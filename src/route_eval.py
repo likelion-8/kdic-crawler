@@ -17,7 +17,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from eval_retrieval import KS, build_retrievers, by_type_mrr, load_testset  # noqa: E402
-from retrieval import DEFAULT_DENSE_MODEL, QuestionTypeClassifier, RoutedRetriever  # noqa: E402
+from query_classifier import QuestionTypeClassifier  # noqa: E402
+from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever  # noqa: E402
 
 MARGIN = 0.03  # 이 이상 차이 나야 "유의미하게 낫다"로 판단
 MODE = "all"   # 프로덕션이 실제로 쓰는 청킹 모드로 고정 (docs/CODEBASE.md 참고)
