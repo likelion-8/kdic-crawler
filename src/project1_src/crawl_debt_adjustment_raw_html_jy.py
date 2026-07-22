@@ -34,7 +34,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 RAW_HTML_DIR = PROJECT_ROOT / "data" / "raw_html"
 RESPONSE_DIR = PROJECT_ROOT / "data" / "responses" / "debt_adjustment"

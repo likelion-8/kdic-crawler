@@ -5,7 +5,7 @@
 HTML 해시는 본문이 그대로여도 튄다. parse_raw_html 을 거친 텍스트만이
 "본문이 실제로 바뀌었다"를 뜻한다.
 
-실행: python3 src/hashing.py  (자체검사)
+실행: python3 src/project1_src/hashing.py  (자체검사)
 """
 import hashlib
 

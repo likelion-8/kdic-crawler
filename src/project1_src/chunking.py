@@ -5,13 +5,13 @@ build_units(mode)는 (unit_ids, texts, unit2page)를 반환한다. 검색기는 
 
 FAQ 탐지는 '질문'/'답변' 마커 규칙(하드코딩 ID 아님) — 재수집으로 새 FAQ가 와도 자동 대응.
 
-실행(자가검증): python3 src/chunking.py
+실행(자가검증): python3 src/project1_src/chunking.py
 """
 import json
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 CORPUS = ROOT / "data" / "corpus.jsonl"
 
 

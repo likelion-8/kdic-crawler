@@ -1,11 +1,11 @@
-# src/crawler_dy.py
+# src/project1_src/crawler_dy.py
 """크롤러 + 결정론적 HTML→텍스트 변환 — 기능2·기능3 담당분.
 
 inventory_dy.PAGES 목록만 수집한다. LLM 미사용, 규칙 기반 변환.
 저장 구조: data/raw_html/<doc_id>.html · data/text/<doc_id>.txt · data/meta/<doc_id>.json
 
 사용법:
-  python3 src/crawler_dy.py   # 전체 8건 수집
+  python3 src/project1_src/crawler_dy.py   # 전체 8건 수집
 """
 import json
 import re
@@ -34,7 +34,7 @@ PAGES = [
     for p in pages_for("dy")
 ]
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 DATA = ROOT / "data"
 RAW = DATA / "raw_html"
 TEXT = DATA / "text"

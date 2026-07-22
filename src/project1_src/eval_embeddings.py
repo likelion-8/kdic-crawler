@@ -8,8 +8,8 @@
 키를 잡아 모델이 달라도 같은 파일을 재사용하므로(모델 충돌), 비교용으로는 부적합하다.
 여기서는 모델마다 문서를 새로 인코딩한다(494청크는 GPU에서 초 단위라 캐시 불필요).
 
-실행(Colab GPU 권장): python3 src/eval_embeddings.py
-자가검증(모델 로드 불필요):   python3 src/eval_embeddings.py --selftest
+실행(Colab GPU 권장): python3 src/project1_src/eval_embeddings.py
+자가검증(모델 로드 불필요):   python3 src/project1_src/eval_embeddings.py --selftest
 """
 import json
 import os
@@ -20,7 +20,9 @@ from pathlib import Path
 # torch import(어느 함수든) 이전에 설정해야 효과 있음 — CUDA 단편화로 인한 가짜 OOM 완화.
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+_HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(_HERE))          # project1_src/ 자기 자신 (chunking 등)
+sys.path.insert(0, str(_HERE.parent))   # src/ (retrieval.py — 다른 폴더로 옮겨짐)
 from chunking import build_units
 from eval_retrieval import KS, ROOT, evaluate, load_testset
 from retrieval import PageRanked

@@ -1,12 +1,12 @@
 """통합 테스트셋(data/testset/testset_all.jsonl) 일관성 검증.
 
-실행: python src/validate_testset.py
+실행: python src/project1_src/validate_testset.py
 """
 import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 KEYS = ["test_id", "question", "question_type", "business_function", "expected_sources",
         "must_include", "must_not_include", "expected_links", "reference_answer", "note"]
 QUESTION_TYPES = {"fact", "faq", "table_lookup", "link_guide", "file_download", "out_of_scope"}

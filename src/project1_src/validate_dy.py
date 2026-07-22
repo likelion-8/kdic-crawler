@@ -1,8 +1,8 @@
-# src/validate_dy.py
+# src/project1_src/validate_dy.py
 """네트워크 없이 HTML→텍스트 변환 검증.
 
 사용법:
-  python3 src/validate_dy.py
+  python3 src/project1_src/validate_dy.py
 """
 from crawler_dy import extract_attachments, html_to_text
 
