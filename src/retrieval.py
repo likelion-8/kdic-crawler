@@ -16,19 +16,24 @@ DEFAULT_DENSE_MODEL = "dragonkue/BGE-m3-ko"
 
 
 class BM25Retriever:
-    def __init__(self, unit_ids, texts):
+    def __init__(self, unit_ids, texts, unit2bf=None):
         from kiwipiepy import Kiwi
         from rank_bm25 import BM25Okapi
         self.kiwi = Kiwi()
         self.unit_ids = unit_ids
+        self.unit2bf = unit2bf  # unit_id → business_function (업무 필터용, 없으면 필터 무시)
         self.bm25 = BM25Okapi([self._tok(t) for t in texts])
 
     def _tok(self, text):
         return [t.form for t in self.kiwi.tokenize(text)]
 
-    def search(self, query, k):
+    def search(self, query, k, business_function=None):
         scores = self.bm25.get_scores(self._tok(query))
         ranked = sorted(zip(self.unit_ids, scores), key=lambda x: x[1], reverse=True)
+        # 업무 필터: 전체 랭킹에서 해당 업무만 남긴 뒤 상위 k → BM25 자체의 '업무 내' 랭킹이 됨
+        # (RRF가 이 업무 내 랭킹을 융합하도록 — 상위 k 자른 뒤 필터하면 RRF가 왜곡됨).
+        if business_function is not None and self.unit2bf is not None:
+            ranked = [r for r in ranked if self.unit2bf.get(r[0]) == business_function]
         return ranked[:k]
 
 
@@ -56,10 +61,11 @@ def _get_model(name):
 
 
 class DenseRetriever:
-    def __init__(self, unit_ids, texts, model=DEFAULT_DENSE_MODEL):
+    def __init__(self, unit_ids, texts, model=DEFAULT_DENSE_MODEL, unit2bf=None):
         import numpy as np
         self.model = _get_model(model)
         self.unit_ids = unit_ids
+        self.unit2bf = unit2bf  # unit_id → business_function (업무 필터용, 없으면 필터 무시)
         # 유닛 임베딩은 (모델+texts) 해시로 캐시하며 data/dense_cache/ 는 팀 공유용으로 커밋된다
         # (src/embed_corpus.py 로 생성). 같은 코퍼스·같은 모델이면 팀원 모두 동일 파일을 불러 써 재인코딩 불필요.
         cache = self._cache_path(texts, model)
@@ -79,10 +85,12 @@ class DenseRetriever:
         h = hashlib.sha256((model + "\x00" + "\x00".join(texts)).encode()).hexdigest()[:16]
         return ROOT / "data" / "dense_cache" / f"{h}.npy"
 
-    def search(self, query, k):
+    def search(self, query, k, business_function=None):
         q = _encode_query(self.model, query)
         scores = self.doc_emb @ q
         ranked = sorted(zip(self.unit_ids, scores.tolist()), key=lambda x: x[1], reverse=True)
+        if business_function is not None and self.unit2bf is not None:
+            ranked = [r for r in ranked if self.unit2bf.get(r[0]) == business_function]
         return ranked[:k]
 
 
@@ -102,10 +110,16 @@ class QdrantDenseRetriever:
         # (내용은 안 쓰이고 개수만 참조됨).
         self.unit_ids = list(range(self.client.count(collection).count))
 
-    def search(self, query, k):
+    def search(self, query, k, business_function=None):
         q = _encode_query(self.model, query)
+        flt = None
+        if business_function is not None:
+            # payload의 business_function이 정확히 일치하는 포인트만 검색(인덱스 레벨 필터).
+            from qdrant_client.models import FieldCondition, Filter, MatchValue
+            flt = Filter(must=[FieldCondition(
+                key="business_function", match=MatchValue(value=business_function))])
         hits = self.client.query_points(
-            self.collection, query=q.tolist(), limit=k).points
+            self.collection, query=q.tolist(), limit=k, query_filter=flt).points
         return [(h.payload["chunk_id"], h.score) for h in hits]
 
 
@@ -122,7 +136,9 @@ class QuestionTypeClassifier:
     table_lookup이 페이지 구조가 아니라 질문 자체의 형태(엔티티+조회 의도)에서
     나온다는 게 확인돼서(2026-07-21), 코퍼스(본문) 대신 라벨링된 질문을 예시로 쓴다.
     """
-    def __init__(self, model=DEFAULT_DENSE_MODEL):
+    def __init__(self, model=DEFAULT_DENSE_MODEL, label_field="question_type"):
+        # label_field로 라벨을 바꿔 재사용 — question_type(유형 라우팅) 또는
+        # business_function(업무 필터) 분류에 같은 1-NN·같은 질문 임베딩 캐시를 쓴다.
         import json
         import numpy as np
 
@@ -133,7 +149,7 @@ class QuestionTypeClassifier:
                 d = json.loads(line)
                 if d["expected_sources"]:  # out_of_scope 제외 — 라우팅 대상이 아님
                     questions.append(d["question"])
-                    types.append(d["question_type"])
+                    types.append(d[label_field])
         self.types = types
 
         self.model = _get_model(model)
@@ -153,6 +169,14 @@ class QuestionTypeClassifier:
         return self.types[best]
 
 
+class BusinessFunctionClassifier(QuestionTypeClassifier):
+    """질의 → 6개 업무(business_function) 분류. QuestionTypeClassifier와 같은 1-NN·같은
+    질문 임베딩 캐시를 쓰되 라벨만 business_function으로 바꾼다. 결과값을 RoutedRetriever
+    (또는 leaf)의 search(..., business_function=...)에 넣어 업무 범위를 좁힌다."""
+    def __init__(self, model=DEFAULT_DENSE_MODEL):
+        super().__init__(model=model, label_field="business_function")
+
+
 class PageRanked:
     """유닛 단위 검색기를 감싸 페이지 단위 랭킹으로 변환. 페이지의 순위 = 그 페이지 유닛 중 최고 순위."""
     def __init__(self, inner, unit2page):
@@ -161,9 +185,10 @@ class PageRanked:
         # dict는 삽입순 보존 → 페이지 등장 순서 유지(고유 페이지 목록)
         self.page_ids = list(dict.fromkeys(unit2page.values()))
 
-    def search(self, query, k):
+    def search(self, query, k, business_function=None):
         seen = {}
-        for uid, score in self.inner.search(query, len(self.inner.unit_ids)):
+        for uid, score in self.inner.search(
+                query, len(self.inner.unit_ids), business_function=business_function):
             p = self.unit2page[uid]
             if p not in seen:            # 유닛은 점수순 → 첫 등장이 그 페이지 최고점
                 seen[p] = score
@@ -188,8 +213,9 @@ class HybridRetriever:
         self.bm25, self.dense = bm25, dense
         self.n = len(bm25.page_ids)
 
-    def search(self, query, k):
-        return rrf([self.bm25.search(query, self.n), self.dense.search(query, self.n)])[:k]
+    def search(self, query, k, business_function=None):
+        return rrf([self.bm25.search(query, self.n, business_function=business_function),
+                    self.dense.search(query, self.n, business_function=business_function)])[:k]
 
 
 class RoutedRetriever:
@@ -212,13 +238,17 @@ class RoutedRetriever:
     """
     DENSE_ONLY_TYPES = {"table_lookup"}
 
-    def __init__(self, hybrid, dense, classifier=None):
+    def __init__(self, hybrid, dense, classifier=None, bf_classifier=None):
         self.hybrid = hybrid
         self.dense = dense
-        self.classifier = classifier
+        self.classifier = classifier        # 질문 유형(table_lookup 여부) 분류 → 검색기 선택
+        self.bf_classifier = bf_classifier  # 업무(business_function) 분류 → 검색 범위 필터
 
-    def search(self, query, k, qtype=None):
+    def search(self, query, k, qtype=None, business_function=None):
+        # qtype/business_function을 직접 주면(예: 평가 시 정답 라벨) 그걸 우선, 없으면 자동 분류.
         if qtype is None and self.classifier is not None:
             qtype = self.classifier.classify(query)
+        if business_function is None and self.bf_classifier is not None:
+            business_function = self.bf_classifier.classify(query)
         retriever = self.dense if qtype in self.DENSE_ONLY_TYPES else self.hybrid
-        return retriever.search(query, k)
+        return retriever.search(query, k, business_function=business_function)

@@ -104,10 +104,14 @@ def build_retrievers(mode):
     """
     from pathlib import Path
 
-    from chunking import build_units
+    from chunking import build_units, load_records
     from retrieval import BM25Retriever, DenseRetriever, HybridRetriever, PageRanked, QdrantDenseRetriever
     uids, texts, u2p = build_units(mode)
-    bm25 = PageRanked(BM25Retriever(uids, texts), u2p)
+    # unit_id → business_function (업무 필터용). BM25·numpy Dense는 payload가 없어 이 맵으로 거른다
+    # (Qdrant는 자체 payload로 필터하므로 불필요).
+    page2bf = {r["page_id"]: r["business_function"] for r in load_records()}
+    unit2bf = {u: page2bf.get(p) for u, p in u2p.items()}
+    bm25 = PageRanked(BM25Retriever(uids, texts, unit2bf), u2p)
     if mode == "all":
         if not Path(QDRANT_PATH).exists():
             raise RuntimeError(
@@ -115,7 +119,7 @@ def build_retrievers(mode):
                 "먼저 `python3 src/index_qdrant.py`를 실행해 색인을 만드세요.")
         dense_inner = QdrantDenseRetriever(QDRANT_PATH, QDRANT_COLLECTION)
     else:
-        dense_inner = DenseRetriever(uids, texts)
+        dense_inner = DenseRetriever(uids, texts, unit2bf=unit2bf)
     dense = PageRanked(dense_inner, u2p)
     hybrid = HybridRetriever(bm25, dense)
     return {"BM25": bm25, "Dense": dense, "Hybrid": hybrid}, dict(zip(uids, texts)), len(uids)
