@@ -8,8 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 KEYS = ["test_id", "question", "question_type", "business_function", "expected_sources",
-        "must_include", "must_not_include", "expected_links", "reference_answer", "note"]
+        "must_include", "must_not_include", "expected_links", "reference_answer", "note", "intent"]
 QUESTION_TYPES = {"fact", "faq", "table_lookup", "link_guide", "file_download", "out_of_scope"}
+INTENTS = {"informational", "civil_petition"}
 
 
 def main():
@@ -32,6 +33,8 @@ def main():
             seen_ids.add(d["test_id"])
             if d["question_type"] not in QUESTION_TYPES:
                 errors.append(f"{where}: 알 수 없는 question_type={d['question_type']}")
+            if d.get("intent") not in INTENTS:
+                errors.append(f"{where}: 알 수 없는 intent={d.get('intent')}")
             for src in d["expected_sources"]:
                 if src not in corpus:
                     errors.append(f"{where}: corpus에 없는 doc_id={src}")
