@@ -60,3 +60,34 @@ class BusinessFunctionClassifier(QuestionTypeClassifier):
     (또는 leaf)의 search(..., business_function=...)에 넣어 업무 범위를 좁힌다."""
     def __init__(self, model=DEFAULT_DENSE_MODEL):
         super().__init__(model=model, label_field="business_function")
+
+
+# 함수형 인터페이스 — label_field별로 분류기 인스턴스를 한 번만 만들어 재사용(임베딩
+# 재계산 방지). 프로세스당 1회 로딩되고, 예시 벡터 캐시는 DenseRetriever와 동일한
+# (모델+텍스트) 해시라 테스트셋 내용이 실제로 바뀔 때만 재계산된다.
+_classifiers = {}
+
+
+def _get_classifier(label_field):
+    if label_field not in _classifiers:
+        _classifiers[label_field] = QuestionTypeClassifier(label_field=label_field)
+    return _classifiers[label_field]
+
+
+def classify_query_type(query):
+    """table_lookup 여부만 판단(이진). RoutedRetriever가 Dense/Hybrid 중 뭘 쓸지
+    고르는 데 이 결과만 쓰므로, 5개 유형 중 table_lookup만 구분하고 나머진 general로 접는다."""
+    qtype = _get_classifier("question_type").classify(query)
+    return "table_lookup" if qtype == "table_lookup" else "general"
+
+
+def classify_intent(query):
+    """질의 의도를 informational/civil_petition 중 하나로 판단.
+
+    라벨은 data/testset/testset_all.jsonl의 intent 필드(2026-07-22, src/project1_src/
+    label_intent.py로 규칙 기반 1차 라벨링 — file_download/link_guide 유형은 전부
+    civil_petition, 나머지는 "신청/접수/제출/구비서류/위임장/철회/취소/이의제기/지급명령/청구"
+    등 절차 실행 표현 포함 여부로 판단). 사람이 한 땀 한 땀 검수한 정답은 아니므로,
+    leave-one-out 등으로 정확도를 실측하기 전까지는 잠정 라벨로 취급할 것.
+    """
+    return _get_classifier("intent").classify(query)
