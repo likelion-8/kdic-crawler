@@ -112,7 +112,7 @@
 
 ## 3. testset_all.jsonl
 
-검색·응답 평가셋. 1줄 = 1평가 문항이며, 총 580개 문항 · 10개 필드로 구성된다.
+검색·응답 평가셋. 1줄 = 1평가 문항이며, 총 856개 문항 · 11개 필드로 구성된다.
 자동 채점이 가능하도록 정답을 서술형 한 덩어리로만 두지 않고, 채점 가능한 필드
 (`expected_sources`·`must_include`·`must_not_include`·`expected_links`)로 나눴다.
 
@@ -130,6 +130,7 @@
 | `expected_links` | list | 답변에 포함되어야 하는 실제 이동 URL |
 | `reference_answer` | string | 사람이 작성한 기준 답변 |
 | `note` | string | 평가 목적 및 주의사항 |
+| `intent` | string | 질의 의도 — `informational`(정보 질문) 또는 `civil_petition`(민원 처리/신청 질문). 응답을 절차·서류·페이지 안내 3단계로 조립할지 결정하는 분기 기준 |
 
 ### test_id 규칙
 
@@ -195,6 +196,27 @@ dp_syst_q3
 - 검색 근거가 없는지
 - 구체적인 수치나 사실을 임의로 생성하지 않는지
 - 제공된 자료에서 확인할 수 없음을 안내하는지
+
+### intent — 질의 의도
+
+`question_type`(검색 관점의 질문 형태)과는 별개 축으로, **응답을 어떤 형식으로
+조립할지**를 결정하는 의도 분류다.
+
+| 값 | 의미 |
+|---|---|
+| `informational` | 사실·정의·수치 등을 묻는 정보성 질문 — 검색된 근거로 바로 답변 |
+| `civil_petition` | 신청·접수·제출 등 절차를 실행하려는 민원 처리성 질문 — 절차 안내·서류 안내·페이지 연결 3단계로 응답 조립 |
+
+`question_type`과 독립적인 축이라 같은 유형이라도 의도는 갈릴 수 있다(예: `fact` 유형
+질문이 "보호한도가 얼마인가요"면 informational, "신청 기한이 언제까지인가요"면
+civil_petition에 가까울 수 있음).
+
+2026-07-22 시점 라벨은 사람이 전수 검수한 값이 아니라 규칙 기반 1차 라벨링이다
+(`file_download`·`link_guide` 유형은 civil_petition, 나머지는 "신청/접수/제출/
+구비서류/위임장/철회/취소/이의제기/지급명령/청구" 등 절차 실행 표현 포함 여부로 판단
+— `src/project1_src/label_intent.py`). leave-one-out 검증 결과 전체 정확도 86.6%,
+civil_petition precision 0.770/recall 0.849로 `question_type` 분류기(81.8%)와
+비슷한 수준이나, 표본 검수를 거쳐 필요 시 수동 라벨링으로 보강할 여지가 있다.
 
 ### 평가 흐름
 
