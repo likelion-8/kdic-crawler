@@ -33,8 +33,16 @@ ROOT = Path(__file__).resolve().parent.parent
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
 CHUNKS = ROOT / "data" / "chunks_all.jsonl"
 
-# 시스템 프롬프트의 거절 문구("제공된 자료에서 확인할 수 없습니다") 핵심 조각
-REFUSAL_MARKERS = ["확인할 수 없습니다", "확인할 수 없", "확인되지 않"]
+# 거절 감지 마커. 시스템 프롬프트는 "제공된 자료에서 확인할 수 없습니다"로 거절하라 하지만
+# LLM이 자유롭게 바꿔 쓴다("답변을 드릴 수 없습니다" 등) → 관찰된 종결 표현을 모두 포함한다.
+# ⚠️ 종결형(~습니다/어렵)으로 앵커링한다 — bare "확인할 수 없"은 내용의 "확인할 수 없는 경우"를
+# 오탐하므로 넣지 않는다(856 실측으로 확인).
+REFUSAL_MARKERS = [
+    "확인할 수 없습니다", "확인되지 않습니다", "확인되지 않아",
+    "답변을 드릴 수 없", "답변을 제공할 수 없", "답변드리기 어렵", "답변이 어렵",
+    "답변을 제공해 드리기 어렵", "제공할 수 없습니다", "제공해 드릴 수 없", "드리기 어렵습니다",
+    "안내가 어렵", "안내드리기 어렵", "알 수 없습니다", "찾을 수 없습니다",
+]
 # 민원 답변 섹션 마커 (prompt_builder.assemble_civil_petition_answer가 붙이는 heading)
 DOC_MARKER = "**필요 서류**"
 PAGE_MARKER = "**신청 페이지**"
@@ -258,9 +266,11 @@ def _process_one(d, chunk2page, judge, rag_answer_eval):
 def _write_outputs(outdir, records, failed, tsmap):
     """records/failed로 4개 산출물 저장 후 summary 반환. manual_review는 records에서 파생.
     run()·retry_failed() 공용 — 두 경로의 출력 형식을 일치시킨다.
-    must_include_hit은 저장된 answer로 매번 재계산한다 — 정규화 매처가 개선되면 옛 결과에도
-    소급 반영돼, 부분 재실행(retry)으로 옛·새 값이 섞이는 것을 막는다(HCX 불필요)."""
+    답변에서만 계산되는 결정론 플래그(refused·must_include_hit)는 저장된 answer로 매번 재계산한다
+    — 매처가 개선되면 옛 결과에도 소급 반영돼, 부분 재실행(retry)으로 옛·새 값이 섞이지 않는다
+    (HCX 불필요). ※ civil_procedure는 llm_text 기반이라 여기서 재계산 못함(run 시점 값 유지)."""
     for r in records:
+        r["refused"] = is_refused(r["answer"])
         r["must_include_hit"] = must_include_hit(r["answer"], tsmap[r["test_id"]].get("must_include") or [])
     review = [{"test_id": r["test_id"], "question": tsmap[r["test_id"]]["question"],
                "must_include": tsmap[r["test_id"]].get("must_include"), "answer": r["answer"]}
@@ -287,6 +297,26 @@ def _print_summary(summary, outdir):
     for k, v in summary.items():
         print(f"  {k}: {v}")
     print(f"\n결과 저장: {outdir.relative_to(ROOT)}/ (results·failed·manual_review·summary)")
+
+
+def loo_intent():
+    """intent 분류기의 leave-one-out 정확도(HCX 불필요, 임베딩만).
+
+    ⚠️ 파이프라인의 intent_정확도(summary)는 leak이다 — classify_intent은 testset_all 질문들과의
+    1-최근접인데, 평가 질문이 그 참조셋에 그대로 들어 있어 자기 자신이 최근접이 된다(train=test).
+    여기서는 각 질문의 최근접에서 '자기 자신'을 빼고 다시 재봐 실제 일반화 정확도를 추정한다.
+    (앞서 question_type/business_function 분류기에서 확인된 형제효과와 같은 뿌리)"""
+    import numpy as np
+    from query_classifier import _get_classifier
+    c = _get_classifier("intent")           # emb: 정규화된 in-scope 질문 임베딩, types: 라벨
+    emb, types = c.emb, np.array(c.types)
+    S = emb @ emb.T                          # 코사인 유사도(정규화됨)
+    np.fill_diagonal(S, -1e9)                # 자기 자신 제외 → 진짜 leave-one-out
+    pred = types[np.argmax(S, axis=1)]
+    acc = float((pred == types).mean())
+    print(f"intent LOO 정확도(자기 제외 1-NN): {acc:.4f}  (n={len(types)}, in-scope only)")
+    print("  → 이 값이 실제 추정치. summary의 intent_정확도(~0.98)는 self-match leak이라 무의미.")
+    return acc
 
 
 def run(limit=None, out="results", judge=False):
@@ -353,6 +383,8 @@ def retry_failed(out="results", judge=False):
 def _selftest():
     """순수 채점 함수 검증 — 모델/HCX 불필요."""
     assert is_refused("제공된 자료에서 확인할 수 없습니다.") and not is_refused("1억원까지 보호됩니다.")
+    assert is_refused("자료에 없어 답변을 제공할 수 없습니다.")  # 마커 밖 거절 표현 포착
+    assert not is_refused("실지명의를 확인할 수 없는 경우 반환에서 제외됩니다.")  # 내용 오탐 방지
     assert has_source("답변...\n[출처]\n- 보호한도 (https://x)") and not has_source("근거 없음")
     assert must_include_hit("원금과 1억원까지", ["1억원"]) is True
     assert must_include_hit("보호됩니다", ["1억원"]) is False
@@ -396,10 +428,15 @@ if __name__ == "__main__":
                     help="저장된 결과로 judge를 프록시와 교차검증+표본추출(재실행/HCX 불필요)")
     ap.add_argument("--retry-failed", action="store_true",
                     help="failed_cases.jsonl 문항만 재실행해 기존 결과에 병합(RateLimit 재시도)")
+    ap.add_argument("--loo-intent", action="store_true",
+                    help="intent 정확도를 leave-one-out으로 재측정(summary의 intent_정확도는 leak)")
     ap.add_argument("--selftest", action="store_true", help="지표 함수만 검증(모델 불필요)")
     args = ap.parse_args()
     if args.selftest:
         _selftest()
+    elif args.loo_intent:
+        sys.path.insert(0, str(ROOT / "src"))
+        sys.exit(0 if loo_intent() is not None else 1)
     elif args.validate_judge:
         sys.exit(validate_judge(out=args.out))
     elif args.retry_failed:
