@@ -16,8 +16,8 @@
 
 주의:
 - rag_answer_eval는 검색(Qdrant 임베디드)+HCX를 실제로 호출한다. Qdrant는 단일 프로세스라
-  **평가 중 챗봇 터미널을 열지 말 것.** HCX는 문항당 1회 호출(856문항이면 856회 — 비용·시간).
-- 856 전량 전에 `--limit 50` 등으로 소규모 검증 권장.
+  **평가 중 챗봇 터미널을 열지 말 것.** HCX는 문항당 1회 호출(전체 문항 수만큼 호출 — 비용·시간).
+- 전량 실행 전에 `--limit 50` 등으로 소규모 검증 권장.
 
 실행:  python3 src/evaluate_pipeline.py [--limit N] [--out results]
 검증:  python3 src/evaluate_pipeline.py --selftest   (지표 함수만, 모델/HCX 불필요)
@@ -74,9 +74,11 @@ def has_source(answer):
 def _normalize(s):
     """정확매칭 오탐 제거용 정규화. 공백 제거 + 날짜를 YYYY-MM-DD로 통일.
     이유(856 실측): 답변 '익 영업일'/'2012년 9월 10일'이 must '익영업일'/'2012-09-10'과
-    표기만 달라 substring이 실패 → 정확도를 과소평가함. 의미 동일하므로 정규화해 맞춘다."""
+    표기만 달라 substring이 실패 → 정확도를 과소평가함. 의미 동일하므로 정규화해 맞춘다.
+    '/' 구분자도 포함한다(golden_labels 검증 중 발견 - corpus의 부보금융회사 갱신일이
+    "2026/03/31"처럼 슬래시로 적혀있어 '-.년' 구분자만으로는 못 잡았음, 2026-07-23)."""
     s = re.sub(r"\s+", "", s)
-    s = re.sub(r"(\d{4})[-.년\s]*(\d{1,2})[-.월\s]*(\d{1,2})일?",
+    s = re.sub(r"(\d{4})[-./년\s]*(\d{1,2})[-./월\s]*(\d{1,2})일?",
                lambda m: f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}", s)
     return s
 
@@ -447,6 +449,7 @@ def _selftest():
     # 정규화: 공백·날짜 표기차 흡수 (856 실측 오탐 케이스)
     assert must_include_hit("통상 익 영업일에 입금", ["익영업일"]) is True
     assert must_include_hit("2012년 9월 10일 개시", ["2012-09-10"]) is True
+    assert must_include_hit("2026/03/31 기준", ["2026년 3월 31일"]) is True  # 슬래시 날짜
     assert must_include_hit("원금만", ["1억원"]) is False  # 진짜 누락은 여전히 False
     assert correct_source(["dp_protlmts", "dp_faq_page"], ["dp_protlmts"]) is True
     assert correct_source(["ha_center"], ["dp_protlmts"]) is False
