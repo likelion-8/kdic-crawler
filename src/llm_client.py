@@ -1,7 +1,7 @@
 """HyperCLOVA X 호출 — prompt_builder.py가 만든 메시지를 실제 LLM 응답으로 변환.
 
 langchain-naver의 ChatClovaX는 CLOVASTUDIO_API_KEY 환경변수를 자동으로 찾지만,
-src/.env의 키 이름은 CLOVA_STUDIO_API_KEY(언더스코어 위치가 다름)라 자동 인식에
+.env의 키 이름은 CLOVA_STUDIO_API_KEY(언더스코어 위치가 다름)라 자동 인식에
 맡기지 않고 api_key를 직접 넘긴다.
 """
 import os
