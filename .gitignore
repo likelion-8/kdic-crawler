@@ -224,3 +224,6 @@ __marimo__/
 # Qdrant 로컬(임베디드) 저장소는 커밋 안 함 — .lock 파일 포함이라 버전관리에 안 맞고,
 # 이미 커밋된 dense_cache에서 python3 src/index_qdrant.py 한 번이면 재생성된다(재인코딩 불필요).
 data/qdrant_local/
+
+# RAG 평가 산출물(생성물 — evaluate_pipeline.py로 재생성)
+results/
