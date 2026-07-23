@@ -235,7 +235,7 @@ Cross-Encoder는 질문과 청크 전체를 함께 입력해 Attention을 계산
 
 ### 실제 해결책: URL을 LLM에게 아예 안 보여준다
 
-발상을 바꿨다. "LLM이 URL을 안 틀리고 잘 쓰게 만들기"가 아니라, **"LLM이 URL을 아예 쓸 일이 없게 만들기"**로 접근했다.
+"LLM이 URL을 안 틀리고 잘 쓰게 만들기"가 아니라, **"LLM이 URL을 아예 쓸 일이 없게 만들기"**로 접근했다.
 
 - `build_informational_prompt()` / `build_civil_petition_prompt()`: 프롬프트에서 서류·링크·출처 URL을 완전히 뺐다. LLM은 이제 "절차 설명"이나 "근거 기반 답변 본문" 텍스트만 쓴다.
 - `SYSTEM_INSTRUCTION`에 "URL·웹사이트 주소·전화번호를 답변에 직접 쓰지 마세요. 그 부분은 시스템이 별도로 붙여줍니다"라는 원칙을 추가했다.

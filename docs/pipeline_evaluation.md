@@ -1,6 +1,6 @@
 # 파이프라인 평가 (evaluate_pipeline.py)
 
-`data/testset/testset_all.jsonl`(856문항)을 RAG 파이프라인에 전부 흘려 답변을 저장하고, 품질을
+`data/testset/testset_all.jsonl`(853문항)을 RAG 파이프라인에 전부 흘려 답변을 저장하고, 품질을
 평가한다. **팀원이 그대로 재실행·재현·이해**할 수 있도록 커맨드·설계 원칙·산출물·한계를 정리한다.
 
 ## 핵심 설계 원칙 — 왜 자동 지표를 줄였나
