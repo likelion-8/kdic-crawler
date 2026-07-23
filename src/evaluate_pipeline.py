@@ -4,14 +4,15 @@
 (expected_sources·intent·must_include·question_type)와 대조해 지표를 낸다. 한 문항 실패가
 전체를 멈추지 않도록 try/except로 감싸 failed_cases에 남긴다.
 
-지표(대부분 결정론 — LLM judge 불필요):
-- 답변 생성 성공률, 평균 응답 시간
-- intent 라우팅 정확도(예측 vs 라벨)
-- (in-scope) 출처 포함률 / 정답 출처 포함률(사용 청크 페이지에 정답 페이지가 있나, 복수정답 허용)
-- (in-scope) must_include 커버리지 = '답변 정확도'의 결정론 프록시
-- 답변 정확도 LLM judge (--judge, opt-in) — 기준답변 대비 사실 부합. judge 신뢰도는 사람 대조 검증 필요
-- (out_of_scope) 거절 성공률 / (in-scope) 과잉 거절률
-- (민원) 절차·서류·공식페이지 포함률 (각 섹션 분리 판정)
+설계 원칙(2026-07-23 정리): **문자열로 '의미'를 흉내내는 지표는 계속 새어 신뢰할 수 없다**
+(거절 표현·정답 문구는 무한히 다르게 쓰임). 그래서 자동 summary에는 **구조적 사실만** 남기고,
+정확도·거절 적절성 같은 '의미' 판단은 **사람이 읽는 층화 표본(build_sample)** 을 앵커로 삼는다.
+
+- summary(구조 지표, aggregate): 생성 성공률 · 평균 응답시간 · 정답 출처 포함률(페이지ID 집합 일치)
+- intent 정확도: `--loo-intent` (분류기가 평가셋 자기참조 leak이라 summary엔 안 넣음)
+- 정확도·거절 앵커: `--sample` → 사람 채점 표본. 프록시(must_include·거절감지)는 여기서
+  '표본 선별 힌트'로만 쓴다(지표로 보고하지 않음).
+- `--judge`/`--validate-judge` 코드는 남겨두되(미검증) summary엔 없다 — 사람 표본으로 검증 후 판단.
 
 주의:
 - rag_answer_eval는 검색(Qdrant 임베디드)+HCX를 실제로 호출한다. Qdrant는 단일 프로세스라
@@ -151,31 +152,26 @@ def score_one(d, result, chunk2page):
 
 
 def aggregate(records):
-    """기록들 → 요약 지표."""
+    """기록들 → 요약 지표. **구조적 사실만** 담는다(문자열로 의미를 흉내내는 지표는 제외).
+
+    의도적으로 뺀 것: 답변 정확도·거절 성공률·민원 섹션 포함률(문자열 프록시라 계속 새어
+    신뢰 불가) / intent_정확도(분류기가 평가셋 자기참조 leak — 실제값은 loo_intent()) /
+    judge(미검증). 정확도·거절 적절성 같은 '의미' 판단은 build_sample()로 뽑은 사람 표본 채점을
+    앵커로 삼는다. 여기 남은 셋은 문자열 의미해석 없이 사실로 확정되는 것들이다."""
     def rate(xs):
         xs = [x for x in xs if x is not None]
         return round(sum(bool(x) for x in xs) / len(xs), 4) if xs else None
 
     inscope = [r for r in records if not r["is_out_of_scope"]]
     oos = [r for r in records if r["is_out_of_scope"]]
-    civil = [r for r in records if r["intent_gold"] == "civil_petition"]
     elapsed = [r["elapsed"] for r in records if r["elapsed"] is not None]
     return {
         "n_total": len(records),
         "n_inscope": len(inscope),
         "n_out_of_scope": len(oos),
-        "생성_성공률": round(len(records) / len(records), 4) if records else None,  # 실패는 failed_cases로 빠짐
+        # 생성_성공률은 _write_outputs에서 failed 포함해 다시 채운다
         "평균_응답시간_s": round(sum(elapsed) / len(elapsed), 2) if elapsed else None,
-        "intent_정확도": rate([r["intent_correct"] for r in records]),
-        "출처_포함률_inscope": rate([r["has_source"] for r in inscope]),
         "정답출처_포함률_inscope": rate([r["correct_source"] for r in inscope]),
-        "must_include_커버리지_inscope(정확도_프록시)": rate([r["must_include_hit"] for r in inscope]),
-        "답변정확도_judge": rate([r.get("judge_correct") for r in records]),  # --judge 없으면 None
-        "거절_성공률_oos": rate([r["refused"] for r in oos]),
-        "과잉거절률_inscope": rate([r["refused"] for r in inscope]),
-        "민원_절차포함률": rate([r["civil_procedure"] for r in civil]),
-        "민원_서류포함률": rate([r["civil_documents"] for r in civil]),
-        "민원_공식페이지포함률": rate([r["civil_official_page"] for r in civil]),
     }
 
 
@@ -299,6 +295,65 @@ def _print_summary(summary, outdir):
     print(f"\n결과 저장: {outdir.relative_to(ROOT)}/ (results·failed·manual_review·summary)")
 
 
+def build_sample(out="results", size=80):
+    """정확도·거절 적절성의 **진짜 앵커** — 사람이 읽고 채점할 층화 표본을 뽑는다.
+
+    문자열 프록시(must_include·거절감지)는 자동 지표로는 계속 새어 신뢰 못 하므로, 여기선
+    '표본을 고르는 힌트'로만 쓴다(판정은 사람이 함). 표본은 (a)프록시가 오답 의심한 것
+    (b)out_of_scope(거절 적절성) (c)in-scope인데 거절한 것(과잉거절 의심) (d)유형 대표 를
+    섞어 대표성+정보성을 함께 갖춘다. 순서 고정 → 재현 가능.
+
+    출력 {out}/review_sample.jsonl: 질문·기준답변·실제답변 + 채점칸(정확한가·거절_적절·메모).
+    팀원이 이 칸을 채우면 그게 신뢰 가능한 정확도/거절 수치가 된다(프록시·judge는 이걸로 검증)."""
+    outdir = ROOT / out
+    R = [json.loads(l) for l in open(outdir / "baseline_results.jsonl", encoding="utf-8") if l.strip()]
+    tsmap = {json.loads(l)["test_id"]: json.loads(l)
+             for l in open(TESTSET, encoding="utf-8") if l.strip()}
+    srt = lambda rs: sorted(rs, key=lambda x: x["test_id"])
+
+    strata = [  # (선정이유, 배정수, 후보)
+        ("프록시_오답의심", 25, [r for r in R if r["must_include_hit"] is False]),
+        ("out_of_scope", 20, [r for r in R if r["is_out_of_scope"]]),
+        ("inscope_거절", 12, [r for r in R if not r["is_out_of_scope"] and r["refused"]]),
+    ]
+    picked = {}  # test_id -> (선정이유, record)  — dict라 삽입순 유지·자동 dedup
+    for name, quota, rs in strata:
+        for r in srt(rs)[:quota]:
+            picked.setdefault(r["test_id"], (name, r))
+    rest = srt([r for r in R if r["test_id"] not in picked])  # 나머지 유형 대표(균등 stride)
+    need = size - len(picked)
+    if need > 0 and rest:
+        step = max(1, len(rest) // need)
+        for r in rest[::step]:
+            if len(picked) >= size:
+                break
+            picked.setdefault(r["test_id"], ("유형대표", r))
+
+    sample = []
+    for reason, r in picked.values():
+        t = tsmap[r["test_id"]]
+        sample.append({
+            "test_id": r["test_id"], "선정이유": reason, "question_type": r["question_type"],
+            "is_out_of_scope": r["is_out_of_scope"], "question": t["question"],
+            "reference_answer": t["reference_answer"], "answer": r["answer"],
+            "expected_sources": t.get("expected_sources"), "chunk_pages": r["chunk_pages"],
+            # 참고 힌트(판정 아님 — 사람 채점 보조용)
+            "_힌트_must_include": t.get("must_include"),
+            "_힌트_프록시정답": r["must_include_hit"], "_힌트_거절감지": r["refused"],
+            # ↓ 사람이 채우는 칸
+            "정확한가": "", "거절_적절": "", "메모": "",
+        })
+
+    (outdir / "review_sample.jsonl").write_text(
+        "".join(json.dumps(s, ensure_ascii=False) + "\n" for s in sample), encoding="utf-8")
+    counts = Counter(reason for reason, _ in picked.values())
+    print(f"사람 채점 표본 {len(sample)}건 → {out}/review_sample.jsonl")
+    for k, v in counts.items():
+        print(f"  {k}: {v}")
+    print("팀원이 정확한가(예/아니오/애매)·거절_적절(예/아니오/해당없음)·메모 칸을 채우면 앵커가 됨.")
+    return 0
+
+
 def loo_intent():
     """intent 분류기의 leave-one-out 정확도(HCX 불필요, 임베딩만).
 
@@ -402,20 +457,18 @@ def _selftest():
     assert s3 == {"procedure": True, "documents": True, "official_page": True}
     s3b = civil_sections("제공된 자료에서 확인할 수 없습니다.", "제공된 자료에서 확인할 수 없습니다.")
     assert s3b["procedure"] is False and s3b["documents"] is False
-    # aggregate 스모크
+    # aggregate 스모크 — 구조 지표만 담기고 프록시·judge·intent는 빠졌는지 함께 확인
     recs = [
-        {"is_out_of_scope": False, "intent_gold": "civil_petition", "intent_pred": "civil_petition",
-         "intent_correct": True, "refused": False, "has_source": True, "correct_source": True,
-         "must_include_hit": True, "civil_procedure": True, "civil_documents": True,
-         "civil_official_page": True, "judge_correct": True, "elapsed": 3.0},
-        {"is_out_of_scope": True, "intent_gold": "informational", "intent_pred": "informational",
-         "intent_correct": True, "refused": True, "has_source": False, "correct_source": None,
-         "must_include_hit": None, "civil_procedure": None, "civil_documents": None,
-         "civil_official_page": None, "judge_correct": None, "elapsed": 2.0},
+        {"is_out_of_scope": False, "correct_source": True, "elapsed": 3.0},
+        {"is_out_of_scope": True, "correct_source": None, "elapsed": 1.0},
     ]
     s = aggregate(recs)
-    assert s["거절_성공률_oos"] == 1.0 and s["정답출처_포함률_inscope"] == 1.0
-    assert s["민원_서류포함률"] == 1.0 and s["답변정확도_judge"] == 1.0
+    assert s["정답출처_포함률_inscope"] == 1.0 and s["평균_응답시간_s"] == 2.0
+    assert s["n_out_of_scope"] == 1
+    # 롤백된 프록시·leak 지표는 summary에 없어야 함
+    for k in ["must_include_커버리지_inscope(정확도_프록시)", "답변정확도_judge",
+              "거절_성공률_oos", "민원_서류포함률", "intent_정확도"]:
+        assert k not in s, f"{k}는 summary에서 빠져야 함"
     print("selftest ok")
 
 
@@ -430,10 +483,14 @@ if __name__ == "__main__":
                     help="failed_cases.jsonl 문항만 재실행해 기존 결과에 병합(RateLimit 재시도)")
     ap.add_argument("--loo-intent", action="store_true",
                     help="intent 정확도를 leave-one-out으로 재측정(summary의 intent_정확도는 leak)")
+    ap.add_argument("--sample", nargs="?", type=int, const=80, default=None,
+                    help="사람 채점용 층화 표본 추출(정확도 앵커). 기본 80건")
     ap.add_argument("--selftest", action="store_true", help="지표 함수만 검증(모델 불필요)")
     args = ap.parse_args()
     if args.selftest:
         _selftest()
+    elif args.sample is not None:
+        sys.exit(build_sample(out=args.out, size=args.sample))
     elif args.loo_intent:
         sys.path.insert(0, str(ROOT / "src"))
         sys.exit(0 if loo_intent() is not None else 1)
