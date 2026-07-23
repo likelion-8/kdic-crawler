@@ -261,7 +261,7 @@ def route_search(query, k):
 
 def route_search_chunks(query, k):
     """route_search()와 같은 라우팅 판단(Dense 전용 vs Hybrid)을 쓰되, 페이지 단위가 아니라
-    청크 단위로 (chunk_id, score, text)를 반환한다. reranker.rerank()는 실제 본문
+    청크 단위로 (chunk_id, score, text)를 반환한다. candidate_ranking.rerank()는 실제 본문
     텍스트가 있어야 질문과 재비교할 수 있으므로, PageRanked로 접기 전의 청크 단위 결과가
     필요해 이 함수를 따로 둔다 — route_search()의 페이지 접기(.inner 우회)만 빼면 로직은
     RoutedRetriever.search()와 동일하다."""

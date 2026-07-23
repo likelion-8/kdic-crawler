@@ -49,7 +49,7 @@ def _format_examples():
 
 def build_informational_prompt(query, chunks, citations):
     """정보성 질문용 프롬프트.
-    chunks: [(chunk_id, score, text), ...] — reranker.top_k_cut() 결과(근거 청크).
+    chunks: [(chunk_id, score, text), ...] — candidate_ranking.top_k_cut() 결과(근거 청크).
     citations: citation.format_all_citations() 결과."""
     context = "\n\n".join(text for _, _, text in chunks)
     sources = "\n".join(f"- {c['title']} ({c['url']})" for c in citations) or "(해당 없음)"
