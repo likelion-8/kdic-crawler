@@ -11,28 +11,52 @@ from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
 from prompt_builder import build_civil_petition_prompt, build_informational_prompt
 from llm_client import call_hyperclova
+from performance import measure_time
 
 K_CANDIDATES = 20
 K_FINAL = 5
 
 
+def _rag_answer_traced(query):
+    """rag_answer()와 흐름은 동일하되, 단계별 소요 시간을 timings 딕셔너리에 함께
+    기록해 (답변, timings) 튜플로 반환한다. 성능 측정 스크립트 전용 — 서비스
+    경로(rag_answer)는 이 함수를 감싸 답변 문자열만 꺼내 쓴다."""
+    timings = {}
+
+    with measure_time(timings, "query_classification"):
+        intent = classify_intent(query)
+
+    with measure_time(timings, "retrieval"):
+        candidates = route_search_chunks(query, k=K_CANDIDATES)
+
+    with measure_time(timings, "reranking"):
+        reranked = rerank(query, candidates)
+        top = top_k_cut(reranked, k=K_FINAL)
+
+    with measure_time(timings, "context_building"):
+        if intent == "civil_petition":
+            civil_petition_answer = build_civil_petition_answer(top)
+        else:
+            citations = format_all_citations([cid for cid, _, _ in top])
+
+    with measure_time(timings, "prompt_building"):
+        if intent == "civil_petition":
+            prompt = build_civil_petition_prompt(query, civil_petition_answer)
+        else:
+            prompt = build_informational_prompt(query, top, citations)
+
+    with measure_time(timings, "llm_call"):
+        answer = call_hyperclova(prompt)
+
+    timings["total"] = round(sum(timings.values()), 4)
+    return answer, timings
+
+
 def rag_answer(query):
     """질문 하나 -> 답변 문자열. intent(informational/civil_petition)에 따라
     근거 조립·프롬프트 조립 방식만 갈리고, 검색·재정렬·LLM호출은 공통이다."""
-    intent = classify_intent(query)
-
-    candidates = route_search_chunks(query, k=K_CANDIDATES)
-    reranked = rerank(query, candidates)
-    top = top_k_cut(reranked, k=K_FINAL)
-
-    if intent == "civil_petition":
-        civil_petition_answer = build_civil_petition_answer(top)
-        prompt = build_civil_petition_prompt(query, civil_petition_answer)
-    else:
-        citations = format_all_citations([cid for cid, _, _ in top])
-        prompt = build_informational_prompt(query, top, citations)
-
-    return call_hyperclova(prompt)
+    answer, _ = _rag_answer_traced(query)
+    return answer
 
 
 if __name__ == "__main__":
