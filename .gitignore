@@ -225,5 +225,6 @@ __marimo__/
 # 이미 커밋된 dense_cache에서 python3 src/index_qdrant.py 한 번이면 재생성된다(재인코딩 불필요).
 data/qdrant_local/
 
-# RAG 평가 산출물(생성물 — evaluate_pipeline.py로 재생성)
-results/
+# RAG 평가 산출물은 커밋한다(팀 공유 — 재실행 없이 결과·사람채점 표본을 보게).
+# 단 실행 로그는 전이적 산출물이라 제외.
+results/*.log

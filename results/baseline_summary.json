@@ -1,0 +1,10 @@
+{
+  "n_total": 856,
+  "n_inscope": 823,
+  "n_out_of_scope": 33,
+  "평균_응답시간_s": 1.62,
+  "정답출처_포함률_inscope": 0.9344,
+  "n_failed": 0,
+  "n_manual_review": 430,
+  "생성_성공률": 1.0
+}
