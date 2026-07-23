@@ -1,4 +1,16 @@
-"""후보 재정렬(reranking) — cross-encoder로 (질문, 청크) 쌍을 직접 비교해 재정렬.
+"""검색 후보 순위정리(candidate ranking) — 1차 검색 후보를 최종 상위 k로 좁힌다.
+
+기본 경로는 1차 검색(retrieval.route_search_chunks) 순위 그대로 상위 k를 자르는 것(top_k_cut).
+cross-encoder 재정렬(rerank)은 그 앞에 끼울 수 있는 선택 단계로 이 파일에 함께 두되 현재는
+비활성이다(아래). 그래서 파일명을 reranker→candidate_ranking으로 바꿔 실제 역할(후보 선별,
+재정렬은 옵션)을 반영한다.
+
+── 리랭킹(rerank) 현재 상태: 비활성 (pipeline.py의 USE_RERANKER=False, 2026-07-23) ──
+리랭크 on/off를 실측한 결과, bge-m3-ko 1차 검색이 이미 강해 리랭커가 검색 품질을 못 올리면서
+(Recall@5 개선 0, MRR 소폭 하락) 질문당 27~210초의 지연만 유발했다. 그래서 기본 Off로 두되,
+GPU 환경이나 경량 설정(작은 max_length·후보 수)에서 재검증한 뒤 재도입할 수 있도록 코드는
+보존한다. top_k_cut()은 리랭크 여부와 무관하게 최종 상위 k를 자를 때 계속 쓰인다.
+────────────────────────────────────────────────────────────────────────────────
 
 bi-encoder(retrieval.py의 Dense/BM25)는 질문·문서를 따로 인코딩해 코사인 유사도·단어
 통계로 비교하지만, cross-encoder는 질문+문서를 한 쌍으로 모델에 같이 넣어 관련도 점수를
