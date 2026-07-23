@@ -243,47 +243,33 @@ def validate_judge(out="results"):
     return 0
 
 
-def run(limit=None, out="results", judge=False):
-    from pipeline import rag_answer_eval  # 여기서만 import — selftest는 모델 로딩 회피
-
-    rows, chunk2page, page2url = load_gold()
-    if limit:
-        rows = rows[:limit]
-    outdir = ROOT / out
-    outdir.mkdir(exist_ok=True)
-    print(f"평가 대상 {len(rows)}문항 · 결과 → {outdir.relative_to(ROOT)}/", flush=True)
-    print("⚠️ 문항당 HCX 1회 호출. Qdrant 단일 프로세스 — 챗봇 터미널 열지 말 것.\n", flush=True)
-
-    records, failed, review = [], [], []
-    t0 = time.time()
-    for i, d in enumerate(rows, 1):
+def _process_one(d, chunk2page, judge, rag_answer_eval):
+    """한 문항 실행+채점 → rec. 파이프라인 오류는 호출자가 잡도록 그대로 전파.
+    judge(opt-in) 실패는 답변 채점을 버리지 않게 격리(judge_correct=None 유지)."""
+    rec = score_one(d, rag_answer_eval(d["question"]), chunk2page)
+    if judge and not rec["is_out_of_scope"] and d.get("reference_answer"):
         try:
-            r = rag_answer_eval(d["question"])
-            rec = score_one(d, r, chunk2page)
-            # 답변 정확도 LLM judge(opt-in) — in-scope + 기준답변 있는 문항만, HCX 1회 추가.
-            # judge 실패는 답변 채점을 버리지 않게 격리(judge_correct=None 유지).
-            if judge and not rec["is_out_of_scope"] and d.get("reference_answer"):
-                try:
-                    rec["judge_correct"] = judge_correct(d["question"], rec["answer"], d["reference_answer"])
-                except Exception as e:
-                    print(f"  judge 실패({d['test_id']}): {type(e).__name__}: {e}", flush=True)
-            records.append(rec)
-            # 정확도 프록시(must_include) 실패 → 수동 검수 후보
-            if rec["must_include_hit"] is False:
-                review.append({"test_id": d["test_id"], "question": d["question"],
-                               "must_include": d.get("must_include"), "answer": rec["answer"]})
-            if i % 10 == 0 or i == len(rows):
-                print(f"  {i}/{len(rows)} 처리 (누적 {time.time()-t0:.0f}s)", flush=True)
+            rec["judge_correct"] = judge_correct(d["question"], rec["answer"], d["reference_answer"])
         except Exception as e:
-            import traceback
-            failed.append({"test_id": d.get("test_id"), "question": d.get("question"),
-                           "error": f"{type(e).__name__}: {e}", "trace": traceback.format_exc()})
-            print(f"  ✗ {d.get('test_id')} 실패: {type(e).__name__}: {e}", flush=True)
+            print(f"  judge 실패({d['test_id']}): {type(e).__name__}: {e}", flush=True)
+    return rec
 
+
+def _write_outputs(outdir, records, failed, tsmap):
+    """records/failed로 4개 산출물 저장 후 summary 반환. manual_review는 records에서 파생.
+    run()·retry_failed() 공용 — 두 경로의 출력 형식을 일치시킨다.
+    must_include_hit은 저장된 answer로 매번 재계산한다 — 정규화 매처가 개선되면 옛 결과에도
+    소급 반영돼, 부분 재실행(retry)으로 옛·새 값이 섞이는 것을 막는다(HCX 불필요)."""
+    for r in records:
+        r["must_include_hit"] = must_include_hit(r["answer"], tsmap[r["test_id"]].get("must_include") or [])
+    review = [{"test_id": r["test_id"], "question": tsmap[r["test_id"]]["question"],
+               "must_include": tsmap[r["test_id"]].get("must_include"), "answer": r["answer"]}
+              for r in records if r["must_include_hit"] is False]
+    total = len(records) + len(failed)
     summary = aggregate(records)
     summary["n_failed"] = len(failed)
     summary["n_manual_review"] = len(review)
-    summary["생성_성공률"] = round(len(records) / len(rows), 4) if rows else None
+    summary["생성_성공률"] = round(len(records) / total, 4) if total else None
 
     (outdir / "baseline_results.jsonl").write_text(
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records), encoding="utf-8")
@@ -293,11 +279,74 @@ def run(limit=None, out="results", judge=False):
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in review), encoding="utf-8")
     (outdir / "baseline_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    return summary
 
+
+def _print_summary(summary, outdir):
     print("\n=== 요약 ===")
     for k, v in summary.items():
         print(f"  {k}: {v}")
     print(f"\n결과 저장: {outdir.relative_to(ROOT)}/ (results·failed·manual_review·summary)")
+
+
+def run(limit=None, out="results", judge=False):
+    from pipeline import rag_answer_eval  # 여기서만 import — selftest는 모델 로딩 회피
+
+    rows, chunk2page, _ = load_gold()
+    if limit:
+        rows = rows[:limit]
+    tsmap = {d["test_id"]: d for d in rows}
+    outdir = ROOT / out
+    outdir.mkdir(exist_ok=True)
+    print(f"평가 대상 {len(rows)}문항 · 결과 → {outdir.relative_to(ROOT)}/", flush=True)
+    print("⚠️ 문항당 HCX 1회 호출. Qdrant 단일 프로세스 — 챗봇 터미널 열지 말 것.\n", flush=True)
+
+    records, failed = [], []
+    t0 = time.time()
+    for i, d in enumerate(rows, 1):
+        try:
+            records.append(_process_one(d, chunk2page, judge, rag_answer_eval))
+            if i % 10 == 0 or i == len(rows):
+                print(f"  {i}/{len(rows)} 처리 (누적 {time.time()-t0:.0f}s)", flush=True)
+        except Exception as e:
+            import traceback
+            failed.append({"test_id": d.get("test_id"), "question": d.get("question"),
+                           "error": f"{type(e).__name__}: {e}", "trace": traceback.format_exc()})
+            print(f"  ✗ {d.get('test_id')} 실패: {type(e).__name__}: {e}", flush=True)
+
+    _print_summary(_write_outputs(outdir, records, failed, tsmap), outdir)
+    return 0
+
+
+def retry_failed(out="results", judge=False):
+    """failed_cases.jsonl의 문항만 재실행해 성공분을 기존 결과에 병합(주로 RateLimit 재시도).
+    RateLimit 완화를 위해 문항 사이에 짧은 간격을 둔다. 재실패분은 failed에 남기고 재집계·재저장."""
+    from pipeline import rag_answer_eval
+
+    outdir = ROOT / out
+    rows, chunk2page, _ = load_gold()
+    tsmap = {d["test_id"]: d for d in rows}
+    records = [json.loads(l) for l in open(outdir / "baseline_results.jsonl", encoding="utf-8") if l.strip()]
+    failed_in = [json.loads(l) for l in open(outdir / "failed_cases.jsonl", encoding="utf-8") if l.strip()]
+    print(f"재실행 대상 {len(failed_in)}건 (기존 성공 {len(records)}건에 병합)", flush=True)
+
+    still_failed = []
+    for i, fc in enumerate(failed_in, 1):
+        d = tsmap.get(fc["test_id"])
+        if d is None:  # 테스트셋에서 사라진 test_id는 재시도 불가
+            still_failed.append(fc)
+            continue
+        try:
+            records.append(_process_one(d, chunk2page, judge, rag_answer_eval))
+            print(f"  {i}/{len(failed_in)} ✓ {fc['test_id']}", flush=True)
+        except Exception as e:
+            import traceback
+            still_failed.append({"test_id": fc["test_id"], "question": d["question"],
+                                 "error": f"{type(e).__name__}: {e}", "trace": traceback.format_exc()})
+            print(f"  {i}/{len(failed_in)} ✗ {fc['test_id']}: {type(e).__name__}", flush=True)
+        time.sleep(1.0)  # ponytail: 고정 1s 간격으로 RateLimit 완화. 계속 429면 값을 올릴 것
+
+    _print_summary(_write_outputs(outdir, records, still_failed, tsmap), outdir)
     return 0
 
 
@@ -345,12 +394,17 @@ if __name__ == "__main__":
     ap.add_argument("--judge", action="store_true", help="답변 정확도 LLM judge(문항당 HCX 1회 추가)")
     ap.add_argument("--validate-judge", action="store_true",
                     help="저장된 결과로 judge를 프록시와 교차검증+표본추출(재실행/HCX 불필요)")
+    ap.add_argument("--retry-failed", action="store_true",
+                    help="failed_cases.jsonl 문항만 재실행해 기존 결과에 병합(RateLimit 재시도)")
     ap.add_argument("--selftest", action="store_true", help="지표 함수만 검증(모델 불필요)")
     args = ap.parse_args()
     if args.selftest:
         _selftest()
     elif args.validate_judge:
         sys.exit(validate_judge(out=args.out))
+    elif args.retry_failed:
+        sys.path.insert(0, str(ROOT / "src"))
+        sys.exit(retry_failed(out=args.out, judge=args.judge))
     else:
         sys.path.insert(0, str(ROOT / "src"))
         sys.exit(run(limit=args.limit, out=args.out, judge=args.judge))
