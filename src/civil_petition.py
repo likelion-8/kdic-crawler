@@ -65,7 +65,12 @@ def build_document_section(chunks):
                 seen.add(key)
                 items.append({"page_id": page_id, "label": a.get("text"), "url": a.get("url")})
         for fa in d.get("form_attachments", []):
-            url = fa.get("resolved_url") or fa.get("page_url")
+            # resolved_url은 실제 파일 링크가 아니라 자바스크립트 다운로드 버튼이 공통으로
+            # 쓰는 POST 전용 서블릿 주소다(코퍼스 전체 103건이 단 3개 URL로 겹침 - 실제
+            # 파일 식별은 암호화된 download_params를 POST 본문으로 같이 보내야 되는데
+            # 여기선 그 값을 안 보낸다). 그대로 노출하면 클릭해도 다운로드가 안 되는 깨진
+            # 링크가 되므로, 다운로드 버튼이 실제로 있는 페이지(page_url)를 안내한다.
+            url = fa.get("page_url")
             key = (fa.get("label"), url)
             if key not in seen:
                 seen.add(key)
