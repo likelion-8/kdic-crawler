@@ -16,6 +16,12 @@ from performance import measure_time
 K_CANDIDATES = 20
 K_FINAL = 5
 
+# 2026-07-23 팀 결정: 리랭커 기본 Off (project_context 9.7). 현 설정(bge-reranker-v2-m3,
+# k=20, max_length=8192, CPU)에서 이득 없이(Recall 개선 0, MRR 소폭↓) 속도만 크게 악화
+# (질문당 27~210초). 코드는 남겨두고 여기서만 끈다 — 재도입 시 True로 바꾸면 됨(GPU/경량 설정
+# 재검증 후). Off면 1차 검색(route_search_chunks) 상위 K_FINAL을 그대로 사용.
+USE_RERANKER = False
+
 
 def _rag_answer_traced(query):
     """rag_answer()와 흐름은 동일하되, 단계별 소요 시간을 timings 딕셔너리에 함께
@@ -30,7 +36,7 @@ def _rag_answer_traced(query):
         candidates = route_search_chunks(query, k=K_CANDIDATES)
 
     with measure_time(timings, "reranking"):
-        reranked = rerank(query, candidates)
+        reranked = rerank(query, candidates) if USE_RERANKER else candidates
         top = top_k_cut(reranked, k=K_FINAL)
 
     with measure_time(timings, "context_building"):
