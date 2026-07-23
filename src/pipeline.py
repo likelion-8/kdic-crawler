@@ -9,7 +9,10 @@ from retrieval import route_search_chunks
 from candidate_ranking import rerank, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
-from prompt_builder import build_civil_petition_prompt, build_informational_prompt
+from prompt_builder import (
+    assemble_civil_petition_answer, assemble_informational_answer,
+    build_civil_petition_prompt, build_informational_prompt,
+)
 from llm_client import call_hyperclova
 from performance import measure_time
 
@@ -49,10 +52,16 @@ def _rag_answer_traced(query):
         if intent == "civil_petition":
             prompt = build_civil_petition_prompt(query, civil_petition_answer)
         else:
-            prompt = build_informational_prompt(query, top, citations)
+            prompt = build_informational_prompt(query, top)
 
     with measure_time(timings, "llm_call"):
-        answer = call_hyperclova(prompt)
+        llm_text = call_hyperclova(prompt)
+        # URL은 LLM에게 안 맡긴다 - 실제 서류/페이지/출처 링크는 civil_petition.py/
+        # citation.py가 이미 조회해둔 값을 여기서 결정론적으로 그대로 붙인다.
+        if intent == "civil_petition":
+            answer = assemble_civil_petition_answer(llm_text, civil_petition_answer)
+        else:
+            answer = assemble_informational_answer(llm_text, citations)
 
     timings["total"] = round(sum(timings.values()), 4)
     return answer, timings
