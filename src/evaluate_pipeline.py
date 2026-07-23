@@ -8,9 +8,10 @@
 - 답변 생성 성공률, 평균 응답 시간
 - intent 라우팅 정확도(예측 vs 라벨)
 - (in-scope) 출처 포함률 / 정답 출처 포함률(사용 청크 페이지에 정답 페이지가 있나, 복수정답 허용)
-- (in-scope) must_include 커버리지 = '답변 정확도'의 결정론 프록시 (완전한 정확도는 judge 후속)
+- (in-scope) must_include 커버리지 = '답변 정확도'의 결정론 프록시
+- 답변 정확도 LLM judge (--judge, opt-in) — 기준답변 대비 사실 부합. judge 신뢰도는 사람 대조 검증 필요
 - (out_of_scope) 거절 성공률 / (in-scope) 과잉 거절률
-- (민원) 답변에 공식 링크(http) 포함률 (절차·서류 품질은 수동/judge 후속)
+- (민원) 절차·서류·공식페이지 포함률 (각 섹션 분리 판정)
 
 주의:
 - rag_answer_eval는 검색(Qdrant 임베디드)+HCX를 실제로 호출한다. Qdrant는 단일 프로세스라
@@ -32,6 +33,9 @@ CHUNKS = ROOT / "data" / "chunks_all.jsonl"
 
 # 시스템 프롬프트의 거절 문구("제공된 자료에서 확인할 수 없습니다") 핵심 조각
 REFUSAL_MARKERS = ["확인할 수 없습니다", "확인할 수 없", "확인되지 않"]
+# 민원 답변 섹션 마커 (prompt_builder.assemble_civil_petition_answer가 붙이는 heading)
+DOC_MARKER = "**필요 서류**"
+PAGE_MARKER = "**신청 페이지**"
 
 
 def load_gold():
@@ -70,13 +74,39 @@ def correct_source(chunk_page_ids, gold_pages):
     return bool(set(chunk_page_ids) & set(gold_pages))
 
 
+def civil_sections(answer, llm_text):
+    """민원 답변의 절차·서류·공식페이지 포함 여부를 각각 판정(결정론).
+    절차=LLM이 쓴 절차 텍스트가 있고 거절이 아님, 서류/공식페이지=해당 섹션 heading 존재."""
+    return {
+        "procedure": bool(llm_text.strip()) and not is_refused(llm_text),
+        "documents": DOC_MARKER in answer,
+        "official_page": PAGE_MARKER in answer,
+    }
+
+
+def judge_correct(question, answer, reference):
+    """LLM judge — 후보 답변이 기준 답변과 사실적으로 부합하나(예/아니오). HCX 1회 추가 호출.
+    ⚠️ judge 자체 신뢰도는 사람 대조로 검증해야 함(미검증 상태에선 참고치)."""
+    from llm_client import call_hyperclova
+    prompt = [
+        ("system", "당신은 예금보험공사 답변을 채점하는 평가자입니다. 표현 차이는 무시하고, "
+                   "후보 답변이 기준 답변과 사실·수치·핵심 정보 면에서 부합하는지만 판단하세요."),
+        ("human", f"질문: {question}\n\n기준 답변: {reference}\n\n후보 답변: {answer}\n\n"
+                  "후보 답변이 기준 답변과 사실적으로 부합하면 '예', 틀리거나 핵심을 빠뜨렸으면 "
+                  "'아니오'로만 답하세요."),
+    ]
+    return call_hyperclova(prompt).strip().startswith("예")
+
+
 def score_one(d, result, chunk2page):
     """한 문항 채점 → 기록 dict. d=테스트셋 항목, result=rag_answer_eval 반환."""
     answer = result["answer"]
+    llm_text = result.get("llm_text", "")
     gold_pages = list(d.get("expected_sources") or [])
     chunk_pages = [chunk2page.get(c) for c, *_ in result.get("chunks", [])]
     must = d.get("must_include") or []
     intent_gold = d.get("intent")
+    sec = civil_sections(answer, llm_text) if intent_gold == "civil_petition" else {}
     return {
         "test_id": d["test_id"],
         "question_type": d["question_type"],
@@ -88,6 +118,10 @@ def score_one(d, result, chunk2page):
         "has_source": has_source(answer),
         "correct_source": correct_source(chunk_pages, gold_pages),
         "must_include_hit": must_include_hit(answer, must),
+        "civil_procedure": sec.get("procedure"),
+        "civil_documents": sec.get("documents"),
+        "civil_official_page": sec.get("official_page"),
+        "judge_correct": None,  # --judge 시 run 루프에서 채움
         "elapsed": result.get("timings", {}).get("total"),
         "chunk_pages": chunk_pages,
         "answer": answer,
@@ -114,13 +148,16 @@ def aggregate(records):
         "출처_포함률_inscope": rate([r["has_source"] for r in inscope]),
         "정답출처_포함률_inscope": rate([r["correct_source"] for r in inscope]),
         "must_include_커버리지_inscope(정확도_프록시)": rate([r["must_include_hit"] for r in inscope]),
+        "답변정확도_judge": rate([r.get("judge_correct") for r in records]),  # --judge 없으면 None
         "거절_성공률_oos": rate([r["refused"] for r in oos]),
         "과잉거절률_inscope": rate([r["refused"] for r in inscope]),
-        "민원_링크포함률": rate([r["has_source"] for r in civil]),
+        "민원_절차포함률": rate([r["civil_procedure"] for r in civil]),
+        "민원_서류포함률": rate([r["civil_documents"] for r in civil]),
+        "민원_공식페이지포함률": rate([r["civil_official_page"] for r in civil]),
     }
 
 
-def run(limit=None, out="results"):
+def run(limit=None, out="results", judge=False):
     from pipeline import rag_answer_eval  # 여기서만 import — selftest는 모델 로딩 회피
 
     rows, chunk2page, page2url = load_gold()
@@ -137,6 +174,9 @@ def run(limit=None, out="results"):
         try:
             r = rag_answer_eval(d["question"])
             rec = score_one(d, r, chunk2page)
+            # 답변 정확도 LLM judge(opt-in) — in-scope + 기준답변 있는 문항만, HCX 1회 추가
+            if judge and not rec["is_out_of_scope"] and d.get("reference_answer"):
+                rec["judge_correct"] = judge_correct(d["question"], rec["answer"], d["reference_answer"])
             records.append(rec)
             # 정확도 프록시(must_include) 실패 → 수동 검수 후보
             if rec["must_include_hit"] is False:
@@ -181,17 +221,26 @@ def _selftest():
     assert correct_source(["dp_protlmts", "dp_faq_page"], ["dp_protlmts"]) is True
     assert correct_source(["ha_center"], ["dp_protlmts"]) is False
     assert correct_source(["x"], []) is None
+    # 민원 3분리
+    full = "위임장을 지참해 신청하세요.\n\n**필요 서류**\n- 위임장: http://x\n\n**신청 페이지**\n- 신청: http://y"
+    s3 = civil_sections(full, "위임장을 지참해 신청하세요.")
+    assert s3 == {"procedure": True, "documents": True, "official_page": True}
+    s3b = civil_sections("제공된 자료에서 확인할 수 없습니다.", "제공된 자료에서 확인할 수 없습니다.")
+    assert s3b["procedure"] is False and s3b["documents"] is False
     # aggregate 스모크
     recs = [
-        {"is_out_of_scope": False, "intent_gold": "informational", "intent_pred": "informational",
+        {"is_out_of_scope": False, "intent_gold": "civil_petition", "intent_pred": "civil_petition",
          "intent_correct": True, "refused": False, "has_source": True, "correct_source": True,
-         "must_include_hit": True, "elapsed": 3.0},
+         "must_include_hit": True, "civil_procedure": True, "civil_documents": True,
+         "civil_official_page": True, "judge_correct": True, "elapsed": 3.0},
         {"is_out_of_scope": True, "intent_gold": "informational", "intent_pred": "informational",
          "intent_correct": True, "refused": True, "has_source": False, "correct_source": None,
-         "must_include_hit": None, "elapsed": 2.0},
+         "must_include_hit": None, "civil_procedure": None, "civil_documents": None,
+         "civil_official_page": None, "judge_correct": None, "elapsed": 2.0},
     ]
     s = aggregate(recs)
-    assert s["거절_성공률_oos"] == 1.0 and s["정답출처_포함률_inscope"] == 1.0 and s["intent_정확도"] == 1.0
+    assert s["거절_성공률_oos"] == 1.0 and s["정답출처_포함률_inscope"] == 1.0
+    assert s["민원_서류포함률"] == 1.0 and s["답변정확도_judge"] == 1.0
     print("selftest ok")
 
 
@@ -199,10 +248,11 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="앞에서 N문항만(소규모 검증용)")
     ap.add_argument("--out", default="results", help="결과 디렉터리")
+    ap.add_argument("--judge", action="store_true", help="답변 정확도 LLM judge(문항당 HCX 1회 추가)")
     ap.add_argument("--selftest", action="store_true", help="지표 함수만 검증(모델 불필요)")
     args = ap.parse_args()
     if args.selftest:
         _selftest()
     else:
         sys.path.insert(0, str(ROOT / "src"))
-        sys.exit(run(limit=args.limit, out=args.out))
+        sys.exit(run(limit=args.limit, out=args.out, judge=args.judge))
