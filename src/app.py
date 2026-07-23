@@ -1,3 +1,5 @@
+"""pip install -r requirements.txt(아니면 pip install streamlit 명령어 실행)` 및 `streamlit run app.py` 명령어 실행"""
+
 import os
 
 # ------------------------------------------------------------------------------
