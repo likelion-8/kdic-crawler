@@ -74,49 +74,6 @@ def rag_answer(query):
     return answer
 
 
-def rag_answer_eval(query):
-    """평가용 — 답변 + 채점에 필요한 내부값을 dict로 반환(evaluate_pipeline.py 전용).
-    프로덕션 rag_answer(문자열)/_rag_answer_traced(측정)는 건드리지 않으려고 별도 함수로 둔다.
-    반환: {answer(출처 포함 최종답), intent, chunks(사용 top 청크 [(chunk_id,score,text)]),
-    llm_text(URL 붙이기 전 원 LLM 출력), timings}.
-    ponytail: _rag_answer_traced와 본문이 겹치지만, 공유 파일의 기존 함수를 안 건드려
-    머지 충돌을 피하는 쪽을 택함(팀 협의). 파이프라인 단계가 바뀌면 두 곳을 같이 고칠 것."""
-    timings = {}
-
-    with measure_time(timings, "query_classification"):
-        intent = classify_intent(query)
-
-    with measure_time(timings, "retrieval"):
-        candidates = route_search_chunks(query, k=K_CANDIDATES)
-
-    with measure_time(timings, "reranking"):
-        reranked = rerank(query, candidates) if USE_RERANKER else candidates
-        top = top_k_cut(reranked, k=K_FINAL)
-
-    with measure_time(timings, "context_building"):
-        if intent == "civil_petition":
-            civil_petition_answer = build_civil_petition_answer(top)
-        else:
-            citations = format_all_citations([cid for cid, _, _ in top])
-
-    with measure_time(timings, "prompt_building"):
-        if intent == "civil_petition":
-            prompt = build_civil_petition_prompt(query, civil_petition_answer)
-        else:
-            prompt = build_informational_prompt(query, top)
-
-    with measure_time(timings, "llm_call"):
-        llm_text = call_hyperclova(prompt)
-        if intent == "civil_petition":
-            answer = assemble_civil_petition_answer(llm_text, civil_petition_answer)
-        else:
-            answer = assemble_informational_answer(llm_text, citations)
-
-    timings["total"] = round(sum(timings.values()), 4)
-    return {"answer": answer, "intent": intent, "chunks": top,
-            "llm_text": llm_text, "timings": timings}
-
-
 if __name__ == "__main__":
     print("KDIC 챗봇 (종료: exit 또는 quit)")
     while True:
