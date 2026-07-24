@@ -22,7 +22,29 @@ class BM25Retriever:
         self.kiwi = Kiwi()
         self.unit_ids = unit_ids
         self.unit2bf = unit2bf  # unit_id → business_function (업무 필터용, 없으면 필터 무시)
-        self.bm25 = BM25Okapi([self._tok(t) for t in texts])
+
+        # Kiwi 형태소 분석은 프로세스 시작마다 494개 유닛 전체를 다시 토큰화해 ~4초가 걸린다
+        # (Streamlit 등 매번 새 프로세스로 뜨는 환경에서 콜드스타트를 체감상 늘림). DenseRetriever의
+        # 임베딩 캐시와 같은 방식(텍스트 해시 기반 파일 캐시)으로 토큰화 결과 자체를 재사용한다.
+        import pickle
+        cache = self._cache_path(texts)
+        if cache.exists():
+            with open(cache, "rb") as f:
+                tokenized = pickle.load(f)
+        else:
+            tokenized = [self._tok(t) for t in texts]
+            cache.parent.mkdir(exist_ok=True)
+            with open(cache, "wb") as f:
+                pickle.dump(tokenized, f)
+        self.bm25 = BM25Okapi(tokenized)
+
+    @staticmethod
+    def _cache_path(texts):
+        # DenseRetriever._cache_path와 동일한 해시 방식 — 텍스트 내용이 바뀌면(코퍼스·청킹 변경)
+        # 캐시가 자동으로 무효화되고 새로 토큰화된다(모델명은 없음 - Kiwi는 버전 고정 옵션이 없음).
+        import hashlib
+        h = hashlib.sha256("\x00".join(texts).encode()).hexdigest()[:16]
+        return ROOT / "data" / "bm25_cache" / f"{h}.pkl"
 
     def _tok(self, text):
         return [t.form for t in self.kiwi.tokenize(text)]
