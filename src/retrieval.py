@@ -252,7 +252,14 @@ def _build_engines():
     bm25 = PageRanked(BM25Retriever(uids, texts, unit2bf), u2p)
     dense = PageRanked(QdrantDenseRetriever(QDRANT_PATH, QDRANT_COLLECTION), u2p)
     hybrid = HybridRetriever(bm25, dense)
-    routed = RoutedRetriever(hybrid, dense, QuestionTypeClassifier(), BusinessFunctionClassifier())
+    # 2026-07-22 팀 결정: 업무(business_function) 하드필터는 기본 Off (project_context 9.5).
+    # 분류기 필터 MRR 0.764 < 무필터 0.786이고, 형제질문 편향을 걷어낸 leave-page-out
+    # 조건에선 0.672 vs 0.842로 손해가 더 커진다 — 오분류 시 정답 업무가 통째로 빠져 그
+    # 문항이 0점이 되는 all-or-nothing 실패 탓이다(현 코퍼스는 정답이 단일 페이지라 무필터
+    # 에서도 이미 상위). 필터의 진짜 이득(혼입→환각 방지)은 MRR이 아니라 답변 단계 혼입률로
+    # 재야 하고, 쓴다면 하드 제한이 아니라 소프트(부스팅/top-2/확신 게이팅)로. bf_classifier를
+    # 넘기지 않으면 search()의 자동 업무분류가 통째로 비활성(무필터)된다 — 재도입 시 여기서만 켜면 됨.
+    routed = RoutedRetriever(hybrid, dense, QuestionTypeClassifier())
 
     _engines.update(bm25=bm25, dense=dense, hybrid=hybrid, routed=routed,
                      unit_texts=dict(zip(uids, texts)))
