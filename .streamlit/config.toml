@@ -1,0 +1,8 @@
+# Streamlit의 파일 감시(코드 저장 시 자동 재실행) 기능을 끈다.
+# transformers/torch처럼 거대한 라이브러리를 import하면, 이 감시 기능이 매 실행마다
+# 모든 하위 모듈 경로를 훑느라 실측 60~90초 이상 걸리는 것을 확인했다(2026-07-24,
+# "Examining the path of transformers.models.aria..." 경고와 함께 발생 - 우리 RAG
+# 파이프라인 자체(_build_engines 등)는 실제로 12초 안팎밖에 안 걸림). 발표 시연은
+# 코드를 실시간으로 고치지 않으므로 이 기능이 없어도 지장 없다.
+[server]
+fileWatcherType = "none"

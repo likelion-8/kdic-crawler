@@ -98,7 +98,7 @@ st.markdown("""
 @st.cache_resource(show_spinner=False)
 def init_rag_system():
     start_time = time.perf_counter()
-    
+
     from retrieval import _build_engines
     from query_classifier import _get_classifier
 
