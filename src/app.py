@@ -1,5 +1,3 @@
-"""pip install -r requirements.txt(아니면 pip install streamlit 명령어 실행)` 및 `streamlit run app.py` 명령어 실행"""
-
 import os
 
 # ------------------------------------------------------------------------------
@@ -38,7 +36,21 @@ st.markdown("""
         margin-bottom: 10px;
     }
     
-    /* 입력창 외곽선 및 포커스 */
+    /* 💡 사이드바: 타이틀은 위, 초기화 버튼만 맨 아래로 고정 */
+    section[data-testid="stSidebar"] > div:first-child {
+        height: 100vh !important;
+    }
+    div[data-testid="stSidebarUserContent"] > div {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: calc(100vh - 4rem) !important;
+    }
+    div[data-testid="stSidebarUserContent"] > div > div:last-child {
+        margin-top: auto !important;
+        padding-bottom: 1rem !important;
+    }
+
+    /* 입력창 스타일 */
     div[data-testid="stChatInput"] > div {
         border: 1.5px solid #CBD5E0 !important;
         border-radius: 10px !important;
@@ -48,7 +60,7 @@ st.markdown("""
         box-shadow: 0 0 0 1px #6C5CE7 !important;
     }
 
-    /* 1. 비활성화 상태 (글자 입력 전): 투명 배경 & 연회색 화살표 */
+    /* 전송 버튼 비활성화 상태 */
     div[data-testid="stChatInput"] button:disabled {
         background-color: transparent !important;
         border: none !important;
@@ -58,7 +70,7 @@ st.markdown("""
         color: #CBD5E0 !important;
     }
 
-    /* 2. 💡 활성화 상태 (글자 입력 시): 빨간색 대신 보라색 박스 + 흰색 화살표 */
+    /* 전송 버튼 활성화 상태 (보라색 박스 + 흰색 화살표) */
     div[data-testid="stChatInput"] button:enabled,
     div[data-testid="stChatInput"] button:not(:disabled) {
         background-color: #6C5CE7 !important;
@@ -71,7 +83,7 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* 3. 활성화 상태 마우스 오버 (Hover): 더 진한 보라색 */
+    /* 전송 버튼 마우스 오버 */
     div[data-testid="stChatInput"] button:enabled:hover,
     div[data-testid="stChatInput"] button:not(:disabled):hover {
         background-color: #5A4AD1 !important;
@@ -107,24 +119,9 @@ with st.sidebar:
     with st.spinner("검색 엔진 및 모델 로딩 중..."):
         init_time = init_rag_system()
     
-    st.success(f"✅ 모델 준비 완료 ({init_time}초)")
-    st.divider()
+    st.success("✅ 모델 준비 완료")
 
-    st.subheader("💻 시스템 파이프라인")
-    st.markdown("""
-    * **임베딩 (Dense)**
-      * `dragonkue/BGE-m3-ko`
-    * **키워드 (Sparse)**
-      * `Kiwi BM25`
-    * **생성 모델 (LLM)**
-      * `HyperCLOVA X`
-    * **검색 설정**
-      * `하이브리드 Retrieval
-                (Top-20 ➔ Top-5)`
-    """)
-    
-    st.divider()
-
+    # 사이드바 맨 마지막 요소이므로 자동으로 바닥으로 내려갑니다.
     if st.button("🗑️ 대화 내역 초기화", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
