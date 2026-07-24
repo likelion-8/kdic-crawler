@@ -53,7 +53,8 @@ st.markdown("""
    ========================================================================== */
 
 /* ── 레이아웃 여백 ── */
-.main .block-container {
+/* ponytail: streamlit 1.60 기준 testid. 구버전 `.main .block-container`는 매치 0개였다 */
+[data-testid="stMainBlockContainer"] {
     padding-top: 1rem !important;
     padding-bottom: 2rem !important;
     max-width: 820px !important;
@@ -77,19 +78,19 @@ st.markdown("""
 }
 
 /* ── 3. 전송 버튼 & 화살표 아이콘 색상 ── */
-[data-testid="stChatInputSubmitButton"] button {
+/* ponytail: 1.60에선 testid가 붙은 요소 자체가 <button>이라 자손 button은 매치 0개였다 */
+/* 입력이 있을 때(=:enabled)만 포인트 컬러. 비활성 상태는 Streamlit 기본값 유지 */
+[data-testid="stChatInputSubmitButton"]:enabled {
     background-color: var(--button-bg) !important;
     border: none !important;
     border-radius: 10px !important;
-}
-[data-testid="stChatInputSubmitButton"] button:hover {
-    background-color: var(--button-hover-bg) !important;
-}
-[data-testid="stChatInputSubmitButton"] button svg,
-[data-testid="stChatInputSubmitButton"] button svg path {
-    fill: var(--button-arrow-color) !important;
-    stroke: var(--button-arrow-color) !important;
+    /* 화살표 path가 fill="currentColor"라 color만 주면 된다.
+       ponytail: path에 fill을 직접 먹이면 안 된다 — 아이콘 첫 path가 fill="none"인
+       24x24 바운딩박스라, 덮어쓰면 사각형이 칠해지며 화살표를 가린다 */
     color: var(--button-arrow-color) !important;
+}
+[data-testid="stChatInputSubmitButton"]:enabled:hover {
+    background-color: var(--button-hover-bg) !important;
 }
 
 /* ===================== 웰컴 화면 ===================== */
@@ -109,7 +110,8 @@ st.markdown("""
 .welcome-text {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-color); /* Streamlit 다크/라이트 자동 감지 */
+    /* ponytail: --text-color 등은 Streamlit이 정의하지 않는다(1.32·1.60 실측). 폴백이 실제 값 */
+    color: var(--text-color, inherit);
     letter-spacing: -0.5px;
     line-height: 1.3;
     text-align: center;
@@ -138,7 +140,7 @@ st.markdown("""
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--secondary-background-color);
+    background-color: var(--secondary-background-color, rgba(128, 128, 128, 0.12));
 }
 .chat-avatar svg {
     width: 100% !important;
@@ -158,8 +160,8 @@ st.markdown("""
 
 /* 챗봇 말풍선 (시스템 테마 배경 및 글자색 자동 적용) */
 .chat-bubble.bot {
-    background-color: var(--secondary-background-color);
-    color: var(--text-color);
+    background-color: var(--secondary-background-color, rgba(128, 128, 128, 0.12));
+    color: var(--text-color, inherit);
     border: 1px solid rgba(128, 128, 128, 0.2);
     border-radius: 4px 18px 18px 18px;
 }   
@@ -170,19 +172,13 @@ st.markdown("""
     color: #191919;
     border-radius: 18px 4px 18px 18px;
 }
-</style>
 
-<script>
-(function() {
-    function removeSpellcheck() {
-        document.querySelectorAll('textarea').forEach(function(el) {
-            el.setAttribute('spellcheck', 'false');
-        });
-    }
-    removeSpellcheck();
-    new MutationObserver(removeSpellcheck).observe(document.body, { childList: true, subtree: true });
-})();
-</script>
+/* 답변 안 출처 링크 */
+.chat-bubble.bot a {
+    color: var(--my-point-color);
+    word-break: break-all;
+}
+</style>
 """, unsafe_allow_html=True)
 
 
@@ -191,7 +187,8 @@ st.markdown("""
 # ------------------------------------------------------------------------------
 BOT_ICON        = "noto:robot"
 USER_ICON       = "noto:lion"
-BOT_AVATAR_PATH = r"C:\Users\jhw00\kdic_\kdic-crawler\data\icon_40_chatbot.png"
+# ponytail: 리포 기준 상대경로. 절대경로면 작성자 PC 밖에선 무조건 없는 파일이다
+BOT_AVATAR_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "icon_40_chatbot.png")
 
 def get_base64_image(file_path):
     if os.path.exists(file_path):
@@ -254,8 +251,18 @@ def make_avatar_html(role):
             return f'<div class="chat-avatar"><img src="{BOT_LOCAL_IMG}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" /></div>'
         return f'<div class="chat-avatar">{BOT_SVG if BOT_SVG else "🤖"}</div>'
 
+def to_safe_html(text):
+    """XSS 방지로 전부 escape한 뒤, 답변에 실제로 쓰이는 마크다운만 되살린다.
+    prompt_builder._render_list()가 붙이는 `**제목**`과 출처 URL 두 가지뿐이라
+    마크다운 파서를 끌어오지 않는다."""
+    safe = html.escape(text)
+    safe = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", safe)
+    safe = re.sub(r"(https?://[^\s<]+)", r'<a href="\1" target="_blank" rel="noopener">\1</a>', safe)
+    return safe.replace("\n", "<br>")
+
+
 def render_message(role, content):
-    safe = html.escape(content).replace("\n", "<br>")
+    safe = to_safe_html(content)
     cls  = "user" if role == "user" else "bot"
     av   = make_avatar_html(role)
     if role == "user":

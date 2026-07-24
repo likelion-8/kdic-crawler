@@ -6,7 +6,6 @@ qdrant_client
 rank_bm25
 requests
 sentence_transformers
-streamlit
+streamlit==1.60.0
 torch
 urllib3
-streamlit-chat
