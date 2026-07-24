@@ -1,8 +1,11 @@
-requests
 beautifulsoup4
-rank_bm25
 kiwipiepy
-sentence-transformers
-qdrant-client
 langchain-naver
 python-dotenv
+qdrant_client
+rank_bm25
+requests
+sentence_transformers
+streamlit
+torch
+urllib3
