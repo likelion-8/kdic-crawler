@@ -175,15 +175,48 @@ def rrf(rankings, c=60):
     return sorted(fused.items(), key=lambda x: x[1], reverse=True)
 
 
+# 2026-07-28 link_guide 융합 스윕(59문항, 부트스트랩 CI): Linear α 0.3~0.5 평탄구간이
+# MRR 0.715~0.720으로 RRF(0.708)·Dense 단독(0.650)보다 낫다. 구간 가운데 0.4 채택.
+# n=59 소표본이라 확정값은 아님 — P3 파라미터 테스트 노브 후보, 홀드아웃 검증 대상.
+HYBRID_LINEAR_ALPHA = 0.4
+
+
+def linear_fuse(bm25_ranked, dense_ranked, alpha=HYBRID_LINEAR_ALPHA):
+    """min-max 정규화 후 볼록결합: (1-α)·dense + α·bm25.
+
+    RRF와 달리 점수(확신도) 정보를 보존한다 — BM25가 강하게 확신할 때만 순위를 끌어올리는
+    동작이 나와 link_guide(페이지명·메뉴 키워드 질문)에서 RRF보다 낫다(위 스윕).
+    BM25 원점수는 스케일이 제멋대로라(수십~수백 vs 코사인 0~1) 질의마다 min-max로 0~1에
+    맞춘 뒤 섞는다. 입력은 rrf()와 같은 [(id, score)](점수순) 리스트, 반환도 같은 형식."""
+    def norm(ranking):
+        if not ranking:
+            return {}
+        scores = [s for _, s in ranking]
+        lo, hi = min(scores), max(scores)
+        rng = (hi - lo) or 1.0
+        return {i: (s - lo) / rng for i, s in ranking}
+
+    nb, nd = norm(bm25_ranked), norm(dense_ranked)
+    fused = {i: (1 - alpha) * nd.get(i, 0.0) + alpha * nb.get(i, 0.0)
+             for i in set(nb) | set(nd)}
+    return sorted(fused.items(), key=lambda x: x[1], reverse=True)
+
+
 class HybridRetriever:
-    """두 페이지 단위 검색기(PageRanked)의 랭킹을 RRF로 결합."""
-    def __init__(self, bm25, dense):
+    """두 페이지 단위 검색기(PageRanked)의 랭킹을 결합. alpha=None이면 RRF(순위 기반 —
+    평가 스크립트 비교군 'Hybrid'의 기존 의미), 숫자면 linear_fuse(점수 기반 볼록결합,
+    α=BM25 비중). 실서비스 조립(_build_engines)만 HYBRID_LINEAR_ALPHA를 넘긴다."""
+    def __init__(self, bm25, dense, alpha=None):
         self.bm25, self.dense = bm25, dense
+        self.alpha = alpha
         self.n = len(bm25.page_ids)
 
     def search(self, query, k, business_function=None):
-        return rrf([self.bm25.search(query, self.n, business_function=business_function),
-                    self.dense.search(query, self.n, business_function=business_function)])[:k]
+        b = self.bm25.search(query, self.n, business_function=business_function)
+        d = self.dense.search(query, self.n, business_function=business_function)
+        if self.alpha is None:
+            return rrf([b, d])[:k]
+        return linear_fuse(b, d, self.alpha)[:k]
 
 
 class RoutedRetriever:
@@ -257,7 +290,7 @@ def _build_engines():
 
     bm25 = PageRanked(BM25Retriever(uids, texts, unit2bf), u2p)
     dense = PageRanked(QdrantDenseRetriever(QDRANT_PATH, QDRANT_COLLECTION), u2p)
-    hybrid = HybridRetriever(bm25, dense)
+    hybrid = HybridRetriever(bm25, dense, alpha=HYBRID_LINEAR_ALPHA)
     # 2026-07-22 팀 결정: 업무(business_function) 하드필터는 기본 Off (project_context 9.5).
     # 분류기 필터 MRR 0.764 < 무필터 0.786이고, 형제질문 편향을 걷어낸 leave-page-out
     # 조건에선 0.672 vs 0.842로 손해가 더 커진다 — 오분류 시 정답 업무가 통째로 빠져 그
@@ -283,7 +316,7 @@ def dense_search(query, k, business_function=None):
 
 
 def hybrid_search(query, k, business_function=None):
-    """dense + bm25 결과를 RRF로 결합해 검색 실행."""
+    """dense + bm25 결과를 linear_fuse(α=HYBRID_LINEAR_ALPHA)로 결합해 검색 실행."""
     return _build_engines()["hybrid"].search(query, k, business_function=business_function)
 
 
@@ -310,7 +343,7 @@ def route_search_chunks(query, k):
         n = len(bm25_inner.unit_ids)
         bm25_ranked = bm25_inner.search(query, n, business_function=bf)
         dense_ranked = dense_inner.search(query, n, business_function=bf)
-        ranked = rrf([bm25_ranked, dense_ranked])[:k]
+        ranked = linear_fuse(bm25_ranked, dense_ranked)[:k]
     else:
         ranked = dense_inner.search(query, k, business_function=bf)
 
