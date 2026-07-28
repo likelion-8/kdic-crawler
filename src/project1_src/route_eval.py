@@ -105,8 +105,8 @@ def main():
         row = t.ljust(14) + "".join(f"{scores[n]:>10.3f}" for n in names)
         print(row + "   " + winners[t])
 
-    print("\n=== 라우팅 결정: 기본 Hybrid, table_lookup만 Dense ===")
-    print(f"  Dense 단독 예외 유형: {sorted(RoutedRetriever.DENSE_ONLY_TYPES)}")
+    print("\n=== 라우팅 결정: 기본 Dense, link_guide만 Hybrid ===")
+    print(f"  Hybrid 단독 예외 유형: {sorted(RoutedRetriever.HYBRID_ONLY_TYPES)}")
 
     routed = RoutedRetriever(retrievers["Hybrid"], retrievers["Dense"])
     routed_per_type = by_type_mrr_routed(routed, questions)
