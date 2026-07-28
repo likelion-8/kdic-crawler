@@ -189,28 +189,34 @@ class HybridRetriever:
 class RoutedRetriever:
     """질문 유형(qtype)별로 Hybrid/Dense 중 하나로 라우팅.
 
-    2026-07-21 route_eval.py 비교(all 모드, bge-m3-ko 기준) — 유형별 MRR:
-        유형            BM25    Dense  Hybrid
-        fact           0.694   0.729   0.737
-        table_lookup   0.434   0.893   0.638   ← BM25가 약해 Hybrid가 확실히 손해
-        faq            0.912   0.887   0.903
-        link_guide     0.609   0.592   0.693
-        file_download  0.882   1.000   1.000
-    table_lookup만 빼면 Hybrid가 Dense와 같거나 근소하게 낫다. 그래서 예외를 하나로
-    최소화해 "기본 Hybrid, table_lookup만 Dense"로 라우팅한다(가중평균 MRR 0.784,
-    Dense 단일 0.770·Dense 기본+예외 방식 0.777보다 높음).
+    2026-07-28 재검증(bf_score_fusion_eval.py baseline, testset_all 821문항 정리 후 기준)
+    — business_function 융합 실험 중 다시 잰 유형별 MRR:
+        유형            Dense   Hybrid
+        fact           0.745   0.739
+        faq            0.819   0.788
+        table_lookup   0.866   0.626   ← BM25가 약해 Hybrid가 확실히 손해
+        link_guide     0.650   0.708   ← 유일하게 Hybrid가 나음
+        file_download  0.931   0.925
+    link_guide만 빼면 Dense가 Hybrid와 같거나 뚜렷하게 낫다. 그래서 "기본 Dense,
+    link_guide만 Hybrid"로 라우팅한다. (2026-07-21 route_eval.py 비교는 다른 testset
+    버전 기준이라 반대 결론이었으나, 이 수치로 대체한다.)
+
+    business_function 가중치는 도입하지 않는다 — leave-page-out(같은 페이지에서 나온
+    형제 질문을 전부 제외)으로 정직하게 재검증한 결과, 분류기의 진짜 일반화 정확도가
+    55~80%에 그쳐 어떤 융합 방식(연속 가중합/RRF 가산/top-1 매칭)을 쓰든 전 유형에서
+    순수 Dense/Hybrid보다 손해였다(project1_src/bf_score_fusion_eval.py 참고).
 
     qtype을 안다면(예: 평가 시 테스트셋 라벨) search()에 직접 넘기면 그걸 우선 쓴다.
     모르면(실서비스 기본 경로) classifier로 자동 분류한다 — query_classifier.py의
-    QuestionTypeClassifier 참고. classifier도 없으면 안전하게 기본값(Hybrid)으로 처리한다.
+    QuestionTypeClassifier 참고. classifier도 없으면 안전하게 기본값(Dense)으로 처리한다.
     """
-    DENSE_ONLY_TYPES = {"table_lookup"}
+    HYBRID_ONLY_TYPES = {"link_guide"}
 
     def __init__(self, hybrid, dense, classifier=None, bf_classifier=None):
         self.hybrid = hybrid
         self.dense = dense
-        self.classifier = classifier        # 질문 유형(table_lookup 여부) 분류 → 검색기 선택
-        self.bf_classifier = bf_classifier  # 업무(business_function) 분류 → 검색 범위 필터
+        self.classifier = classifier        # 질문 유형(link_guide 여부) 분류 → 검색기 선택
+        self.bf_classifier = bf_classifier  # 업무(business_function) 분류 → 검색 범위 필터(현재 미사용)
 
     def search(self, query, k, qtype=None, business_function=None):
         # qtype/business_function을 직접 주면(예: 평가 시 정답 라벨) 그걸 우선, 없으면 자동 분류.
@@ -218,7 +224,7 @@ class RoutedRetriever:
             qtype = self.classifier.classify(query)
         if business_function is None and self.bf_classifier is not None:
             business_function = self.bf_classifier.classify(query)
-        retriever = self.dense if qtype in self.DENSE_ONLY_TYPES else self.hybrid
+        retriever = self.hybrid if qtype in self.HYBRID_ONLY_TYPES else self.dense
         return retriever.search(query, k, business_function=business_function)
 
 
@@ -300,13 +306,13 @@ def route_search_chunks(query, k):
     bf = routed.bf_classifier.classify(query) if routed.bf_classifier else None
 
     bm25_inner, dense_inner = e["bm25"].inner, e["dense"].inner
-    if qtype in RoutedRetriever.DENSE_ONLY_TYPES:
-        ranked = dense_inner.search(query, k, business_function=bf)
-    else:
+    if qtype in RoutedRetriever.HYBRID_ONLY_TYPES:
         n = len(bm25_inner.unit_ids)
         bm25_ranked = bm25_inner.search(query, n, business_function=bf)
         dense_ranked = dense_inner.search(query, n, business_function=bf)
         ranked = rrf([bm25_ranked, dense_ranked])[:k]
+    else:
+        ranked = dense_inner.search(query, k, business_function=bf)
 
     unit_texts = e["unit_texts"]
     return [(cid, score, unit_texts[cid]) for cid, score in ranked]
