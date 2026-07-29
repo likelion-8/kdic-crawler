@@ -1,0 +1,302 @@
+{
+  "model": "dragonkue/BGE-m3-ko",
+  "seed": 42,
+  "n_inscope": 821,
+  "intent_distribution": {
+    "civil_petition": 260,
+    "informational": 561
+  },
+  "diagnosis_leak": {
+    "reference_set_overlap": "821/821 = 100%",
+    "reference_cache_file": "9fb07f0cdbe56443.npy",
+    "reference_cache_exists": true,
+    "prod_1nn_selfmatch_acc": 1.0,
+    "prod_1nn_leaveoneout_acc": 0.8879
+  },
+  "split": {
+    "train_n": 657,
+    "eval_n": 164,
+    "train_dist": {
+      "civil_petition": 208,
+      "informational": 449
+    },
+    "eval_dist": {
+      "civil_petition": 52,
+      "informational": 112
+    }
+  },
+  "centroid_clean_8_2": {
+    "accuracy": 0.7378,
+    "per_class": {
+      "informational": {
+        "precision": 0.8485,
+        "recall": 0.75,
+        "f1": 0.7962,
+        "support": 112
+      },
+      "civil_petition": {
+        "precision": 0.5692,
+        "recall": 0.7115,
+        "f1": 0.6325,
+        "support": 52
+      }
+    },
+    "n_misclassified": 43,
+    "misclassified": [
+      {
+        "question": "예금보험금 신청하면 언제 입금되나요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "정상 영업 중인 은행·보험·우체국의 휴면계좌는 어디서 조회하나요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "미수령금 관련 전화 문의는 ARS에서 몇 번을 눌러야 하나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "IT서비스 데스크는 공휴일이나 주말에도 운영하나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "은닉재산 신고센터에 전화나 이메일로 상담을 요청하고 싶은데, 상담전화 번호와 이메일 주소는 무엇인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "부실책임조사 업무용 개인정보 동의 화면에서 주소, 전화번호, 팩스번호는 필수 항목으로 수집되나요, 아니면 선택 항목인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "이 개인정보 수집·이용 동의서는 어떤 법률들에 근거하여 개인정보를 수집·처리하고 있나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "예금보험공사의 파산금융회사 채무조정제도를 신청할 수 있는 대상 주체와 자격 요건은 무엇인가요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "파산재단 채무자가 채무조정제도에 대해 전화로 자세한 안내를 받고 싶을 때 문의할 수 있는 전화번호는 무엇인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "예금보험공사 홈페이지에서 본인인증을 통해 파산금융회사 및 KR&C 채무가 있는지 직접 온라인으로 확인해 볼 수 있는 메뉴의 웹사이트 링크는 어떻게 되나요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "케이알앤씨가 관리하는 대출채권 중, 채무조정을 원천적으로 신청할 수 없는 사유 4가지는 구체적으로 무엇인가요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "케이알앤씨 대출채권의 고금리 채무자가 이자율조정 제도를 신청할 경우, 금리는 보통 어느 수준까지 인하하여 조정받을 수 있나요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "개인회생과 일반회생을 비교할 때, 인가를 받기 위해 채권자의 동의가 필요한지 여부는 각각 어떻게 다른가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "부채증명원/금융거래정보 발급이 완료되면 어떤 방법으로 채무자에게 전달되나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "보이스피싱으로 인한 피해도 착오송금 반환지원 대상인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "착오송금반환지원 서비스의 다른 이름은 무엇인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "착오송금반환지원 제도는 누구를 위해 만들어졌나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "반환지원 절차의 마지막 단계에서는 어떤 일이 일어나나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "착오송금인이 반환지원 절차에서 가장 먼저 해야 하는 일은 무엇인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "보이스피싱 피해도 착오송금 반환지원 대상인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "토스나 카카오페이 간편송금도 반환지원이 되나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "지급명령이 확정된 후에도 착오송금액을 반환하지 않으면 어떻게 되나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "착오송금반환지원 시행세칙에서는 무엇을 확인할 수 있나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "예금자보호법 원문은 어디서 확인할 수 있나요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "돈을 잘못 보낸 착오송금인이 상황선택 화면에서 이용할 수 있는 메뉴는 무엇인가요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "모르는 돈을 받았을 때 이의를 제기하는 메뉴가 있나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "착오송금 수취인과 관련된 반환지원 제외 사유에는 어떤 것이 있나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "착오송금 수취계좌가 어떤 경우에 반환지원 대상에서 제외되나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "회수 관련 비용은 모든 신청자에게 동일하게 적용되나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "예금자보호 대상 상품 검색 페이지로 안내해 주세요.",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "전자금융거래에서 설명 확인용 전자서명과 계약 체결용 전자서명을 두 번 받아야 하나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "예금자보호안내문 영문 번역본도 다운로드할 수 있나요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "내가 거래하는 은행이 예금보호 되는 곳인지 찾아보게 해줘",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "저축은행 옛날 이름이랑 바뀐 이름 정리된 표 어디서 봐요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "내가 예금 넣어둔 저축은행이 보험금 받을 수 있는 곳인지 찾아보는 페이지 좀 열어줘",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "보험금 나오기 전에 급한대로 원금 일부 먼저 신청해서 받는 돈 있다던데 그게 뭐죠?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "전화 걸어서 파산배당금이나 정산금 받는 거 물어보려면 몇 번 눌러야 하나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "기한 안에 안 돌려주면 어떻게 돼요? 법적으로 뭐 진행되나요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "지급명령 확정되고도 안 갚으면 재산 압류당하나요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "수취인한테 보낸다는 양도 통지문이 뭐예요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "임직원 배임 이런거 제보하려면 어디로 연락함?",
+        "true": "informational",
+        "pred": "civil_petition"
+      },
+      {
+        "question": "빚이 너무 많아서 파산신청하면 남은 빚은 아예 안갚아도 되는거에요?",
+        "true": "civil_petition",
+        "pred": "informational"
+      },
+      {
+        "question": "빚이 얼마 남았는지 증명하는 서류 떼야 되는데 꼭 찾아가야 되나요 인터넷으로는 안돼요?",
+        "true": "informational",
+        "pred": "civil_petition"
+      }
+    ]
+  },
+  "centroid_leaky_full": {
+    "accuracy": 0.7966,
+    "per_class": {
+      "informational": {
+        "precision": 0.9264,
+        "recall": 0.7629,
+        "f1": 0.8368,
+        "support": 561
+      },
+      "civil_petition": {
+        "precision": 0.6295,
+        "recall": 0.8692,
+        "f1": 0.7302,
+        "support": 260
+      }
+    }
+  },
+  "summary_table": [
+    {
+      "방식": "[운영]1-NN 자기참조(완전 누수)",
+      "정확도": 1.0,
+      "비고": "신뢰 불가"
+    },
+    {
+      "방식": "centroid 누수 있음(전체 기준+검증)",
+      "정확도": 0.7966,
+      "비고": "참고용, 신뢰 불가"
+    },
+    {
+      "방식": "centroid 8:2 분리(올바른 검증)",
+      "정확도": 0.7378,
+      "비고": "실제 성능"
+    },
+    {
+      "방식": "[운영]1-NN LOO(참고)",
+      "정확도": 0.8879,
+      "비고": "운영 방식 누수 제거 실측"
+    }
+  ]
+}

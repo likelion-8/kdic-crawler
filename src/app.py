@@ -231,7 +231,7 @@ def init_rag_system():
     from query_classifier import _get_classifier
     _build_engines()
     _get_classifier("question_type")
-    _get_classifier("business_function")
+    # business_function 분류는 검색에 쓰지 않기로 하여 워밍업 제거(2026-07-29). 재도입 시 복원.
     return round(time.perf_counter() - start_time, 2)
 
 init_rag_system()

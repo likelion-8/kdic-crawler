@@ -1,0 +1,18 @@
+{
+  "n_inscope": 821,
+  "loo_1nn_acc": 0.8879,
+  "nearest_is_sibling": {
+    "count": 551,
+    "ratio": 0.6711,
+    "acc": 0.9002,
+    "avg_sim": 0.7799
+  },
+  "nearest_is_non_sibling": {
+    "count": 270,
+    "ratio": 0.3289,
+    "acc": 0.863,
+    "avg_sim": 0.7717
+  },
+  "leave_page_out_acc": 0.8149,
+  "sibling_inflation_pp": 7.31
+}

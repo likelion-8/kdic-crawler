@@ -1,0 +1,114 @@
+{
+  "method": "rule_based_regex",
+  "seed": 42,
+  "eval_n": 164,
+  "eval_acc_leave_page_out": 0.9146,
+  "eval_per_class": {
+    "informational": {
+      "precision": 0.9554,
+      "recall": 0.9224,
+      "f1": 0.9386,
+      "support": 116
+    },
+    "civil_petition": {
+      "precision": 0.8269,
+      "recall": 0.8958,
+      "f1": 0.86,
+      "support": 48
+    }
+  },
+  "all821_acc": 0.9001,
+  "patterns": [
+    "하려면",
+    "하고\\s*싶",
+    "해야\\s*(하나요|되나요|하나요|되나|하나)",
+    "받으려면",
+    "신청",
+    "접수",
+    "제출",
+    "구비\\s*서류",
+    "필요한.{0,6}서류",
+    "위임장",
+    "다운로드",
+    "발급",
+    "환급",
+    "철회",
+    "취소",
+    "이의\\s*제기",
+    "청구",
+    "지급명령",
+    "어떻게\\s*하"
+  ],
+  "misclassified": [
+    {
+      "question": "파산한 금융회사 정보는 어디서 검색할 수 있어요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "부채증명원/금융거래정보 발급과 관련해 궁금한 사항이 있을 때 문의할 수 있는 전화번호는 무엇인가요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "부채증명원/금융거래정보 발급이 완료되면 어떤 방법으로 채무자에게 전달되나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "부채증명원/금융거래정보 발급 대상은 구체적으로 누구인가요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "착오송금 자진반환은 언제까지 해야 하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "자진반환 기한 내에 이의제기 없이 반환하지 않으면 어떻게 되나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "지급명령이 확정된 후에도 착오송금액을 반환하지 않으면 어떻게 되나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "예금자보호법 원문은 어디서 확인할 수 있나요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "예금보험료만으로 지급 재원이 부족하면 어떻게 하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "부보금융회사 조사 내용에 이견이 있으면 어떻게 해야 하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "조사 내용에 이견이 있어 소명하려면 어떤 자료를 첨부해야 하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "저축은행 옛날 이름이랑 바뀐 이름 정리된 표 어디서 봐요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "내가 예전에 거래한 그 망한 금융회사 자세한 정보는 어디서 찾아봐요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "예금자보호법 시행령 원문 보러 가고 싶어요",
+      "true": "civil_petition",
+      "pred": "informational"
+    }
+  ]
+}
