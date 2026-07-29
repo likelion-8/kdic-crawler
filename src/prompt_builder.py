@@ -109,6 +109,13 @@ def _render_list(heading, items, line):
     return f"\n\n**{heading}**\n{body}"
 
 
+def _format_source_line(item):
+    """출처 한 줄 = 브레드크럼(사이트 계층 경로) + 제목 + URL. 브레드크럼이 없으면 제목만."""
+    breadcrumb = item.get("breadcrumb", "")
+    label = f"{breadcrumb} — {item['title']}" if breadcrumb else item["title"]
+    return f"- {label} ({item['url']})"
+
+
 NO_SOURCE_MARKER = "[NO_SOURCE]"
 
 
@@ -134,7 +141,7 @@ def assemble_informational_answer(llm_text, citations):
     text, used_source = _strip_no_source_marker(llm_text)
     if not used_source:
         return text
-    return text + _render_list("참고 출처", citations, lambda c: f"- {c['title']} ({c['url']})")
+    return text + _render_list("참고 출처", citations, _format_source_line)
 
 
 def assemble_civil_petition_answer(llm_text, civil_petition_answer):
@@ -147,6 +154,5 @@ def assemble_civil_petition_answer(llm_text, civil_petition_answer):
     answer = text
     answer += _render_list(
         "필요 서류", civil_petition_answer["documents"], lambda d: f"- {d['label']}: {d['url']}")
-    answer += _render_list(
-        "신청 페이지", civil_petition_answer["links"], lambda l: f"- {l['title']}: {l['url']}")
+    answer += _render_list("신청 페이지", civil_petition_answer["links"], _format_source_line)
     return answer
