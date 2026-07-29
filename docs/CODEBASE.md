@@ -108,6 +108,9 @@ python3 src/eval_retrieval.py
 # 임베딩 + 제품 청크 재생성 (코퍼스 갱신 후 실행 → data/dense_cache/ 와 chunks_all.jsonl 재커밋)
 python3 src/embed_corpus.py
 
+# intent 분류기 재학습 (testset_all.jsonl 갱신 후 실행 → data/intent_classifier/*.pkl 재커밋)
+python3 src/train_intent_morpheme.py
+
 # 개별 모듈 자가검증
 python3 src/chunking.py      # 청킹 단위 수 확인
 python3 src/hashing.py       # 해시 자체검사
@@ -119,6 +122,7 @@ python3 src/hashing.py       # 해시 자체검사
 - 나머지 3개 모드(page/faq_atomic/table_row)는 "청킹이 왜 필요한지" 증명한 **실험 비교군**이지 제품용이 아니다. 근거는 `docs/retrieval_experiment_results.md`.
 
 ## 참고
+- `data/intent_classifier/*.pkl`(TF-IDF 벡터라이저 + LogReg 모델)도 `dense_cache`처럼 **커밋됨** — 작은 파일이라 pull만 받으면 `classify_intent`가 바로 동작한다. `data/testset/testset_all.jsonl`이 갱신되면 `python3 src/train_intent_morpheme.py`를 한 번 실행해 재생성·재커밋할 것.
 - 크롤러가 담당자별로 나뉜 건 팀원 5명이 업무 기능을 나눠 수집했기 때문 (`inventory.py` 상단 owner 매핑 참고).
 - 변환은 **전부 규칙 기반**(LLM 미사용) — 원문 보존·재현성이 원칙.
 - **크로스 플랫폼(맥·윈도우):** 모든 텍스트 파일 I/O는 `encoding="utf-8"` 명시(윈도우 기본 cp949로 한글 깨짐 방지), `.gitattributes`가 `.jsonl` 줄바꿈을 LF로 고정(CRLF면 공유 임베딩 캐시 해시가 틀어짐).

@@ -83,7 +83,10 @@ def build_link_section(chunks):
     한다 — "근거로 삼은 페이지"와 "신청하러 가야 할 페이지"가 같은 데이터이므로 중복
     조회하지 않는다."""
     chunk_ids = [cid for cid, _, _ in chunks]
-    return [{"title": c["title"], "url": c["url"]} for c in format_all_citations(chunk_ids)]
+    return [
+        {"title": c["title"], "url": c["url"], "breadcrumb": c["breadcrumb"]}
+        for c in format_all_citations(chunk_ids)
+    ]
 
 
 def build_civil_petition_answer(chunks):
