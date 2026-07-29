@@ -279,7 +279,7 @@ def _build_engines():
     import sys as _sys
     _sys.path.insert(0, str(ROOT / "src" / "project1_src"))
     from chunking import build_units, load_records
-    from query_classifier import BusinessFunctionClassifier, QuestionTypeClassifier
+    from query_classifier import QuestionTypeClassifier  # BusinessFunctionClassifier 미사용(업무필터 비활성)
 
     QDRANT_PATH = str(ROOT / "data" / "qdrant_local")
     QDRANT_COLLECTION = "kdic_chunks_all"

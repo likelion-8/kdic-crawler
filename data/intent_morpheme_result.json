@@ -1,0 +1,259 @@
+{
+  "method": "morpheme_tfidf",
+  "seed": 42,
+  "eval_n": 164,
+  "n_features": 757,
+  "classifiers": {
+    "LogReg": {
+      "acc": 0.8963,
+      "per_class": {
+        "informational": {
+          "precision": 0.9541,
+          "recall": 0.8966,
+          "f1": 0.9244,
+          "support": 116
+        },
+        "civil_petition": {
+          "precision": 0.7818,
+          "recall": 0.8958,
+          "f1": 0.835,
+          "support": 48
+        }
+      },
+      "n_misclassified": 17
+    },
+    "MultinomialNB": {
+      "acc": 0.8902,
+      "per_class": {
+        "informational": {
+          "precision": 0.8952,
+          "recall": 0.9569,
+          "f1": 0.925,
+          "support": 116
+        },
+        "civil_petition": {
+          "precision": 0.875,
+          "recall": 0.7292,
+          "f1": 0.7955,
+          "support": 48
+        }
+      },
+      "n_misclassified": 18
+    }
+  },
+  "best": {
+    "name": "LogReg",
+    "acc": 0.8963
+  },
+  "top_features_civil": [
+    [
+      "신청/NNG",
+      -6.612
+    ],
+    [
+      "접수/NNG",
+      -2.777
+    ],
+    [
+      "하/XSV",
+      -1.902
+    ],
+    [
+      "방문/NNG",
+      -1.693
+    ],
+    [
+      "서/JKB",
+      -1.52
+    ],
+    [
+      "양식/NNG",
+      -1.498
+    ],
+    [
+      "어/EF",
+      -1.439
+    ],
+    [
+      "ᆯ/ETM",
+      -1.37
+    ],
+    [
+      "대리인/NNG",
+      -1.359
+    ],
+    [
+      "어디/NP",
+      -1.342
+    ],
+    [
+      "서류/NNG",
+      -1.253
+    ],
+    [
+      "·/SP",
+      -1.189
+    ],
+    [
+      "바로/MAG",
+      -1.093
+    ],
+    [
+      "온라인/NNG",
+      -1.023
+    ],
+    [
+      "안내/NNG",
+      -0.99
+    ]
+  ],
+  "top_features_info": [
+    [
+      "보호/NNG",
+      1.094
+    ],
+    [
+      "되/XSV",
+      1.044
+    ],
+    [
+      "자산/NNG",
+      1.029
+    ],
+    [
+      "부동산/NNG",
+      0.915
+    ],
+    [
+      "예요/EF",
+      0.915
+    ],
+    [
+      "예금/NNG",
+      0.878
+    ],
+    [
+      "신탁/NNG",
+      0.857
+    ],
+    [
+      "특별/NNG",
+      0.851
+    ],
+    [
+      "재단/NNG",
+      0.824
+    ],
+    [
+      "관리/NNG",
+      0.823
+    ],
+    [
+      "대상/NNG",
+      0.816
+    ],
+    [
+      "로고/NNG",
+      0.794
+    ],
+    [
+      "파산/NNG",
+      0.793
+    ],
+    [
+      "이/MM",
+      0.751
+    ],
+    [
+      "의/JKG",
+      0.75
+    ]
+  ],
+  "misclassified_best": [
+    {
+      "question": "파산금융회사의 파산절차가 이미 법적으로 완전히 종결된 경우, 채무자가 신청 가능한 발급 서식은 무엇인가요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "착오송금 자진반환은 언제까지 해야 하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "착오송금 반환지원 절차에 법원도 관여하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "자진반환 기한 내에 이의제기 없이 반환하지 않으면 어떻게 되나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "착오송금반환지원 규정에서는 무엇을 확인할 수 있나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "착오송금반환지원 시행세칙에서는 무엇을 확인할 수 있나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "관련법령 및 규정 페이지에서 확인할 수 있는 법령·규정은 무엇인가요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "착오송금 반환지원 자가진단에서 미반환 통보와 관련해 무엇을 확인하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "조사 내용에 이견이 있어 소명하려면 어떤 자료를 첨부해야 하나요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "모아둔 보험료로도 물어줄 돈이 모자라면 그땐 어떻게 해요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "저축은행 옛날 이름이랑 바뀐 이름 정리된 표 어디서 봐요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "조사 받은 내용에 억울한 게 있으면 어떻게 이의제기해요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "지급명령 확정되고도 안 갚으면 재산 압류당하나요?",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "돌려주긴 할 건데 이의가 있으면 어디에 제기해요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "예금자보호법 시행령 원문 보러 가고 싶어요",
+      "true": "civil_petition",
+      "pred": "informational"
+    },
+    {
+      "question": "반환지원 규정이랑 시행세칙은 어디서 봐요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    },
+    {
+      "question": "빚이 얼마 남았는지 증명하는 서류 떼야 되는데 꼭 찾아가야 되나요 인터넷으로는 안돼요?",
+      "true": "informational",
+      "pred": "civil_petition"
+    }
+  ]
+}

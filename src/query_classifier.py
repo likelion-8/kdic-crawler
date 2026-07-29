@@ -54,12 +54,16 @@ class QuestionTypeClassifier:
         return self.types[best]
 
 
-class BusinessFunctionClassifier(QuestionTypeClassifier):
-    """질의 → 6개 업무(business_function) 분류. QuestionTypeClassifier와 같은 1-NN·같은
-    질문 임베딩 캐시를 쓰되 라벨만 business_function으로 바꾼다. 결과값을 RoutedRetriever
-    (또는 leaf)의 search(..., business_function=...)에 넣어 업무 범위를 좁힌다."""
-    def __init__(self, model=DEFAULT_DENSE_MODEL):
-        super().__init__(model=model, label_field="business_function")
+# 2026-07-29 팀 결정: 업무(business_function) 분류는 검색에 쓰지 않기로 하여 비활성화.
+# (retrieval._build_engines가 bf_classifier를 넘기지 않아 이미 무필터였고, 이 클래스는
+#  아무도 인스턴스화하지 않던 죽은 코드였음.) 재도입 시 아래 주석을 되살리고, retrieval.py의
+#  import·RoutedRetriever 인자, app.py 워밍업도 함께 복원할 것.
+# class BusinessFunctionClassifier(QuestionTypeClassifier):
+#     """질의 → 6개 업무(business_function) 분류. QuestionTypeClassifier와 같은 1-NN·같은
+#     질문 임베딩 캐시를 쓰되 라벨만 business_function으로 바꾼다. 결과값을 RoutedRetriever
+#     (또는 leaf)의 search(..., business_function=...)에 넣어 업무 범위를 좁힌다."""
+#     def __init__(self, model=DEFAULT_DENSE_MODEL):
+#         super().__init__(model=model, label_field="business_function")
 
 
 # 함수형 인터페이스 — label_field별로 분류기 인스턴스를 한 번만 만들어 재사용(임베딩
@@ -81,13 +85,41 @@ def classify_query_type(query):
     return "table_lookup" if qtype == "table_lookup" else "general"
 
 
-def classify_intent(query):
-    """질의 의도를 informational/civil_petition 중 하나로 판단.
+# ── intent 분류: Kiwi 형태소 + TF-IDF + LogisticRegression (2026-07-29 코사인 1-NN에서 교체) ──
+# question_type 분류(위)는 코사인 방식 유지. intent만 형태소 방식으로 바꾼다.
+# Leave-Page-Out 검증: 형태소 89.6% > 코사인 1-NN 80.5%. 학습 산출물은
+# train_intent_morpheme.py가 data/intent_classifier/ 에 pickle로 만든다(파이프라인은 로드만).
+_INTENT_DIR = ROOT / "data" / "intent_classifier"
+_intent_artifacts = {}
+_kiwi_intent = {}
 
-    라벨은 data/testset/testset_all.jsonl의 intent 필드(2026-07-22, src/project1_src/
-    label_intent.py로 규칙 기반 1차 라벨링 — file_download/link_guide 유형은 전부
-    civil_petition, 나머지는 "신청/접수/제출/구비서류/위임장/철회/취소/이의제기/지급명령/청구"
-    등 절차 실행 표현 포함 여부로 판단). 사람이 한 땀 한 땀 검수한 정답은 아니므로,
-    leave-one-out 등으로 정확도를 실측하기 전까지는 잠정 라벨로 취급할 것.
-    """
-    return _get_classifier("intent").classify(query)
+
+def tokenize_intent(text):
+    """Kiwi 형태소+품사 태그 토큰(예: "신청/NNG", "어요/EF"). 학습(train_intent_morpheme.py)과
+    추론이 반드시 같은 토큰화를 써야 하므로 이 함수 하나를 양쪽이 공유한다(train이 여기서 import).
+    TF-IDF 벡터라이저는 공백 분리(token_pattern)만 쓰므로, 여기서 토큰을 만들어 공백으로 이어
+    넘긴다 — 커스텀 tokenizer를 pickle에 넣지 않아 저장/로드가 깨지지 않는다."""
+    if "kiwi" not in _kiwi_intent:
+        from kiwipiepy import Kiwi
+        _kiwi_intent["kiwi"] = Kiwi()
+    return [f"{t.form}/{t.tag}" for t in _kiwi_intent["kiwi"].tokenize(text)]
+
+
+def _load_intent_model():
+    """vectorizer/model pickle을 프로세스당 1회만 로드(함수 호출마다 다시 읽지 않게)."""
+    if not _intent_artifacts:
+        import pickle
+        with open(_INTENT_DIR / "tfidf_vectorizer.pkl", "rb") as f:
+            _intent_artifacts["vec"] = pickle.load(f)
+        with open(_INTENT_DIR / "logreg_model.pkl", "rb") as f:
+            _intent_artifacts["model"] = pickle.load(f)
+    return _intent_artifacts["vec"], _intent_artifacts["model"]
+
+
+def classify_intent(query):
+    """질의 의도를 informational/civil_petition 중 하나로 판단(형태소 TF-IDF + LogReg).
+    입출력 계약은 기존과 동일(query 문자열 → 두 라벨 중 하나)이라 호출부(pipeline.py 등)는
+    수정이 필요 없다. 모델 산출물이 없으면 train_intent_morpheme.py를 먼저 실행해야 한다."""
+    vec, model = _load_intent_model()
+    joined = " ".join(tokenize_intent(query))
+    return str(model.predict(vec.transform([joined]))[0])
