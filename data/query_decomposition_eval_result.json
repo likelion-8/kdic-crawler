@@ -1,0 +1,1784 @@
+{
+  "summary": {
+    "n_cases": 38,
+    "n_runs": 114,
+    "false_split_rate": 0.0,
+    "under_split_rate": 0.0455,
+    "count_match_rate": 0.9737,
+    "item_missing_rate": 0.0323,
+    "split_decision_stability": 1.0,
+    "total_runs": 114,
+    "by_difficulty": {
+      "easy": {
+        "n_cases": 20,
+        "n_runs": 60,
+        "false_split_rate": 0.0,
+        "under_split_rate": 0.0,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "hard": {
+        "n_cases": 18,
+        "n_runs": 54,
+        "false_split_rate": 0.0,
+        "under_split_rate": 0.0769,
+        "count_match_rate": 0.9444,
+        "item_missing_rate": 0.0645,
+        "split_decision_stability": 1.0
+      }
+    },
+    "by_case_type": {
+      "single_definition": {
+        "n_cases": 3,
+        "n_runs": 9,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "single_procedure": {
+        "n_cases": 4,
+        "n_runs": 12,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "single_role_context": {
+        "n_cases": 3,
+        "n_runs": 9,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "compound_same_bf": {
+        "n_cases": 9,
+        "n_runs": 27,
+        "false_split_rate": null,
+        "under_split_rate": 0.0,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "compound_cross_bf": {
+        "n_cases": 4,
+        "n_runs": 12,
+        "false_split_rate": null,
+        "under_split_rate": 0.0,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "compound_role_pair": {
+        "n_cases": 5,
+        "n_runs": 15,
+        "false_split_rate": null,
+        "under_split_rate": 0.2,
+        "count_match_rate": 0.8,
+        "item_missing_rate": 0.1,
+        "split_decision_stability": 1.0
+      },
+      "trivial": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "single_informal_typo": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "single_synonym_trap": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "single_terse": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "single_long_rambling": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "single_negation_trap": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": 0.0,
+        "under_split_rate": null,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "compound_offtopic_clause": {
+        "n_cases": 2,
+        "n_runs": 6,
+        "false_split_rate": null,
+        "under_split_rate": 0.0,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.25,
+        "split_decision_stability": 1.0
+      },
+      "compound_no_conjunction": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": null,
+        "under_split_rate": 0.0,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      },
+      "compound_elliptical": {
+        "n_cases": 1,
+        "n_runs": 3,
+        "false_split_rate": null,
+        "under_split_rate": 0.0,
+        "count_match_rate": 1.0,
+        "item_missing_rate": 0.0,
+        "split_decision_stability": 1.0
+      }
+    }
+  },
+  "cases": [
+    {
+      "test_id": "dq_001",
+      "case_type": "single_definition",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "예금보험금은 어떻게 신청하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금은 어떻게 신청하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금은 어떻게 신청하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_002",
+      "case_type": "single_definition",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "예금자보호제도는 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금자보호제도는 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금자보호제도는 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_003",
+      "case_type": "single_definition",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "은닉재산 신고가 무슨 뜻인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "은닉재산 신고가 무슨 뜻인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "은닉재산 신고가 무슨 뜻인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_004",
+      "case_type": "single_procedure",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "착오송금 반환 신청 방법은 어떻게 되나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금 반환 신청 방법은 어떻게 되나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금 반환 신청 절차는 어떻게 되나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_005",
+      "case_type": "single_procedure",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "채무조정은 어떻게 신청하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정은 어떻게 신청하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정은 어떻게 신청하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_006",
+      "case_type": "single_procedure",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "고객 미수령금은 어떻게 찾나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "고객 미수령금은 어떻게 찾나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "고객 미수령금은 어떻게 찾나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_007",
+      "case_type": "single_procedure",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "은닉재산은 어디에 신고하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "은닉재산은 어디에 신고하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "은닉재산은 어디에 신고하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_008",
+      "case_type": "single_role_context",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "대리인이 예금보험금을 대신 수령하려면 어떤 서류가 필요한가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "대리인이 예금보험금을 대신 수령하려면 어떤 서류가 필요한가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "대리인이 예금보험금을 대신 수령하려면 어떤 서류가 필요한가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_009",
+      "case_type": "single_role_context",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "착오송금인이 반환지원을 신청하려면 어떤 절차를 거쳐야 하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금인이 반환지원을 신청하려면 어떤 절차를 거쳐야 하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금인이 반환지원을 신청하려면 어떤 절차를 거쳐야 하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_010",
+      "case_type": "single_role_context",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "미성년자 자녀 명의의 미수령금을 법정대리인이 대신 찾으려면 어떻게 해야 하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "미성년자 자녀 명의의 미수령금을 법정대리인이 대신 찾으려면 어떻게 해야 하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "미성년자 자녀 명의의 미수령금을 법정대리인이 대신 찾으려면 어떻게 해야 하나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_011",
+      "case_type": "compound_same_bf",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "필요한 서류는 어떤 것들이 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_012",
+      "case_type": "compound_same_bf",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "착오송금 반환 신청에 필요한 서류는 무엇인가요?",
+            "착오송금 반환 신청 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금 반환 신청에 필요한 서류는 무엇인가요?",
+            "착오송금 반환 신청 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금 반환 신청에 필요한 서류는 무엇인가요?",
+            "착오송금 반환 신청 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_013",
+      "case_type": "compound_same_bf",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "채무조정의 감면율은 어느 정도인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "채무조정의 감면율은 어느 정도인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "채무조정의 감면율은 어느 정도인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_014",
+      "case_type": "compound_same_bf",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "예금보험금을 신청하기 위해 필요한 서류는 무엇인가요?",
+            "예금보험금 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 3,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 3,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "예금보험금 신청에 필요한 서류는 무엇인가요?",
+            "예금보험금 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 3,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 3,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "예금보험금을 신청하기 위해 필요한 서류는 무엇인가요?",
+            "예금보험금 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 3,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 3,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_015",
+      "case_type": "compound_same_bf",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "고객 미수령금 조회 방법은 어떻게 되나요?",
+            "고객 미수령금 신청 기한은 언제까지인가요?",
+            "고객 미수령금 신청을 위해 필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 3,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 3,
+          "missing": []
+        },
+        {
+          "output": [
+            "고객 미수령금 조회 방법은 어떻게 되나요?",
+            "고객 미수령금 신청 기한은 언제까지 인가요?",
+            "고객 미수령금 신청 시 필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 3,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 3,
+          "missing": []
+        },
+        {
+          "output": [
+            "고객 미수령금 조회 방법은 어떻게 되나요?",
+            "고객 미수령금 신청 기한은 언제까지 인가요?",
+            "고객 미수령금 신청 시 필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 3,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 3,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_016",
+      "case_type": "compound_cross_bf",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "착오송금 반환 신청 조건은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "착오송금 반환 신청 조건은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "착오송금 반환 신청 조건은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_017",
+      "case_type": "compound_cross_bf",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "은닉재산 신고 방법은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "은닉재산 신고 방법은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "은닉재산 신고 방법은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_018",
+      "case_type": "compound_role_pair",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "착오송금을 잘못 보낸 사람은 어떤 절차를 밟아야 하나요?",
+            "착오송금을 잘못 받은 사람은 어떤 절차를 밟아야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금을 잘못 보낸 사람은 어떤 절차를 밟아야 하나요?",
+            "착오송금을 잘못 받은 사람은 어떤 절차를 밟아야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금을 잘못 보낸 사람은 어떤 절차를 밟아야 하나요?",
+            "착오송금을 잘못 받은 사람은 어떤 절차를 밟아야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_019",
+      "case_type": "compound_role_pair",
+      "difficulty": "easy",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "주채무자 채무조정 감면율은 어떻게 되나요?",
+            "보증채무자 채무조정 감면율은 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "주채무자의 채무조정 감면율은 어떻게 되나요?",
+            "보증채무자의 채무조정 감면율은 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "주채무자의 채무조정 감면율은 어떻게 되나요?",
+            "보증채무자의 채무조정 감면율은 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_020",
+      "case_type": "trivial",
+      "difficulty": "easy",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "안녕하세요"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "안녕하세요"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "안녕하세요"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_021",
+      "case_type": "single_informal_typo",
+      "difficulty": "hard",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "착오송금이 뭔가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금이 뭔가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금이 뭔가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_022",
+      "case_type": "single_synonym_trap",
+      "difficulty": "hard",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "예금보험금 신청 방법하고 절차 좀 알려주세요."
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법하고 절차 좀 알려주세요."
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법하고 절차 좀 알려주세요."
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_023",
+      "case_type": "single_terse",
+      "difficulty": "hard",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "필요한 서류는 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_024",
+      "case_type": "single_long_rambling",
+      "difficulty": "hard",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "제 예금은 어떻게 보호받을 수 있나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "제 예금은 어떻게 보호받을 수 있나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "제 예금은 어떻게 보호받을 수 있나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_025",
+      "case_type": "single_negation_trap",
+      "difficulty": "hard",
+      "should_split": false,
+      "runs": [
+        {
+          "output": [
+            "미수령금 외에 예금보험금 신청 방법은 어떻게 되나요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "미수령금 외에 예금보험금 신청 방법은 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        },
+        {
+          "output": [
+            "미수령금 외에 예금보험금 신청 방법은 무엇인가요?"
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": true,
+          "matched": 1,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_026",
+      "case_type": "compound_offtopic_clause",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "돈을 빌려 송금했는데 잘못 송금했을 경우 어떻게 해야 하나요?",
+            "잘못 송금한 돈을 돌려받지 못하면 어떤 문제가 발생하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 1,
+          "missing": [
+            [
+              "보내"
+            ]
+          ]
+        },
+        {
+          "output": [
+            "돈을 빌려 송금했는데 잘못 송금했을 때 어떻게 해야 하나요?",
+            "잘못 송금한 경우 상대방이 돌려주지 않으면 문제가 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 1,
+          "missing": [
+            [
+              "보내"
+            ]
+          ]
+        },
+        {
+          "output": [
+            "돈을 빌려 송금했는데 잘못 송금했을 경우 어떻게 해야 하나요?",
+            "잘못 송금한 돈을 돌려받지 못하면 어떤 문제가 발생하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 1,
+          "missing": [
+            [
+              "보내"
+            ]
+          ]
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_027",
+      "case_type": "compound_same_bf",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "제 예금은 어떻게 되나요?",
+            "보상을 못 받는 경우가 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "제 예금은 어떻게 되나요?",
+            "보상을 못 받는 경우가 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "제 예금은 어떻게 되나요?",
+            "보상을 못 받는 경우가 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_028",
+      "case_type": "compound_role_pair",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "친구가 저한테 돈 잘못 보냈다고 연락이 왔는데 제가 그냥 안 돌려주면 어떻게 되나요?",
+            "제가 예전에 실수로 잘못 보낸 것도 지금 신청할 수 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "친구가 저한테 돈 잘못 보냈는데 그냥 안 돌려주면 어떻게 되나요?",
+            "예전에 실수로 잘못 보낸 것도 지금 신청 가능한가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "친구가 저한테 돈 잘못 보냈는데 그냥 안 돌려주면 어떻게 되나요?",
+            "예전에 실수로 잘못 보낸 것도 지금 신청 가능한가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_029",
+      "case_type": "compound_same_bf",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "저희 아버지가 돌아가셨는데 아버지 앞으로 된 예금이 있으면 그것도 미수령금으로 찾을 수 있나요?",
+            "아버지 앞으로 된 예금을 찾기 위해 형제들이 함께 가야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "저희 아버지가 돌아가셨는데 아버지 앞으로 된 예금이 있으면 그것도 미수령금으로 찾을 수 있나요?",
+            "아버지 앞으로 된 예금을 찾기 위해 형제들이 함께 가야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "저희 아버지가 돌아가셨는데 아버지 앞으로 된 예금이 있으면 그것도 미수령금으로 찾을 수 있나요?",
+            "아버지 앞으로 된 예금을 찾기 위해 형제들이 함께 가야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_030",
+      "case_type": "compound_cross_bf",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "빚 조정을 받으려면 어떻게 해야 되나요?",
+            "숨겨진 재산을 신고했을 때 어떤 혜택이 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "빚 조정을 받으려면 어떻게 해야 되나요?",
+            "숨겨진 재산을 신고했을 경우, 어떤 혜택이 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "빚 조정을 받으려면 어떻게 해야 하나요?",
+            "숨겨진 재산을 신고했을 경우, 어떤 혜택이 있나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_031",
+      "case_type": "compound_role_pair",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "보증을 서줬다가 저까지 빚을 떠안게 생긴 경우 조정 대상이 되는지와 주채무자와 보증인의 감면 비율 차이에 대해 알고 싶습니다."
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": false,
+          "matched": 1,
+          "missing": [
+            [
+              "주채무자"
+            ]
+          ]
+        },
+        {
+          "output": [
+            "보증을 서줬다가 저까지 빚을 떠안게 생긴 경우 조정 대상이 되는지와 주채무자와 보증인의 감면 비율 차이에 대해 알고 싶습니다."
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": false,
+          "matched": 1,
+          "missing": [
+            [
+              "주채무자"
+            ]
+          ]
+        },
+        {
+          "output": [
+            "보증을 서줬다가 저까지 빚을 떠안게 생긴 경우 조정 대상이 되는지와 주채무자와 보증인의 감면 비율 차이에 대해 알고 싶습니다."
+          ],
+          "n_out": 1,
+          "split_flag": false,
+          "count_match": false,
+          "matched": 1,
+          "missing": [
+            [
+              "주채무자"
+            ]
+          ]
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": false
+    },
+    {
+      "test_id": "dq_032",
+      "case_type": "compound_offtopic_clause",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "사기범에게 잘못 보낸 경우 착오송금으로 처리되나요?",
+            "보이스피싱 사기는 어디에 신고해야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "사기범에게 잘못 보낸 경우 착오송금으로 처리되나요?",
+            "보이스피싱 사기는 어디에 신고해야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "사기범에게 잘못 보낸 경우 착오송금으로 처리되나요?",
+            "보이스피싱 사기는 어디에 신고해야 하나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_033",
+      "case_type": "compound_same_bf",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "여자친구와 함께 살기 위해 받은 대출이 은행이 망했을 경우 각자 예금 보호 가능 여부",
+            "예금보호 한도가 1인당인지 세대당인지"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "각자 예금 보호 받을 수 있는지",
+            "예금보호 한도는 1인당인지 세대당인지"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "여자친구와 함께 대출을 받았는데 은행이 망했을 경우 각자 예금 보호는 어떻게 되나요?",
+            "예금보호 한도는 1인당인가요, 세대당인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_034",
+      "case_type": "compound_cross_bf",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "예금보험금 신청 기간은 어떻게 되나요?",
+            "착오송금 신청 기간은 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 기간은 어떻게 되나요?",
+            "착오송금 신청 기간은 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 기간은 어떻게 되나요?",
+            "착오송금 신청 기간은 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_035",
+      "case_type": "compound_no_conjunction",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "착오송금 반환 신청 조건은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "착오송금 반환 신청 조건은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "예금보험금 신청 방법은 어떻게 되나요?",
+            "착오송금 반환 신청 조건은 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_036",
+      "case_type": "compound_elliptical",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "채무조정의 감면율은 얼마인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "채무조정의 감면율은 얼마인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "채무조정 신청 자격은 어떻게 되나요?",
+            "채무조정의 감면율은 얼마인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_037",
+      "case_type": "compound_role_pair",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "돈 잘못 보낸 사람의 절차는 어떻게 되나요?",
+            "잘못 받은 사람의 절차는 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "돈 잘못 보낸 사람이 해야 할 절차는 무엇인가요?",
+            "잘못 받은 사람이 해야 할 절차는 무엇인가요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "돈 잘못 보낸 사람의 절차는 어떻게 되나요?",
+            "잘못 받은 사람의 절차는 어떻게 되나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    },
+    {
+      "test_id": "dq_038",
+      "case_type": "compound_same_bf",
+      "difficulty": "hard",
+      "should_split": true,
+      "runs": [
+        {
+          "output": [
+            "착오송금 신청에 필요한 서류는 무엇인가요?",
+            "착오송금 신청 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금 신청에 필요한 서류는 무엇인가요?",
+            "착오송금 신청 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        },
+        {
+          "output": [
+            "착오송금 신청에 필요한 서류는 무엇인가요?",
+            "착오송금 신청 처리 기간은 얼마나 걸리나요?"
+          ],
+          "n_out": 2,
+          "split_flag": true,
+          "count_match": true,
+          "matched": 2,
+          "missing": []
+        }
+      ],
+      "split_stable": true,
+      "majority_split_flag": true
+    }
+  ]
+}
