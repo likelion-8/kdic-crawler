@@ -94,7 +94,10 @@ def main():
     for i, r in enumerate(rows, 1):
         q = r["question"]
         gold = set(r.get("expected_sources") or [])
-        is_oos = not gold
+        # OOS 판정은 명시적 의도 라벨(question_type=="out_of_scope")로 한다.
+        # expected_sources 빈 값으로 판정하면, 나중에 '범위 안인데 정답 페이지 미기입' 행이
+        # 추가될 때 OOS로 오분류된다(현재는 두 기준이 같은 10개라 결과 동일).
+        is_oos = (r.get("question_type") == "out_of_scope")
         try:
             answer, timings = pipeline._rag_answer_traced(q)
         except Exception as e:
