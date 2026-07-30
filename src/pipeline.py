@@ -15,6 +15,7 @@ from prompt_builder import (
     assemble_civil_petition_answer, assemble_informational_answer,
     build_civil_petition_prompt, build_informational_prompt,
 )
+from source_verifier import used_source
 from llm_client import call_hyperclova
 from performance import measure_time
 
@@ -70,12 +71,20 @@ def _answer_one(query, timings):
 
     with measure_time(timings, "llm_call", accumulate=True):
         llm_text = call_hyperclova(prompt)
-        # URL은 LLM에게 안 맡긴다 - 실제 서류/페이지/출처 링크는 civil_petition.py/
-        # citation.py가 이미 조회해둔 값을 여기서 결정론적으로 그대로 붙인다.
-        if intent == "civil_petition":
-            answer = assemble_civil_petition_answer(llm_text, civil_petition_answer)
-        else:
-            answer = assemble_informational_answer(llm_text, citations)
+
+    with measure_time(timings, "source_verification", accumulate=True):
+        # 출처를 붙일지도 LLM에게 안 묻는다 - 답변이 근거를 실제로 썼는지를
+        # source_verifier가 겹침 계산으로 판정한다(자기보고 마커 폐기 경위는 그 파일 주석).
+        context = (civil_petition_answer["procedure"] if intent == "civil_petition"
+                   else "\n\n".join(text for _, _, text in top))
+        src_used = used_source(llm_text, context)
+
+    # URL은 LLM에게 안 맡긴다 - 실제 서류/페이지/출처 링크는 civil_petition.py/
+    # citation.py가 이미 조회해둔 값을 여기서 결정론적으로 그대로 붙인다.
+    if intent == "civil_petition":
+        answer = assemble_civil_petition_answer(llm_text, civil_petition_answer, src_used)
+    else:
+        answer = assemble_informational_answer(llm_text, citations, src_used)
 
     return answer
 

@@ -257,7 +257,14 @@ def to_safe_html(text):
     마크다운 파서를 끌어오지 않는다."""
     safe = html.escape(text)
     safe = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", safe)
-    safe = re.sub(r"(https?://[^\s<]+)", r'<a href="\1" target="_blank" rel="noopener">\1</a>', safe)
+    # URL 문자를 RFC 3986 ASCII로 제한(괄호 제외)하고 꼬리 문장부호를 떼어낸다 —
+    # 기존 [^\s<]+는 공백 전까지 전부 먹어서 "(URL)"의 닫는 괄호와 "URL에 접속"의
+    # 한글 조사까지 href에 포함돼 링크가 깨졌다(404).
+    def _linkify(m):
+        url = m.group(1).rstrip(".,;:!?'")
+        rest = m.group(1)[len(url):]
+        return f'<a href="{url}" target="_blank" rel="noopener">{url}</a>{rest}'
+    safe = re.sub(r"(https?://[A-Za-z0-9._~:/?#@!$&'*+,;=%-]+)", _linkify, safe)
     return safe.replace("\n", "<br>")
 
 
