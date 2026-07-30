@@ -17,8 +17,12 @@ ChatClovaX가 그대로 받아 호출한다.
 FEW_SHOT_EXAMPLES는 새로 지어내지 않고 data/testset/testset_all.jsonl의
 reference_answer(사람이 작성한 기준 답변)를 그대로 가져다 썼다(URL·출처 문구는
 이제 LLM 몫이 아니라서 뺐다).
+
+출처를 "붙일지 말지"의 판정도 LLM에게 맡기지 않는다 — 예전의 [SOURCE_USED]/[NO_SOURCE]
+자기보고 마커는 오표기가 프롬프트로 교정 불가능해 폐기했고(study/2026-07-30.md),
+source_verifier.py가 답변↔근거 겹침을 계산해 판정한다. 이 파일은 프롬프트 조립과
+판정 결과(used_source)에 따른 출처 부착만 담당한다.
 """
-import re
 
 SYSTEM_INSTRUCTION = """당신은 예금보험공사(KDIC)의 AI 상담 챗봇 "예솜"입니다. 정확하고 신뢰할 수 있는 답변으로 국민을 돕는 것이 당신의 역할입니다.
 
@@ -28,41 +32,38 @@ SYSTEM_INSTRUCTION = """당신은 예금보험공사(KDIC)의 AI 상담 챗봇 "
 3. URL·웹사이트 주소·전화번호를 답변에 직접 쓰지 마세요. 서류 안내와 신청 페이지, 출처 링크는 시스템이 답변 뒤에 별도로 붙여줍니다 — 당신은 그 부분을 언급하거나 대신 채우지 않아도 됩니다.
 4. 친절하고 정중한 어투를 쓰되, 확실하지 않은 내용을 단정적으로 말하지 마세요.
 5. 아래 예시(few-shot)는 답변의 형식과 어투를 보여주기 위한 것일 뿐입니다. 예시 속 구체적인 사실은 지금 질문의 "근거 자료"에 실제로 없다면 절대 가져오지 마세요.
-6. 사용자가 "너는 누구야", "무슨 AI야", "HyperCLOVA X야?" 처럼 당신의 정체를 물으면, 모델명(HyperCLOVA X 등)이 아니라 "예금보험공사의 AI 상담 챗봇 예솜"이라고 답하세요.
-7. 답변 맨 첫 줄에는 다른 말 없이 정확히 `[SOURCE_USED]` 또는 `[NO_SOURCE]` 둘 중 하나만 쓰고 줄바꿈한 뒤 이어서 답변하세요. "근거 자료"의 내용을 실제로 근거로 삼아 답했다면 `[SOURCE_USED]`, 인사·잡담이거나 질문이 "근거 자료"와 전혀 관련이 없어서 근거 자료를 하나도 참고하지 않고 답했다면 `[NO_SOURCE]`를 쓰세요. 둘 중 하나는 반드시 있어야 하며 절대 생략하지 마세요."""
+6. 사용자가 "너는 누구야", "무슨 AI야", "HyperCLOVA X야?" 처럼 당신의 정체를 물으면, 모델명(HyperCLOVA X 등)이 아니라 "예금보험공사의 AI 상담 챗봇 예솜"이라고 답하세요."""
 
 FEW_SHOT_EXAMPLES = [
     {
         # informational — testset_all.jsonl ms_poss_dcmnt_q4
         "question": "예금자 본인이 직접 예금보험금을 찾으러 갈 때 필요한 서류는 무엇인가요?",
-        "answer": "[SOURCE_USED]\n주민등록증·운전면허증·여권 등 공공기관 발행 신분증과 본인의 도장(서명 가능)만 있으면 됩니다.",
+        "answer": "주민등록증·운전면허증·여권 등 공공기관 발행 신분증과 본인의 도장(서명 가능)만 있으면 됩니다.",
     },
     {
         # civil_petition — testset_all.jsonl ms_poss_dcmnt_q3 (절차 설명만 - 서류/페이지는 백엔드가 붙임)
         "question": "예금보험금 위임장 양식은 어디서 다운로드 받나요?",
-        "answer": "[SOURCE_USED]\n대리인이 위임장을 지참해 신청하시면 됩니다.",
+        "answer": "대리인이 위임장을 지참해 신청하시면 됩니다.",
     },
     {
         # 정체성 질문 — testset에 없는 시범 예시(2026-07-24). 검색은 관련도 임계값 없이
-        # 항상 top-k를 반환하므로 이런 질문에도 무관한 청크가 "근거 자료"로 딸려온다.
-        # [NO_SOURCE] 표기 형식을 보여주기 위한 예시일 뿐, 사실 정보가 아니라 지어낼 것도 없다.
+        # 항상 top-k를 반환하므로 이런 질문에도 무관한 청크가 "근거 자료"로 딸려온다 —
+        # 그걸 무시하고 정체성 답변을 하는 형식을 보여주는 예시.
         "question": "너는 누구야? HyperCLOVA X야?",
-        "answer": "[NO_SOURCE]\n안녕하세요! 저는 예금보험공사의 AI 상담 챗봇 예솜입니다. 예금자보호제도나 착오송금 반환지원처럼 궁금하신 점을 편하게 물어봐 주세요.",
+        "answer": "안녕하세요! 저는 예금보험공사의 AI 상담 챗봇 예솜입니다. 예금자보호제도나 착오송금 반환지원처럼 궁금하신 점을 편하게 물어봐 주세요.",
     },
     {
         # 인사·잡담 — 위와 같은 이유의 시범 예시.
         "question": "안녕",
-        "answer": "[NO_SOURCE]\n안녕하세요! 예금보험공사와 관련해 궁금하신 점이 있으시면 말씀해주세요.",
+        "answer": "안녕하세요! 예금보험공사와 관련해 궁금하신 점이 있으시면 말씀해주세요.",
     },
     {
-        # out_of_scope — testset_all.jsonl ha_ilgl_intro_q3. 거절 답변도 근거 자료를 실제로
-        # 못 썼다는 점은 인사·잡담과 같으므로 [NO_SOURCE]를 붙인다 - 안 붙이면 검색된
-        # (무관한) 청크의 출처가 거절 답변에도 잘못 붙는 문제가 재현됨(2026-07-24).
-        # 일부러 few-shot 맨 마지막에 둔다 - 실제 질문 바로 앞이라 "거절해도 된다"는
-        # 신호가 가장 강하게 남아야, 근거가 약할 때(civil_petition 오분류로 인한
-        # 무관한 절차 청크 등) 억지로 답을 지어내지 않고 거절하는 쪽으로 붙잡아준다.
+        # out_of_scope — testset_all.jsonl ha_ilgl_intro_q3. 일부러 few-shot 맨 마지막에
+        # 둔다 - 실제 질문 바로 앞이라 "거절해도 된다"는 신호가 가장 강하게 남아야,
+        # 근거가 약할 때(civil_petition 오분류로 인한 무관한 절차 청크 등) 억지로 답을
+        # 지어내지 않고 거절하는 쪽으로 붙잡아준다.
         "question": "불법 대부업체나 사채업자의 살인적인 고금리 피해를 금융감독원에 정식으로 신고하고 구제받는 절차를 상세히 설명해 주세요.",
-        "answer": "[NO_SOURCE]\n문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 금융감독원 등 관련 기관에 문의하시길 권해드립니다.",
+        "answer": "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 금융감독원 등 관련 기관에 문의하시길 권해드립니다.",
     },
 ]
 
@@ -97,10 +98,9 @@ def build_civil_petition_prompt(query, civil_petition_answer):
         "--- 아래는 실제 질문입니다 ---\n\n"
         f"[절차 안내 근거]\n{civil_petition_answer['procedure']}\n\n"
         f"질문: {query}\n"
-        "답변(위 절차 안내 근거가 질문 주제와 실제로 관련 있으면 [SOURCE_USED]로 시작해 그"
-        " 내용으로 자연스럽게 설명하세요 - 서류·URL 언급은 하지 마세요. 근거가 질문과 다른"
-        " 제도·기관 이야기라면 절대 그걸로 답을 지어내지 말고 [NO_SOURCE]로 시작해서 확인할"
-        " 수 없다고 답하세요 - 둘 중 하나는 반드시 맨 앞에 쓰세요):"
+        "답변(위 절차 안내 근거가 질문 주제와 실제로 관련 있으면 그 내용으로 자연스럽게"
+        " 설명하세요 - 서류·URL 언급은 하지 마세요. 근거가 질문과 다른 제도·기관"
+        " 이야기라면 절대 그걸로 답을 지어내지 말고 확인할 수 없다고 답하세요):"
     )
     return [("system", SYSTEM_INSTRUCTION), ("human", human)]
 
@@ -119,60 +119,25 @@ def _format_source_line(item):
     return f"- {label} ({item['url']})"
 
 
-NO_SOURCE_MARKER = "[NO_SOURCE]"
-SOURCE_USED_MARKER = "[SOURCE_USED]"
-
-# LLM이 지시한 정확한 밑줄 표기([SOURCE_USED]) 대신 띄어쓰기([SOURCE USED])로 쓰는 경우가
-# 실제로 재현됐다(2026-07-30) — 완전 일치 문자열 비교로는 이 변형을 못 잡아 마커 텍스트가
-# 그대로 노출되고 근거_사용_여부까지 잘못 판정되는 회귀가 났다. 마커 두 단어 사이 구분자만
-# 밑줄/띄어쓰기 둘 다 허용하고(대소문자 무시), 그 외 자유 문구는 절대 추측하지 않는다 —
-# "여러 표현을 추측해서 거른다"는, 이 프로젝트가 이미 폐기한 접근과는 다르다.
-_MARKER_RE = re.compile(r"^\[(SOURCE[_ ]USED|NO[_ ]SOURCE)\]\s*", re.IGNORECASE)
-
-
-def _strip_no_source_marker(llm_text):
-    """LLM이 맨 앞에 붙인 마커([SOURCE_USED]/[NO_SOURCE])를 떼어내고 (본문, 근거_사용_여부)를
-    반환한다.
-
-    검색(route_search_chunks)은 관련도 임계값이 없어 인사·잡담·근거와 무관한 질문에도
-    항상 top-k 청크를 반환한다 — 그래서 답변이 그 근거를 실제로 안 썼는데도(예: "안녕하세요"
-    인사말, 정체성 질문) 무관한 출처가 붙는 문제가 있었다(2026-07-24). "이 문구가 답변에
-    있으면 거절/잡담"식으로 여러 표현을 추측해서 걸러내는 방식은 표현이 다양해 계속 새므로
-    (이 프로젝트에서 여러 번 확인된 패턴 - docs/pipeline_issues.md 참고), LLM이 근거를
-    실제로 썼는지를 고정된 마커로 직접 표시하게 해 그 결과만 확인한다.
-
-    2026-07-30: "근거 미사용일 때만 [NO_SOURCE]를 붙여라"는 조건부 지시로는 LLM이 마커
-    자체를 빼먹고도 내용상으로는 올바르게 거절하는 사례가 재현됐다(docs/pipeline_issues.md
-    이슈 3) — 답변은 맞는데 마커가 없어 무관한 출처가 그대로 붙는 문제. 그래서 "항상 둘 중
-    하나를 붙여라"는 강제 이지선다로 바꿨다. 그래도 마커가 하나도 없는 이상 응답이 오면
-    안전한 쪽(출처 미첨부)으로 기본 처리한다 — 없는 출처를 안 보여주는 게, 무관한 출처를
-    잘못 붙이는 것보다 낫다."""
-    text = llm_text.strip()
-    m = _MARKER_RE.match(text)
-    if not m:
-        return llm_text, False
-    used_source = m.group(1).upper().replace(" ", "_") == "SOURCE_USED"
-    return text[m.end():].lstrip(), used_source
-
-
-def assemble_informational_answer(llm_text, citations):
+def assemble_informational_answer(llm_text, citations, used_source):
     """LLM이 쓴 답변 본문 뒤에 citation.py가 조회한 실제 출처를 결정론적으로 붙인다.
-    단, LLM이 근거를 실제로 안 썼다고 표시했으면(NO_SOURCE_MARKER) 출처를 붙이지 않는다.
+    used_source(bool)는 source_verifier.used_source()의 판정 — 답변이 근거를 실제로
+    썼는지를 코드로 잰 결과다. 예전에는 LLM이 답변 첫 줄에 붙이는 [SOURCE_USED]/[NO_SOURCE]
+    마커(자기보고)로 판단했으나, 근거를 쓰고도 [NO_SOURCE]를 표기하는 오표기가 프롬프트로
+    교정 불가능한 수준으로 재현되어(study/2026-07-30.md) 판정을 코드로 옮겼다.
     citations: citation.format_all_citations() 결과."""
-    text, used_source = _strip_no_source_marker(llm_text)
     if not used_source:
-        return text
-    return text + _render_list("참고 출처", citations, _format_source_line)
+        return llm_text
+    return llm_text + _render_list("참고 출처", citations, _format_source_line)
 
 
-def assemble_civil_petition_answer(llm_text, civil_petition_answer):
+def assemble_civil_petition_answer(llm_text, civil_petition_answer, used_source):
     """LLM이 쓴 절차 설명 뒤에 civil_petition.py가 조립한 서류·페이지 정보를 결정론적으로
-    붙인다. 근거 미사용 표시(NO_SOURCE_MARKER)가 있으면 붙이지 않는다.
+    붙인다. used_source 판정 근거는 assemble_informational_answer() 주석 참고.
     civil_petition_answer: civil_petition.build_civil_petition_answer() 결과."""
-    text, used_source = _strip_no_source_marker(llm_text)
     if not used_source:
-        return text
-    answer = text
+        return llm_text
+    answer = llm_text
     answer += _render_list(
         "필요 서류", civil_petition_answer["documents"], lambda d: f"- {d['label']}: {d['url']}")
     answer += _render_list("신청 페이지", civil_petition_answer["links"], _format_source_line)
