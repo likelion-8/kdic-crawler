@@ -39,12 +39,13 @@ USE_RERANKER = False
 USE_QUERY_DECOMPOSITION = True
 
 
-def _answer_one(query, timings, seen_pages, seen_urls):
+def _answer_one(query, timings):
     """질문 하나(원본 질문 또는 복합 질문의 하위 질문 하나)에 대해 검색부터 답변 조립까지
-    수행한다. seen_pages/seen_urls는 같은 요청 안의 다른 하위 질문에서 이미 인용된
-    페이지/서식 링크를 걸러내기 위한 누적 집합 — "같은 문서가 여러 하위 질문에서 검색되면
-    중복 제거"(log/0729.md 3항) 요구를 여기서 만족시킨다. 단일 질문 경로에서는 두 집합이
-    항상 비어 있으므로 필터링이 실질적으로 아무것도 안 걸러 기존 동작과 동일하다."""
+    수행한다. 하위 답변끼리는 출처를 포함해 완전히 독립이다 — 하위 답변 간 "중복 출처
+    제거"를 하던 누적 집합(seen_pages/seen_urls)은 2026-07-30 제거했다. 출처를 실제로
+    붙였는지가 아니라 검색됐는지 기준으로 걸러서, 앞 하위 답변이 [NO_SOURCE]로 거절한
+    경우 뒤 하위 답변의 진짜 출처까지 지우는 버그가 있었다(docs/pipeline_issues.md 이슈 4).
+    같은 문서가 여러 하위 답변의 근거면 각각에 보이는 게 맞다 — 다시 도입하지 말 것."""
     with measure_time(timings, "query_classification", accumulate=True):
         intent = classify_intent(query)
 
@@ -58,13 +59,8 @@ def _answer_one(query, timings, seen_pages, seen_urls):
     with measure_time(timings, "context_building", accumulate=True):
         if intent == "civil_petition":
             civil_petition_answer = build_civil_petition_answer(top)
-            civil_petition_answer["documents"] = [
-                d for d in civil_petition_answer["documents"] if d["url"] not in seen_urls]
-            civil_petition_answer["links"] = [
-                l for l in civil_petition_answer["links"] if l["url"] not in seen_urls]
         else:
-            citations = [c for c in format_all_citations([cid for cid, _, _ in top])
-                         if c["page_id"] not in seen_pages]
+            citations = format_all_citations([cid for cid, _, _ in top])
 
     with measure_time(timings, "prompt_building", accumulate=True):
         if intent == "civil_petition":
@@ -78,11 +74,8 @@ def _answer_one(query, timings, seen_pages, seen_urls):
         # citation.py가 이미 조회해둔 값을 여기서 결정론적으로 그대로 붙인다.
         if intent == "civil_petition":
             answer = assemble_civil_petition_answer(llm_text, civil_petition_answer)
-            seen_urls.update(d["url"] for d in civil_petition_answer["documents"])
-            seen_urls.update(l["url"] for l in civil_petition_answer["links"])
         else:
             answer = assemble_informational_answer(llm_text, citations)
-            seen_pages.update(c["page_id"] for c in citations)
 
     return answer
 
@@ -99,15 +92,13 @@ def _rag_answer_traced(query):
     else:
         sub_queries = [query]
 
-    seen_pages, seen_urls = set(), set()
-
     if len(sub_queries) <= 1:
         # 단일 질문(또는 기능 Off) - 분해기가 살짝 바꿔 쓴 표현(예: "이란"->"이라는 게")이
         # 아니라 원본 질문 그대로 검색한다. 분해가 실제로 아무것도 바꾸지 않아야 할 상황에서
         # 굳이 재질문판 문구를 쓸 이유가 없다(안전한 기본 동작 유지).
-        answer = _answer_one(query, timings, seen_pages, seen_urls)
+        answer = _answer_one(query, timings)
     else:
-        sub_answers = [_answer_one(q, timings, seen_pages, seen_urls) for q in sub_queries]
+        sub_answers = [_answer_one(q, timings) for q in sub_queries]
         answer = "\n\n".join(f"**{q}**\n{a}" for q, a in zip(sub_queries, sub_answers))
 
     timings["total"] = round(sum(timings.values()), 4)
