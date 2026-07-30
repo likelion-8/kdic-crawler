@@ -93,9 +93,13 @@ def _build_prompt(query):
 
 def decompose_query(query):
     """질문 하나 -> 하위 질문 문자열 리스트. 나눌 필요가 없으면 [query]와 동일한 내용의
-    한 원소 리스트가 된다. LLM 출력 파싱에 실패하거나(빈 응답 등) 명백히 잘못됐으면
-    분해하지 않은 원본 질문 그대로 담아 반환한다 — 분해 실패가 검색 자체를 막으면 안 된다."""
-    response = call_hyperclova(_build_prompt(query))
+    한 원소 리스트가 된다. LLM 출력 파싱에 실패하거나(빈 응답 등) 명백히 잘못됐으면,
+    또는 call_hyperclova 호출 자체가 실패하면(타임아웃 등) 분해하지 않은 원본 질문
+    그대로 담아 반환한다 — 분해 실패가 검색 자체를 막으면 안 된다."""
+    try:
+        response = call_hyperclova(_build_prompt(query))
+    except Exception:
+        return [query]
     sub_queries = [line.strip() for line in response.strip().splitlines() if line.strip()]
     return sub_queries if sub_queries else [query]
 
