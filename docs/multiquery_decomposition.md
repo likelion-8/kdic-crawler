@@ -215,9 +215,15 @@ LLM 호출 자체를 거르는 방식이었고, 원하는 성능이 안 나와 2
 
 1. **"~인지와 ~에 대해 알고 싶습니다" 패턴**: 미해결로 남은 잔여 케이스 — few-shot 늘리기
    외의 다른 접근(예: 후처리 검증, 규칙 기반 보정) 검토 필요.
-2. **중복 페이지 전수 감사**: `kmrs_proc`/`mtrs_gvbk_proc` 외에도 두 사이트(www.kdic.or.kr/
-   fins.kdic.or.kr)에 중복 게재된 자매 페이지가 58페이지 전체에 더 있는지 확인 — 있다면
-   6절의 Recall@5(0.815)도 과소평가일 수 있다.
+~~2. 중복 페이지 전수 감사~~ → **2026-07-30 검증 완료.** 팀원이 `testset_all.jsonl`(메인
+851문항 테스트셋 — cq01~15와는 별개 파일)에서 corpus 전체 중복 페이지 감사를 독립적으로
+수행해 4개 그룹을 확인했다(89e220d, `main` 반영): `uc_gudn`/`uc_hrpe_hist`/`uc_itgr_aply`,
+`kmrs_proc`/`mtrs_gvbk_proc`(6절에서 이미 반영한 바로 그 쌍), `faq_msdr_apply`/`faq_top10`,
+`dr_kruc`/`dr_system`. 이 4개 그룹을 cq01~15의 `expected_sources`와 전부 대조한 결과 —
+그룹1 관련 항목은 이미 정답 처리돼 있었고, 그룹3·4는 cq01~15의 정답으로 아예 안 쓰였다.
+**즉 6절의 Recall@5(0.815)는 추가 보정 없이 그대로 정확한 수치이며, 남아있던 4개 미스
+(`dp_fnst_srch`·`dp_fnst`·`kmrs_itrd`·`kmrs_apply_mthd`)는 채점 오류가 아니라 진짜 검색
+약점이라는 결론도 그대로 유지된다.**
 
 ~~3. [NO_SOURCE] 마커 신뢰성~~ → **2026-07-30 해결.** `prompt_builder.py`의 마커 방식을
 강제 이지선다(`[SOURCE_USED]`/`[NO_SOURCE]` 중 하나 필수)로 바꾸고, 그 과정에서 새로 생긴
