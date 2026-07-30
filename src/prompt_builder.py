@@ -19,9 +19,9 @@ reference_answer(사람이 작성한 기준 답변)를 그대로 가져다 썼�
 이제 LLM 몫이 아니라서 뺐다).
 
 출처를 "붙일지 말지"의 판정도 LLM에게 맡기지 않는다 — 예전의 [SOURCE_USED]/[NO_SOURCE]
-자기보고 마커는 오표기가 프롬프트로 교정 불가능해 폐기했고(study/2026-07-30.md),
-source_verifier.py가 답변↔근거 겹침을 계산해 판정한다. 이 파일은 프롬프트 조립과
-판정 결과(used_source)에 따른 출처 부착만 담당한다.
+자기보고 마커는 오표기가 프롬프트로 교정 불가능해 폐기했고(docs/pipeline_issues.md
+이슈 5), source_verifier.py가 답변↔근거 겹침을 계산해 판정한다. 이 파일은 프롬프트
+조립과 판정 결과(used_source)에 따른 출처 부착만 담당한다.
 """
 
 SYSTEM_INSTRUCTION = """당신은 예금보험공사(KDIC)의 AI 상담 챗봇 "예솜"입니다. 정확하고 신뢰할 수 있는 답변으로 국민을 돕는 것이 당신의 역할입니다.
@@ -124,7 +124,7 @@ def assemble_informational_answer(llm_text, citations, used_source):
     used_source(bool)는 source_verifier.used_source()의 판정 — 답변이 근거를 실제로
     썼는지를 코드로 잰 결과다. 예전에는 LLM이 답변 첫 줄에 붙이는 [SOURCE_USED]/[NO_SOURCE]
     마커(자기보고)로 판단했으나, 근거를 쓰고도 [NO_SOURCE]를 표기하는 오표기가 프롬프트로
-    교정 불가능한 수준으로 재현되어(study/2026-07-30.md) 판정을 코드로 옮겼다.
+    교정 불가능한 수준으로 재현되어(docs/pipeline_issues.md 이슈 5) 판정을 코드로 옮겼다.
     citations: citation.format_all_citations() 결과."""
     if not used_source:
         return llm_text

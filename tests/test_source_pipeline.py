@@ -4,7 +4,7 @@
 이걸 먼저 돌린다: python3 tests/test_source_pipeline.py
 
 과거 사고 재발 방지 케이스:
-- 근거로 답했는데 출처 누락 (마커 오표기, study/2026-07-30.md → source_verifier로 대체)
+- 근거로 답했는데 출처 누락 (마커 오표기, docs/pipeline_issues.md 이슈 5 → source_verifier로 대체)
 - 거절·인사에 무관한 출처 부착 (2026-07-24, docs/pipeline_issues.md 이슈 3)
 - 복합 질문에서 앞 하위 답변이 뒤 답변의 출처를 지움 (이슈 4)
 """
