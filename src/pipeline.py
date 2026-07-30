@@ -1,9 +1,11 @@
-"""전체 흐름 조립 — 질문 하나를 받아 분류→검색→재정렬→근거조립→프롬프트→LLM호출까지
-이어붙인 최종 진입점. 각 단계는 이미 만들어진 모듈을 그대로 호출만 한다(새 로직 없음).
+"""전체 흐름 조립 — 질문 하나를 받아 분해(복합 질문이면)→분류→검색→재정렬→근거조립→
+프롬프트→LLM호출까지 이어붙인 최종 진입점. 각 단계는 이미 만들어진 모듈을 그대로 호출만
+한다(새 로직 없음).
 
 K_CANDIDATES=20/K_FINAL=5는 candidate_ranking.py의 리랭킹 실측값(Recall@20 99%+, 기존 프로젝트
 AnswerRecall@5 기준)을 그대로 재사용한다.
 """
+from query_decomposer import decompose_query
 from query_classifier import classify_intent
 from retrieval import route_search_chunks
 from candidate_ranking import rerank, top_k_cut
@@ -25,6 +27,65 @@ K_FINAL = 5
 # 재검증 후). Off면 1차 검색(route_search_chunks) 상위 K_FINAL을 그대로 사용.
 USE_RERANKER = False
 
+# 2026-07-30: query_decomposer.decompose_query()로 복합 질문(예: "신청 방법과 필요한 서류,
+# 처리 기간을 알려주세요")을 감지해 하위 질문별로 따로 검색·답변한다(log/0729.md 3항).
+# 판단 자체가 매 질문마다 HyperCLOVA 호출 1회를 추가한다(단일 질문이어도 "쪼갤지 말지"를
+# 판단해야 하므로 피할 수 없는 비용) — 38문항 hard-tier 검증(eval_query_decomposition.py)
+# 기준 오분해 0%대·과소분해 ~5%까지 잡았지만, temperature=0.2(llm_client.py, 전체 파이프라인
+# 공유)에 따른 근본적 비결정성 때문에 10~20%대 잔여 흔들림은 프롬프트만으로는 못 없앴다.
+# 최악의 경우도 "원래 단일 질문을 비슷한 재질문 2개로 나눠 검색"하는 정도라 답 품질이
+# 완전히 틀어지진 않는다고 판단해 기본 On으로 둔다. E2E(Recall/환각률/응답시간) 재검증 후
+# 이 판단이 틀렸다면 USE_RERANKER처럼 여기서 끄면 된다.
+USE_QUERY_DECOMPOSITION = True
+
+
+def _answer_one(query, timings, seen_pages, seen_urls):
+    """질문 하나(원본 질문 또는 복합 질문의 하위 질문 하나)에 대해 검색부터 답변 조립까지
+    수행한다. seen_pages/seen_urls는 같은 요청 안의 다른 하위 질문에서 이미 인용된
+    페이지/서식 링크를 걸러내기 위한 누적 집합 — "같은 문서가 여러 하위 질문에서 검색되면
+    중복 제거"(log/0729.md 3항) 요구를 여기서 만족시킨다. 단일 질문 경로에서는 두 집합이
+    항상 비어 있으므로 필터링이 실질적으로 아무것도 안 걸러 기존 동작과 동일하다."""
+    with measure_time(timings, "query_classification", accumulate=True):
+        intent = classify_intent(query)
+
+    with measure_time(timings, "retrieval", accumulate=True):
+        candidates = route_search_chunks(query, k=K_CANDIDATES)
+
+    with measure_time(timings, "reranking", accumulate=True):
+        reranked = rerank(query, candidates) if USE_RERANKER else candidates
+        top = top_k_cut(reranked, k=K_FINAL)
+
+    with measure_time(timings, "context_building", accumulate=True):
+        if intent == "civil_petition":
+            civil_petition_answer = build_civil_petition_answer(top)
+            civil_petition_answer["documents"] = [
+                d for d in civil_petition_answer["documents"] if d["url"] not in seen_urls]
+            civil_petition_answer["links"] = [
+                l for l in civil_petition_answer["links"] if l["url"] not in seen_urls]
+        else:
+            citations = [c for c in format_all_citations([cid for cid, _, _ in top])
+                         if c["page_id"] not in seen_pages]
+
+    with measure_time(timings, "prompt_building", accumulate=True):
+        if intent == "civil_petition":
+            prompt = build_civil_petition_prompt(query, civil_petition_answer)
+        else:
+            prompt = build_informational_prompt(query, top)
+
+    with measure_time(timings, "llm_call", accumulate=True):
+        llm_text = call_hyperclova(prompt)
+        # URL은 LLM에게 안 맡긴다 - 실제 서류/페이지/출처 링크는 civil_petition.py/
+        # citation.py가 이미 조회해둔 값을 여기서 결정론적으로 그대로 붙인다.
+        if intent == "civil_petition":
+            answer = assemble_civil_petition_answer(llm_text, civil_petition_answer)
+            seen_urls.update(d["url"] for d in civil_petition_answer["documents"])
+            seen_urls.update(l["url"] for l in civil_petition_answer["links"])
+        else:
+            answer = assemble_informational_answer(llm_text, citations)
+            seen_pages.update(c["page_id"] for c in citations)
+
+    return answer
+
 
 def _rag_answer_traced(query):
     """rag_answer()와 흐름은 동일하되, 단계별 소요 시간을 timings 딕셔너리에 함께
@@ -32,36 +93,22 @@ def _rag_answer_traced(query):
     경로(rag_answer)는 이 함수를 감싸 답변 문자열만 꺼내 쓴다."""
     timings = {}
 
-    with measure_time(timings, "query_classification"):
-        intent = classify_intent(query)
+    if USE_QUERY_DECOMPOSITION:
+        with measure_time(timings, "decomposition"):
+            sub_queries = decompose_query(query)
+    else:
+        sub_queries = [query]
 
-    with measure_time(timings, "retrieval"):
-        candidates = route_search_chunks(query, k=K_CANDIDATES)
+    seen_pages, seen_urls = set(), set()
 
-    with measure_time(timings, "reranking"):
-        reranked = rerank(query, candidates) if USE_RERANKER else candidates
-        top = top_k_cut(reranked, k=K_FINAL)
-
-    with measure_time(timings, "context_building"):
-        if intent == "civil_petition":
-            civil_petition_answer = build_civil_petition_answer(top)
-        else:
-            citations = format_all_citations([cid for cid, _, _ in top])
-
-    with measure_time(timings, "prompt_building"):
-        if intent == "civil_petition":
-            prompt = build_civil_petition_prompt(query, civil_petition_answer)
-        else:
-            prompt = build_informational_prompt(query, top)
-
-    with measure_time(timings, "llm_call"):
-        llm_text = call_hyperclova(prompt)
-        # URL은 LLM에게 안 맡긴다 - 실제 서류/페이지/출처 링크는 civil_petition.py/
-        # citation.py가 이미 조회해둔 값을 여기서 결정론적으로 그대로 붙인다.
-        if intent == "civil_petition":
-            answer = assemble_civil_petition_answer(llm_text, civil_petition_answer)
-        else:
-            answer = assemble_informational_answer(llm_text, citations)
+    if len(sub_queries) <= 1:
+        # 단일 질문(또는 기능 Off) - 분해기가 살짝 바꿔 쓴 표현(예: "이란"->"이라는 게")이
+        # 아니라 원본 질문 그대로 검색한다. 분해가 실제로 아무것도 바꾸지 않아야 할 상황에서
+        # 굳이 재질문판 문구를 쓸 이유가 없다(안전한 기본 동작 유지).
+        answer = _answer_one(query, timings, seen_pages, seen_urls)
+    else:
+        sub_answers = [_answer_one(q, timings, seen_pages, seen_urls) for q in sub_queries]
+        answer = "\n\n".join(f"**{q}**\n{a}" for q, a in zip(sub_queries, sub_answers))
 
     timings["total"] = round(sum(timings.values()), 4)
     return answer, timings

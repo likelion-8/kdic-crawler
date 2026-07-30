@@ -18,6 +18,8 @@ FEW_SHOT_EXAMPLES는 새로 지어내지 않고 data/testset/testset_all.jsonl�
 reference_answer(사람이 작성한 기준 답변)를 그대로 가져다 썼다(URL·출처 문구는
 이제 LLM 몫이 아니라서 뺐다).
 """
+import re
+
 SYSTEM_INSTRUCTION = """당신은 예금보험공사(KDIC)의 AI 상담 챗봇 "예솜"입니다. 정확하고 신뢰할 수 있는 답변으로 국민을 돕는 것이 당신의 역할입니다.
 
 다음 원칙을 반드시 지키세요:
@@ -27,18 +29,18 @@ SYSTEM_INSTRUCTION = """당신은 예금보험공사(KDIC)의 AI 상담 챗봇 "
 4. 친절하고 정중한 어투를 쓰되, 확실하지 않은 내용을 단정적으로 말하지 마세요.
 5. 아래 예시(few-shot)는 답변의 형식과 어투를 보여주기 위한 것일 뿐입니다. 예시 속 구체적인 사실은 지금 질문의 "근거 자료"에 실제로 없다면 절대 가져오지 마세요.
 6. 사용자가 "너는 누구야", "무슨 AI야", "HyperCLOVA X야?" 처럼 당신의 정체를 물으면, 모델명(HyperCLOVA X 등)이 아니라 "예금보험공사의 AI 상담 챗봇 예솜"이라고 답하세요.
-7. 인사·잡담이거나 질문이 "근거 자료"와 전혀 관련이 없어서 근거 자료를 하나도 참고하지 않고 답했다면, 답변 맨 첫 줄에 다른 말 없이 정확히 `[NO_SOURCE]`만 쓰고 줄바꿈한 뒤 이어서 답변하세요(이 표시가 있으면 시스템이 출처를 안 붙입니다 — 근거를 실제로 썼을 때만 이 표시를 빼세요)."""
+7. 답변 맨 첫 줄에는 다른 말 없이 정확히 `[SOURCE_USED]` 또는 `[NO_SOURCE]` 둘 중 하나만 쓰고 줄바꿈한 뒤 이어서 답변하세요. "근거 자료"의 내용을 실제로 근거로 삼아 답했다면 `[SOURCE_USED]`, 인사·잡담이거나 질문이 "근거 자료"와 전혀 관련이 없어서 근거 자료를 하나도 참고하지 않고 답했다면 `[NO_SOURCE]`를 쓰세요. 둘 중 하나는 반드시 있어야 하며 절대 생략하지 마세요."""
 
 FEW_SHOT_EXAMPLES = [
     {
         # informational — testset_all.jsonl ms_poss_dcmnt_q4
         "question": "예금자 본인이 직접 예금보험금을 찾으러 갈 때 필요한 서류는 무엇인가요?",
-        "answer": "주민등록증·운전면허증·여권 등 공공기관 발행 신분증과 본인의 도장(서명 가능)만 있으면 됩니다.",
+        "answer": "[SOURCE_USED]\n주민등록증·운전면허증·여권 등 공공기관 발행 신분증과 본인의 도장(서명 가능)만 있으면 됩니다.",
     },
     {
         # civil_petition — testset_all.jsonl ms_poss_dcmnt_q3 (절차 설명만 - 서류/페이지는 백엔드가 붙임)
         "question": "예금보험금 위임장 양식은 어디서 다운로드 받나요?",
-        "answer": "대리인이 위임장을 지참해 신청하시면 됩니다.",
+        "answer": "[SOURCE_USED]\n대리인이 위임장을 지참해 신청하시면 됩니다.",
     },
     {
         # 정체성 질문 — testset에 없는 시범 예시(2026-07-24). 검색은 관련도 임계값 없이
@@ -95,9 +97,10 @@ def build_civil_petition_prompt(query, civil_petition_answer):
         "--- 아래는 실제 질문입니다 ---\n\n"
         f"[절차 안내 근거]\n{civil_petition_answer['procedure']}\n\n"
         f"질문: {query}\n"
-        "답변(위 절차 안내 근거가 질문 주제와 실제로 관련 있을 때만 그 내용으로 자연스럽게"
-        " 설명하세요 - 서류·URL 언급은 하지 마세요. 근거가 질문과 다른 제도·기관 이야기라면"
-        " 절대 그걸로 답을 지어내지 말고 [NO_SOURCE]로 시작해서 확인할 수 없다고 답하세요):"
+        "답변(위 절차 안내 근거가 질문 주제와 실제로 관련 있으면 [SOURCE_USED]로 시작해 그"
+        " 내용으로 자연스럽게 설명하세요 - 서류·URL 언급은 하지 마세요. 근거가 질문과 다른"
+        " 제도·기관 이야기라면 절대 그걸로 답을 지어내지 말고 [NO_SOURCE]로 시작해서 확인할"
+        " 수 없다고 답하세요 - 둘 중 하나는 반드시 맨 앞에 쓰세요):"
     )
     return [("system", SYSTEM_INSTRUCTION), ("human", human)]
 
@@ -117,21 +120,39 @@ def _format_source_line(item):
 
 
 NO_SOURCE_MARKER = "[NO_SOURCE]"
+SOURCE_USED_MARKER = "[SOURCE_USED]"
+
+# LLM이 지시한 정확한 밑줄 표기([SOURCE_USED]) 대신 띄어쓰기([SOURCE USED])로 쓰는 경우가
+# 실제로 재현됐다(2026-07-30) — 완전 일치 문자열 비교로는 이 변형을 못 잡아 마커 텍스트가
+# 그대로 노출되고 근거_사용_여부까지 잘못 판정되는 회귀가 났다. 마커 두 단어 사이 구분자만
+# 밑줄/띄어쓰기 둘 다 허용하고(대소문자 무시), 그 외 자유 문구는 절대 추측하지 않는다 —
+# "여러 표현을 추측해서 거른다"는, 이 프로젝트가 이미 폐기한 접근과는 다르다.
+_MARKER_RE = re.compile(r"^\[(SOURCE[_ ]USED|NO[_ ]SOURCE)\]\s*", re.IGNORECASE)
 
 
 def _strip_no_source_marker(llm_text):
-    """LLM이 맨 앞에 [NO_SOURCE]를 썼으면 떼어내고 (본문, 근거_사용_여부)를 반환한다.
+    """LLM이 맨 앞에 붙인 마커([SOURCE_USED]/[NO_SOURCE])를 떼어내고 (본문, 근거_사용_여부)를
+    반환한다.
 
     검색(route_search_chunks)은 관련도 임계값이 없어 인사·잡담·근거와 무관한 질문에도
     항상 top-k 청크를 반환한다 — 그래서 답변이 그 근거를 실제로 안 썼는데도(예: "안녕하세요"
     인사말, 정체성 질문) 무관한 출처가 붙는 문제가 있었다(2026-07-24). "이 문구가 답변에
     있으면 거절/잡담"식으로 여러 표현을 추측해서 걸러내는 방식은 표현이 다양해 계속 새므로
     (이 프로젝트에서 여러 번 확인된 패턴 - docs/pipeline_issues.md 참고), LLM이 근거를
-    실제로 썼는지를 고정된 마커로 직접 표시하게 해 그 결과만 확인한다."""
+    실제로 썼는지를 고정된 마커로 직접 표시하게 해 그 결과만 확인한다.
+
+    2026-07-30: "근거 미사용일 때만 [NO_SOURCE]를 붙여라"는 조건부 지시로는 LLM이 마커
+    자체를 빼먹고도 내용상으로는 올바르게 거절하는 사례가 재현됐다(docs/pipeline_issues.md
+    이슈 3) — 답변은 맞는데 마커가 없어 무관한 출처가 그대로 붙는 문제. 그래서 "항상 둘 중
+    하나를 붙여라"는 강제 이지선다로 바꿨다. 그래도 마커가 하나도 없는 이상 응답이 오면
+    안전한 쪽(출처 미첨부)으로 기본 처리한다 — 없는 출처를 안 보여주는 게, 무관한 출처를
+    잘못 붙이는 것보다 낫다."""
     text = llm_text.strip()
-    if text.startswith(NO_SOURCE_MARKER):
-        return text[len(NO_SOURCE_MARKER):].lstrip("\n").lstrip(), False
-    return llm_text, True
+    m = _MARKER_RE.match(text)
+    if not m:
+        return llm_text, False
+    used_source = m.group(1).upper().replace(" ", "_") == "SOURCE_USED"
+    return text[m.end():].lstrip(), used_source
 
 
 def assemble_informational_answer(llm_text, citations):
