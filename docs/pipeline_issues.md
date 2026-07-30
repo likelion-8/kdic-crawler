@@ -476,7 +476,8 @@ Vertex Check Grounding, Azure Groundedness)은 전부 생성 모델의 자기보
 마커를 프롬프트·파싱에서 완전히 제거하고, 답변이 도착한 뒤 코드가 판정한다:
 
 - **특징 3종**: 답변 형태소 TF-IDF(거절·인사 문체는 정형적 — 고정 문구 매칭이 아니라
-  학습 가중치라 표현 변형에 견딤) + 내용어 근거 겹침률 + bge-m3 코사인. 모두 파이프라인이
+  학습 가중치라 표현 변형에 견딤) + 내용어 근거 겹침률 + bge-m3-ko(`retrieval.py`의
+  `DEFAULT_DENSE_MODEL` 재사용) 코사인. 모두 파이프라인이
   이미 로딩한 자원(Kiwi, bge-m3)만 사용 — 새 의존성·추가 API 호출 0.
 - **모델 저장은 sklearn pickle이 아니라 JSON**(가중치+임계값): sklearn 버전이 다르면
   pickle 로드가 깨지는 문제가 intent 분류기에서 실제 발생("idf vector is not fitted",

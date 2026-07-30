@@ -9,7 +9,8 @@
 
 특징: (1) 답변 형태소 TF-IDF(거절·인사 문체는 정형적이라 문체가 1차 신호 — 고정 문구
 매칭이 아니라 학습된 가중치라 표현 변형에 견딤) (2) 답변 내용어의 근거 겹침률
-(3) bge-m3 임베딩 코사인. 전부 파이프라인이 이미 로딩한 자원(Kiwi, bge-m3)만 쓰므로
+(3) bge-m3-ko(dragonkue/BGE-m3-ko, retrieval.DEFAULT_DENSE_MODEL 재사용) 임베딩 코사인.
+전부 파이프라인이 이미 로딩한 자원(Kiwi, 검색용 임베딩 모델)만 쓰므로
 새 의존성·추가 API 호출이 없다.
 
 모델은 data/source_verifier/model.json — sklearn pickle이 아니라 JSON인 이유: 버전이
