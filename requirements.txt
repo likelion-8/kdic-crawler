@@ -1,6 +1,7 @@
 beautifulsoup4
 kiwipiepy
 langchain-naver
+pgvector
 psycopg[binary]
 python-dotenv
 qdrant_client
