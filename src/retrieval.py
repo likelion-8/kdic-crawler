@@ -147,25 +147,26 @@ class QdrantDenseRetriever:
 
 class PgVectorDenseRetriever:
     """QdrantDenseRetriever와 동일한 계약(search(query,k)->[(unit_id,score)])이지만
-    Supabase Postgres(pgvector)에 쿼리한다.
+    Supabase Postgres(pgvector) document_chunks(schema.py, 정식 스키마)에 쿼리한다.
+    2026-08-03 kdic_chunks_all(레거시 flat 테이블, index_pgvector.py)에서 이관.
 
     embedding 컬럼에 ANN 인덱스를 안 걸어 exact search로 동작한다(팀 결정 — 현재
     규모(500개 안팎)에선 HNSW/IVFFlat 도입 실익이 없고 정확도만 깎임). 임베딩이
     정규화돼 있어 1 - cosine_distance가 곧 코사인 유사도(다른 Dense 계열과 동일 스케일).
+    is_active=false인 청크(비활성 문서 소속, documents.is_active 트리거로 자동 동기화)는
+    검색에서 항상 제외한다.
     """
     def __init__(self, model=DEFAULT_DENSE_MODEL):
-        import sys as _sys
-
         from sqlalchemy import func, select
 
         from db import get_engine
-        _sys.path.insert(0, str(ROOT / "src" / "project1_src"))  # index_pgvector가 project1_src에 있어서 필요
-        from index_pgvector import chunks_table
-        self.table = chunks_table
+        from schema import document_chunks
+        self.table = document_chunks
         self.engine = get_engine()
         self.model = _get_model(model)
         with self.engine.connect() as conn:
-            count = conn.execute(select(func.count()).select_from(self.table)).scalar()
+            count = conn.execute(
+                select(func.count()).select_from(self.table).where(self.table.c.is_active)).scalar()
         self.unit_ids = list(range(count))
 
     def search(self, query, k, business_function=None):
@@ -173,7 +174,8 @@ class PgVectorDenseRetriever:
         q = _encode_query(self.model, query).tolist()
         c = self.table.c
         distance = c.embedding.cosine_distance(q)
-        stmt = select(c.chunk_id, (1 - distance).label("score")).order_by(distance).limit(k)
+        stmt = (select(c.chunk_id, (1 - distance).label("score"))
+                .where(c.is_active).order_by(distance).limit(k))
         if business_function is not None:
             stmt = stmt.where(c.business_function == business_function)
         with self.engine.connect() as conn:
