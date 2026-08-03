@@ -5,6 +5,11 @@ question_id(=test_id) 기준 upsert(ON CONFLICT DO UPDATE)를 쓴다 — documen
 통째로 지우고 다시 넣으면 안 된다. 나중에 evaluation_results가 이 행의 id를 FK로
 물게 되는데, delete+insert는 매번 새 UUID를 만들어 그 FK를 끊어버린다.
 
+golden_set에만 question 임베딩을 같이 넣는다 — query_classifier.py의
+QuestionTypeClassifier가 로컬 JSONL+npy 캐시 대신 여기서 1-NN 참조 예시를 읽도록
+바꿀 것이라(팀 결정), golden_set.embedding이 그 원천이 된다. test_set은 그 용도가
+없어 임베딩을 안 넣는다.
+
 실행: python3 src/project1_src/index_evaluation_sets.py
 """
 import json
@@ -15,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from db import get_engine  # noqa: E402
+from retrieval import DenseRetriever  # noqa: E402
 from schema import golden_set, test_set  # noqa: E402
 
 from sqlalchemy.dialects.postgresql import insert as pg_insert  # noqa: E402
@@ -28,9 +34,16 @@ def _load(path):
         return [json.loads(line) for line in f]
 
 
-def _rows(records):
-    return [{"question_id": r["test_id"], "question": r["question"],
+def _rows(records, with_embedding=False):
+    rows = [{"question_id": r["test_id"], "question": r["question"],
               **{k: r.get(k) for k in _FIELDS}} for r in records]
+    if with_embedding:
+        qids = [r["question_id"] for r in rows]
+        questions = [r["question"] for r in rows]
+        dense = DenseRetriever(qids, questions)  # 캐시 있으면 재사용, 없으면 인코딩
+        for row, vec in zip(rows, dense.doc_emb):
+            row["embedding"] = vec.tolist()
+    return rows
 
 
 def _upsert(conn, table, rows):
@@ -42,7 +55,7 @@ def _upsert(conn, table, rows):
 
 
 def main():
-    golden_rows = _rows(_load(ROOT / "data" / "testset" / "testset_all.jsonl"))
+    golden_rows = _rows(_load(ROOT / "data" / "testset" / "testset_all.jsonl"), with_embedding=True)
     test_rows = _rows(_load(ROOT / "data" / "testset" / "testset_pipeline.jsonl"))
 
     engine = get_engine()

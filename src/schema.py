@@ -95,8 +95,12 @@ def _eval_question_columns():
     ]
 
 
-# testset_all.jsonl(851문항, 전체 골든셋) 적재 대상.
-golden_set = Table("golden_set", metadata, _uuid_pk(), *_eval_question_columns())
+# testset_all.jsonl(851문항, 전체 골든셋) 적재 대상. embedding은 query_classifier.py의
+# QuestionTypeClassifier가 로컬 JSONL+npy 캐시 대신 여기서 1-NN 참조 예시를 읽도록
+# 쓴다(팀 결정 — 매 질문마다 Supabase에 쿼리하는 게 아니라 프로세스 시작 시 한 번만
+# 통째로 읽어 메모리에 올려두고 비교하므로 분류 속도엔 영향 없음).
+golden_set = Table("golden_set", metadata, _uuid_pk(), *_eval_question_columns(),
+                    Column("embedding", Vector(1024)))
 
 # testset_pipeline.jsonl(89문항, held-out 평가셋 — golden_set과 test_id 겹치지 않음) 적재 대상.
 test_set = Table("test_set", metadata, _uuid_pk(), *_eval_question_columns())
@@ -160,6 +164,9 @@ def main():
     with engine.begin() as conn:
         metadata.create_all(conn, checkfirst=True)
         conn.execute(text(_SYNC_TRIGGER_SQL))
+        # golden_set이 embedding 컬럼 추가 전에 이미 만들어졌을 수 있어 create_all이
+        # 건너뛴다(테이블 존재 여부만 봄, 컬럼 diff는 안 함) — 별도로 멱등하게 추가.
+        conn.execute(text("ALTER TABLE golden_set ADD COLUMN IF NOT EXISTS embedding vector(1024)"))
     print("생성 완료:", ", ".join(t.name for t in metadata.sorted_tables))
     print("트리거 생성 완료: trg_sync_document_chunks_is_active (documents.is_active → document_chunks.is_active)")
 
