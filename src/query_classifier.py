@@ -5,7 +5,13 @@ retrieval.py의 라우팅/검색 실행과 분리해, "무엇으로 라우팅할
 검색을 실행"하는 책임을 나눈다. RoutedRetriever(retrieval.py)가 이 분류기들을 받아
 qtype/business_function을 자동으로 채워 넣는다.
 """
+import os
+
+from dotenv import load_dotenv
+
 from retrieval import DEFAULT_DENSE_MODEL, ROOT, _encode_query, _get_model
+
+load_dotenv(ROOT / ".env")  # OPENAI_API_KEY 등 로드(intent 분류 OpenAI 호출용)
 
 _LABEL_FIELDS = ("question_type", "business_function")
 
@@ -81,41 +87,54 @@ def classify_query_type(query):
     return "table_lookup" if qtype == "table_lookup" else "general"
 
 
-# ── intent 분류: Kiwi 형태소 + TF-IDF + LogisticRegression (2026-07-29 코사인 1-NN에서 교체) ──
-# question_type 분류(위)는 코사인 방식 유지. intent만 형태소 방식으로 바꾼다.
-# Leave-Page-Out 검증: 형태소 89.6% > 코사인 1-NN 80.5%. 학습 산출물은
-# train_intent_morpheme.py가 data/intent_classifier/ 에 pickle로 만든다(파이프라인은 로드만).
-_INTENT_DIR = ROOT / "data" / "intent_classifier"
-_intent_artifacts = {}
+# ── Kiwi 형태소 토크나이저 (source_verifier 공용) ──
+# 원래 intent 분류(TF-IDF) 전처리용이었으나, intent가 OpenAI로 교체된(2026-08-03) 뒤로는
+# source_verifier.py(답변이 근거를 실제로 썼는지 내용어 겹침 판정)와 train_source_verifier.py가
+# 이 토크나이저를 재사용한다. 그 import 호환을 위해 함수명(tokenize_intent)은 유지한다.
 _kiwi_intent = {}
 
 
 def tokenize_intent(text):
-    """Kiwi 형태소+품사 태그 토큰(예: "신청/NNG", "어요/EF"). 학습(train_intent_morpheme.py)과
-    추론이 반드시 같은 토큰화를 써야 하므로 이 함수 하나를 양쪽이 공유한다(train이 여기서 import).
-    TF-IDF 벡터라이저는 공백 분리(token_pattern)만 쓰므로, 여기서 토큰을 만들어 공백으로 이어
-    넘긴다 — 커스텀 tokenizer를 pickle에 넣지 않아 저장/로드가 깨지지 않는다."""
+    """Kiwi 형태소+품사 태그 토큰(예: "신청/NNG", "어요/EF"). source_verifier가 답변·근거의
+    내용어 겹침을 재는 데 쓴다(과거엔 intent TF-IDF 학습·추론 공용이었음, 지금 intent는 OpenAI)."""
     if "kiwi" not in _kiwi_intent:
         from kiwipiepy import Kiwi
         _kiwi_intent["kiwi"] = Kiwi()
     return [f"{t.form}/{t.tag}" for t in _kiwi_intent["kiwi"].tokenize(text)]
 
 
-def _load_intent_model():
-    """vectorizer/model pickle을 프로세스당 1회만 로드(함수 호출마다 다시 읽지 않게)."""
-    if not _intent_artifacts:
-        import pickle
-        with open(_INTENT_DIR / "tfidf_vectorizer.pkl", "rb") as f:
-            _intent_artifacts["vec"] = pickle.load(f)
-        with open(_INTENT_DIR / "logreg_model.pkl", "rb") as f:
-            _intent_artifacts["model"] = pickle.load(f)
-    return _intent_artifacts["vec"], _intent_artifacts["model"]
+# ── intent 분류: OpenAI GPT-5.4-mini Structured Output (2026-08-03, 기존 Kiwi+TF-IDF+LogReg에서 교체) ──
+# 채택 근거: held-out(testset_pipeline) 4자 비교에서 gpt-5.4-mini가 전체 92.1%·구어체 93.8%로
+# 최고이면서 응답 ~0.85초로 빠르고, native structured output으로 출력이 두 라벨 중 하나로 보장됨
+# (기존 TF-IDF baseline 77.2% 대비 큰 개선, HCX-007 91.0%보다 빠름).
+# 상세: docs/intent_classification_final_report.md. 스키마·프롬프트는 intent_llm_common.py 재사용.
+# question_type 분류(위 QuestionTypeClassifier)는 코사인 방식 그대로 유지 — 이번 교체 대상 아님.
+_OPENAI_INTENT_MODEL = os.environ.get("OPENAI_INTENT_MODEL") or "gpt-5.4-mini"
+_openai = {}
+
+
+def _get_openai_client():
+    """OpenAI 클라이언트를 프로세스당 1회만 생성(OPENAI_API_KEY 환경변수 사용)."""
+    if "c" not in _openai:
+        from openai import OpenAI
+        _openai["c"] = OpenAI()
+    return _openai["c"]
 
 
 def classify_intent(query):
-    """질의 의도를 informational/civil_petition 중 하나로 판단(형태소 TF-IDF + LogReg).
+    """질의 의도를 informational/civil_petition 중 하나로 판단(OpenAI structured output).
     입출력 계약은 기존과 동일(query 문자열 → 두 라벨 중 하나)이라 호출부(pipeline.py 등)는
-    수정이 필요 없다. 모델 산출물이 없으면 train_intent_morpheme.py를 먼저 실행해야 한다."""
-    vec, model = _load_intent_model()
-    joined = " ".join(tokenize_intent(query))
-    return str(model.predict(vec.transform([joined]))[0])
+    수정 없이 그대로 작동한다. API 실패 시 안전 기본값 informational로 폴백해 전체 파이프라인이
+    멈추지 않게 한다(프롬프트 규칙 5 — 애매하면 informational)."""
+    from intent_llm_common import IntentResult, SYSTEM_PROMPT
+    try:
+        completion = _get_openai_client().beta.chat.completions.parse(
+            model=_OPENAI_INTENT_MODEL,
+            messages=[{"role": "system", "content": SYSTEM_PROMPT},
+                      {"role": "user", "content": query}],
+            response_format=IntentResult,
+            temperature=0,
+        )
+        return completion.choices[0].message.parsed.intent
+    except Exception:
+        return "informational"
