@@ -145,6 +145,42 @@ class QdrantDenseRetriever:
         return [(h.payload["chunk_id"], h.score) for h in hits]
 
 
+class PgVectorDenseRetriever:
+    """QdrantDenseRetriever와 동일한 계약(search(query,k)->[(unit_id,score)])이지만
+    Supabase Postgres(pgvector)에 쿼리한다.
+
+    embedding 컬럼에 ANN 인덱스를 안 걸어 exact search로 동작한다(팀 결정 — 현재
+    규모(500개 안팎)에선 HNSW/IVFFlat 도입 실익이 없고 정확도만 깎임). 임베딩이
+    정규화돼 있어 1 - cosine_distance가 곧 코사인 유사도(다른 Dense 계열과 동일 스케일).
+    """
+    def __init__(self, model=DEFAULT_DENSE_MODEL):
+        import sys as _sys
+
+        from sqlalchemy import func, select
+
+        from db import get_engine
+        _sys.path.insert(0, str(ROOT / "src" / "project1_src"))  # index_pgvector가 project1_src에 있어서 필요
+        from index_pgvector import chunks_table
+        self.table = chunks_table
+        self.engine = get_engine()
+        self.model = _get_model(model)
+        with self.engine.connect() as conn:
+            count = conn.execute(select(func.count()).select_from(self.table)).scalar()
+        self.unit_ids = list(range(count))
+
+    def search(self, query, k, business_function=None):
+        from sqlalchemy import select
+        q = _encode_query(self.model, query).tolist()
+        c = self.table.c
+        distance = c.embedding.cosine_distance(q)
+        stmt = select(c.chunk_id, (1 - distance).label("score")).order_by(distance).limit(k)
+        if business_function is not None:
+            stmt = stmt.where(c.business_function == business_function)
+        with self.engine.connect() as conn:
+            rows = conn.execute(stmt).all()
+        return [(row.chunk_id, row.score) for row in rows]
+
+
 class PageRanked:
     """유닛 단위 검색기를 감싸 페이지 단위 랭킹으로 변환. 페이지의 순위 = 그 페이지 유닛 중 최고 순위."""
     def __init__(self, inner, unit2page):
@@ -281,15 +317,13 @@ def _build_engines():
     from chunking import build_units, load_records
     from query_classifier import QuestionTypeClassifier  # BusinessFunctionClassifier 미사용(업무필터 비활성)
 
-    QDRANT_PATH = str(ROOT / "data" / "qdrant_local")
-    QDRANT_COLLECTION = "kdic_chunks_all"
-
     uids, texts, u2p = build_units("all")
     page2bf = {r["page_id"]: r["business_function"] for r in load_records()}
     unit2bf = {u: page2bf.get(p) for u, p in u2p.items()}
 
     bm25 = PageRanked(BM25Retriever(uids, texts, unit2bf), u2p)
-    dense = PageRanked(QdrantDenseRetriever(QDRANT_PATH, QDRANT_COLLECTION), u2p)
+    # 2026-08-03 Qdrant → Supabase pgvector 전환. QdrantDenseRetriever는 롤백 대비로 남겨둠.
+    dense = PageRanked(PgVectorDenseRetriever(), u2p)
     hybrid = HybridRetriever(bm25, dense, alpha=HYBRID_LINEAR_ALPHA)
     # 2026-07-22 팀 결정: 업무(business_function) 하드필터는 기본 Off (project_context 9.5).
     # 분류기 필터 MRR 0.764 < 무필터 0.786이고, 형제질문 편향을 걷어낸 leave-page-out
