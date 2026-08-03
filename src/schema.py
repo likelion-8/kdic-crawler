@@ -1,4 +1,4 @@
-"""RAG 서비스 본 스키마(documents/document_chunks/golden_set/test_set/rag_runs/
+"""RAG 서비스 본 스키마(documents/document_chunks/evaluation_dataset/test_set/rag_runs/
 rag_retrieval_results) — Supabase PostgreSQL(pgvector)에 생성.
 
 기획서(Supabase PostgreSQL 저장 데이터 정리.pdf) "최소 구축안" 6개 중 rag_trace_steps는
@@ -7,10 +7,11 @@ evaluation_runs/evaluation_results도 운영 단계 착수 전이라 아직 안 
 
 기획서는 evaluation_questions 하나에 split 컬럼으로 골든셋/테스트셋을 구분하는
 안이었으나, 실제로는 골든셋(testset_all.jsonl)과 테스트셋(testset_pipeline.jsonl)이
-용도가 뚜렷이 갈려(팀 결정) golden_set/test_set 두 테이블로 분리했다.
+용도가 뚜렷이 갈려(팀 결정) evaluation_dataset/test_set 두 테이블로 분리했다.
+("golden_set"이라는 이름이 애매하다는 팀 결정으로 2026-08-03 evaluation_dataset로 개명.)
 
 기획서 대비 반영한 수정 3건:
-1. golden_set/test_set에 expected_links, business_function 추가 — 실제 testset
+1. evaluation_dataset/test_set에 expected_links, business_function 추가 — 실제 testset
    jsonl(data/testset/*.jsonl)에 이미 두 필드가 있는데 기획서 표엔 빠져 있었음. 없으면
    생성 평가(expected_links 기준)와 업무별 성능 비교(business_function 필터)를 못 돌림.
 2. documents.breadcrumb 제거 — sub_category와 값이 같아 중복.
@@ -78,8 +79,9 @@ document_chunks = Table(
 )
 
 def _eval_question_columns():
-    # golden_set/test_set이 컬럼 구성이 완전히 같아(testset_all.jsonl과 testset_pipeline.jsonl
-    # 필드 동일) 공유. Column은 테이블 하나에만 바인딩되므로 호출할 때마다 새로 만들어야 한다.
+    # evaluation_dataset/test_set이 컬럼 구성이 완전히 같아(testset_all.jsonl과
+    # testset_pipeline.jsonl 필드 동일) 공유. Column은 테이블 하나에만 바인딩되므로
+    # 호출할 때마다 새로 만들어야 한다.
     return [
         Column("question_id", String, unique=True, nullable=False),
         Column("question", Text, nullable=False),
@@ -99,10 +101,10 @@ def _eval_question_columns():
 # QuestionTypeClassifier가 로컬 JSONL+npy 캐시 대신 여기서 1-NN 참조 예시를 읽도록
 # 쓴다(팀 결정 — 매 질문마다 Supabase에 쿼리하는 게 아니라 프로세스 시작 시 한 번만
 # 통째로 읽어 메모리에 올려두고 비교하므로 분류 속도엔 영향 없음).
-golden_set = Table("golden_set", metadata, _uuid_pk(), *_eval_question_columns(),
-                    Column("embedding", Vector(1024)))
+evaluation_dataset = Table("evaluation_dataset", metadata, _uuid_pk(), *_eval_question_columns(),
+                            Column("embedding", Vector(1024)))
 
-# testset_pipeline.jsonl(89문항, held-out 평가셋 — golden_set과 test_id 겹치지 않음) 적재 대상.
+# testset_pipeline.jsonl(89문항, held-out 평가셋 — evaluation_dataset과 test_id 겹치지 않음) 적재 대상.
 test_set = Table("test_set", metadata, _uuid_pk(), *_eval_question_columns())
 
 rag_runs = Table(
@@ -164,9 +166,9 @@ def main():
     with engine.begin() as conn:
         metadata.create_all(conn, checkfirst=True)
         conn.execute(text(_SYNC_TRIGGER_SQL))
-        # golden_set이 embedding 컬럼 추가 전에 이미 만들어졌을 수 있어 create_all이
+        # evaluation_dataset이 embedding 컬럼 추가 전에 이미 만들어졌을 수 있어 create_all이
         # 건너뛴다(테이블 존재 여부만 봄, 컬럼 diff는 안 함) — 별도로 멱등하게 추가.
-        conn.execute(text("ALTER TABLE golden_set ADD COLUMN IF NOT EXISTS embedding vector(1024)"))
+        conn.execute(text("ALTER TABLE evaluation_dataset ADD COLUMN IF NOT EXISTS embedding vector(1024)"))
     print("생성 완료:", ", ".join(t.name for t in metadata.sorted_tables))
     print("트리거 생성 완료: trg_sync_document_chunks_is_active (documents.is_active → document_chunks.is_active)")
 

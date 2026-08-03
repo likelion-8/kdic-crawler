@@ -1,6 +1,6 @@
 """질문 분류 — 유형(question_type: table_lookup 여부)과 업무(business_function) 판별.
 
-둘 다 같은 메커니즘(테스트셋 라벨링 질문 579개와의 코사인 유사도 1-최근접)을 쓴다.
+둘 다 같은 메커니즘(테스트셋 라벨링 질문과의 코사인 유사도 1-최근접)을 쓴다.
 retrieval.py의 라우팅/검색 실행과 분리해, "무엇으로 라우팅할지 판단"과 "그 판단으로
 검색을 실행"하는 책임을 나눈다. RoutedRetriever(retrieval.py)가 이 분류기들을 받아
 qtype/business_function을 자동으로 채워 넣는다.
@@ -13,8 +13,8 @@ _LABEL_FIELDS = ("question_type", "business_function")
 class QuestionTypeClassifier:
     """새 질문의 유형(qtype)을 예시 질문과의 코사인 유사도로 분류(1-최근접).
 
-    예시는 Supabase golden_set의 (question, question_type, embedding)을 그대로 쓴다
-    (expected_sources 빈 값=out_of_scope 제외). golden_set.embedding은
+    예시는 Supabase evaluation_dataset의 (question, question_type, embedding)을 그대로
+    쓴다(expected_sources 빈 값=out_of_scope 제외). evaluation_dataset.embedding은
     index_evaluation_sets.py가 미리 계산해 저장해둔 값이라, 프로세스 시작 시 한 번만
     통째로 읽어 메모리에 올려두고(2026-08-03 로컬 JSONL+npy 캐시에서 이관) 그 뒤로는
     Supabase에 다시 안 물어본다 — 질문 하나 처리할 때마다 재계산되는 게 아니라, 질의
@@ -25,15 +25,15 @@ class QuestionTypeClassifier:
     """
     def __init__(self, model=DEFAULT_DENSE_MODEL, label_field="question_type"):
         # label_field로 라벨을 바꿔 재사용 — question_type(유형 라우팅) 또는
-        # business_function(업무 필터) 분류에 같은 1-NN·같은 golden_set 임베딩을 쓴다.
+        # business_function(업무 필터) 분류에 같은 1-NN·같은 evaluation_dataset 임베딩을 쓴다.
         assert label_field in _LABEL_FIELDS, f"알 수 없는 label_field: {label_field}"
         import numpy as np
         from sqlalchemy import func, select
 
         from db import get_engine
-        from schema import golden_set
+        from schema import evaluation_dataset
 
-        c = golden_set.c
+        c = evaluation_dataset.c
         stmt = (select(c.question, c[label_field], c.embedding)
                 .where(func.cardinality(c.expected_sources) > 0))
         with get_engine().connect() as conn:
