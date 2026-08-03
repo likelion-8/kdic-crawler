@@ -514,3 +514,81 @@ Vertex Check Grounding, Azure Groundedness)은 전부 생성 모델의 자기보
   데이터를 늘리는 구조).
 - 회귀 방지: `python3 tests/test_source_pipeline.py` (AI 호출 없이 수 초) — 판정 4픽스처
   + 출처 조립 + 이슈 4 하위 답변 독립성. **파이프라인 코드를 고치면 커밋 전에 돌릴 것.**
+  (2026-08-03 롤백으로 구성이 바뀌었다 — 아래 "이슈 5 후속" 참고.)
+
+---
+
+## 이슈 5 후속 — source_verifier 폐기, 자기보고 마커로 롤백 (2026-08-03)
+
+위 이슈 5의 결정(자기보고 마커 → 생성 후 코드 판정)을 되돌렸다. 출처를 붙일지 말지를
+다시 LLM이 답변 첫 줄에 표기하는 `[SOURCE_USED]`/`[NO_SOURCE]` 마커로 판단한다.
+
+### 되돌린 범위 — 멀티쿼리 파이프라인 두 파일만
+
+| 파일 | 변경 |
+| --- | --- |
+| `prompt_builder.py` | `SYSTEM_INSTRUCTION` 규칙 7(마커 강제 이지선다) 부활, few-shot 5개 답변에 마커 재삽입, `_MARKER_RE`·`_strip_no_source_marker()` 복원, `assemble_*()` 3인자 → 2인자 |
+| `pipeline.py` | `source_verifier` import·`source_verification` 타이밍 단계 제거, 2인자 조립 호출 |
+
+`query_classifier.py`(intent 분류)와 검색·분해기 쪽은 건드리지 않았다 — 이번 롤백은
+멀티쿼리 답변 조립 경로 한정이다. 이슈 4(하위 답변 출처 소실)의 수정은 **그대로 유지**한다.
+즉 `seen_pages`/`seen_urls` 누적 집합은 되살리지 않았고, 하위 답변끼리 출처는 여전히 독립이다.
+
+### 삭제한 것
+
+- `src/source_verifier.py`, `src/train_source_verifier.py`
+- `data/source_verifier/labels.jsonl`(라벨 107건), `data/source_verifier/model.json`
+
+마커가 판정을 도로 가져가면서 호출부가 하나도 남지 않았다. 리랭커(`USE_RERANKER`)처럼
+플래그로 껐다 켜는 구조가 아니라 파이프라인 배선 자체가 사라지는 것이라, 코드를 남겨두지
+않고 지웠다. 되살릴 필요가 생기면 이 커밋 이전 이력이나 태그 `semi_document-freeze`에서
+복원하면 된다.
+
+### 다시 떠안게 된 알려진 위험
+
+이슈 5에서 실측한 마커의 실패는 그대로 되살아난다. 감수하고 내린 결정이며, 이 문서를
+읽는 사람이 "몰랐다"가 되지 않도록 수치를 다시 적어둔다:
+
+| | 근거사용 답변의 출처 누락 (위험 축) | 미사용(거절·인사) 차단 (미관 축) |
+| --- | --- | --- |
+| **마커 (되돌아간 방식)** | **33/61 (54%)** | 46/46 |
+| source_verifier (삭제됨) | 1/61 (2%) | 28/46 (61%) |
+
+- 근거를 실제로 쓴 답변의 **절반 이상에서 출처가 통째로 빠질 수 있다**. 이는 '출처 표시
+  필수' 원칙과 정면으로 충돌하는 축이다.
+- 프롬프트로는 못 고친다는 게 이슈 5의 통제 실험 결론이다(가설 7종 × 5회 = 35회 HCX 호출,
+  전부 실패). 오표기는 주제 의존적이고(예금보험금은 안정, 착오송금은 5/5 오표기) 원인이
+  불투명하다. **같은 프롬프트 튜닝을 다시 시도하는 건 이미 한 번 실패한 경로다.**
+- 마커 형식 변형(`[SOURCE USED]` 띄어쓰기, `[ SOURCE USED ]` 괄호 안 공백, 소문자)은
+  `_MARKER_RE`가 밑줄/띄어쓰기·대소문자까지만 흡수한다. 그 밖의 변형이 오면 마커가 없는
+  것으로 보고 **안전한 쪽(출처 미첨부)** 으로 처리한다.
+- 멀티쿼리는 하위 질문마다 답변을 따로 생성하므로, 한 턴에 이 실패율이 하위 질문 수만큼
+  독립적으로 노출된다.
+
+### 회귀 방지 스크립트 변경
+
+`tests/test_source_pipeline.py`가 3종으로 바뀌었다(기존 4종에서 `test_verifier()` 제거 —
+대상 모듈이 사라졌다). 남은 검사는 다음과 같고, source_verifier가 빠지면서 bge-m3 로딩이
+없어져 수 초 이내로 끝난다.
+
+1. `test_marker_parsing()` — 정상 마커 2종 + 재현됐던 띄어쓰기 변형 + 소문자 변형
+   + 마커 없음(안전 폴백). 마커 텍스트가 본문에 노출되지 않는지까지 확인.
+2. `test_assemble()` — 마커에 따른 출처 부착/미부착.
+3. `test_subanswer_independence()` — 이슈 4 회귀. `used_source` 패치 대신 마커가 붙은
+   답변을 주입하도록 바꿨다.
+
+부수적으로, 완료 메시지의 em-dash가 Windows cp949 콘솔에서 `UnicodeEncodeError`를 내
+**검사가 다 통과하고도 비정상 종료(exit 1)** 하던 문제를 고쳤다.
+
+### 남은 것 — intent 문제가 아니라 이 롤백이 남긴 잔재
+
+`query_classifier.py`의 `tokenize_intent()`(Kiwi 형태소 토크나이저)가 고아가 됐다. **intent
+분류 동작과는 무관하다** — 이름 때문에 헷갈리지만 현재 `classify_intent()`(OpenAI structured
+output)는 이 함수를 쓰지 않는다. 원래 옛 intent 분류기(TF-IDF)의 전처리였고, intent가
+OpenAI로 교체된 뒤에도 남아 있던 이유는 `source_verifier`·`train_source_verifier`가
+재사용했기 때문인데(해당 주석에 명시), 이번 롤백으로 그 둘을 지우면서 호출부가 0이 됐다.
+
+지우지 않고 둔다. 기능상 차이가 없는 죽은 함수 십수 줄인 반면, `query_classifier.py`는
+intent 작업이 진행 중인 파일이라 건드리면 머지 충돌만 생긴다. `kiwipiepy` 의존성도
+`retrieval.py`(BM25 토큰화)가 계속 쓰므로 제거해도 줄지 않는다. intent 쪽에서 이 파일을
+다음에 손볼 때 같이 정리하면 된다.

@@ -197,25 +197,101 @@ LLM 호출 자체를 거르는 방식이었고, 원하는 성능이 안 나와 2
   testset_query_decomposition.jsonl`과 같은 형식으로 옮기고 `retrieval.route_search` +
   `query_decomposer.decompose_query`로 이 절차를 반복하면 된다.)
 
-## 7. 산출물 — 실제로 저장소에 있는 것 (2차 시도, 최종 채택안)
+## 7. 파이프라인 통합 — 실제 서비스 경로에서 어떻게 도는가 (최종 형태, 2026-08-03 기준)
+
+분해기 단독 성능(5절)과 검색 개선(6절)까지 확인한 뒤 `pipeline.py`에 붙인 최종 형태다.
+분해 결과를 어떻게 쓰느냐가 답변 품질을 좌우하므로, 이 절이 실질적인 "채택안 명세"다.
+
+### 흐름
+
+```
+rag_answer(질문)
+  └ _rag_answer_traced(질문)
+      ├ decompose_query(질문) -> sub_queries          # USE_QUERY_DECOMPOSITION=True일 때만
+      ├ len(sub_queries) <= 1  → _answer_one(원본 질문)
+      └ len(sub_queries)  > 1  → [_answer_one(q) for q in sub_queries] → 문자열 join
+```
+
+`_answer_one(질문)`은 질문 하나에 대한 검색~답변 조립 전체이며, **단일 질문 경로와 복합
+질문의 각 하위 질문이 똑같이 이 함수를 탄다**(경로가 갈리지 않으므로 단일 질문 동작이
+분해 기능 때문에 달라질 여지가 없다):
+
+`classify_intent` → `route_search_chunks(k=20)` → 리랭킹(`USE_RERANKER=False`라 통과) →
+`top_k_cut(k=5)` → 근거 조립(`citation.py` 또는 `civil_petition.py`) → 프롬프트 조립 →
+HyperCLOVA 호출 → 출처 결정론적 부착.
+
+### 설계상 명시적으로 정한 것 네 가지
+
+1. **단일 질문이면 분해기 출력이 아니라 원본 질문으로 검색한다.** 분해기는 "안 나눌 땐
+   입력을 그대로 출력"하도록 지시받지만(3절 규칙 2) 실제로는 "이란"→"이라는 게" 같은
+   미세한 재작성이 섞여 나온다. 나눌 필요가 없다고 판단된 상황에서 굳이 재작성된 문구로
+   검색할 이유가 없으므로 원본을 쓴다 — 분해 기능이 켜져 있어도 단일 질문의 검색 입력은
+   기능이 꺼졌을 때와 동일하다.
+2. **하위 답변 병합에 LLM을 쓰지 않는다.** `"\n\n".join(f"**{q}**\n{a}")`로 하위 질문을
+   굵은 제목으로 달고 결정론적으로 이어붙인다. 병합을 LLM에 맡기면 하위 답변에 없던 내용이
+   섞여 들어갈 수 있고(이 프로젝트가 URL 할루시네이션에서 이미 겪은 실패 패턴), 무엇보다
+   하위 답변별로 확정된 출처와 본문의 대응이 깨진다.
+3. **하위 답변끼리 출처는 완전히 독립이다.** 초기 구현에는 "같은 문서가 여러 하위 질문에서
+   검색되면 중복 제거"(log/0729.md 3항) 요구를 만족시키려고 요청 단위 누적 집합
+   (`seen_pages`/`seen_urls`)이 있었으나 **삭제했고 다시 도입하지 않는다.** 이 집합은 출처를
+   실제로 붙였는지가 아니라 검색됐는지 기준으로 걸러서, 앞 하위 답변이 근거 미사용으로
+   거절한 경우 뒤 하위 답변의 진짜 출처까지 지웠다(`docs/pipeline_issues.md` 이슈 4).
+   같은 문서가 여러 하위 답변의 근거라면 각각에 보이는 것이 맞다.
+4. **기능 스위치는 `USE_QUERY_DECOMPOSITION` 하나**(`pipeline.py` 모듈 상수, 기본 `True`).
+   `USE_RERANKER`와 같은 패턴이라, E2E 재검증에서 판단이 뒤집히면 여기만 `False`로 바꾸면
+   분해 없는 기존 동작으로 즉시 돌아간다.
+
+### 비용 — 분해를 켜면 반드시 따라오는 것
+
+- **모든 질문에 HyperCLOVA 호출 1회가 고정 추가된다.** 단일 질문이어도 "쪼갤지 말지"를
+  판단해야 하고, 그 판단이 곧 LLM 호출이기 때문에 게이트 없는 구조에서는 피할 수 없다
+  (웜 상태 ~0.9~1초).
+- 복합 질문은 하위 질문 수 N만큼 **분류·검색·생성이 각각 N번** 일어난다. 지연은 대략
+  `분해 1회 + N × (단일 질문 처리 시간)`이다.
+- 단계별 소요 시간은 `performance.measure_time(..., accumulate=True)`로 같은 키에 합산해
+  기록한다 — 하위 질문이 몇 개든 `retrieval`, `llm_call` 같은 항목 하나로 집계된다.
+
+### 출처 부착 판정과의 상호작용 (알아둘 것)
+
+답변에 출처를 붙일지 말지는 `prompt_builder.py`가 LLM 자기보고 마커
+(`[SOURCE_USED]`/`[NO_SOURCE]`)로 판정한다. 이 방식은 근거를 실제로 쓴 답변의 54%에서
+출처를 잘못 생략하는 것이 실측됐고(라벨 107건), 한때 코드 판정(`source_verifier.py`)으로
+교체됐다가 **2026-08-03 다시 마커로 롤백**됐다 — 경위와 수치는
+`docs/pipeline_issues.md` 이슈 3 → 이슈 5 → "이슈 5 후속" 순서로 이어진다.
+
+멀티쿼리 입장에서 중요한 건 하나다: **한 번의 사용자 질문이 N개의 독립 생성으로 늘어나므로,
+생성 1회당 존재하는 이런 실패율이 그대로 N배로 노출된다.** 분해가 만든 버그는 아니지만
+분해가 노출 빈도를 키우므로, 출처 관련 이상이 보고되면 분해를 의심하기 전에 먼저
+`docs/pipeline_issues.md`의 해당 이슈를 확인하는 편이 빠르다(3절 4항의 A/B 검증 사례가
+바로 그런 오진을 걷어낸 기록이다).
+
+## 8. 산출물 — 실제로 저장소에 있는 것 (2차 시도, 최종 채택안)
 
 | 파일 | 역할 |
 |---|---|
 | `src/query_decomposer.py` | 항상-LLM 분해기. `decompose_query(query) -> list[str]` |
 | `data/testset/testset_query_decomposition.jsonl` | 38건(easy 20/hard 18), `difficulty`·`case_type`·`expected_items` 라벨 |
 | `src/eval_query_decomposition.py` | 3회 반복 채점 스크립트, `data/query_decomposition_eval_result.json` 생성 |
-| `src/pipeline.py` | `_answer_one()` 공통화 + `USE_QUERY_DECOMPOSITION` 플래그 + 하위질문 결과 dedup·병합 |
+| `data/query_decomposition_eval_result.json` | 위 스크립트의 최신 실행 결과(5절 수치의 원본) |
+| `src/pipeline.py` | `_answer_one()` 공통화 + `USE_QUERY_DECOMPOSITION` 플래그 + 결정론적 병합 (7절) |
 | `src/performance.py` | `measure_time(..., accumulate=True)` — 복합질문 하위질문별 시간 합산 |
-| `docs/pipeline_issues.md` 이슈 3 | [NO_SOURCE] 마커 신뢰성 버그(별개 이슈, 3절 참고) |
+| `docs/pipeline_issues.md` 이슈 4 | 하위 답변 출처 소실 — 7절 3항의 근거 |
+| `docs/pipeline_issues.md` 이슈 3·5·5 후속 | 출처 부착 판정 방식의 변천(마커 → 코드 판정 → 마커 롤백) |
 
 1차 시도(규칙+형태소 게이트) 산출물은 위 경고대로 저장소에 없음 — 필요하면 이 문서의 2절 표를
 참고해 재구현할 것.
 
-## 8. 남은 작업
+## 9. 남은 작업
 
 1. **"~인지와 ~에 대해 알고 싶습니다" 패턴**: 미해결로 남은 잔여 케이스 — few-shot 늘리기
-   외의 다른 접근(예: 후처리 검증, 규칙 기반 보정) 검토 필요.
-~~2. 중복 페이지 전수 감사~~ → **2026-07-30 검증 완료.** 팀원이 `testset_all.jsonl`(메인
+   외의 다른 접근(예: 후처리 검증, 규칙 기반 보정) 검토 필요. few-shot을 더 늘리는 방향은
+   동의어 함정 케이스를 회귀시키는 것이 확인됐으므로(3절) 같은 길을 다시 가지 말 것.
+2. **E2E 재검증 미실시**: 5절(분해기 텍스트 품질)과 6절(검색 Recall/MRR)은 쟀지만, 분해
+   On/Off로 **최종 답변 품질(정답률·환각률·응답시간)** 을 끝까지 비교한 적은 없다. 7절의
+   비용(질문당 LLM 호출 +1, 복합 질문은 N배 지연)이 답변 품질 이득에 값하는지는 아직
+   수치로 답하지 못한 상태다 — `USE_QUERY_DECOMPOSITION` 기본 On은 그 전까지의 잠정 판단이다.
+
+~~중복 페이지 전수 감사~~ → **2026-07-30 검증 완료.** 팀원이 `testset_all.jsonl`(메인
 851문항 테스트셋 — cq01~15와는 별개 파일)에서 corpus 전체 중복 페이지 감사를 독립적으로
 수행해 4개 그룹을 확인했다(89e220d, `main` 반영): `uc_gudn`/`uc_hrpe_hist`/`uc_itgr_aply`,
 `kmrs_proc`/`mtrs_gvbk_proc`(6절에서 이미 반영한 바로 그 쌍), `faq_msdr_apply`/`faq_top10`,
@@ -225,8 +301,8 @@ LLM 호출 자체를 거르는 방식이었고, 원하는 성능이 안 나와 2
 (`dp_fnst_srch`·`dp_fnst`·`kmrs_itrd`·`kmrs_apply_mthd`)는 채점 오류가 아니라 진짜 검색
 약점이라는 결론도 그대로 유지된다.**
 
-~~3. [NO_SOURCE] 마커 신뢰성~~ → **2026-07-30 해결.** `prompt_builder.py`의 마커 방식을
-강제 이지선다(`[SOURCE_USED]`/`[NO_SOURCE]` 중 하나 필수)로 바꾸고, 그 과정에서 새로 생긴
-밑줄/띄어쓰기 표기 불일치 버그까지 정규식으로 잡아 해결했다. 상세 내용·검증 결과는
-`docs/pipeline_issues.md` 이슈 3 참고.
-   
+~~[NO_SOURCE] 마커 신뢰성~~ → 2026-07-30 강제 이지선다로 형식 문제 해결 → 2026-07-30
+내용 오표기가 남아 `source_verifier.py`(코드 판정)로 교체 → **2026-08-03 다시 마커로 롤백**.
+현재 상태와 감수한 위험은 `docs/pipeline_issues.md` "이슈 5 후속" 참고. 멀티쿼리 쪽에서
+해야 할 조치는 없다(7절 마지막 참고).
+
