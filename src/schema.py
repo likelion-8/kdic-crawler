@@ -1,20 +1,21 @@
-"""RAG 서비스 본 스키마(documents/document_chunks/evaluation_questions/rag_runs/
+"""RAG 서비스 본 스키마(documents/document_chunks/golden_set/test_set/rag_runs/
 rag_retrieval_results) — Supabase PostgreSQL(pgvector)에 생성.
 
 기획서(Supabase PostgreSQL 저장 데이터 정리.pdf) "최소 구축안" 6개 중 rag_trace_steps는
 제외했다(팀 결정 — trace는 나중 단계). crawl_runs/crawl_results/document_versions/
 evaluation_runs/evaluation_results도 운영 단계 착수 전이라 아직 안 만든다.
 
+기획서는 evaluation_questions 하나에 split 컬럼으로 골든셋/테스트셋을 구분하는
+안이었으나, 실제로는 골든셋(testset_all.jsonl)과 테스트셋(testset_pipeline.jsonl)이
+용도가 뚜렷이 갈려(팀 결정) golden_set/test_set 두 테이블로 분리했다.
+
 기획서 대비 반영한 수정 3건:
-1. evaluation_questions에 expected_links, business_function 추가 — 실제 testset
+1. golden_set/test_set에 expected_links, business_function 추가 — 실제 testset
    jsonl(data/testset/*.jsonl)에 이미 두 필드가 있는데 기획서 표엔 빠져 있었음. 없으면
    생성 평가(expected_links 기준)와 업무별 성능 비교(business_function 필터)를 못 돌림.
 2. documents.breadcrumb 제거 — sub_category와 값이 같아 중복.
 3. documents.is_active → document_chunks.is_active 동기화 트리거 추가 — 문서가
    비활성화됐는데 그 청크가 검색에 계속 걸리는 조용한 버그를 막는다.
-
-기존 kdic_chunks_all(index_pgvector.py)은 그대로 둔다 — 이 파일은 스키마만 만들고
-데이터 재적재는 하지 않는다(팀 결정, 별도 작업).
 
 실행: python3 src/schema.py
 """
@@ -76,22 +77,29 @@ document_chunks = Table(
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
-evaluation_questions = Table(
-    "evaluation_questions", metadata,
-    _uuid_pk(),
-    Column("question_id", String, unique=True, nullable=False),
-    Column("question", Text, nullable=False),
-    Column("question_type", String),
-    Column("intent", String),
-    Column("business_function", String),  # 수정 1: 업무별 성능 비교 필터
-    Column("reference_answer", Text),
-    Column("expected_sources", ARRAY(String)),
-    Column("expected_links", ARRAY(String)),  # 수정 1: 생성 평가 기준
-    Column("must_include", ARRAY(String)),
-    Column("must_not_include", ARRAY(String)),
-    Column("split", String),
-    Column("is_active", Boolean, nullable=False, server_default=text("true")),
-)
+def _eval_question_columns():
+    # golden_set/test_set이 컬럼 구성이 완전히 같아(testset_all.jsonl과 testset_pipeline.jsonl
+    # 필드 동일) 공유. Column은 테이블 하나에만 바인딩되므로 호출할 때마다 새로 만들어야 한다.
+    return [
+        Column("question_id", String, unique=True, nullable=False),
+        Column("question", Text, nullable=False),
+        Column("question_type", String),
+        Column("intent", String),
+        Column("business_function", String),  # 업무별 성능 비교 필터
+        Column("reference_answer", Text),
+        Column("expected_sources", ARRAY(String)),
+        Column("expected_links", ARRAY(String)),  # 생성 평가 기준
+        Column("must_include", ARRAY(String)),
+        Column("must_not_include", ARRAY(String)),
+        Column("is_active", Boolean, nullable=False, server_default=text("true")),
+    ]
+
+
+# testset_all.jsonl(851문항, 전체 골든셋) 적재 대상.
+golden_set = Table("golden_set", metadata, _uuid_pk(), *_eval_question_columns())
+
+# testset_pipeline.jsonl(89문항, held-out 평가셋 — golden_set과 test_id 겹치지 않음) 적재 대상.
+test_set = Table("test_set", metadata, _uuid_pk(), *_eval_question_columns())
 
 rag_runs = Table(
     "rag_runs", metadata,
