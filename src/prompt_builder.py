@@ -127,7 +127,15 @@ SOURCE_USED_MARKER = "[SOURCE_USED]"
 # 그대로 노출되고 근거_사용_여부까지 잘못 판정되는 회귀가 났다. 마커 두 단어 사이 구분자만
 # 밑줄/띄어쓰기 둘 다 허용하고(대소문자 무시), 그 외 자유 문구는 절대 추측하지 않는다 —
 # "여러 표현을 추측해서 거른다"는, 이 프로젝트가 이미 폐기한 접근과는 다르다.
-_MARKER_RE = re.compile(r"^\[(SOURCE[_ ]USED|NO[_ ]SOURCE)\]\s*", re.IGNORECASE)
+#
+# 2026-08-03: 대괄호 안쪽 공백 변형([ SOURCE USED ])을 추가로 흡수한다. 이 변형은 이슈 5
+# 라벨 수집 중 실제로 관측됐는데(docs/pipeline_issues.md), 정규식이 `[` 바로 뒤에 단어가
+# 오는 형태만 매치해서 (a) 출처가 통째로 누락되고 (b) 마커 텍스트가 본문에 노출되는,
+# 2026-07-30에 한 번 고쳤던 것과 똑같은 증상이 그대로 재현됐다. 볼드(**[SOURCE_USED]**)와
+# 마커 뒤 콜론도 같은 계열의 표기 흔들림이라 함께 흡수한다. 인식 대상은 여전히 고정된 두
+# 토큰뿐이다 — 자유 문구를 추측하지 않는다는 위 원칙은 그대로다.
+_MARKER_RE = re.compile(
+    r"^\**\[\s*(SOURCE[_ ]USED|NO[_ ]SOURCE)\s*\]\**[:：]?\s*", re.IGNORECASE)
 
 
 def _strip_no_source_marker(llm_text):
@@ -155,21 +163,38 @@ def _strip_no_source_marker(llm_text):
     return text[m.end():].lstrip(), used_source
 
 
-def assemble_informational_answer(llm_text, citations):
+def _resolve_used_source(llm_text, recheck):
+    """마커를 떼고 근거 사용 여부를 확정한다 -> (본문, 근거_사용_여부).
+
+    recheck(본문)->bool을 주면, 마커가 [NO_SOURCE]로 판정했을 때만 그 콜백에 한 번 더
+    물어 True면 판정을 뒤집는다. [SOURCE_USED] 판정은 절대 재확인하지 않는다 — 라벨 107건
+    실측에서 마커의 오판은 [NO_SOURCE] 쪽에만 있었고(28건 중 0건 vs 79건 중 33건),
+    맞고 있는 축을 건드리면 거절·인사에 무관한 출처가 붙는 문제가 되살아난다.
+    recheck가 None이면(기본) 마커 판정을 그대로 쓴다 — 이 기능을 켜기 전과 동작이 같다.
+    상세: src/source_check.py, docs/pipeline_issues.md 이슈 5."""
+    text, used_source = _strip_no_source_marker(llm_text)
+    if not used_source and recheck is not None:
+        used_source = recheck(text)
+    return text, used_source
+
+
+def assemble_informational_answer(llm_text, citations, recheck=None):
     """LLM이 쓴 답변 본문 뒤에 citation.py가 조회한 실제 출처를 결정론적으로 붙인다.
     단, LLM이 근거를 실제로 안 썼다고 표시했으면(NO_SOURCE_MARKER) 출처를 붙이지 않는다.
-    citations: citation.format_all_citations() 결과."""
-    text, used_source = _strip_no_source_marker(llm_text)
+    citations: citation.format_all_citations() 결과.
+    recheck: _resolve_used_source() 참고(선택). 없으면 마커 판정을 그대로 따른다."""
+    text, used_source = _resolve_used_source(llm_text, recheck)
     if not used_source:
         return text
     return text + _render_list("참고 출처", citations, _format_source_line)
 
 
-def assemble_civil_petition_answer(llm_text, civil_petition_answer):
+def assemble_civil_petition_answer(llm_text, civil_petition_answer, recheck=None):
     """LLM이 쓴 절차 설명 뒤에 civil_petition.py가 조립한 서류·페이지 정보를 결정론적으로
     붙인다. 근거 미사용 표시(NO_SOURCE_MARKER)가 있으면 붙이지 않는다.
-    civil_petition_answer: civil_petition.build_civil_petition_answer() 결과."""
-    text, used_source = _strip_no_source_marker(llm_text)
+    civil_petition_answer: civil_petition.build_civil_petition_answer() 결과.
+    recheck: _resolve_used_source() 참고(선택). 없으면 마커 판정을 그대로 따른다."""
+    text, used_source = _resolve_used_source(llm_text, recheck)
     if not used_source:
         return text
     answer = text

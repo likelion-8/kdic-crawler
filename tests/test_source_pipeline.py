@@ -43,6 +43,21 @@ def test_marker_parsing():
     text, src = _strip_no_source_marker("[no_source]\n안녕하세요.")
     assert src is False and "[" not in text, "소문자 변형 미인식"
 
+    # 실제 재현된 변형 — 대괄호 안쪽 공백(이슈 5 라벨 수집 중 관측, 2026-08-03 대응).
+    # 이 변형은 출처 누락과 마커 노출이 동시에 나던 자리다.
+    text, src = _strip_no_source_marker("[ SOURCE USED ]\n안내드립니다.")
+    assert src is True and "[" not in text, "괄호 안 공백 변형 미인식 — 출처 누락 + 마커 노출"
+
+    text, src = _strip_no_source_marker("[ NO_SOURCE ]\n확인할 수 없습니다.")
+    assert src is False and "[" not in text, "괄호 안 공백 변형에서 마커가 본문에 노출됨"
+
+    # 볼드·콜론 표기 흔들림도 같은 계열
+    text, src = _strip_no_source_marker("**[SOURCE_USED]**\n안내드립니다.")
+    assert src is True and "[" not in text and "*" not in text, "볼드 변형 미인식"
+
+    text, src = _strip_no_source_marker("[SOURCE_USED]:\n안내드립니다.")
+    assert src is True and text == "안내드립니다.", "마커 뒤 콜론이 본문에 남음"
+
     # 마커가 아예 없으면 안전한 쪽(출처 미첨부)으로. 본문은 원문 그대로 둔다.
     text, src = _strip_no_source_marker("마커 없는 답변입니다.")
     assert src is False and text == "마커 없는 답변입니다."
@@ -58,6 +73,49 @@ def test_assemble():
     assert "[NO_SOURCE]" not in without, "마커가 본문에 노출됨"
 
 
+def test_recheck_direction():
+    """2026-08-03 — [NO_SOURCE] 판정만 재확인하고 [SOURCE_USED]는 절대 건드리지 않는지.
+
+    마커의 오판은 [NO_SOURCE] 쪽에만 있었으므로(이슈 5), 맞고 있는 축까지 다시 물으면
+    거절·인사에 무관한 출처가 붙는 문제가 되살아난다. 재확인 콜백이 호출되는 조건 자체를
+    고정해 둔다."""
+    citations = [{"page_id": "p1", "breadcrumb": "안내", "title": "제목", "url": "https://x/1"}]
+    called = []
+
+    def recheck(body):
+        called.append(body)
+        return True
+
+    # [SOURCE_USED] — 재확인을 부르지 않고 그대로 출처 부착
+    out = assemble_informational_answer("[SOURCE_USED]\n답변입니다.", citations, recheck=recheck)
+    assert not called, "[SOURCE_USED]인데 재확인을 호출함 — 맞고 있는 축을 건드리면 안 됨"
+    assert "참고 출처" in out
+
+    # [NO_SOURCE] + 재확인이 '썼다' → 판정을 뒤집어 출처 부착(오표기 구제)
+    out = assemble_informational_answer("[NO_SOURCE]\n반환 신청은 이렇게 합니다.", citations,
+                                        recheck=recheck)
+    assert called == ["반환 신청은 이렇게 합니다."], "재확인에 마커 뗀 본문이 넘어가야 함"
+    assert "참고 출처" in out, "재확인이 '썼다'인데 출처가 안 붙음"
+
+    # [NO_SOURCE] + 재확인도 '안 썼다' → 그대로 미부착(거절·인사 정상 동작 유지)
+    out = assemble_informational_answer("[NO_SOURCE]\n확인할 수 없습니다.", citations,
+                                        recheck=lambda body: False)
+    assert "참고 출처" not in out, "재확인이 '안 썼다'인데 출처가 붙음"
+
+    # 재확인 실패(예외)는 마커 판정 유지 — 이 기능이 죽어도 이전 동작으로 떨어질 뿐
+    def boom(body):
+        raise RuntimeError("LLM 호출 실패")
+
+    from source_check import recheck_source_usage
+    orig_call = sys.modules["source_check"].call_hyperclova
+    try:
+        sys.modules["source_check"].call_hyperclova = boom
+        assert recheck_source_usage("반환 신청은 이렇게 합니다.", "근거 본문") is False, \
+            "호출 실패가 True로 떨어짐 — 실패는 항상 안전한 쪽이어야 함"
+    finally:
+        sys.modules["source_check"].call_hyperclova = orig_call
+
+
 def test_subanswer_independence():
     """이슈 4 회귀 — 협력자를 전부 가짜로 바꿔, 앞 하위 답변(미사용)이 뒤 하위 답변(사용)의
     출처를 지우지 않는지 확인한다."""
@@ -66,11 +124,14 @@ def test_subanswer_independence():
     page = json.loads(open(ROOT / "data" / "corpus.jsonl", encoding="utf-8").readline())
     chunks = [(f"{page['page_id']}#0", 0.9, "본문")]
     orig = (pipeline.decompose_query, pipeline.classify_intent, pipeline.route_search_chunks,
-            pipeline.call_hyperclova)
+            pipeline.call_hyperclova, pipeline.recheck_source_usage)
     try:
         pipeline.decompose_query = lambda q: ["질문1", "질문2"]
         pipeline.classify_intent = lambda q: "informational"
         pipeline.route_search_chunks = lambda q, k: chunks
+        # ①이 [NO_SOURCE]라 재확인이 실제로 호출된다 — HCX를 타지 않도록 가짜로 막고,
+        # '안 썼다'로 답하게 해 이 검사의 원래 시나리오(①은 출처 미부착)를 유지한다.
+        pipeline.recheck_source_usage = lambda body, evidence: False
         # ① 근거 미사용(거절) → ② 근거 사용. 판정은 이제 마커가 하므로 답변에 직접 붙인다.
         answers = iter(["[NO_SOURCE]\n확인할 수 없습니다.",
                         "[SOURCE_USED]\n반환지원 제도로 신청하시면 됩니다."])
@@ -82,13 +143,14 @@ def test_subanswer_independence():
         assert page["source_url"] in second, "②(사용)의 출처가 사라짐 — 이슈 4 재발!"
     finally:
         (pipeline.decompose_query, pipeline.classify_intent, pipeline.route_search_chunks,
-         pipeline.call_hyperclova) = orig
+         pipeline.call_hyperclova, pipeline.recheck_source_usage) = orig
 
 
 if __name__ == "__main__":
     test_marker_parsing()
     test_assemble()
+    test_recheck_direction()
     test_subanswer_independence()
     # em-dash 등 cp949에 없는 문자는 쓰지 않는다 - Windows 콘솔에서 UnicodeEncodeError로
     # 검사가 통과하고도 비정상 종료한다(2026-08-03 실제 발생).
-    print("OK - 출처 부착 경로 검사 3종 통과")
+    print("OK - 출처 부착 경로 검사 4종 통과")
