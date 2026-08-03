@@ -87,22 +87,6 @@ def classify_query_type(query):
     return "table_lookup" if qtype == "table_lookup" else "general"
 
 
-# ── Kiwi 형태소 토크나이저 (source_verifier 공용) ──
-# 원래 intent 분류(TF-IDF) 전처리용이었으나, intent가 OpenAI로 교체된(2026-08-03) 뒤로는
-# source_verifier.py(답변이 근거를 실제로 썼는지 내용어 겹침 판정)와 train_source_verifier.py가
-# 이 토크나이저를 재사용한다. 그 import 호환을 위해 함수명(tokenize_intent)은 유지한다.
-_kiwi_intent = {}
-
-
-def tokenize_intent(text):
-    """Kiwi 형태소+품사 태그 토큰(예: "신청/NNG", "어요/EF"). source_verifier가 답변·근거의
-    내용어 겹침을 재는 데 쓴다(과거엔 intent TF-IDF 학습·추론 공용이었음, 지금 intent는 OpenAI)."""
-    if "kiwi" not in _kiwi_intent:
-        from kiwipiepy import Kiwi
-        _kiwi_intent["kiwi"] = Kiwi()
-    return [f"{t.form}/{t.tag}" for t in _kiwi_intent["kiwi"].tokenize(text)]
-
-
 # ── intent 분류: OpenAI GPT-5.4-mini Structured Output (2026-08-03, 기존 Kiwi+TF-IDF+LogReg에서 교체) ──
 # 채택 근거: held-out(testset_pipeline) 4자 비교에서 gpt-5.4-mini가 전체 92.1%·구어체 93.8%로
 # 최고이면서 응답 ~0.85초로 빠르고, native structured output으로 출력이 두 라벨 중 하나로 보장됨
