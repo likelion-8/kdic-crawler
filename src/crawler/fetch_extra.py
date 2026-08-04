@@ -12,7 +12,7 @@ FAQ 목록)는 그냥 크롤하면 1페이지 10행만 잡힌다. 안내자료 �
   data/raw_html/paged/<id>_p<n>.html    → parse_raw_html.py가 새 라인만 텍스트에 병합
   data/raw_html/detail/<id>__<bbsId>.html → build_corpus.py가 첨부를 corpus에 병합
 
-실행: python3 src/project1_src/fetch_extra.py [page_id ...]   # 미지정 시 대상 페이지 자동 발견
+실행: python3 src/crawler/fetch_extra.py [page_id ...]   # 미지정 시 대상 페이지 자동 발견
 """
 import re
 import sys
@@ -121,7 +121,7 @@ def main():
         print(f"[{page['id']}] 뒷페이지 {n_paged}건, 게시글 상세 {n_detail}건")
     print(f"\n완료: 뒷페이지 {total_paged}건 → data/raw_html/paged/, "
           f"상세 {total_detail}건 → data/raw_html/detail/")
-    print("다음 단계: python3 src/project1_src/parse_raw_html.py && python3 src/project1_src/build_corpus.py")
+    print("다음 단계: python3 src/crawler/parse_raw_html.py && python3 src/crawler/build_corpus.py")
 
 
 if __name__ == "__main__":

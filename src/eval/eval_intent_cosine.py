@@ -16,7 +16,7 @@
   - 새로 계산한 centroid는 data/intent_eval_centroids.npy 로만 저장한다.
   - 운영 분류 로직(query_classifier가 참조하는 파일)에는 아무 영향도 주지 않는다.
 
-실행: python3 src/eval_intent_cosine.py
+실행: python3 src/eval/eval_intent_cosine.py
 """
 import json
 import random
@@ -26,7 +26,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from retrieval import DEFAULT_DENSE_MODEL, DenseRetriever, _get_model  # noqa: E402

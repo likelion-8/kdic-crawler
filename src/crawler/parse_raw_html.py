@@ -4,7 +4,7 @@
 변환 로직은 crawler_dy.html_to_text 재사용 (결정론적, 표는 '|' 구분 행으로 보존).
 
 실행:
-  python3 src/project1_src/parse_raw_html.py
+  python3 src/crawler/parse_raw_html.py
 """
 import re
 from pathlib import Path

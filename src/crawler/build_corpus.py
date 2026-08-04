@@ -10,7 +10,7 @@ corpus.jsonl은 페이지(문서) 단위 1줄 = 메타데이터 + 본문 텍스�
 data/meta/<page_id>.json 이며, 해시가 같으면 collected_at 을 그대로 물려받는다.
 (원본 HTML 은 판본 혼재·세션 토큰 탓에 본문이 그대로여도 바뀌므로 기준이 못 된다.)
 
-실행: python3 src/project1_src/build_corpus.py  (네트워크 불필요 — 로컬 raw_html/text 사용)
+실행: python3 src/crawler/build_corpus.py  (네트워크 불필요 — 로컬 raw_html/text 사용)
 """
 import json
 import re

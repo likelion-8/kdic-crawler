@@ -1,6 +1,6 @@
 """통합 테스트셋(data/testset/testset_all.jsonl) 일관성 검증.
 
-실행: python src/project1_src/validate_testset.py
+실행: python src/crawler/validate_testset.py
 """
 import json
 import sys

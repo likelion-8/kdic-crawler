@@ -14,7 +14,7 @@ must_include·거절감지는 결정론 프록시(하한선)로만 쓰고, 애�
 ⚠️ Qdrant 단일 프로세스 — 평가 중 챗봇(streamlit) 켜지 말 것.
 
 읽기 전용: 기존 파일 수정/git 실행 없음.
-실행: python3 src/eval_pipeline_generation.py [--limit N] [--rerank]
+실행: python3 src/eval/eval_pipeline_generation.py [--limit N] [--rerank]
 """
 import argparse
 import json
@@ -23,7 +23,7 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 import pipeline  # noqa: E402  (USE_RERANKER 토글 + _rag_answer_traced 호출)
