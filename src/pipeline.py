@@ -52,16 +52,13 @@ USE_QUERY_DECOMPOSITION = True
 USE_SOURCE_RECHECK = True
 
 
-def _answer_one(query, timings, collect=None):
+def _answer_one(query, timings):
     """질문 하나(원본 질문 또는 복합 질문의 하위 질문 하나)에 대해 검색부터 답변 조립까지
     수행한다. 하위 답변끼리는 출처를 포함해 완전히 독립이다 — 하위 답변 간 "중복 출처
     제거"를 하던 누적 집합(seen_pages/seen_urls)은 2026-07-30 제거했다. 출처를 실제로
     붙였는지가 아니라 검색됐는지 기준으로 걸러서, 앞 하위 답변이 [NO_SOURCE]로 거절한
     경우 뒤 하위 답변의 진짜 출처까지 지우는 버그가 있었다(docs/pipeline_issues.md 이슈 4).
-    같은 문서가 여러 하위 답변의 근거면 각각에 보이는 게 맞다 — 다시 도입하지 말 것.
-
-    collect가 리스트면 (query, candidates, top)을 append한다 — rag_logger가 검색 후보/
-    최종선택을 로깅할 때만 쓰고, 기본(None)이면 기존 동작과 완전히 동일하다."""
+    같은 문서가 여러 하위 답변의 근거면 각각에 보이는 게 맞다 — 다시 도입하지 말 것."""
     with measure_time(timings, "query_classification", accumulate=True):
         intent = classify_intent(query)
 
@@ -108,20 +105,13 @@ def _answer_one(query, timings, collect=None):
         else:
             answer = assemble_informational_answer(llm_text, citations, recheck=recheck)
 
-    if collect is not None:
-        collect.append((query, candidates, top))
-
     return answer
 
 
-def _rag_answer_traced(query, collect_retrieval=None):
+def _rag_answer_traced(query):
     """rag_answer()와 흐름은 동일하되, 단계별 소요 시간을 timings 딕셔너리에 함께
     기록해 (답변, timings) 튜플로 반환한다. 성능 측정 스크립트 전용 — 서비스
-    경로(rag_answer)는 이 함수를 감싸 답변 문자열만 꺼내 쓴다.
-
-    collect_retrieval이 리스트면 하위 질문별 (query, candidates, top)이 쌓인다(로깅용).
-    eval_pipeline_generation.py/measure_baseline.py는 이 인자를 안 넘기므로(기본 None)
-    기존 호출과 동작이 완전히 같다 — 평가·성능측정 실행은 로깅 대상이 아니다."""
+    경로(rag_answer)는 이 함수를 감싸 답변 문자열만 꺼내 쓴다."""
     timings = {}
 
     if USE_QUERY_DECOMPOSITION:
@@ -134,9 +124,9 @@ def _rag_answer_traced(query, collect_retrieval=None):
         # 단일 질문(또는 기능 Off) - 분해기가 살짝 바꿔 쓴 표현(예: "이란"->"이라는 게")이
         # 아니라 원본 질문 그대로 검색한다. 분해가 실제로 아무것도 바꾸지 않아야 할 상황에서
         # 굳이 재질문판 문구를 쓸 이유가 없다(안전한 기본 동작 유지).
-        answer = _answer_one(query, timings, collect=collect_retrieval)
+        answer = _answer_one(query, timings)
     else:
-        sub_answers = [_answer_one(q, timings, collect=collect_retrieval) for q in sub_queries]
+        sub_answers = [_answer_one(q, timings) for q in sub_queries]
         answer = "\n\n".join(f"**{q}**\n{a}" for q, a in zip(sub_queries, sub_answers))
 
     timings["total"] = round(sum(timings.values()), 4)
@@ -148,11 +138,12 @@ def rag_answer(query):
     근거 조립·프롬프트 조립 방식만 갈리고, 검색·재정렬·LLM호출은 공통이다.
 
     Streamlit(app.py)·터미널(본 파일 __main__)이 실제로 부르는 유일한 경로라, 여기서만
-    rag_runs/rag_retrieval_results에 실행 결과를 로깅한다 — eval_pipeline_generation.py 등
-    평가 스크립트는 _rag_answer_traced()를 직접 불러 이 로깅을 우회한다(의도적).
+    rag_runs에 실행 결과를 로깅한다 — eval_pipeline_generation.py 등 평가 스크립트는
+    _rag_answer_traced()를 직접 불러 이 로깅을 우회한다(의도적). 검색 후보/선택 상세
+    (rag_retrieval_results)는 로깅하지 않는다 — 질문당 20행씩 쌓여 부담이고, 추후 Langfuse로
+    trace를 붙이면 그쪽이 이 역할을 전담한다(2026-08-04 팀 결정).
     로깅은 log_rag_run 내부에서 전부 실패-안전(예외를 삼킴)이라 여기서 답변을 막지 않는다."""
-    sub_results = []
-    answer, timings = _rag_answer_traced(query, collect_retrieval=sub_results)
+    answer, timings = _rag_answer_traced(query)
 
     intent = classify_intent(query)
     qtype = classify_question_type(query)
@@ -160,8 +151,7 @@ def rag_answer(query):
     log_rag_run(
         question=query, answer=answer, intent=intent, question_type=qtype,
         retrieval_route=route, total_latency_ms=timings["total"] * 1000,
-        sub_results=sub_results, embedding_model=DEFAULT_DENSE_MODEL,
-        llm_model=os.environ.get("CLOVA_MODEL"),
+        embedding_model=DEFAULT_DENSE_MODEL, llm_model=os.environ.get("CLOVA_MODEL"),
     )
 
     return answer
