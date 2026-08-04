@@ -87,6 +87,13 @@ def classify_query_type(query):
     return "table_lookup" if qtype == "table_lookup" else "general"
 
 
+def classify_question_type(query):
+    """question_type 원본 라벨(fact/faq/table_lookup/link_guide/file_download 등)을 그대로
+    반환한다. classify_query_type()과 같은 분류기(같은 캐시된 인스턴스)를 재사용하되, 라우팅용
+    이진 접기 없이 원본 라벨이 필요한 곳(rag_runs 로깅 등)에서 쓴다."""
+    return _get_classifier("question_type").classify(query)
+
+
 # ── intent 분류: OpenAI GPT-5.4-mini Structured Output (2026-08-03, 기존 Kiwi+TF-IDF+LogReg에서 교체) ──
 # 채택 근거: held-out(testset_pipeline) 4자 비교에서 gpt-5.4-mini가 전체 92.1%·구어체 93.8%로
 # 최고이면서 응답 ~0.85초로 빠르고, native structured output으로 출력이 두 라벨 중 하나로 보장됨
