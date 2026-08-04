@@ -103,6 +103,15 @@ def classify_question_type(query):
 _OPENAI_INTENT_MODEL = os.environ.get("OPENAI_INTENT_MODEL") or "gpt-5.4-mini"
 _openai = {}
 
+# 2026-08-04: 모델마다 temperature 지원 여부가 다르다(gpt-5.4-mini는 0 허용, gpt-5.6-luna
+# 같은 일부 모델은 기본값 1만 허용하고 0을 주면 즉시 BadRequestError). 이 프로젝트는 지금까지
+# HCX-007 -> gpt-4o-mini -> gpt-5.4-mini -> gpt-5.6-luna로 모델을 계속 바꿔왔으므로(교체 근거
+# docs/intent_classification_final_report.md), "이 모델은 temperature 됨/안 됨" 목록을 코드에
+# 박아두면 모델 바꿀 때마다 또 손봐야 한다. 대신 일단 temperature=0으로 시도하고, 그 모델이
+# 거부하면(BadRequestError, 메시지에 "temperature" 포함) 이후로는 그 모델에 한해 파라미터 없이
+# (모델 기본값으로) 호출한다 — 새 모델로 바꿔도 코드 수정 불필요, 매 호출마다 재시도하지도 않음.
+_temperature_unsupported = set()
+
 
 def _get_openai_client():
     """OpenAI 클라이언트를 프로세스당 1회만 생성(OPENAI_API_KEY 환경변수 사용)."""
@@ -112,20 +121,36 @@ def _get_openai_client():
     return _openai["c"]
 
 
+def _parse_intent(client, model, messages):
+    """IntentResult로 파싱된 completion을 반환 — temperature=0을 모델이 거부하면
+    (BadRequestError, 메시지에 temperature 포함) 그 모델을 _temperature_unsupported에
+    기록하고 파라미터 없이 재시도한다. temperature와 무관한 에러는 그대로 올린다(호출부
+    classify_intent의 바깥 try/except가 처리)."""
+    from intent_llm_common import IntentResult
+
+    if model not in _temperature_unsupported:
+        try:
+            return client.beta.chat.completions.parse(
+                model=model, messages=messages, response_format=IntentResult, temperature=0)
+        except Exception as e:
+            if "temperature" not in str(e).lower():
+                raise
+            _temperature_unsupported.add(model)
+
+    return client.beta.chat.completions.parse(
+        model=model, messages=messages, response_format=IntentResult)
+
+
 def classify_intent(query):
     """질의 의도를 informational/civil_petition 중 하나로 판단(OpenAI structured output).
     입출력 계약은 기존과 동일(query 문자열 → 두 라벨 중 하나)이라 호출부(pipeline.py 등)는
     수정 없이 그대로 작동한다. API 실패 시 안전 기본값 informational로 폴백해 전체 파이프라인이
     멈추지 않게 한다(프롬프트 규칙 5 — 애매하면 informational)."""
-    from intent_llm_common import IntentResult, SYSTEM_PROMPT
+    from intent_llm_common import SYSTEM_PROMPT
     try:
-        completion = _get_openai_client().beta.chat.completions.parse(
-            model=_OPENAI_INTENT_MODEL,
-            messages=[{"role": "system", "content": SYSTEM_PROMPT},
-                      {"role": "user", "content": query}],
-            response_format=IntentResult,
-            temperature=0,
-        )
+        messages = [{"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": query}]
+        completion = _parse_intent(_get_openai_client(), _OPENAI_INTENT_MODEL, messages)
         return completion.choices[0].message.parsed.intent
     except Exception:
         return "informational"
