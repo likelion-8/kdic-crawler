@@ -12,7 +12,7 @@ held-out 세트(testset_pipeline.jsonl)로 '확정된 우리 파이프라인'의
 question_type·note)로 대상을 정한다(팀원이 행을 더 추가해도 안 깨지게).
 
 읽기 전용: 기존 파일 수정/git 실행 없음.
-실행: python3 src/eval_pipeline_retrieval.py            # 리랭킹 Off(베이스라인)
+실행: python3 src/eval/eval_pipeline_retrieval.py            # 리랭킹 Off(베이스라인)
       python3 src/eval_pipeline_retrieval.py --rerank   # 리랭킹 On(다음 주)
 """
 import argparse
@@ -22,7 +22,7 @@ import time
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from retrieval import route_search_chunks  # noqa: E402

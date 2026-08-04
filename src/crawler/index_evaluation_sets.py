@@ -10,7 +10,7 @@ QuestionTypeClassifier가 로컬 JSONL+npy 캐시 대신 여기서 1-NN 참조 �
 바꿀 것이라(팀 결정), evaluation_dataset.embedding이 그 원천이 된다. test_set은 그 용도가
 없어 임베딩을 안 넣는다.
 
-실행: python3 src/project1_src/index_evaluation_sets.py
+실행: python3 src/crawler/index_evaluation_sets.py
 """
 import json
 import sys

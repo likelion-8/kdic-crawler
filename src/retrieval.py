@@ -275,7 +275,7 @@ class RoutedRetriever:
     business_function 가중치는 도입하지 않는다 — leave-page-out(같은 페이지에서 나온
     형제 질문을 전부 제외)으로 정직하게 재검증한 결과, 분류기의 진짜 일반화 정확도가
     55~80%에 그쳐 어떤 융합 방식(연속 가중합/RRF 가산/top-1 매칭)을 쓰든 전 유형에서
-    순수 Dense/Hybrid보다 손해였다(project1_src/bf_score_fusion_eval.py 참고).
+    순수 Dense/Hybrid보다 손해였다(crawler/bf_score_fusion_eval.py 참고).
 
     qtype을 안다면(예: 평가 시 테스트셋 라벨) search()에 직접 넘기면 그걸 우선 쓴다.
     모르면(실서비스 기본 경로) classifier로 자동 분류한다 — query_classifier.py의
@@ -310,12 +310,12 @@ _engines = {}
 def _build_engines():
     """all 모드(제품이 실제로 쓰는 색인) 검색 엔진 일체를 한 번만 조립한다.
     eval_retrieval.build_retrievers("all")와 하는 일은 같지만, retrieval.py는 평가
-    스크립트(project1_src/)에 의존하면 안 되므로 필요한 조립 로직만 여기 자체적으로 둔다."""
+    스크립트(crawler/)에 의존하면 안 되므로 필요한 조립 로직만 여기 자체적으로 둔다."""
     if _engines:
         return _engines
 
     import sys as _sys
-    _sys.path.insert(0, str(ROOT / "src" / "project1_src"))
+    _sys.path.insert(0, str(ROOT / "src" / "crawler"))
     from chunking import build_units, load_records
     from query_classifier import QuestionTypeClassifier  # BusinessFunctionClassifier 미사용(업무필터 비활성)
 

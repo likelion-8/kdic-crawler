@@ -13,7 +13,7 @@ question_type/business_function처럼 사람이 직접 라벨링해야 하는 �
   질문(예: "포상금 몇 프로 줘요?")은 절차 표현이 있어도 informational에 가깝지만,
   이 스크립트는 표현 매칭만으로 1차 분류하므로 그런 경계 사례는 오분류될 수 있다.
 
-실행: python3 src/project1_src/label_intent.py
+실행: python3 src/crawler/label_intent.py
 """
 import json
 from pathlib import Path

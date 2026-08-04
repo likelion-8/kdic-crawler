@@ -214,7 +214,7 @@ civil_petition에 가까울 수 있음).
 2026-07-22 시점 라벨은 사람이 전수 검수한 값이 아니라 규칙 기반 1차 라벨링이다
 (`file_download`·`link_guide` 유형은 civil_petition, 나머지는 "신청/접수/제출/
 구비서류/위임장/철회/취소/이의제기/지급명령/청구" 등 절차 실행 표현 포함 여부로 판단
-— `src/project1_src/label_intent.py`). leave-one-out 검증 결과 전체 정확도 86.6%,
+— `src/crawler/label_intent.py`). leave-one-out 검증 결과 전체 정확도 86.6%,
 civil_petition precision 0.770/recall 0.849로 `question_type` 분류기(81.8%)와
 비슷한 수준이나, 표본 검수를 거쳐 필요 시 수동 라벨링으로 보강할 여지가 있다.
 

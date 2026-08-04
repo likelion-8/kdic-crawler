@@ -69,7 +69,7 @@ RAG를 위한 문서 검색(Passage Retrieval)과 근거 기반 질의응답입�
 
 BM25 + 글자수 청킹(500자, overlap 100) + 업무 구분 없는 평면 검색.
 6개 업무 전량(58페이지·초기 500자 고정 청킹 기준 3,662청크·초기 평가셋 규모)에서 진단용으로
-한 번 뽑은 수치입니다. 이 초기 스크립트는 이후 `src/project1_src/eval_retrieval.py`(문서찾기
+한 번 뽑은 수치입니다. 이 초기 스크립트는 이후 `src/crawler/eval_retrieval.py`(문서찾기
 MRR·AnswerRecall@5 기준)로 대체됐고, 이후 실험은 전부 그 기준으로 재측정합니다(2·4장 참고).
 
 | Baseline (BM25 평면) | Recall@1 | Recall@3 | Recall@5 |

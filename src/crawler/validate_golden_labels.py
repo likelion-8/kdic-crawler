@@ -13,7 +13,7 @@
 
 정규화(_normalize)는 공백·날짜 표기차이로 인한 오탐을 걸러낸다(아래에 함께 둔다).
 
-실행: python3 src/project1_src/validate_golden_labels.py
+실행: python3 src/crawler/validate_golden_labels.py
 """
 import json
 import re

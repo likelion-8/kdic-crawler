@@ -7,7 +7,7 @@ documents는 data/corpus.jsonl(페이지 단위 원문), document_chunks는 inde
 매번 documents/document_chunks를 비우고 다시 채운다(멱등 재실행). FK 때문에
 document_chunks를 먼저 지운다.
 
-실행: python3 src/project1_src/index_document_chunks.py
+실행: python3 src/crawler/index_document_chunks.py
 """
 import sys
 from datetime import date

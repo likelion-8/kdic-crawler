@@ -17,7 +17,7 @@ leave-page-out으로 제외한다. 자기 자신만 빼는 leave-one-out으로�
 빼도 형제 질문이 최근접으로 잡혀 점수가 허위로 높아진다. 같은 gold page(expected_sources)에서
 나온 질문 전체를 후보 풀에서 제외해야 진짜 일반화 성능을 잰다.
 
-실행: python3 src/project1_src/bf_score_fusion_eval.py
+실행: python3 src/crawler/bf_score_fusion_eval.py
 """
 import json
 import sys

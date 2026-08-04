@@ -5,7 +5,7 @@ docs/performance_baseline.md에 표로 남긴다. 어느 단계가 병목인지 
 대표 질문 4개(정보성/민원성/표조회/근거부족)는 새로 짓지 않고 data/testset/testset_all.jsonl에서
 실제 라벨이 확인된 문항을 test_id로 그대로 가져온다.
 
-실행: python3 src/project1_src/measure_baseline.py (첫 실행 시 임베딩/재정렬 모델 로딩 포함,
+실행: python3 src/crawler/measure_baseline.py (첫 실행 시 임베딩/재정렬 모델 로딩 포함,
 이 로딩 시간은 "웜업" 실행으로 따로 표시하고 실제 비교는 웜업 이후 실행 기준으로 한다)
 """
 import json

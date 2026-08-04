@@ -7,7 +7,7 @@
 포인트 ID는 Qdrant가 문자열 chunk_id("faq_nramt#3" 등)를 못 받아서(정수/UUID만
 허용) 순번 정수를 쓰고, 원래 chunk_id는 payload에 그대로 넣어 되짚을 수 있게 한다.
 
-실행: python3 src/project1_src/index_qdrant.py
+실행: python3 src/crawler/index_qdrant.py
 """
 import sys
 from pathlib import Path
