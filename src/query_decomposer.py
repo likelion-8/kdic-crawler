@@ -8,6 +8,8 @@
 분해된 하위 질문은 각각 retrieval.route_search_chunks()에 독립적으로 넣어 검색한다
 (이 파일은 분해까지만 책임지고, 검색·조립은 pipeline.py 쪽에서 연결한다).
 """
+import re
+
 from llm_client import call_hyperclova
 
 SYSTEM_INSTRUCTION = """당신은 예금보험공사(KDIC) 챗봇의 질문 분해기입니다. 사용자 질문 하나를 받아
@@ -91,6 +93,15 @@ def _build_prompt(query):
     return [("system", SYSTEM_INSTRUCTION), ("human", human)]
 
 
+# 2026-08-04(docs/pipeline_issues.md 이슈 6): few-shot 프롬프트가 "질문: ...\n출력:" 형식을
+# 쓰다 보니, 드물게 LLM이 실제 하위 질문 대신 이 틀 자체("질문:", "출력:" 한 줄)를 그대로
+# 따라 써서 응답에 섞어 보낸다. decompose_query()가 줄바꿈만 보고 나누기 때문에 이런 줄이
+# 그대로 "하위 질문"으로 취급돼 pipeline.py에 넘어가면, "출력:" 같은 무의미한 문자열이 질문
+# 취급을 받아 근거 없음 답변("제공해주신 자료에... 답변 못 드립니다")이 섞여 나온다.
+# 재현율은 낮지만(직접 재현 시도 5/5는 정상), 방어 코드 자체엔 비용이 없으므로 필터링한다.
+_PROMPT_ARTIFACT_RE = re.compile(r"^(질문|출력)\s*[:：]")
+
+
 def decompose_query(query):
     """질문 하나 -> 하위 질문 문자열 리스트. 나눌 필요가 없으면 [query]와 동일한 내용의
     한 원소 리스트가 된다. LLM 출력 파싱에 실패하거나(빈 응답 등) 명백히 잘못됐으면,
@@ -100,7 +111,8 @@ def decompose_query(query):
         response = call_hyperclova(_build_prompt(query))
     except Exception:
         return [query]
-    sub_queries = [line.strip() for line in response.strip().splitlines() if line.strip()]
+    sub_queries = [line.strip() for line in response.strip().splitlines()
+                   if line.strip() and not _PROMPT_ARTIFACT_RE.match(line.strip())]
     return sub_queries if sub_queries else [query]
 
 
