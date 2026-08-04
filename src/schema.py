@@ -1,9 +1,13 @@
-"""RAG 서비스 본 스키마(documents/document_chunks/evaluation_dataset/test_set/rag_runs/
-rag_retrieval_results) — Supabase PostgreSQL(pgvector)에 생성.
+"""RAG 서비스 본 스키마(documents/document_chunks/evaluation_dataset/test_set/rag_runs)
+— Supabase PostgreSQL(pgvector)에 생성.
 
 기획서(Supabase PostgreSQL 저장 데이터 정리.pdf) "최소 구축안" 6개 중 rag_trace_steps는
 제외했다(팀 결정 — trace는 나중 단계). crawl_runs/crawl_results/document_versions/
 evaluation_runs/evaluation_results도 운영 단계 착수 전이라 아직 안 만든다.
+
+rag_retrieval_results(검색 후보/선택 추적)도 한때 만들었다가 제거했다 — 질문 1건당
+20행씩 쌓이는 부담 대비 실익이 낮고, 추후 Langfuse로 trace를 붙이면 그쪽이 이 역할을
+전담하기로 했다(2026-08-04 팀 결정, rag_logger.py 참고).
 
 기획서는 evaluation_questions 하나에 split 컬럼으로 골든셋/테스트셋을 구분하는
 안이었으나, 실제로는 골든셋(testset_all.jsonl)과 테스트셋(testset_pipeline.jsonl)이
@@ -30,7 +34,7 @@ from db import get_engine  # noqa: E402
 
 from pgvector.sqlalchemy import Vector  # noqa: E402
 from sqlalchemy import (  # noqa: E402
-    Boolean, Column, DateTime, Float, ForeignKey, Integer, MetaData, String,
+    Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String,
     Table, Text, func, text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID  # noqa: E402
@@ -123,21 +127,6 @@ rag_runs = Table(
     Column("llm_model", String),
     Column("embedding_model", String),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
-)
-
-rag_retrieval_results = Table(
-    "rag_retrieval_results", metadata,
-    _uuid_pk(),
-    Column("rag_run_id", UUID(as_uuid=True), ForeignKey("rag_runs.id"), nullable=False),
-    Column("sub_query", Text),
-    Column("chunk_id", String),
-    Column("rank", Integer),
-    Column("score", Float),
-    Column("stage", String),  # candidate, selected, context
-    Column("is_selected", Boolean),
-    Column("document_id", UUID(as_uuid=True), ForeignKey("documents.id")),
-    Column("source_url", String),
-    Column("page_title", String),
 )
 
 # 수정 3: documents.is_active가 바뀌면 그 문서의 청크 전부를 같은 값으로 맞춘다.

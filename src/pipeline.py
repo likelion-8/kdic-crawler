@@ -5,9 +5,11 @@
 K_CANDIDATES=20/K_FINAL=5는 candidate_ranking.py의 리랭킹 실측값(Recall@20 99%+, 기존 프로젝트
 AnswerRecall@5 기준)을 그대로 재사용한다.
 """
+import os
+
 from query_decomposer import decompose_query
-from query_classifier import classify_intent
-from retrieval import route_search_chunks
+from query_classifier import classify_intent, classify_question_type
+from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever, route_search_chunks
 from candidate_ranking import rerank, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
@@ -17,6 +19,7 @@ from prompt_builder import (
 )
 from llm_client import call_hyperclova
 from performance import measure_time
+from rag_logger import log_rag_run
 from source_check import recheck_source_usage
 
 K_CANDIDATES = 20
@@ -132,8 +135,25 @@ def _rag_answer_traced(query):
 
 def rag_answer(query):
     """질문 하나 -> 답변 문자열. intent(informational/civil_petition)에 따라
-    근거 조립·프롬프트 조립 방식만 갈리고, 검색·재정렬·LLM호출은 공통이다."""
-    answer, _ = _rag_answer_traced(query)
+    근거 조립·프롬프트 조립 방식만 갈리고, 검색·재정렬·LLM호출은 공통이다.
+
+    Streamlit(app.py)·터미널(본 파일 __main__)이 실제로 부르는 유일한 경로라, 여기서만
+    rag_runs에 실행 결과를 로깅한다 — eval_pipeline_generation.py 등 평가 스크립트는
+    _rag_answer_traced()를 직접 불러 이 로깅을 우회한다(의도적). 검색 후보/선택 상세
+    (rag_retrieval_results)는 로깅하지 않는다 — 질문당 20행씩 쌓여 부담이고, 추후 Langfuse로
+    trace를 붙이면 그쪽이 이 역할을 전담한다(2026-08-04 팀 결정).
+    로깅은 log_rag_run 내부에서 전부 실패-안전(예외를 삼킴)이라 여기서 답변을 막지 않는다."""
+    answer, timings = _rag_answer_traced(query)
+
+    intent = classify_intent(query)
+    qtype = classify_question_type(query)
+    route = "hybrid" if qtype in RoutedRetriever.HYBRID_ONLY_TYPES else "dense"
+    log_rag_run(
+        question=query, answer=answer, intent=intent, question_type=qtype,
+        retrieval_route=route, total_latency_ms=timings["total"] * 1000,
+        embedding_model=DEFAULT_DENSE_MODEL, llm_model=os.environ.get("CLOVA_MODEL"),
+    )
+
     return answer
 
 

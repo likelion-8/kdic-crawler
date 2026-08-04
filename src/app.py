@@ -313,14 +313,8 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     user_prompt = st.session_state.messages[-1]["content"]
     with st.spinner("예솜이가 생각 중입니다..."):
         try:
-            from pipeline import _rag_answer_traced
-            res = _rag_answer_traced(user_prompt)
-            if isinstance(res, dict):
-                answer_text = res.get("answer", "")
-            elif isinstance(res, (tuple, list)):
-                answer_text = res[0] if len(res) > 0 else ""
-            else:
-                answer_text = str(res)
+            from pipeline import rag_answer
+            answer_text = rag_answer(user_prompt)
             st.session_state.messages.append({"role": "assistant", "content": answer_text})
         except Exception as e:
             st.session_state.messages.append({"role": "assistant", "content": f"답변 생성 중 오류가 발생했습니다: {str(e)}"})
