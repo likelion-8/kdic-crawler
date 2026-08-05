@@ -115,6 +115,12 @@ rag_runs = Table(
     "rag_runs", metadata,
     _uuid_pk(),
     Column("trace_id", String),
+    # 답변 1건의 식별자. API가 응답(ChatResponse.request_id)으로 내보낸 값을 그대로 저장한다.
+    # 사용자가 그 답변에 피드백을 남길 때 이 값으로 대상을 찾으므로, 없으면 feedback을 붙일
+    # 곳이 사라진다. 미들웨어의 요청추적 request_id(X-Request-ID)와는 다른 값이다.
+    Column("request_id", String, unique=True),
+    # 대화(세션) 식별자. 한 대화의 여러 질문을 묶어 보거나 복원할 때 쓴다.
+    Column("session_id", String),
     Column("question", Text, nullable=False),
     Column("intent", String),
     Column("question_type", String),
@@ -128,6 +134,26 @@ rag_runs = Table(
     Column("embedding_model", String),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
+
+# 답변 1건에 대한 사용자 피드백. 프론트는 👍/👎를 먼저 보내고(POST), 👎일 때만 사유 칩·자유
+# 의견을 뒤이어 보낸다(PATCH). 그래서 vote는 필수, reason_codes/comment는 나중에 채워진다.
+#
+# request_id에 unique를 건 이유: 같은 답변에 대한 피드백은 최종 1건만 남는다(사용자가 👍를
+# 눌렀다 👎로 바꾸면 덮어쓴다). 이 제약이 있어야 애플리케이션이 upsert로 그 규칙을 강제할 수 있다.
+# rag_runs.request_id를 가리키지만 FK는 걸지 않는다 — 로깅(rag_logger)이 실패-안전이라 답변
+# 행이 없을 수 있고, 그때 피드백까지 거부되면 사용자에게 이유 없는 실패가 보인다.
+feedback = Table(
+    "feedback", metadata,
+    _uuid_pk(),
+    Column("request_id", String, nullable=False, unique=True),
+    Column("session_id", String),
+    Column("vote", String, nullable=False),          # 'up' | 'down'
+    Column("reason_codes", ARRAY(String)),           # codes.ts ReasonCode (INACCURATE 등)
+    Column("comment", Text),                         # 마스킹 후 저장 · 최대 200자
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+)
+
 
 # 수정 3: documents.is_active가 바뀌면 그 문서의 청크 전부를 같은 값으로 맞춘다.
 # 애플리케이션 레이어에서 매번 챙기게 두면 한 곳이라도 빠뜨렸을 때 "비활성 문서의
@@ -158,6 +184,18 @@ def main():
         # evaluation_dataset이 embedding 컬럼 추가 전에 이미 만들어졌을 수 있어 create_all이
         # 건너뛴다(테이블 존재 여부만 봄, 컬럼 diff는 안 함) — 별도로 멱등하게 추가.
         conn.execute(text("ALTER TABLE evaluation_dataset ADD COLUMN IF NOT EXISTS embedding vector(1024)"))
+        # rag_runs도 같은 이유로 뒤늦게 추가한 컬럼이 있다(피드백 연결용 request_id/session_id).
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS request_id text"))
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS session_id text"))
+        # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
+        # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.
+        conn.execute(text("""
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'rag_runs_request_id_key') THEN
+                    ALTER TABLE rag_runs ADD CONSTRAINT rag_runs_request_id_key UNIQUE (request_id);
+                END IF;
+            END $$;
+        """))
     print("생성 완료:", ", ".join(t.name for t in metadata.sorted_tables))
     print("트리거 생성 완료: trg_sync_document_chunks_is_active (documents.is_active → document_chunks.is_active)")
 

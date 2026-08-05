@@ -145,6 +145,32 @@ def to_chat_response(finalized: list[SubAnswer], used_flags: list[bool], full_an
     )
 
 
+def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int) -> None:
+    """실사용 질의 1건을 Supabase rag_runs 에 남긴다.
+
+    pipeline.rag_answer() 는 자기 안에서 이걸 부르지만 API 는 그 함수를 우회해 흐름을
+    재조립하므로(파일 상단 참고), 여기서 따로 불러야 한다. 이 호출이 없으면 웹 챗봇 대화가
+    DB에 한 줄도 남지 않고, request_id 가 저장되지 않아 피드백을 붙일 답변도 사라진다.
+
+    복합 질문은 하위마다 intent·검색경로가 다를 수 있어 쉼표로 잇는다(단일이면 값 하나).
+    log_rag_run 은 내부에서 모든 예외를 삼키므로 호출부가 실패를 신경 쓰지 않아도 된다.
+    """
+    from rag_logger import log_rag_run
+    intents = ",".join(dict.fromkeys(sp.intent for sp in sub_plans)) or None
+    routes = ",".join(dict.fromkeys(
+        getattr(sp, "route", None) or "" for sp in sub_plans)).strip(",") or None
+    log_rag_run(
+        question=question,
+        answer=resp.answer,
+        intent=intents,
+        question_type=None,      # 검색 라우팅 내부에서만 쓰고 응답 경로엔 노출되지 않는다
+        retrieval_route=routes,
+        total_latency_ms=latency_ms,
+        request_id=resp.request_id,
+        session_id=resp.session_id,
+    )
+
+
 def error_from_exception(exc: Exception, phase: str = "llm", request_id: str = "") -> ApiError:
     """예외를 프론트가 분기하는 대문자 5종 code 로 매핑한다(codes.ts ErrorCode). timeout/rate 는
     어느 단계든 우선 감지하고, 그 외에는 단계(retrieval/llm)로 가른다. 사용자 문구는 담되 내부

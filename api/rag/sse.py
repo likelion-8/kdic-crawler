@@ -127,6 +127,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     composite = len(sub_qs) > 1
     finalized = []
     used_flags = []
+    sub_plans = []   # 로깅에 쓸 intent·검색경로 (하위질문마다 다를 수 있다)
     full_parts = []  # 흘려보낸 모든 조각(구분자 포함) — done.answer 로 쓴다(불변식 보장)
 
     for i, q in enumerate(sub_qs):
@@ -137,6 +138,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
             logger.exception("[%s] prepare_sub 실패: %s", request_id, q)
             yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
             return
+        sub_plans.append(sp)
 
         # 복합이면 하위 답변 사이에 구분자를 넣는다(스트림·done.answer 양쪽에 동일 반영).
         if composite and i > 0:
@@ -186,6 +188,11 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     latency_ms = int((time.perf_counter() - started) * 1000)
     resp = answer.to_chat_response(
         finalized, used_flags, "".join(full_parts), composite, session_id, request_id, latency_ms)
+
+    # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에
+    # 남길 피드백(POST /api/feedback)의 연결 열쇠다 — 없으면 피드백을 붙일 곳이 사라진다.
+    # log_rag_run 은 내부에서 예외를 삼키므로(실패-안전) 답변 전달을 막지 않는다.
+    answer.log_run(message, resp, sub_plans, latency_ms)
 
     # sources/attachments 이벤트는 보내지 않는다(프론트 합의 2026-08-05).
     # 출처는 근거 사용 여부(source_check)가 확정돼야 정해지는데 그 판정이 스트리밍이 끝난 뒤라,
