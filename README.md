@@ -135,8 +135,9 @@ FAQ 청킹 효과(faq 유형 MRR 0.696→0.926)와 표 행 청킹 효과(잘린 
 (지급대행점 조회, 착오송금 지원현황, 보호대상 검색 등). 전부 추가해 58페이지로 확정했습니다.
 현재 확보량은 58페이지 · 494검색유닛(구조 인식 청킹 기준) · 첨부(서식 다운로드) 103건 ·
 FAQ 7페이지(질문-답변 83쌍) · 대형 표 다수(예: 파산재단 현황 3,458행) · 영상 자막 1건입니다.
-평가셋은 원문에서 질의-답변-근거-출처URL 세트로 만들었습니다(853건 — 범위 안 821건 + 범위 밖
-32건, `validate_testset.py`로 스키마·근거 page_id 일관성 전수 검사 853/853 통과).
+평가셋은 원문에서 질의-답변-근거-출처URL 세트로 만들었습니다(현재 851건 — 범위 안 819건 + 범위 밖
+32건, `src/crawler/validate_testset.py`로 스키마·근거 page_id 일관성 전수 검사 851/851 통과).
+아래 3~4장의 실험 수치는 측정 당시 세트(821/853문항) 기준입니다.
 
 **데이터 특성.** 페이지당 수백~수천 자의 짧은 안내문입니다. 구비서류 표, HWP/PDF 첨부 서식,
 순서도·안내그림이 섞여 있습니다. 페이지 유형도 정적 안내문 외에 FAQ 게시판, 로그인 화면, 동적 검색 화면이 있습니다.
@@ -162,7 +163,7 @@ FAQ 7페이지(질문-답변 83쌍) · 대형 표 다수(예: 파산재단 현�
   전용 메타 태그(`time_caveat` 등)는 아직 구현하지 않았습니다 — 현재는 페이지 본문에 있는
   시점 문구(예: "2025.9.1 이후")를 생성 단계가 그대로 읽는 데 의존하는 상태로, 남은 리스크입니다.
 - 검증: 수집본을 라이브 원문과 독립 대조하고(무오염 0건), 평가셋 근거가 원문에 실재하는지
-  전수 검사합니다(`validate_testset.py`, 853/853 통과, 오류 0건).
+  전수 검사합니다(`src/crawler/validate_testset.py`, 851/851 통과, 오류 0건).
 
 ### 실제로는 어떻게 됐는가 (계획 대비 결과)
 
@@ -223,7 +224,7 @@ Dense 단독이 Hybrid와 같거나 더 좋아서, "전부 Hybrid"가 아니라 
 ### Evaluation Metrics
 
 **검색 단계 (완료)**: Recall@1/3/5, MRR, AnswerRecall@5. 정답 기준은 평가셋의 `page_id`이며
-`src/eval_retrieval.py`로 재현합니다. 이 단계는 위 E1~E5 수치로 이미 측정을 마쳤습니다.
+`src/crawler/eval_retrieval.py`로 재현합니다. 이 단계는 위 E1~E5 수치로 이미 측정을 마쳤습니다.
 
 **E2E 응답 단계 (다음 단계, 아직 정식 실행 전)**: 계획대로 아래 네 가지를 보려고 합니다.
 
@@ -238,7 +239,7 @@ Dense 단독이 Hybrid와 같거나 더 좋아서, "전부 Hybrid"가 아니라 
 
 지표 자체를 어떻게 믿을 것인가.
 평가셋의 근거는 사람이나 모델의 주장이 아니라 스크립트가 원문과 문자열 대조로 전수 검증합니다
-(`validate_testset.py`, 853/853 통과, 오류 0건). 근거가 원문에 없으면 그 문항은 버립니다.
+(`src/crawler/validate_testset.py`, 851/851 통과, 오류 0건). 근거가 원문에 없으면 그 문항은 버립니다.
 LLM judge는 아직 정식 도입 전이라 "표본을 팀원 2인이 수작업 채점" 단계는 E2E 평가를 시작할 때
 계획대로 진행할 예정입니다. 검색 지표 안에서도 문서찾기(MRR)와 근거단위(AnswerRecall@5)를
 반드시 같이 봤습니다 — 표 꼬리 프로브처럼 페이지는 맞혀도(MRR 만점) 정작 답을 못 뽑는
@@ -253,12 +254,20 @@ LLM judge는 아직 정식 도입 전이라 "표본을 팀원 2인이 수작업 
 파이프라인·검색 로직을 Streamlit 데모에서 프론트엔드·백엔드가 분리된 웹 서비스로 확장하는
 계획입니다.
 
+> ⚠️ **이 장은 착수 시점의 계획이고, 실제 구현은 몇 군데에서 다른 길로 갔습니다.**
+> 아래 본문은 뒤집힌 결정을 그 자리에서 정정해 두었습니다. 현재 구조의 정본은
+> `CLAUDE.md`(전체) · `docs/backend-structure.md`(백엔드) · `web/src/lib/api/types.ts`(API 계약)입니다.
+
 ### 확장 방향
 
 - 프론트엔드(React)·백엔드(FastAPI)는 API 스키마를 먼저 확정한 뒤 병렬 개발합니다.
   프론트엔드는 확정된 스키마로 만든 Mock 데이터로 화면부터 완성합니다.
-- 기존 `src/`의 RAG 파이프라인은 그대로 유지하고, `pipeline.py`의 `rag_answer()`를
-  백엔드와 AI 코드 사이의 유일한 경계 인터페이스로 씁니다.
+- 기존 `src/`의 RAG 파이프라인은 그대로 유지합니다. **다만 `rag_answer()`를 경계로 쓰려던
+  계획은 채택되지 않았습니다** — 그 함수는 문자열만 반환하고 모놀리식·비스트리밍이라
+  토큰을 흘릴 수 없습니다. 실제로는 `api/rag/answer.py`가 `src/`의 빌딩블록
+  (query_decomposer·query_classifier·retrieval·candidate_ranking·citation·civil_petition·
+  prompt_builder·source_check)을 직접 조립해 구조화된 `ChatResponse`를 만듭니다.
+  `pipeline.py`는 손대지 않았고 Streamlit·CLI가 계속 씁니다.
 - 새 AI 기능은 지금까지와 같은 기준으로 Baseline과 비교해 개선이 확인된 경우에만
   반영합니다 — 이 원칙으로 이미 3~4장에서 업무 필터·리랭커·Parent-Child를 걸러냈고,
   앞으로도 같은 기준을 적용합니다.
@@ -268,7 +277,7 @@ LLM judge는 아직 정식 도입 전이라 "표본을 팀원 2인이 수작업 
 
 | 순위 | 포함 항목 |
 |---|---|
-| P0 (필수) | React 채팅 화면, FastAPI 백엔드, RAG 연결, 답변·출처·첨부파일, 범위 밖 질문 처리, PostgreSQL 대화·피드백 저장, Qdrant 서버 모드 전환, BM25·Dense 코퍼스 정합성 검증, 오류 처리, Docker 실행 환경, AI 회귀 평가 |
+| P0 (필수) | React 채팅 화면, FastAPI 백엔드, RAG 연결, 답변·출처·첨부파일, 범위 밖 질문 처리, PostgreSQL 대화·피드백 저장, ~~Qdrant 서버 모드 전환~~ → Supabase pgvector 전환(완료), BM25·Dense 코퍼스 정합성 검증, 오류 처리, Docker 실행 환경, AI 회귀 평가 |
 | P1 (가능하면) | 관리자 로그인·조회, 문서 검색 제외·포함, 관리자 재색인, Rate Limit, 기본 부하 테스트 |
 | P2 (여유 시) | 무중단 인덱스 교체, 비동기 재색인, 부분 재색인, 자동 재수집, 관리자 통계, 멀티턴, 스트리밍 |
 
@@ -280,9 +289,8 @@ LLM judge는 아직 정식 도입 전이라 "표본을 팀원 2인이 수작업 
 - **멀티턴 대화**: "그럼 저축은행도 똑같아?"처럼 이전 질문과 연결해 해석하는 Query
   Rewriting은 초기 범위에서 뺍니다. 다만 세션·메시지는 PostgreSQL에 저장해둬 나중에
   붙일 때 데이터가 이미 쌓여 있게 합니다.
-- **스트리밍 응답(SSE)**: `rag_answer()`가 동기 함수라 스트리밍을 붙이려면 인터페이스
-  자체를 바꿔야 합니다. 초기엔 전체 응답을 한 번에 반환하고, 필요해지면
-  `/api/chat/stream`을 별도 엔드포인트로 추가합니다.
+- ~~**스트리밍 응답(SSE)**~~ → **구현됨.** 별도 엔드포인트를 두지 않고 `POST /api/chat`
+  자체가 SSE입니다(`api/routers/chat.py`, `api/rag/sse.py`). 논스트리밍 엔드포인트는 없습니다.
 - **관리자의 원문 직접 수정**: 재크롤링하면 수정 내용이 사라지므로 지원하지 않습니다.
   관리자는 조회·검색 제외/포함·재색인만 할 수 있습니다.
 
@@ -293,25 +301,29 @@ LLM judge는 아직 정식 도입 전이라 "표본을 팀원 2인이 수작업 
 | 프론트엔드 | React + TypeScript + Vite | API 타입을 TS로 관리하고 Mock·실제 응답 구조를 동일하게 유지하기 쉬움 |
 | 백엔드 | FastAPI | 기존 AI 코드가 Python이라 직접 연결 가능, Pydantic으로 스키마 명시, OpenAPI 자동 생성 |
 | RDB | PostgreSQL | 대화·피드백·오류 로그·문서 메타데이터 등 서비스 데이터 저장 |
-| 벡터 DB | Qdrant 서버 모드 | 기존 검색 코드를 그대로 재사용하면서, 로컬 임베디드 모드의 파일 잠금 문제(이 저장소에서 실제로 겪은 문제 — 한 프로세스가 `data/qdrant_local`을 열어두면 다른 프로세스는 `AlreadyLocked`로 접근이 막힙니다)를 해결 |
+| 벡터 DB | **Supabase Postgres + pgvector** | 계획은 Qdrant 서버 모드였으나 2026-08-03에 전환했습니다. RDB와 벡터를 한 곳에 두어 운영 대상이 하나로 줄고, 로컬 임베디드 모드의 파일 잠금 문제(`data/qdrant_local`을 한 프로세스가 열면 다른 프로세스는 `AlreadyLocked`)도 같이 사라집니다 |
 | API 타입 흐름 | Pydantic → OpenAPI → `openapi-typescript` | 프론트·백엔드가 API 타입을 각자 손으로 만들지 않고 자동 생성해 스키마 불일치를 원천 차단 |
 
-PostgreSQL에 `pgvector`를 넣어 통합하는 대안도 검토했지만, 기존 검색 코드를 그대로 쓸 수 있고
-PostgreSQL과 벡터 검색의 역할이 명확히 분리된다는 이유로 Qdrant 서버 모드를 유지합니다.
+처음에는 "역할이 명확히 분리된다"는 이유로 Qdrant 서버 모드를 유지할 계획이었으나,
+**2026-08-03에 Supabase Postgres(pgvector)로 전환했습니다**(`src/retrieval.py:327`).
+운영 Dense 검색은 `PgVectorDenseRetriever`가 `document_chunks` 테이블(`embedding vector(1024)`)을
+읽습니다. `QdrantDenseRetriever`는 롤백 대비로 코드에만 남아 있고 운영 경로에서는 호출되지 않습니다.
 
 ### 데이터·인덱스 정합성
 
-`corpus.jsonl`을 계속 데이터 정본으로 두고, Qdrant 컬렉션 이름에 코퍼스 해시(예:
-`kdic_chunks_a18f02c3`)를 넣어 코퍼스가 바뀌면 컬렉션도 자동으로 갈리게 합니다. 재색인
-때마다 "코퍼스 청크 수 = Qdrant 포인트 수 = BM25 대상 문서 수"를 검증합니다. 관리자는
+`corpus.jsonl`을 계속 데이터 정본으로 둡니다. 코퍼스 해시를 컬렉션 이름에 넣는 계획은
+저장소가 Supabase로 바뀌면서 쓰지 않게 됐고, 실제로는 `src/crawler/index_document_chunks.py`가
+`documents`/`document_chunks`를 **전량 교체**한 뒤 양쪽 행수를 대조합니다(현재 58/494).
+검색 제외는 테이블을 지우는 대신 `is_active` 플래그로 하고, `documents.is_active`를 내리면
+트리거가 그 페이지의 청크까지 함께 내립니다(`src/schema.py`). 관리자는
 문서를 검색 대상에서 빼거나 다시 넣을 수만 있고 본문은 직접 고치지 못합니다 — 고치면
 재크롤링 시 사라지기 때문입니다.
 
 ### AI 회귀 평가 체계
 
-`data/testset/testset_pipeline.jsonl`(70문항, 6개 업무 균등 분배, `testset_all.jsonl`과
-안 겹치는 Held-out 세트)을 Smoke 평가로, `testset_all.jsonl`(853문항)을 전체 평가로
-쓸 계획입니다.
+`data/testset/testset_pipeline.jsonl`(**89문항**, `testset_all.jsonl`과 안 겹치는 Held-out
+세트 — 6개 업무에 균등하지 않고 범위밖·복합 문항을 포함합니다)을 Smoke 평가로,
+`testset_all.jsonl`(**851문항**)을 전체 평가로 쓸 계획입니다.
 
 다만 이 둘을 실제로 채점할 **E2E 평가 스크립트는 지금 저장소에 없습니다.** `evaluate_pipeline.py`
 (테스트셋 전체 자동 채점, LLM judge, `--retry-failed` 등)가 한 차례 구현·운용됐지만
@@ -321,7 +333,7 @@ PostgreSQL과 벡터 검색의 역할이 명확히 분리된다는 이유로 Qdr
 계획**이 되어 있어, 재도입 여부부터 다시 결정해야 합니다.
 
 반면 테스트셋 라벨 자체의 무결성 검증 도구는 남아 있습니다 — `validate_testset.py`(스키마·
-필드 일관성, 853/853 통과)와 `validate_golden_labels.py`(`must_include`가 실제 정답
+필드 일관성, 851/851 통과)와 `validate_golden_labels.py`(`must_include`가 실제 정답
 페이지의 본문·링크·첨부에 정말 있는지 대조, 롤백 시 `evaluate_pipeline._normalize`를
 인라인해 계속 동작). 즉 **라벨 품질은 이미 검증돼 있고, 그 라벨로 챗봇 답변을 채점하는
 E2E 스크립트만 다시 만들면 되는 상태**입니다. 새 AI 기능은 이 평가가 재도입된 뒤 다음을
@@ -337,20 +349,20 @@ E2E 스크립트만 다시 만들면 되는 상태**입니다. 새 AI 기능은 
 | 주차 | 목표 | 핵심 산출물 |
 |---|---|---|
 | 1주 | 문제 정의·MVP 범위·API 스키마 확정, 데이터 정본/저장소 역할 확정, 배포 가능성 Spike(BGE-m3-ko 메모리 사용량, 8GB 환경 실행 가능성), AI Baseline 측정 | API 스키마, 기술 스택 결정서, 저장소 역할 정의, Baseline 결과 |
-| 2주 | 프론트·백엔드 기본 골격 + Mock 통신, PostgreSQL·Qdrant 개발 환경 구성, AI 1차 실험(현재 방식 포함 최대 3개 후보) | Mock 채팅 화면, DB ERD, AI 1차 실험 결과 |
-| 3주 | Qdrant·BM25를 웹 서비스에 붙이기 전에 각각 독립적으로 검증 → 정합성 검증 → FastAPI에 연결 → 프론트엔드를 실제 API로 전환 | 실제 RAG가 연결된 Prototype, Smoke 회귀 결과 |
+| 2주 | 프론트·백엔드 기본 골격 + Mock 통신, PostgreSQL·벡터 검색 개발 환경 구성(→ Supabase 단일 인스턴스로 통합), AI 1차 실험(현재 방식 포함 최대 3개 후보) | Mock 채팅 화면, DB ERD, AI 1차 실험 결과 |
+| 3주 | 벡터 검색·BM25를 웹 서비스에 붙이기 전에 각각 독립적으로 검증 → 정합성 검증 → FastAPI에 연결 → 프론트엔드를 실제 API로 전환 | 실제 RAG가 연결된 Prototype, Smoke 회귀 결과 |
 | 4주 | 사용자 기능 완성(대화·피드백 저장), 관리자 P1 기능, AI 1차 실험 중 검증된 것만 반영, 부하·장애 테스트 | Beta 버전, AI 최종 설정 후보 |
 | 5주 | 신규 기능 추가 중단(Feature Freeze), 전체 회귀 평가, Docker Compose 배포, 발표 준비 | 최종 MVP, 배포 서비스, 발표자료 |
 
 앞 단계가 검증되기 전엔 다음 단계로 넘어가지 않는 걸 원칙으로 합니다 — 특히 3주차는
-"Qdrant 단독 검증 → BM25 단독 검증 → 정합성 검증 → FastAPI 연결 → 프론트 연결" 순서를
+"벡터 검색 단독 검증 → BM25 단독 검증 → 정합성 검증 → FastAPI 연결 → 프론트 연결" 순서를
 지켜서 인프라·백엔드·프론트엔드 문제를 한꺼번에 디버깅하지 않게 합니다.
 
 ### 프로젝트 완료 기준
 
 - 프론트엔드 질문이 FastAPI를 거쳐 기존 RAG 파이프라인(`rag_answer()`)으로 연결된다.
 - 답변·출처·첨부파일이 화면에 표시되고, 범위 밖 질문에 잘못된 URL이 붙지 않는다.
-- 대화·피드백이 PostgreSQL에, 코퍼스가 Qdrant·BM25에 정합성 있게 저장된다(청크 수 일치).
+- 대화·피드백과 코퍼스가 Supabase Postgres에 정합성 있게 저장된다(코퍼스 청크 수 = `document_chunks` 행수 = BM25 대상 문서 수).
 - `testset_pipeline.jsonl` 기반 Smoke 회귀 평가가 가능하고, Docker Compose로 전체
   서비스가 뜬다.
 - 주요 기술 결정은 Decision Log/ADR에 기록돼 있다.
