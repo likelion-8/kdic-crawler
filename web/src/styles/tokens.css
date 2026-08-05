@@ -1,0 +1,127 @@
+/* 디자인 토큰 — 기획서 정본에서 그대로 옮김. 임의로 값을 바꾸지 말 것.
+ * 출처: CM-DF-003 02절(화면 공통 규격) · CM-DF-001(공통 UI 컴포넌트 정의)
+ * 색 실측: CM-DF-001 프레임 픽셀 샘플링(문서에 색 토큰 표가 없어 렌더에서 추출)
+ */
+
+:root {
+  /* --- 브랜드 (CM-DF-003 02절) --- */
+  --color-primary: #7e57c2;
+  --color-primary-hover: #512da8;
+  --color-primary-bg: #f3effa; /* 상태 바·선택 행·'초안' 배지 배경 */
+  --color-primary-border: #d6c9f2;
+  /* 포인트 컬러로 채운 면 위의 글자색. 다크에서 --color-primary가 밝아지므로
+   * 흰색 고정이면 대비가 무너진다(라이트 5.2:1 / 다크 흰글자 1.7:1). */
+  --color-on-primary: #ffffff;
+
+  /* --- 기관 CI (예금보험공사 로고 실측 — assets/logo-kdic.png 픽셀 샘플링) ---
+   * 서비스 포인트 컬러(--color-primary 보라)와 다른 축이다. 기관을 가리킬 때만 쓴다:
+   * 챗봇 헤더의 워드마크·[AI챗봇] 칩. 본문·버튼·상태색으로 번지지 않게 할 것. */
+  --color-kdic-navy: #143275;
+  --color-on-kdic-navy: #ffffff;
+
+  /* --- 사용자 말풍선 (CM-DF-003 02절) --- */
+  --color-user-bubble-bg: #fee500;
+  --color-user-bubble-text: #191919;
+
+  /* --- 의미색 (CM-DF-001 05절 배지·칩) --- */
+  --color-danger-text: #c83232;
+  --color-danger-bg: #feebeb;
+  --color-success-text: #2e7d50;
+  --color-success-bg: #d9f1de;
+  --color-warning-text: #b46e28;
+  --color-warning-bg: #ffedd5;
+
+  /* --- 텍스트 --- */
+  --color-text-primary: #2d2d2d;
+  --color-text-body: #3c3c3c;
+  --color-text-muted: #828288;
+  --color-text-helper: #919196;
+  /* CM-DF-001 실측값 #BDBDBD/#AEAEAE는 #F5F5F5 위에서 대비 1.9:1로 WCAG 미달이라
+   * #8a8a8e로 상향했다(대비 3.5:1). 기획서 수정 필요 — docs/frontend-handoff.md 참조. */
+  --color-text-disabled: #8a8a8e;
+
+  /* --- 표면 --- */
+  --color-surface: #ffffff;
+  --color-surface-sunken: #fafafb; /* diff 박스·빈 상태 박스 */
+  --color-surface-disabled: #f5f5f5;
+  --color-border: #d6d6d6;
+  --color-border-subtle: #e5e5e5; /* 표 행 구분선 */
+  --color-track: #e4e4e8; /* 슬라이더 미채움 */
+  --color-toast-bg: #323236;
+  --color-overlay: rgb(0 0 0 / 40%); /* 모달 오버레이 — 문서 명시값 */
+
+  /* --- 타이포 --- */
+  --font-sans: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+
+  /* --- 챗봇 레이아웃 (CM-DF-003 02절) --- */
+  --chat-content-max: 820px; /* 본문 최대 폭 */
+  --chat-input-max: 720px; /* 입력창 최대 폭 */
+  --chat-bubble-max: 68%; /* 말풍선 최대 폭 (PC) — 모바일 값은 파일 끝 미디어쿼리 */
+  --chat-radius-user: 18px 4px 18px 18px;
+  --chat-radius-bot: 4px 18px 18px 18px;
+  --chat-avatar: 38px;
+  --chat-welcome-icon: 72px;
+
+  /* --- 관리자 컴포넌트 치수 (CM-DF-001 1.2 실측) --- */
+  --modal-width: 560px; /* 문서는 "520~560 고정" — 목업값 560으로 확정 */
+  --btn-height: 32px;
+  --btn-height-sm: 24px; /* 표 행 안 조치용 (문서 22~24) */
+  --btn-radius: 6px;
+  --badge-height: 18px;
+  --badge-radius: 9px;
+  --field-height: 26px;
+  --field-radius: 4px;
+  --table-row-height: 30px;
+  --statusbar-height: 56px;
+
+  /* --- 포커스 링 (기획서에 접근성 규격 없음 — 프론트에서 확정) --- */
+  --focus-ring: 2px solid var(--color-primary);
+  --focus-ring-offset: 2px;
+}
+
+/* 다크 테마 — CM-DF-003 02절 "라이트·다크(시스템 설정 자동 대응)".
+ * 기획서에 다크 색값이 없어 라이트 팔레트에서 파생했다(대비 유지 우선).
+ * 관리자 화면은 라이트 고정이므로 여기 값은 챗봇 화면에만 적용된다. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-primary: #b39ddb;
+    --color-primary-hover: #d1c4e9;
+    --color-primary-bg: #2a2438;
+    --color-primary-border: #4a3f66;
+    --color-on-primary: #1b1b1f; /* #b39ddb 위에서 7.0:1 */
+
+    --color-danger-text: #ef9a9a;
+    --color-danger-bg: #3a2323;
+    --color-success-text: #81c995;
+    --color-success-bg: #1e3324;
+    --color-warning-text: #e0b070;
+    --color-warning-bg: #3a2e1c;
+
+    --color-text-primary: #e8e8ea;
+    --color-text-body: #d4d4d8;
+    --color-text-muted: #9a9aa2;
+    --color-text-helper: #8a8a92;
+    --color-text-disabled: #6e6e76;
+
+    --color-surface: #1b1b1f;
+    --color-surface-sunken: #232328;
+    --color-surface-disabled: #2a2a30;
+    --color-border: #3a3a42;
+    --color-border-subtle: #2e2e35;
+    --color-track: #3a3a42;
+    --color-toast-bg: #e8e8ea;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* 말풍선 폭 68%는 CM-DF-003의 PC 규격이다. 그대로 두면 360px에서 봇 말풍선 본문이 188px
+   (한 줄 13자)까지 눌려, 그 안의 추천 칩·신청 CTA가 밖으로 삐져나온다.
+   모바일에서는 아바타·여백을 뺀 나머지를 거의 다 쓴다. */
+@media (max-width: 767px) {
+  :root {
+    --chat-bubble-max: 88%;
+  }
+}

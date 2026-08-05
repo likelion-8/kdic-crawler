@@ -1,0 +1,453 @@
+/** AD-004(파이프라인) · AD-005(대화 로그) 전용 목 — handlers/admin.ts에 없는 접점만 채운다.
+ *
+ * admin.ts가 이미 가진 것(작업 생성·목록·취소·재시도·롤백)은 그대로 쓰고,
+ * 여기서는 기획서에만 있고 계약이 없는 것들을 채운다(10 §E · 11 §3).
+ *  - 변경 페이지 알림 / 지금 확인 ↻ (AD-004 R2)
+ *  - 확인 모달의 대상 건수·예상 소요 (AD-004 B-6·B-7 · 이슈 G-23)
+ *  - 대화 로그 목록·요약·상세·재실행·조치·후보 등록·내보내기 (AD-005 전부)
+ *
+ * 목업 숫자는 예시라 여기 데이터도 예시다. 화면은 이 응답만 보고 그린다(하드코딩 금지).
+ * 단계별 소요 합계는 응답 시간과 일치시켜 두었다 — 기획서 목업은 5.9 vs 9.2로 어긋난다(11 §M1).
+ */
+import { HttpResponse, delay, http } from 'msw'
+import type { Page } from '../../../lib/api/types'
+import type { BusinessFunction, ErrorCode, Intent, QuestionType, Role, TriageStatus } from '../../../lib/codes'
+import { hasRole } from '../../../lib/codes'
+
+// ---------------------------------------------------------------- 공통
+
+let seq = 0
+const nextId = (prefix: string) => `${prefix}_${Date.now().toString(36)}_${(seq += 1)}`
+
+function fail(status: number, message: string) {
+  return HttpResponse.json(
+    { code: 'INTERNAL', user_message: message, retryable: false, fallback_sources: [], request_id: nextId('req') },
+    { status },
+  )
+}
+
+/** handlers/admin.ts와 같은 개발용 스위치 — 헤더가 없으면 ADMIN으로 본다 */
+const roleOf = (request: Request): Role => (request.headers.get('x-mock-role') as Role | null) ?? 'ADMIN'
+
+function denied(request: Request, need: Role) {
+  const mine = roleOf(request)
+  if (hasRole(mine, need)) return null
+  return HttpResponse.json(
+    {
+      code: 'INTERNAL',
+      user_message: `이 작업에는 ${need} 권한이 필요합니다. 현재 권한은 ${mine}입니다.`,
+      retryable: false,
+      fallback_sources: [],
+      request_id: nextId('req'),
+    },
+    { status: 403 },
+  )
+}
+
+/** KST 기준 오늘(YYYY-MM-DD). 브라우저 타임존과 무관하게 고정한다 */
+const KST_TODAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date())
+
+const at = (hhmm: string, date: string = KST_TODAY) => `${date}T${hhmm}:00+09:00`
+
+// ---------------------------------------------------------------- AD-004 변경 페이지 알림
+
+/** 원본 사이트 본문이 바뀐 페이지 1건 (AD-004 R2) */
+export interface ChangedPage {
+  page_id: string
+  /** 카드 1행 — 짧은 제목 */
+  title: string
+  /** 보조 표기에 쓰는 원문 제목 */
+  source_title: string
+  /** 본문 변경을 감지한 시각 */
+  detected_at: string
+}
+
+const CHANGED_PAGES: ChangedPage[] = [
+  {
+    page_id: 'kmrs_apply_mthd',
+    title: '착오송금 반환지원 신청',
+    source_title: '착오송금 반환지원 신청 방법',
+    detected_at: '2026-07-28T04:12:00+09:00',
+  },
+  {
+    page_id: 'dp_faq_page',
+    title: '예금자보호 FAQ',
+    source_title: '예금자보호제도 FAQ',
+    detected_at: '2026-07-27T03:41:00+09:00',
+  },
+]
+
+let lastCheckedAt = '2026-07-29T03:00:00+09:00'
+
+export interface ChangedPagesResponse {
+  last_checked_at: string
+  items: ChangedPage[]
+}
+
+// ---------------------------------------------------------------- AD-004 실행 전 견적
+
+/** 확인 모달의 '대상'·'예상 소요' (이슈 G-23 — 서버가 줘야 하는 값) */
+export interface JobEstimate {
+  type: string
+  /** 전체 재수집=페이지 수 · 재적재=문서 수 */
+  target_count: number
+  estimated_minutes: number
+}
+
+const ESTIMATES: Record<string, JobEstimate> = {
+  FULL_RECRAWL: { type: 'FULL_RECRAWL', target_count: 58, estimated_minutes: 12 },
+  REINDEX: { type: 'REINDEX', target_count: 58, estimated_minutes: 8 },
+  SELECTED_RECRAWL: { type: 'SELECTED_RECRAWL', target_count: CHANGED_PAGES.length, estimated_minutes: 4 },
+}
+
+// ---------------------------------------------------------------- AD-005 대화 로그
+
+export type LogStatus = 'NORMAL' | 'OUT_OF_SCOPE' | 'FAILED'
+export type FeedbackVote = 'up' | 'down'
+
+/** 목록 한 행 — 컬럼: 시각/질문/성격/상태/피드백/출처/응답 (AD-005 1.4) */
+export interface ConversationLogRow {
+  request_id: string
+  occurred_at: string
+  /** 마스킹된 저장본. 원문은 어떤 권한으로도 볼 수 없다 */
+  question_masked: string
+  intent: Intent
+  status: LogStatus
+  feedback: FeedbackVote | null
+  /** 실패 건은 null(화면에서 '—') */
+  source_count: number | null
+  latency_s: number | null
+  triage: TriageStatus
+}
+
+export interface LogSummary {
+  total: number
+  normal: number
+  out_of_scope: number
+  failed: number
+  feedback_up: number
+  feedback_down: number
+}
+
+/** 실행 추적(검색 후보·단계별 소요)은 Langfuse가 전담한다(2026-08-04 팀 결정).
+ *  `rag_retrieval_results` 테이블은 삭제됐고 `rag_runs`에는 `total_latency_ms`만 있다
+ *  (src/schema.py) — 이 두 가지를 서버가 만들어 낼 방법이 없어 추적으로 넘긴다.
+ *  ⚠ 백엔드는 `rag_runs.trace_id`를 채우고, 여기 `url`은 **완성된 주소**로 내려줘야 한다.
+ *     프론트가 Langfuse 호스트를 알 이유가 없고, 조각을 붙이면 배포 환경이 바뀔 때마다 깨진다. */
+export interface LangfuseTrace {
+  id: string
+  url: string | null
+}
+
+export interface LogErrorDetail {
+  code: ErrorCode
+  /** 코드 + 뜻 병기용 뒷부분 */
+  meaning: string
+  /** 사용자에게 실제로 나갔던 문구 */
+  user_message: string
+  auto_retry: string
+  fallback: string
+  /** rag_runs.failure_stage — 단계별 소요가 아니라 '어디서 멈췄나' 한 값 */
+  failure_stage: string | null
+  /** rag_runs.root_cause */
+  root_cause: string | null
+}
+
+export interface ConversationLogDetail extends ConversationLogRow {
+  classification: {
+    intent: Intent
+    business_function: BusinessFunction | null
+    question_type: QuestionType
+    source_used: boolean
+    /** 첫 줄 근거 사용 마커 */
+    marker: string
+    /** 마커가 어긋나 정규화로 보정한 건 */
+    normalized: boolean
+  }
+  langfuse: LangfuseTrace | null
+  /** rag_runs.total_latency_ms */
+  total_latency_ms: number | null
+  answer_masked_preview: string
+  answer_masked_full: string
+  feedback_detail: {
+    vote: FeedbackVote
+    at: string
+    reason_label: string
+    comment: string
+  } | null
+  error: LogErrorDetail | null
+}
+
+const ANSWER_FULL =
+  '착오송금일로부터 1년 이내에 예금보험공사에 반환지원을 신청할 수 있습니다. 신청 시에는 착오송금 사실을 확인할 수 있는 이체확인증과 신분증 사본이 필요하며, 온라인 신청 페이지 또는 방문 접수로 진행합니다. 신청 후 예금보험공사가 수취인의 연락처를 확인해 자진 반환을 안내하고, 반환이 이루어지지 않으면 지급명령 등 회수 절차를 진행합니다.'
+
+const rows: ConversationLogRow[] = [
+  {
+    request_id: '4a01-77bc', occurred_at: at('09:41'), question_masked: '예금자보호 한도가 얼마인가요?',
+    intent: 'informational', status: 'NORMAL', feedback: 'up', source_count: 2, latency_s: 7.9, triage: 'NONE',
+  },
+  {
+    request_id: '7d1a-93f2', occurred_at: at('09:38'), question_masked: '착오송금 반환지원 신청 방법',
+    intent: 'civil_petition', status: 'NORMAL', feedback: 'down', source_count: 3, latency_s: 5.9, triage: 'NONE',
+  },
+  {
+    request_id: '8f2c-41ab', occurred_at: at('09:36'), question_masked: '예금보험금 신청 서류 알려주세요',
+    intent: 'civil_petition', status: 'FAILED', feedback: null, source_count: null, latency_s: null, triage: 'IN_REVIEW',
+  },
+  {
+    request_id: '2b58-0c14', occurred_at: at('09:31'), question_masked: '안녕',
+    intent: 'informational', status: 'OUT_OF_SCOPE', feedback: null, source_count: 0, latency_s: 3.1, triage: 'NONE',
+  },
+  {
+    request_id: '9e33-5f70', occurred_at: at('09:24'), question_masked: '대출 금리 알려줘',
+    intent: 'informational', status: 'OUT_OF_SCOPE', feedback: 'down', source_count: 0, latency_s: 4.0, triage: 'NONE',
+  },
+  {
+    request_id: '1c47-a8d9', occurred_at: at('09:17'), question_masked: '미수령금 조회는 어디서 하나요?',
+    intent: 'civil_petition', status: 'NORMAL', feedback: null, source_count: 2, latency_s: 8.8, triage: 'NONE',
+  },
+  {
+    request_id: '6d92-3e11', occurred_at: at('09:11'), question_masked: '보호대상 금융상품인지 확인',
+    intent: 'informational', status: 'NORMAL', feedback: 'up', source_count: 1, latency_s: 7.2, triage: 'NONE',
+  },
+  {
+    request_id: '0af6-b273', occurred_at: at('09:04'), question_masked: '예금보험 가입 금융회사 조회',
+    intent: 'informational', status: 'NORMAL', feedback: 'up', source_count: 3, latency_s: 6.5, triage: 'NONE',
+  },
+  {
+    request_id: '3f80-cc45', occurred_at: at('08:57'), question_masked: '착오송금 반환지원 신청서 양식',
+    intent: 'civil_petition', status: 'NORMAL', feedback: null, source_count: 2, latency_s: 8.1, triage: 'NONE',
+  },
+  {
+    request_id: '5b21-9d06', occurred_at: at('08:49'), question_masked: '오늘 날씨 어때',
+    intent: 'informational', status: 'OUT_OF_SCOPE', feedback: null, source_count: 0, latency_s: 2.8, triage: 'RESOLVED',
+  },
+  // 기간 필터(7일/30일)를 눌러야 보이는 어제·지난주 건
+  {
+    request_id: 'ab19-4e82', occurred_at: at('16:20', shiftKstDate(-1)), question_masked: '은닉재산 신고 포상금은 얼마인가요?',
+    intent: 'informational', status: 'NORMAL', feedback: 'up', source_count: 2, latency_s: 6.9, triage: 'NONE',
+  },
+  {
+    request_id: 'cd57-1a30', occurred_at: at('11:02', shiftKstDate(-8)), question_masked: '채무조정 신청 자격이 궁금해요',
+    intent: 'civil_petition', status: 'NORMAL', feedback: null, source_count: 1, latency_s: 7.4, triage: 'NONE',
+  },
+]
+
+/** KST 오늘에서 n일 이동한 날짜(YYYY-MM-DD) */
+function shiftKstDate(days: number): string {
+  const base = new Date(`${KST_TODAY}T00:00:00+09:00`)
+  base.setUTCDate(base.getUTCDate() + days)
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(base)
+}
+
+/** 상세는 목록 행에서 파생하고, 목업에 값이 있는 2건만 실제 값을 채운다 */
+const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
+  '7d1a-93f2': {
+    classification: {
+      intent: 'civil_petition', business_function: '착오송금 반환 신청', question_type: 'fact',
+      source_used: true, marker: 'SOURCE_USED', normalized: false,
+    },
+    langfuse: { id: 'tr_7d1a93f2', url: 'https://langfuse.example.com/trace/tr_7d1a93f2' },
+    total_latency_ms: 5900,
+    answer_masked_preview: '착오송금일로부터 1년 이내에… 필요 서류 … 신청 페이지 …',
+    answer_masked_full: ANSWER_FULL,
+    feedback_detail: {
+      vote: 'down', at: at('09:39'), reason_label: '내용이 부정확',
+      comment: '필요 서류 목록이 실제 신청 페이지와 달라요',
+    },
+  },
+  '8f2c-41ab': {
+    classification: {
+      intent: 'civil_petition', business_function: '예금보험금 안내', question_type: 'link_guide',
+      source_used: false, marker: 'SOURCE_UNUSED', normalized: false,
+    },
+    langfuse: { id: 'tr_8f2c41ab', url: 'https://langfuse.example.com/trace/tr_8f2c41ab' },
+    total_latency_ms: null,
+    answer_masked_preview: '',
+    answer_masked_full: '',
+    feedback_detail: null,
+    error: {
+      code: 'LLM_TIMEOUT',
+      meaning: '답변 생성 시간 초과(30초)',
+      user_message: '답변 생성이 지연되어 중단되었어요. 다시 시도해 주세요.',
+      auto_retry: '1회 재시도 → 재실패, 사용자에게 오류 안내됨',
+      fallback: '제공됨 · 검색은 성공해 관련 자료 2건을 대신 안내 (챗봇 Case 4)',
+      failure_stage: '답변 생성',
+      root_cause: '시간 초과(30초) — 여기서 중단',
+    },
+  },
+}
+
+function detailOf(row: ConversationLogRow): ConversationLogDetail {
+  const base: ConversationLogDetail = {
+    ...row,
+    classification: {
+      intent: row.intent,
+      business_function: row.status === 'OUT_OF_SCOPE' ? null : '예금자보호제도',
+      question_type: row.status === 'OUT_OF_SCOPE' ? 'out_of_scope' : 'faq',
+      source_used: (row.source_count ?? 0) > 0,
+      marker: (row.source_count ?? 0) > 0 ? 'SOURCE_USED' : 'SOURCE_UNUSED',
+      normalized: false,
+    },
+    // 추적이 없는 실행도 있다 — trace_id를 못 남긴 경우(로깅 실패는 응답을 막지 않는다)
+    langfuse: null,
+    total_latency_ms: row.latency_s === null ? null : Math.round(row.latency_s * 1000),
+    answer_masked_preview: '답변 미리보기…',
+    answer_masked_full: ANSWER_FULL,
+    feedback_detail: null,
+    error: null,
+  }
+  return { ...base, ...DETAIL_OVERRIDE[row.request_id] }
+}
+
+/** 조치 사유는 서버가 보관한다 — 목에서는 메모리에만 */
+const triageReasons: Record<string, string> = {}
+
+// ---------------------------------------------------------------- 핸들러
+
+export const adPipelineLogsHandlers = [
+  // ---- AD-004 변경 페이지 알림 ----
+  http.get('/api/admin/pipeline/changes', () =>
+    HttpResponse.json<ChangedPagesResponse>({ last_checked_at: lastCheckedAt, items: CHANGED_PAGES })),
+
+  // [지금 확인 ↻] — 수동 재검사. 본문 해시를 다시 떠 보는 동작이라 시간이 걸린다
+  http.post('/api/admin/pipeline/changes/recheck', async ({ request }) => {
+    const no = denied(request, 'OPERATOR')
+    if (no) return no
+    await delay(900)
+    lastCheckedAt = new Date().toISOString()
+    return HttpResponse.json<ChangedPagesResponse>({ last_checked_at: lastCheckedAt, items: CHANGED_PAGES })
+  }),
+
+  // ---- AD-004 확인 모달의 대상·예상 소요 ----
+  http.get('/api/admin/pipeline/estimate', async ({ request }) => {
+    const type = new URL(request.url).searchParams.get('type') ?? 'FULL_RECRAWL'
+    const estimate = ESTIMATES[type]
+    if (!estimate) return fail(404, '예상 소요를 계산할 수 없는 작업 유형입니다.')
+    await delay(250) // 모달을 연 뒤 값이 채워지는 걸 화면에서 볼 수 있게
+    return HttpResponse.json(estimate)
+  }),
+
+  // ---- AD-005 대화 로그 ----
+  http.get('/api/admin/logs', ({ request }) => {
+    // VIEWER는 집계만 — 목록(마스킹 질문)도 서버가 막는다. 화면 숨김만으로는 계약이 아니다(Desc 0)
+    const no = denied(request, 'OPERATOR')
+    if (no) return no
+    const url = new URL(request.url)
+    const from = url.searchParams.get('from')
+    const to = url.searchParams.get('to')
+    const status = url.searchParams.get('status')
+    const intent = url.searchParams.get('intent')
+    const feedback = url.searchParams.get('feedback')
+    const q = (url.searchParams.get('q') ?? '').trim()
+
+    let list = rows
+    // occurred_at은 +09:00 고정이라 앞 10글자가 곧 KST 날짜다
+    if (from) list = list.filter((r) => r.occurred_at.slice(0, 10) >= from)
+    if (to) list = list.filter((r) => r.occurred_at.slice(0, 10) <= to)
+    if (status) list = list.filter((r) => r.status === status)
+    if (intent) list = list.filter((r) => r.intent === intent)
+    if (feedback === 'none') list = list.filter((r) => r.feedback === null)
+    else if (feedback) list = list.filter((r) => r.feedback === feedback)
+    // 검색은 마스킹된 저장본만 훑는다(원문 개인정보는 저장하지 않는다)
+    if (q) list = list.filter((r) => r.question_masked.includes(q))
+
+    const sorted = [...list].sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
+    const page = Number(url.searchParams.get('page') ?? 1)
+    const size = Number(url.searchParams.get('size') ?? 20)
+    const body: Page<ConversationLogRow> = {
+      items: sorted.slice((page - 1) * size, page * size),
+      total: sorted.length,
+      page,
+      size,
+    }
+    return HttpResponse.json(body)
+  }),
+
+  // 요약 스트립은 필터와 무관하게 항상 '오늘' 기준이다(11 §H2 대응)
+  http.get('/api/admin/logs/summary', () => {
+    const today = rows.filter((r) => r.occurred_at.slice(0, 10) === KST_TODAY)
+    const body: LogSummary = {
+      total: today.length,
+      normal: today.filter((r) => r.status === 'NORMAL').length,
+      out_of_scope: today.filter((r) => r.status === 'OUT_OF_SCOPE').length,
+      failed: today.filter((r) => r.status === 'FAILED').length,
+      feedback_up: today.filter((r) => r.feedback === 'up').length,
+      feedback_down: today.filter((r) => r.feedback === 'down').length,
+    }
+    return HttpResponse.json(body)
+  }),
+
+  http.get('/api/admin/logs/:requestId', ({ params, request }) => {
+    // VIEWER는 집계만 — 마스킹된 상세도 볼 수 없다
+    const no = denied(request, 'OPERATOR')
+    if (no) return no
+    const row = rows.find((r) => r.request_id === params.requestId)
+    if (!row) return fail(404, '대화 로그를 찾을 수 없습니다.')
+    return HttpResponse.json(detailOf(row))
+  }),
+
+  // [동일 질문 재실행] — 원래 실패 행은 비교용으로 남기고 새 행을 만든다
+  http.post('/api/admin/logs/:requestId/rerun', async ({ params, request }) => {
+    const no = denied(request, 'OPERATOR')
+    if (no) return no
+    const body = (await request.json()) as { request_id?: string }
+    if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
+    const origin = rows.find((r) => r.request_id === params.requestId)
+    if (!origin) return fail(404, '대화 로그를 찾을 수 없습니다.')
+    await delay(800)
+    const created: ConversationLogRow = {
+      ...origin,
+      request_id: nextId('rr').replace('rr_', ''),
+      occurred_at: new Date().toISOString(),
+      status: 'NORMAL',
+      feedback: null,
+      source_count: 2,
+      latency_s: 6.4,
+      triage: 'NONE',
+    }
+    rows.unshift(created)
+    return HttpResponse.json(created, { status: 201 })
+  }),
+
+  // [처리 완료 표시] — 조치 사유 필수
+  http.patch('/api/admin/logs/:requestId', async ({ params, request }) => {
+    const no = denied(request, 'OPERATOR')
+    if (no) return no
+    const body = (await request.json()) as { request_id?: string; reason?: string; triage?: TriageStatus }
+    if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
+    if (!body.reason?.trim()) return fail(400, '조치 사유를 입력해 주세요.')
+    const row = rows.find((r) => r.request_id === params.requestId)
+    if (!row) return fail(404, '대화 로그를 찾을 수 없습니다.')
+    row.triage = body.triage ?? 'RESOLVED'
+    triageReasons[row.request_id] = body.reason
+    return HttpResponse.json(row)
+  }),
+
+  // [테스트셋 보강 후보로 등록] — 승인 대기 상태로만 들어간다(AD-006 편입은 별도)
+  http.post('/api/admin/evaluations/candidates', async ({ request }) => {
+    const no = denied(request, 'EDITOR')
+    if (no) return no
+    const body = (await request.json()) as { request_id?: string }
+    if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
+    await delay(300)
+    return HttpResponse.json({ candidate_id: nextId('cand'), status: 'PENDING' }, { status: 201 })
+  }),
+
+  // 내보내기 — 사실 자체가 활동 로그에 남는다(AD-005 Desc 0)
+  http.post('/api/admin/logs/exports', async ({ request }) => {
+    const no = denied(request, 'ADMIN')
+    if (no) return no
+    const body = (await request.json()) as { request_id?: string }
+    if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
+    await delay(500)
+    return HttpResponse.json({ export_id: nextId('exp'), status: 'QUEUED', estimated_rows: rows.length })
+  }),
+]

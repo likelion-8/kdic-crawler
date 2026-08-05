@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    // shadcn CLI가 별칭을 여기서 읽는다(참조 프로젝트는 안 봄). 실제 컴파일은 tsconfig.app.json
+    "paths": { "@/*": ["./src/*"] }
+  }
+}

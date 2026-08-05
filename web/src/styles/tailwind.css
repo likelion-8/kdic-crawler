@@ -1,0 +1,160 @@
+/* Tailwind v4 + shadcn/ui 시맨틱 토큰.
+ *
+ * 기획서 고정값(CM-DF-003 02절: 포인트 #7E57C2 · 말풍선 #FEE500 · Noto Sans KR)은
+ * tokens.css가 정본이고, 여기서는 그 값을 shadcn 변수(--primary 등)로 브리지한다.
+ * 다크 스코프는 tokens.css와 동일 — 시스템 자동 + 관리자는 data-theme='light' 고정. */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* tokens.css의 다크 스코프와 일치시키는 dark 변형 —
+ * 시스템 다크이면서 라이트 강제(data-theme='light')가 아닐 때만 적용된다. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']) *, :root:not([data-theme='light'])) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  /* --- shadcn 시맨틱 (라이트) --- */
+  --background: #ffffff;
+  --foreground: #2d2d2d; /* = --color-text-primary */
+  --card: #ffffff;
+  --card-foreground: #2d2d2d;
+  --popover: #ffffff;
+  --popover-foreground: #2d2d2d;
+  --primary: #7e57c2; /* 기획서 포인트 컬러 — 변경 금지 */
+  --primary-foreground: #ffffff;
+  --secondary: #f1f2f5;
+  --secondary-foreground: #2d2d2d;
+  --muted: #f4f5f7;
+  /* #828288(기획서 실측)은 흰 배경 대비 3.9:1로 소형 텍스트 WCAG 미달 → 4.6:1로 상향 */
+  --muted-foreground: #62626a;
+  --accent: #f3effa; /* = --color-primary-bg */
+  --accent-foreground: #512da8;
+  --destructive: #d32f2f;
+  --destructive-foreground: #ffffff;
+  --border: #e3e3e6;
+  --input: #cfcfd4;
+  --ring: #7e57c2;
+  /* 밀도 있는 업무 UI라 라운드를 낮춘다. 크게 굴린 카드(rounded-xl)는 SaaS 템플릿 인상을 준다.
+   * 채팅 말풍선·입력창만 기획서 고정 radius(18px)를 따로 쓴다. */
+  --radius: 0.375rem;
+  /* 챗봇 지면 — 순백 대신 아주 옅은 온기. 화면이 '기본값'이 아니라 '고른 색'으로 읽힌다 */
+  --paper: #faf9f7;
+  --chart-1: #7e57c2;
+  --chart-2: #2e7d50;
+  --chart-3: #b46e28;
+  --chart-4: #0369a1;
+  --chart-5: #c83232;
+  --sidebar: #fafafb;
+  --sidebar-foreground: #2d2d2d;
+  --sidebar-primary: #7e57c2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3effa;
+  --sidebar-accent-foreground: #512da8;
+  --sidebar-border: #e4e5e9;
+  --sidebar-ring: #7e57c2;
+}
+
+/* 다크 — tokens.css와 같은 가드. 관리자(data-theme='light')는 라이트 유지 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --background: #131316;
+    --foreground: #e8e8ea;
+    --card: #1b1b1f;
+    --card-foreground: #e8e8ea;
+    --popover: #1b1b1f;
+    --popover-foreground: #e8e8ea;
+    --primary: #b39ddb;
+    --primary-foreground: #1b1b1f;
+    --secondary: #26262c;
+    --secondary-foreground: #e8e8ea;
+    --muted: #232328;
+    --muted-foreground: #9a9aa2;
+    --accent: #2a2438;
+    --accent-foreground: #d1c4e9;
+    --destructive: #ef5350;
+    --destructive-foreground: #1b1b1f;
+    --border: #2e2e35;
+    --input: #3a3a42;
+    --ring: #b39ddb;
+    --paper: #141417;
+    --sidebar: #1b1b1f;
+    --sidebar-foreground: #e8e8ea;
+    --sidebar-primary: #b39ddb;
+    --sidebar-primary-foreground: #1b1b1f;
+    --sidebar-accent: #2a2438;
+    --sidebar-accent-foreground: #d1c4e9;
+    --sidebar-border: #2e2e35;
+    --sidebar-ring: #b39ddb;
+  }
+}
+
+@theme inline {
+  --font-sans: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+
+  --color-paper: var(--paper);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* --- 기획서 고정 토큰 브리지 (tokens.css 정본) --- */
+  /* 기관 CI 남색 — tokens.css의 --color-kdic-navy를 유틸리티(bg-kdic/text-kdic)로 연다 */
+  --color-kdic: var(--color-kdic-navy);
+  --color-kdic-fg: var(--color-on-kdic-navy);
+
+  --color-user-bubble: var(--color-user-bubble-bg);
+  --color-user-bubble-fg: var(--color-user-bubble-text);
+  --color-success: var(--color-success-text);
+  --color-success-bg: var(--color-success-bg);
+  --color-warning: var(--color-warning-text);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-danger-soft: var(--color-danger-bg);
+  --color-danger-fg: var(--color-danger-text);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
