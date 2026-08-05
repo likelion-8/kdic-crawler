@@ -1,0 +1,28 @@
+# Logs
+# ⚠ `logs`(앵커 없음)는 하위 어느 경로든 걸린다 — src/routes/admin/logs/(AD-005 대화 로그 화면)가
+# 통째로 무시돼 커밋에서 빠지는 것은 물론, Tailwind v4가 .gitignore를 존중해 그 폴더를 스캔하지
+# 않아 거기 쓰인 클래스의 CSS가 생성되지 않았다(상세 패널 레이아웃이 조용히 깨졌다).
+# 실행 로그는 리포 루트에만 쌓이므로 루트로 앵커한다.
+/logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

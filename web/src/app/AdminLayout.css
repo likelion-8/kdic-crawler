@@ -1,0 +1,8 @@
+/* 셸 스타일은 AdminLayout.tsx의 Tailwind 클래스로 옮겼다.
+   여기 남는 건 RequireAuth.tsx(로직 파일 — 스타일 대상 아님)가 쓰는 부팅 화면뿐이다. */
+
+/* 세션 확인 중 (RequireAuth) — 셸이 아직 없을 때의 유일한 화면 */
+.screen-boot {
+  padding: 32px;
+  color: var(--muted-foreground);
+}

@@ -1,0 +1,164 @@
+@import './tokens.css';
+@import './tailwind.css';
+
+/* Noto Sans KR — CM-DF-003 02절. 로컬에 없으면 시스템 폰트로 떨어진다.
+ * 폰트 파일을 번들하려면 public/fonts에 넣고 @font-face로 교체할 것(외부 CDN 의존 제거).
+ * 폰트 적용 자체는 Tailwind preflight가 --font-sans(tailwind.css)로 처리한다. */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+/* box-sizing·margin 0·헤딩 마진·form 컨트롤 font/color 상속은 Tailwind preflight가
+ * 이미 처리한다 — 여기서 중복 정의하지 않는다. preflight에 없는 것만 남긴다. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* base 레이어 안에 둔다 — 레이어 밖 규칙은 Tailwind 유틸리티를 항상 덮어 버린다(공존 규칙). */
+@layer base {
+  body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--foreground);
+    background: var(--background);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--foreground);
+    font-weight: 700;
+  }
+
+  /* 접근성(CM-DF-004 09절): 키보드 포커스는 눈에 보이는 테두리. 아웃라인 제거 금지.
+   * base 레이어라 자체 포커스 링을 그리는 컴포넌트(shadcn 등)의 유틸리티가 이긴다. */
+  :focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* 브라우저 기본 스타일시트는 열린 <dialog>를 margin:auto로 화면 중앙에 놓는데,
+   * Tailwind preflight의 전역 margin:0이 그걸 덮어 모달이 좌상단에 붙는다. 되돌린다. */
+  dialog:modal {
+    margin: auto;
+  }
+}
+
+/* 스크린리더 전용 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * 시그니처 프리미티브 — 화면들이 공유하는 질감·모션.
+ * 색은 전부 시맨틱 변수라 라이트/다크 자동. 모션은 아래 reduced-motion이 일괄 무력화.
+ * ──────────────────────────────────────────────────────────── */
+@layer components {
+  /* 텍스트 선택도 브랜드 — 보라 하이라이트 */
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* 얇은 스크롤바 (Chrome·Edge 지원 범위 — CM-DF-004 09절) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* 챗봇 지면 — 보라 글로우(라디얼 그라데이션)는 걷어냈다. AI가 만든 화면의 가장 흔한 표식이고,
+   * 공공 서비스 톤과도 맞지 않는다. 대신 아주 옅은 종이 톤 + 미세 그레인만 남긴다.
+   * 색이 아니라 '질감'으로만 밋밋함을 없앤다. */
+  .paper {
+    position: relative;
+    background: var(--paper);
+    isolation: isolate;
+  }
+  .paper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    /* SVG 프랙탈 노이즈 — 외부 에셋 없이 데이터 URI 한 장 */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  /* 경고·오류 표기는 components/ui/Notice.tsx가 담당한다.
+   * 좌측 2px 액센트 바 → 상단 2px 헤어라인(.notice) → Notice 컴포넌트 순으로 옮겨왔다.
+   * 가로줄은 '구획 나눔'으로 읽히지 '경고'로 읽히지 않았고(좌측 바를 90도 돌린 것에 불과),
+   * 문장 전체 채색은 가독성을 떨어뜨렸다. 지금은 색을 아이콘에만 주고 무게는 등급으로 나눈다. */
+
+  /* 진입 안무 — 웰컴·첫 화면에서 위로 떠오르며 나타난다.
+   * 순서는 인라인 style="--reveal-i: n"으로 지정(행마다 60ms 간격). */
+  .reveal {
+    animation: reveal-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--reveal-i, 0) * 60ms);
+  }
+
+  /* 말풍선 등장 — 짧고 절제된 슬라이드 페이드 */
+  .bubble-in {
+    animation: bubble-in 0.22s ease-out both;
+  }
+
+  /* 실행 중 상태 점 — 색만으로 알리지 않도록 항상 텍스트와 병기해서 쓸 것 */
+  .pulse-dot {
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+
+  /* 관리자 수치 공통 — 자릿수가 흔들리지 않는 표 숫자 */
+  .nums {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
