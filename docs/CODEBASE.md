@@ -2,7 +2,7 @@
 
 > ⚠️ **이 문서는 P1(데이터 파이프라인, `src/crawler/`)만 다룬다.**
 > P2 RAG 코어는 `src/` 루트(`pipeline.py`·`retrieval.py`·`citation.py` 등), API는 `api/`,
-> 화면은 `web/`에 있다. 그쪽 구조는 `CLAUDE.md`와 `docs/backend-structure.md` 참고.
+> 화면은 `web/`에 있다. 그쪽 구조는 `docs/backend-structure.md` 참고.
 
 KDIC 안내문서 기반 한국어 RAG 챗봇의 **데이터 파이프라인 + 검색 평가** 저장소.
 전체는 **수집 → 변환 → 코퍼스 → 검증 → 검색·평가** 5단계로 흐른다. 각 파일은 이 중 한 단계에 속한다.

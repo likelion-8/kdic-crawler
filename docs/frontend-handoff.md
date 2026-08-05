@@ -389,9 +389,9 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 
 ## 8. 주의
 
-- **커밋 금지**: `.env`, HCX/NCP·OpenAI API Key. `.jsonl` LF 고정, dense 임베딩 캐시 규칙, "HTML→텍스트에 LLM 미사용" 같은 리포 불변식은 루트 [`CLAUDE.md`](../CLAUDE.md)가 정본이다. 여기서 되풀이하지 않는다.
+- **커밋 금지**: `.env`, HCX/NCP·OpenAI API Key. `.jsonl` LF 고정, dense 임베딩 캐시 규칙, "HTML→텍스트에 LLM 미사용" 같은 리포 불변식은 여기서 되풀이하지 않는다.
 - ⚠ **`.gitignore`의 Python 템플릿 함정.** 루트 `.gitignore`의 `lib/`·`build/`·`dist/`·`var/`는 앵커가 없어 **하위 경로까지 전부** 걸린다 — `web/src/lib/`(API 클라이언트·enum·상수)가 통째로 무시돼 커밋에서 빠져 있었다. 2026-08-03에 `/lib/`처럼 루트 앵커로 고쳤다(setuptools가 만드는 건 루트의 그 디렉터리들이다). **앞으로 루트 `.gitignore`에 디렉터리 규칙을 추가할 때는 반드시 `/`로 시작할 것.**
 - `web/`은 아직 git에 안 올라가 있다. 첫 커밋 전에 `git status --short`로 `node_modules`·`dist`가 빠졌는지 확인할 것(`web/.gitignore`가 이미 처리하지만 확인은 싸다).
 - `web/public/mockServiceWorker.js`는 `pnpm exec msw init public/`가 생성한 파일이다. 손대지 말 것.
 - `web/README.md`는 Vite 템플릿 원문이라 이 프로젝트 내용이 아니다. 프론트 문서는 이 파일과 `web/src/mocks/README.md` 둘뿐이다.
-- 기획서 문구·수치를 인용할 때는 코드/데이터로 먼저 검증한다(루트 CLAUDE.md "문서 위상"). 이 문서의 수치도 2026-08-03 기준이다.
+- 기획서 문구·수치를 인용할 때는 코드/데이터로 먼저 검증한다 — 산문 문서는 stale일 수 있다. 이 문서의 수치도 2026-08-03 기준이다.
