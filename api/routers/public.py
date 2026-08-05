@@ -10,38 +10,40 @@ liveness 와 readiness 를 나눈다:
 import logging
 
 from fastapi import APIRouter
+from sqlalchemy import select
 
+from api.deps import DbSession
 from api.rag.engine import is_warmed_up
 from api.schemas.feedback import Suggestion
+from schema import suggested_questions  # src/schema.py 의 테이블 정의 (flat import)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["public"])
 
-# 웰컴 화면의 자주 묻는 질문(활성 최대 10). 관리자 화면(AD-009)에서 편집하게 되면 이 목록의
-# 원천이 suggested_questions 테이블로 옮겨간다 — 그때까지는 상수로 둔다. 프론트에도 같은
-# 성격의 FALLBACK_SUGGESTIONS 가 있지만, 그건 서버가 아예 응답하지 못할 때의 마지막 수단이라
-# 여기서 주는 편이 낫다(문구를 서버에서 고칠 수 있다).
-# text 는 web/src/mocks/data/admin.ts 의 활성 10건과 맞췄고, business_function 은
-# codes.ts BUSINESS_FUNCTIONS 6종 중 하나여야 한다(다르면 화면의 업무 칩이 어긋난다).
-_SUGGESTIONS = [
-    ("sq_01", "착오송금 반환까지 얼마나 걸리나요?", "착오송금 반환 신청"),
-    ("sq_02", "반환지원 대상이 아닌 경우는 어떤 경우인가요?", "착오송금 반환 신청"),
-    ("sq_03", "반환지원 대상 금액은 얼마까지인가요?", "착오송금 반환 신청"),
-    ("sq_04", "어떤 금융회사·앱이 반환지원 대상인가요?", "착오송금 반환 신청"),
-    ("sq_05", "방문 신청도 가능한가요?", "착오송금 반환 신청"),
-    ("sq_06", "상속인 금융거래 조회 기간은 어떻게 되나요?", "고객 미수령금 신청"),
-    ("sq_07", "보이스피싱 피해도 신청할 수 있나요?", "착오송금 반환 신청"),
-    ("sq_08", "토스·카카오페이 간편송금도 지원되나요?", "착오송금 반환 신청"),
-    ("sq_09", "착오송금 후 언제까지 신청해야 하나요?", "착오송금 반환 신청"),
-    ("sq_10", "은행 반환절차 없이 바로 신청할 수 있나요?", "착오송금 반환 신청"),
-]
+# 활성 노출 상한. 기획서 CB-001 「자주 묻는 질문 TOP 10」.
+SUGGESTIONS_LIMIT = 10
 
 
 @router.get("/suggestions", response_model=list[Suggestion])
-def suggestions():
-    """CB-001 웰컴 화면의 자주 묻는 질문. 노출 순서대로 준다."""
-    return [Suggestion(id=i, text=t, business_function=bf) for i, t, bf in _SUGGESTIONS]
+def suggestions(db: DbSession):
+    """CB-001 웰컴 화면의 자주 묻는 질문. 활성만 노출 순서대로, 최대 10건.
+
+    원천은 Supabase suggested_questions 테이블이다(초기 10건은 src/schema.py 가 시드).
+    관리자 화면(AD-009)이 생기기 전까지는 Supabase 대시보드에서 행을 고치는 게 관리 수단이다
+    — 문구·순서·활성 여부를 코드 배포 없이 바꿀 수 있다.
+
+    active/display_order/click_count 는 관리자용이라 공개 응답에는 싣지 않는다.
+    """
+    rows = db.execute(
+        select(suggested_questions.c.id,
+               suggested_questions.c.text,
+               suggested_questions.c.business_function)
+        .where(suggested_questions.c.active.is_(True))
+        .order_by(suggested_questions.c.display_order)
+        .limit(SUGGESTIONS_LIMIT)
+    ).all()
+    return [Suggestion(id=r.id, text=r.text, business_function=r.business_function) for r in rows]
 
 
 def _db_ok() -> bool:

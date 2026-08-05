@@ -155,6 +155,29 @@ feedback = Table(
 )
 
 
+# 웰컴 화면의 자주 묻는 질문(CB-001) + 관리자 추천질문 관리(AD-009)가 함께 쓰는 목록.
+# 원천을 하나로 둬야 두 화면이 서로 다른 질문을 보여주는 일이 없다.
+#
+# 컬럼은 프론트 SuggestedQuestion(web/src/routes/admin/settings/promptops/api.ts:158)과 맞췄다.
+# 공개 API(GET /api/suggestions)는 이 중 id/text/business_function만 내보내고, active/order/
+# click_count는 관리자 화면 몫이다.
+#
+# id를 uuid가 아니라 문자열 PK로 둔 이유: 프론트가 'sq_01' 같은 읽히는 값을 쓰고 있고,
+# 사람이 Supabase 대시보드에서 직접 행을 편집하는 게 당분간 유일한 관리 수단이라
+# 눈으로 알아볼 수 있는 편이 낫다.
+suggested_questions = Table(
+    "suggested_questions", metadata,
+    Column("id", String, primary_key=True),
+    Column("text", Text, nullable=False),
+    Column("business_function", String),      # codes.ts BUSINESS_FUNCTIONS 6종
+    Column("active", Boolean, nullable=False, server_default=text("true")),
+    Column("display_order", Integer, nullable=False),   # 'order'는 SQL 예약어라 이름을 바꿨다
+    Column("click_count", Integer, nullable=False, server_default=text("0")),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+)
+
+
 # 수정 3: documents.is_active가 바뀌면 그 문서의 청크 전부를 같은 값으로 맞춘다.
 # 애플리케이션 레이어에서 매번 챙기게 두면 한 곳이라도 빠뜨렸을 때 "비활성 문서의
 # 청크가 검색에 걸리는" 조용한 버그가 나므로 DB 트리거로 강제한다.
@@ -174,6 +197,35 @@ AFTER UPDATE OF is_active ON documents
 FOR EACH ROW
 EXECUTE FUNCTION sync_document_chunks_is_active();
 """
+
+
+# 추천질문 초기값 — 기획서 CB-001 §2.4 「자주 묻는 질문 TOP 10」 원문 그대로다(순서 포함).
+# 착오송금에 편중돼 있는데 오타가 아니라 기획서 그대로이며, AD-009의 '업무 균형 경고'를 그
+# 화면에서 실제로 보여주기 위한 예시다(프론트 mocks/data/admin.ts:203 주석과 같은 근거).
+# 테이블이 비어 있을 때만 넣는다 — 운영에서 지운 질문이 재실행 때 되살아나면 안 된다.
+_SUGGESTED_QUESTIONS_SEED = [
+    ("sq_01", "착오송금 반환까지 얼마나 걸리나요?", "착오송금 반환 신청", 1),
+    ("sq_02", "반환지원 대상이 아닌 경우는 어떤 경우인가요?", "착오송금 반환 신청", 2),
+    ("sq_03", "반환지원 대상 금액은 얼마까지인가요?", "착오송금 반환 신청", 3),
+    ("sq_04", "어떤 금융회사·앱이 반환지원 대상인가요?", "착오송금 반환 신청", 4),
+    ("sq_05", "방문 신청도 가능한가요?", "착오송금 반환 신청", 5),
+    ("sq_06", "상속인 금융거래 조회 기간은 어떻게 되나요?", "고객 미수령금 신청", 6),
+    ("sq_07", "보이스피싱 피해도 신청할 수 있나요?", "착오송금 반환 신청", 7),
+    ("sq_08", "토스·카카오페이 간편송금도 지원되나요?", "착오송금 반환 신청", 8),
+    ("sq_09", "착오송금 후 언제까지 신청해야 하나요?", "착오송금 반환 신청", 9),
+    ("sq_10", "은행 반환절차 없이 바로 신청할 수 있나요?", "착오송금 반환 신청", 10),
+]
+
+
+def _seed_suggested_questions(conn):
+    if conn.execute(text("SELECT count(*) FROM suggested_questions")).scalar():
+        return 0
+    conn.execute(
+        suggested_questions.insert(),
+        [{"id": i, "text": t, "business_function": bf, "display_order": o, "active": True}
+         for i, t, bf, o in _SUGGESTED_QUESTIONS_SEED],
+    )
+    return len(_SUGGESTED_QUESTIONS_SEED)
 
 
 def main():
@@ -196,7 +248,9 @@ def main():
                 END IF;
             END $$;
         """))
+        seeded = _seed_suggested_questions(conn)
     print("생성 완료:", ", ".join(t.name for t in metadata.sorted_tables))
+    print(f"추천질문 시드: {seeded}건 삽입" if seeded else "추천질문 시드: 이미 데이터가 있어 건너뜀")
     print("트리거 생성 완료: trg_sync_document_chunks_is_active (documents.is_active → document_chunks.is_active)")
 
 
