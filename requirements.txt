@@ -1,18 +1,51 @@
-beautifulsoup4
-fastapi
-kiwipiepy
-langchain-naver
-openai
-pgvector
-psycopg[binary]
-pydantic-settings
-python-dotenv
-qdrant_client
-rank_bm25
-requests
-sentence_transformers
-sqlalchemy
+# 파이썬 의존성 — 버전을 고정한다.
+#
+# 왜 고정하나: 예전에는 이름만 적혀 있어서 각자 설치한 시점과 PC에 원래 깔려 있던 패키지에
+# 따라 다른 조합이 깔렸고, "같은 코드인데 되는 사람과 안 되는 사람"이 갈렸다. 실제로
+# typing-extensions 3.10.0.2(2021년 버전)이 남아 있던 PC에서는 SQLAlchemy·FastAPI·Pydantic이
+# 통째로 import 실패했다(dataclass_transform 없음 / TypeVar(default=) 미지원).
+#
+# 설치 (프로젝트 전용 가상환경을 쓸 것 — 시스템 파이썬에 직접 깔면 다른 프로젝트가 이 환경을
+# 깨뜨린다):
+#
+#   python -m venv .venv
+#   .\.venv\Scripts\Activate.ps1      # Windows PowerShell
+#   source .venv/bin/activate          # macOS / Linux
+#   pip install -r requirements.txt
+#
+# 버전을 올릴 때는 혼자 올리지 말고 이 파일을 함께 고쳐 PR로 공유한다.
+
+# --- 웹 API (FastAPI) ---
+fastapi==0.141.1
+uvicorn==0.51.0
+pydantic-settings==2.14.2
+
+# --- DB (Supabase Postgres + pgvector) ---
+sqlalchemy==2.0.51
+psycopg[binary]==3.3.4
+pgvector==0.5.0
+
+# --- 검색·임베딩 ---
+sentence_transformers==5.6.0
+torch==2.12.1
+rank_bm25==0.2.2
+kiwipiepy==0.23.2
+qdrant_client==1.18.0
+
+# --- LLM ---
+langchain-naver==0.1.1
+openai==2.46.0
+
+# --- 크롤링·유틸 ---
+beautifulsoup4==4.15.0
+requests==2.34.2
+urllib3==2.7.0
+python-dotenv==1.2.2
+
+# --- 데모 UI (src/app.py) ---
 streamlit==1.60.0
-torch
-urllib3
-uvicorn
+
+# --- 전이 의존성 하한 ---
+# 직접 import 하지는 않지만 버전이 낮으면 위 패키지들이 통째로 깨진다. 오래된 버전이 이미
+# 깔려 있는 PC를 강제로 끌어올리기 위해 명시한다.
+typing_extensions>=4.12
