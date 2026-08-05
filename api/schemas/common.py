@@ -36,12 +36,16 @@ class ApiError(BaseModel):
     프론트는 이 봉투의 code 만 보고 분기하고, 사용자에게는 user_message 만 보여준다.
     내부 사정(스택 트레이스·DB 오류 원문 등)은 절대 담기지 않는다(서버 로그에만 남음).
 
-    ⚠️ code 값 규약(미해결): 프론트는 대문자 5종(LLM_TIMEOUT / LLM_RATE_LIMIT / LLM_ERROR /
-    RETRIEVAL_ERROR / INTERNAL)으로 분기하는데, errors.py 는 지금 소문자 코드(rag_timeout 등)를
-    내보낸다 — 겹치는 값이 없다. 이 모델은 code 를 str 로만 두고(다른 엔드포인트 코드까지
-    수용), 값 정렬은 errors.py(1단계 파일) 쪽 결정 사항으로 남긴다.
+    code 값 규약(2026-08-05 정렬 완료): web/src/lib/codes.ts 의 ErrorCode 5종만 쓴다 —
+    LLM_TIMEOUT / LLM_RATE_LIMIT / LLM_ERROR / RETRIEVAL_ERROR / INTERNAL. 프론트가 닫힌 union 이고
+    ERROR_HAS_FALLBACK 을 Record 로 조회하므로 목록 밖 값은 조회가 undefined 가 되어 분기가 깨진다.
+    HTTP 계층 오류(검증 실패·404·405)는 대응 코드가 5종에 없어 errors.py 가 INTERNAL 로 모으고
+    user_message 로 구분한다. 타입은 str 로 두되 값은 이 5종을 벗어나지 않게 한다.
+
+    fallback_sources 를 실을지도 codes.ts 의 ERROR_HAS_FALLBACK 표를 따른다 — LLM_* 3종만 true,
+    RETRIEVAL_ERROR·INTERNAL 은 false 다.
     """
-    code: str = Field(description="프론트 분기용 기계 식별자. 프론트 기대값: LLM_TIMEOUT/LLM_RATE_LIMIT/LLM_ERROR/RETRIEVAL_ERROR/INTERNAL (errors.py 정렬 필요).")
+    code: str = Field(description="프론트 분기용 기계 식별자. LLM_TIMEOUT/LLM_RATE_LIMIT/LLM_ERROR/RETRIEVAL_ERROR/INTERNAL 5종만 사용.")
     user_message: str = Field(description="사용자에게 그대로 보여줄 한국어 문장.")
     retryable: bool = Field(description="재시도 버튼을 띄울지 여부.")
     fallback_sources: list[SourceItem] = Field(

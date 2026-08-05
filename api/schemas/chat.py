@@ -108,6 +108,10 @@ class ChatResponse(BaseModel):
         default=None, description="질문이 애매해 재질문이 필요할 때의 되묻기 구조(문구+선택지).")
     error: Optional[ApiError] = Field(
         default=None, description="오류 정보(common.ApiError 재사용). 정상 응답이면 null.")
+    # 화면은 쓰지 않고 로깅·분석용이다(프론트 types.ts 에서도 선택 필드). accepted~done 전체
+    # 소요이며 sse.py 가 측정한다 — src/performance.py 의 초 단위 값과 달리 밀리초다.
+    latency_ms: Optional[int] = Field(
+        default=None, description="요청 접수부터 done 까지 걸린 시간(ms).")
     # 프론트가 이 값으로 /chat/{id} 주소를 잡고 새로고침 복원을 한다 — 없으면 복원이 안 된다.
     # 요청에 session_id 가 없었으면 서버가 새로 발급해 여기에 담는다.
     session_id: str = Field(description="세션 식별자. 프론트의 /chat/{id} 주소·새로고침 복원에 쓰인다.")

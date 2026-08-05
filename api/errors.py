@@ -55,9 +55,15 @@ class ApiError(Exception):
     서비스·라우터는 HTTPException 대신 이 계열을 던진다. status_code 뿐 아니라
     code/user_message/retryable/fallback_sources 까지 예외 자체가 들고 다녀서,
     던지는 쪽이 "사용자에게 뭐라고 보일지"를 결정할 수 있게 하기 위함이다.
+
+    ⚠️ code 는 web/src/lib/codes.ts 의 ErrorCode 5종(LLM_TIMEOUT · LLM_RATE_LIMIT · LLM_ERROR ·
+    RETRIEVAL_ERROR · INTERNAL)만 쓴다. 프론트는 닫힌 union 이고 ERROR_HAS_FALLBACK 을 Record 로
+    조회하므로, 목록에 없는 값을 보내면 조회가 undefined 가 되어 분기가 깨진다. HTTP 계층 오류
+    (검증 실패·404·405 등)에 딱 맞는 코드가 5종에 없어 INTERNAL 로 모으고, 사용자에게 보일
+    내용은 user_message 로 구분한다.
     """
 
-    code = "internal_error"
+    code = "INTERNAL"
     status_code = 500
     user_message = "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
     retryable = False
@@ -80,40 +86,37 @@ class ApiError(Exception):
 
 
 class BadRequestError(ApiError):
-    code = "bad_request"
     status_code = 400
     user_message = "요청 형식이 올바르지 않습니다."
 
 
 class UnauthorizedError(ApiError):
-    code = "unauthorized"
     status_code = 401
     user_message = "로그인이 필요합니다."
 
 
 class ForbiddenError(ApiError):
-    code = "forbidden"
     status_code = 403
     user_message = "접근 권한이 없습니다."
 
 
 class NotFoundError(ApiError):
-    code = "not_found"
     status_code = 404
     user_message = "요청한 자료를 찾을 수 없습니다."
 
 
 class RateLimitError(ApiError):
-    code = "rate_limited"
+    code = "LLM_RATE_LIMIT"
     status_code = 429
+    # 자동 재호출 금지 — 사용자가 직접 다시 보낸다(mocks/README §3-3).
     user_message = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
-    retryable = True
+    retryable = False
 
 
 class RagTimeoutError(ApiError):
     """RAG 실행이 설정된 시간(config.rag_timeout_s)을 넘겼을 때."""
 
-    code = "rag_timeout"
+    code = "LLM_TIMEOUT"
     status_code = 504
     user_message = "답변 생성이 예상보다 오래 걸립니다. 잠시 후 다시 시도해 주세요."
     retryable = True
@@ -123,11 +126,11 @@ class RagTimeoutError(ApiError):
 class RagUnavailableError(ApiError):
     """검색 엔진·LLM·DB 등 RAG 의존 요소가 죽어 답변을 만들 수 없을 때."""
 
-    code = "rag_unavailable"
+    code = "RETRIEVAL_ERROR"
     status_code = 503
-    user_message = "답변 서비스를 일시적으로 이용할 수 없습니다. 아래 공식 안내를 참고해 주세요."
+    user_message = "답변 서비스를 일시적으로 이용할 수 없습니다. 잠시 후 다시 시도해 주세요."
     retryable = True
-    include_fallback_sources = True
+    # ERROR_HAS_FALLBACK[RETRIEVAL_ERROR] 가 false 라 폴백 출처를 싣지 않는다.
 
 
 def build_error_body(*, code, user_message, retryable, fallback_sources, request_id):
@@ -153,12 +156,12 @@ def _request_id(request):
 # HTTPException 의 status_code 를 우리 code 문자열로 옮긴다. 우리가 직접 던지지 않아도
 # FastAPI 내부(예: 없는 경로 404, 허용되지 않은 메서드 405)에서 올라오는 게 있어서 필요하다.
 _STATUS_CODE_MAP = {
-    400: ("bad_request", "요청 형식이 올바르지 않습니다."),
-    401: ("unauthorized", "로그인이 필요합니다."),
-    403: ("forbidden", "접근 권한이 없습니다."),
-    404: ("not_found", "요청한 경로를 찾을 수 없습니다."),
-    405: ("method_not_allowed", "허용되지 않은 요청 방식입니다."),
-    429: ("rate_limited", "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
+    400: ("INTERNAL", "요청 형식이 올바르지 않습니다."),
+    401: ("INTERNAL", "로그인이 필요합니다."),
+    403: ("INTERNAL", "접근 권한이 없습니다."),
+    404: ("INTERNAL", "요청한 경로를 찾을 수 없습니다."),
+    405: ("INTERNAL", "허용되지 않은 요청 방식입니다."),
+    429: ("LLM_RATE_LIMIT", "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
 }
 
 
@@ -181,7 +184,7 @@ async def api_error_handler(request: Request, exc: ApiError):
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     code, message = _STATUS_CODE_MAP.get(
-        exc.status_code, ("http_error", "요청을 처리하지 못했습니다."))
+        exc.status_code, ("INTERNAL", "요청을 처리하지 못했습니다."))
     return error_response(
         exc.status_code,
         build_error_body(
@@ -202,7 +205,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return error_response(
         422,
         build_error_body(
-            code="validation_error",
+            code="INTERNAL",
             user_message="입력값을 확인해 주세요.",
             retryable=False,
             fallback_sources=[],
@@ -221,10 +224,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     return error_response(
         500,
         build_error_body(
-            code="internal_error",
+            code="INTERNAL",
             user_message="일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
             retryable=True,
-            fallback_sources=DEFAULT_FALLBACK_SOURCES,
+            # ERROR_HAS_FALLBACK[INTERNAL] 이 false 라 폴백 출처를 싣지 않는다.
+            fallback_sources=[],
             request_id=request_id,
         ),
     )

@@ -31,8 +31,9 @@ from api.middleware import REQUEST_ID_HEADER, RateLimitMiddleware, RequestIDMidd
 logger = logging.getLogger(__name__)
 
 # 요청 제한에서 빼는 경로. 헬스체크는 오케스트레이터/로드밸런서가 수초마다 호출하므로
-# 여기에 걸리면 안 된다.
-RATE_LIMIT_EXEMPT_PATHS = ("/health",)
+# 여기에 걸리면 안 된다. /api/health(readiness)는 프론트도 점검 배너 판정에 주기적으로 부르므로,
+# 같은 IP 의 실사용자 채팅 요청과 분당 한도를 나눠 쓰면 안 된다.
+RATE_LIMIT_EXEMPT_PATHS = ("/health", "/api/health")
 
 
 def _configure_logging(settings):
