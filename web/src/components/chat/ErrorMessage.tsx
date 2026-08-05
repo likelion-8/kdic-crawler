@@ -42,7 +42,9 @@ export function ErrorMessage({ error, at, onRetry }: ErrorMessageProps) {
             </Button>
           )}
           {/* "문의에 쓸 수 있도록 요청 ID를 함께 표시합니다" (CB-004 Desc 3행) */}
-          {error.request_id !== '' && (
+          {/* 빈 문자열뿐 아니라 null·undefined도 걸러낸다 — 백엔드가 SSE 오류에 이 값을
+              안 싣는 경로가 있어(미들웨어 이전 예외) 그대로 두면 '요청 ID null'이 찍힌다 */}
+          {error.request_id && (
             <span className="text-xs text-muted-foreground">요청 ID {error.request_id}</span>
           )}
         </div>

@@ -5,16 +5,13 @@
  * 분기는 response_type이 아니라 필드 존재 검사로 한다 — 빈 배열이면 헤딩까지 통째로 미렌더가 규칙이고,
  * 빈 상태 문구("등록된 서류가 없습니다" 등)를 넣는 것은 금지다(CB-DF-004 §6).
  *
- * ⚠ 미구현: 답변 Type 6(복합 질문 분해, CB-002 상태 A / CB-DF-002 Type 6).
- *   하위 질문 제목·답변·하위별 독립 출처를 그리려면 응답에 하위 귀속 필드가 있어야 하는데
- *   ChatResponse에는 `answer: string` + 평면 `sources[]`뿐이라 하위에 출처를 매핑할 수 없다
- *   (CB-DF-004 §7 I-03이 같은 gap을 지적한다). 제목을 answer 안 `**…**` 마크다운으로 받는 것은
- *   "마크다운 파싱 불필요"(CB-DF-002 프레임 주석) 규칙과 충돌하므로 금지.
- *   → BE 계약에 `sub_answers: [{title, answer, sources[], attachments[]}]`가 추가되면
- *     이 파일에 SubAnswerBlock을 붙인다. 그 전까지는 서버가 준 answer를 문단으로만 그린다. */
+ * 답변 Type 6(복합 질문 분해, CB-DF-002 Type 6)은 `subAnswers`로 그린다. 하위마다 검색·근거가
+ * 독립이라 출처도 하위에 붙는다 — 이때 최상위 sources·attachments는 빈 배열로 온다.
+ * 제목을 answer 안 `**…**` 마크다운으로 받는 방식은 "마크다운 파싱 불필요"(CB-DF-002) 규칙과
+ * 충돌해 쓰지 않는다. */
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { Attachment, Source } from '../../lib/api/types'
+import type { Attachment, Source, SubAnswer } from '../../lib/api/types'
 import { Bubble, BubbleText } from './Bubble'
 import { ApplyCta, SourceCard } from './SourceCard'
 import { useTypewriter } from './useTypewriter'
@@ -25,6 +22,8 @@ export interface AnswerMessageProps {
   at?: string | number
   sources?: Source[]
   attachments?: Attachment[]
+  /** 복합 질문의 하위 답변. 비어 있지 않으면 본문 대신 하위 묶음으로 그린다 */
+  subAnswers?: SubAnswer[]
   /** 근거 미사용 판정 — 출처·서류·신청 페이지 섹션을 전부 그리지 않는다 (CB-DF-001 2-5) */
   outOfScope?: boolean
   /** 스트리밍 중이면 커서 표시, 섹션은 아직 그리지 않는다 */
@@ -46,6 +45,57 @@ function stripMarker(text: string): string {
 /** 섹션 헤딩 — 라벨마다 아이콘을 붙이지 않는다. 위계는 굵기와 여백이 진다 */
 const HEADING = 'mb-2 text-[13px] font-bold'
 const LIST = 'flex flex-col gap-2'
+
+/** 근거 섹션 3종을 순서 고정으로 만든다 (필요 서류 → 신청 페이지 → 참고 출처, CB-DF-004 5-2).
+ * 단일 질문은 최상위 배열로, 복합 질문은 하위 답변마다 한 번씩 부른다 — 그리는 규칙이 같아서다.
+ * 빈 배열이면 헤딩째 그리지 않는다(빈 상태 문구 금지, CB-DF-004 §6). */
+function sections(sources: Source[], attachments: Attachment[], prefix: string): ReactNode[] {
+  const documents = attachments.filter((a) => a.kind === 'document')
+  const links = attachments.filter((a) => a.kind === 'link')
+  const out: ReactNode[] = []
+  if (documents.length > 0) {
+    out.push(
+      <section className="reveal mt-4" key={`${prefix}-documents`}>
+        <h3 className={HEADING}>필요 서류</h3>
+        <ol className={LIST}>
+          {documents.map((d) => (
+            <li key={`${d.url}-${d.label}`}>
+              {/* 부제는 목업 원문 고정 — 서식 직링크가 POST 전용이라 페이지로 보낸다(CB-003 마커 2) */}
+              <SourceCard title={d.label} subtitle="서식 다운로드 페이지로 이동" url={d.url} />
+            </li>
+          ))}
+        </ol>
+      </section>,
+    )
+  }
+  if (links.length > 0) {
+    out.push(
+      <section className="reveal mt-4" key={`${prefix}-links`}>
+        <h3 className={HEADING}>신청 페이지</h3>
+        {links.map((l) => (
+          <ApplyCta key={`${l.url}-${l.label}`} label={l.label} url={l.url} />
+        ))}
+      </section>,
+    )
+  }
+  if (sources.length > 0) {
+    out.push(
+      <section className="reveal mt-4" key={`${prefix}-sources`}>
+        <h3 className={HEADING}>참고 출처</h3>
+        {/* 중복 제거·정렬은 서버가 끝낸 상태로 온다 — 복합 질문은 하위별 중복 제거 금지라
+            프론트가 손대면 규칙이 반대로 뒤집힌다(CB-DF-002 Type 6) */}
+        <ol className={LIST}>
+          {sources.map((s, i) => (
+            <li key={`${s.page_id}-${i}`}>
+              <SourceCard title={s.title} subtitle={s.breadcrumb} url={s.url} />
+            </li>
+          ))}
+        </ol>
+      </section>,
+    )
+  }
+  return out
+}
 
 /** 하단 블록을 한 박자씩 **붙여 나간다**.
  *
@@ -70,62 +120,23 @@ export function AnswerMessage({
   at,
   sources = [],
   attachments = [],
+  subAnswers = [],
   outOfScope = false,
   streaming = false,
   feedback,
 }: AnswerMessageProps) {
-  // 필요 서류(서식 다운로드 페이지)와 신청 페이지는 같은 attachments 배열에 kind로 섞여 온다
-  const documents = attachments.filter((a) => a.kind === 'document')
-  const links = attachments.filter((a) => a.kind === 'link')
   // 서버가 몇 자씩 끊어 보내든 화면에는 고른 속도로 흘린다(끊김 방지).
   // 스트리밍이 끝나도 남은 글자를 마저 흘리고, 다 흘린 뒤(typed.done)에 하단 섹션을 연다.
   const typed = useTypewriter(stripMarker(answer), streaming)
   // 스트리밍 중에는 부착 영역을 그리지 않는다 — 나중에 걷어내면 깜빡임이 생긴다(CB-DF-004 §7 I-10)
   const showSections = typed.done && !outOfScope
+  // 복합 질문은 본문을 하위 묶음으로 대체한다. 스트리밍 중에는 아직 하위 구조를 모르므로
+  // 평문으로 흘리다가 done에서 한 번 바뀐다 — 섹션이 열리는 것과 같은 시점이라 튀지 않는다
+  const composite = typed.done && subAnswers.length > 0
 
   // 하단 블록 — 순서 고정(필요 서류 → 신청 페이지 → 참고 출처 → AI 고지, CB-DF-004 5-2)
   const blocks: ReactNode[] = []
-  if (showSections && documents.length > 0) {
-    blocks.push(
-      <section className="reveal mt-4" key="documents">
-        <h3 className={HEADING}>필요 서류</h3>
-        <ol className={LIST}>
-          {documents.map((d) => (
-            <li key={`${d.url}-${d.label}`}>
-              {/* 부제는 목업 원문 고정 — 서식 직링크가 POST 전용이라 페이지로 보낸다(CB-003 마커 2) */}
-              <SourceCard title={d.label} subtitle="서식 다운로드 페이지로 이동" url={d.url} />
-            </li>
-          ))}
-        </ol>
-      </section>,
-    )
-  }
-  if (showSections && links.length > 0) {
-    blocks.push(
-      <section className="reveal mt-4" key="links">
-        <h3 className={HEADING}>신청 페이지</h3>
-        {links.map((l) => (
-          <ApplyCta key={`${l.url}-${l.label}`} label={l.label} url={l.url} />
-        ))}
-      </section>,
-    )
-  }
-  if (showSections && sources.length > 0) {
-    blocks.push(
-      <section className="reveal mt-4" key="sources">
-        <h3 className={HEADING}>참고 출처</h3>
-        {/* 중복 제거·정렬은 서버가 끝낸 상태로 온다 — 복합 질문은 하위별 중복 제거 금지라
-            프론트가 손대면 규칙이 반대로 뒤집힌다(CB-DF-002 Type 6) */}
-        <ol className={LIST}>
-          {sources.map((s, i) => (
-            <li key={`${s.page_id}-${i}`}>
-              <SourceCard title={s.title} subtitle={s.breadcrumb} url={s.url} />
-            </li>
-          ))}
-        </ol>
-      </section>,
-    )
-  }
+  if (showSections && !composite) blocks.push(...sections(sources, attachments, 'top'))
   // AI 고지는 말풍선 **안** 맨 아래다(CB-002 마커 8) — 답변과 같은 지면에 있어야
   // '이 답변에 대한 고지'로 읽힌다. 밖에 두면 다음 말풍선의 머리말처럼 보인다.
   // 스트리밍 중에는 그리지 않는다 — 아직 답변이 아니다
@@ -155,9 +166,20 @@ export function AnswerMessage({
           done 시점(busy=false)에 완성 본문을 한 번만 읽게 한다. 대화 목록 <ol>에는 live 영역을
           두지 않는다 — 중첩되면 같은 답변이 두 번 읽힌다(CB-DF-004 §7 I-17). */}
       <div aria-live="polite" aria-busy={streaming}>
-        {/* 커서는 BubbleText가 마지막 문단 안에 그린다 — 글 끝을 따라다녀야 한다.
-            스트리밍이 끝나도 아직 흘릴 글자가 남아 있으면 커서를 유지한다 */}
-        <BubbleText text={typed.text} caret={!typed.done} />
+        {composite ? (
+          // 하위 질문마다 제목 → 답변 → 그 하위의 근거. 최상위 sources는 규약상 비어 있다
+          subAnswers.map((sub, i) => (
+            <section className={i === 0 ? undefined : 'mt-5 border-t pt-4'} key={`${sub.title}-${i}`}>
+              <h3 className="mb-2 text-sm font-bold">{sub.title}</h3>
+              <BubbleText text={stripMarker(sub.answer)} />
+              {showSections && sections(sub.sources, sub.attachments, `sub${i}`)}
+            </section>
+          ))
+        ) : (
+          /* 커서는 BubbleText가 마지막 문단 안에 그린다 — 글 끝을 따라다녀야 한다.
+             스트리밍이 끝나도 아직 흘릴 글자가 남아 있으면 커서를 유지한다 */
+          <BubbleText text={typed.text} caret={!typed.done} />
+        )}
       </div>
 
       {/* 블록을 배열로 모아 마운트 순서를 제어한다 — 조건에 따라 개수가 달라지므로

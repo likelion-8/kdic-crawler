@@ -63,16 +63,32 @@ export interface ClarificationOption {
   value?: string
 }
 
+/** 복합 질문(멀티쿼리)의 하위 답변 1건 — 하위마다 검색·근거·출처가 독립이다.
+ *
+ * 🔴 `sub_answers`가 비어 있지 않으면 **최상위 `sources`·`attachments`는 빈 배열**이고
+ * 근거는 전부 하위로 내려온다(백엔드 확정 2026-08-05 · backend-structure #26).
+ * 하위 간 출처 중복 제거는 하지 않는다 — 같은 페이지가 두 하위에 나와도 각각 그린다. */
+export interface SubAnswer {
+  /** 분해된 하위 질문. 화면에는 이 답변 묶음의 제목으로 그린다 */
+  title: string
+  answer: string
+  sources: Source[]
+  attachments: Attachment[]
+}
+
 /** POST /api/chat 확정 응답. SSE `done` 이벤트가 이 객체 전문을 싣는다. */
 export interface ChatResponse {
   answer: string
   sources: Source[]
   attachments: Attachment[]
+  /** 복합 질문일 때만 채워진다. 비어 있으면 단일 질문이라 `answer`+`sources`를 그대로 쓴다 */
+  sub_answers?: SubAnswer[]
   /** true면 출처·서류·신청 페이지 섹션을 전부 렌더하지 않는다 */
   out_of_scope: boolean
   session_id: string
   request_id: string
-  latency_ms: number
+  /** 화면은 쓰지 않는다(로깅·분석용). 백엔드 ChatResponse에 아직 없어 선택으로 둔다 */
+  latency_ms?: number
   error?: ApiError
   /** 로깅·분석용. 렌더 분기는 이 값이 아니라 필드 존재 검사로 한다 */
   response_type?: ResponseType

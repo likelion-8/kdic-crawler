@@ -10,7 +10,7 @@
 // ↑ tsconfig.app.json의 types는 vite/client뿐이다. 이 파일만 node에서 도는 스크립트라 여기서만 끌어온다.
 import assert from 'node:assert/strict'
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { ApiError, Attachment, Source } from '../../lib/api/types'
+import type { ApiError, Attachment, Source, SubAnswer } from '../../lib/api/types'
 import { formatClock } from '../../lib/format'
 import { AnswerMessage } from './AnswerMessage'
 import { ClarificationMessage } from './ClarificationMessage'
@@ -194,6 +194,56 @@ const LINK: Attachment = { label: '착오송금 반환지원 신청방법', url:
   const html = renderToStaticMarkup(<AnswerMessage answer="절차 안내" attachments={[bad]} />)
   assert.ok(html.includes('>새 탭<'))
   assert.ok(!html.includes(' · 새 탭'), '빈 도메인 자리에 구분점만 남으면 안 된다')
+}
+
+// 13. 복합 질문(Type 6) — 하위 질문마다 제목 → 답변 → 그 하위의 근거를 그린다.
+//     하위 간 출처 중복 제거는 금지다(같은 페이지가 두 하위에 나오면 두 번 그린다).
+{
+  // url까지 바꿔야 아래 '두 번 그린다' 계수가 SOURCE만 센다
+  const SOURCE2: Source = {
+    ...SOURCE,
+    page_id: 'dp_syst',
+    title: '예금자보호제도 안내',
+    url: 'https://www.kdic.or.kr/protect/protection_system.do',
+  }
+  const subs: SubAnswer[] = [
+    { title: '신청 방법은?', answer: '온라인과 방문 두 가지입니다.', sources: [SOURCE], attachments: [LINK] },
+    { title: '필요한 서류는?', answer: '공동인증서와 이체확인증이 필요합니다.', sources: [SOURCE, SOURCE2], attachments: [DOC] },
+  ]
+  // sub_answers가 있으면 최상위 sources·attachments는 빈 배열로 온다(백엔드 확정 2026-08-05)
+  const html = renderToStaticMarkup(
+    <AnswerMessage answer="신청 방법은?\n온라인과 방문 두 가지입니다." subAnswers={subs} sources={[]} attachments={[]} />,
+  )
+
+  assert.ok(html.includes('신청 방법은?'), '하위 질문 제목이 보인다')
+  assert.ok(html.includes('필요한 서류는?'), '두 번째 하위 제목도 보인다')
+  // 하위 순서는 서버가 준 순서 그대로
+  assert.ok(html.indexOf('신청 방법은?') < html.indexOf('필요한 서류는?'), '하위 순서 유지')
+
+  // 하위별 근거가 각자 붙는다 — 섹션 헤딩이 하위 수만큼 반복된다
+  assert.equal(html.split('참고 출처').length - 1, 2, '참고 출처가 하위마다 하나씩')
+  assert.ok(html.includes('신청 페이지') && html.includes('필요 서류'), '하위의 링크·서류 섹션도 그린다')
+
+  // 중복 제거 금지 — 같은 page_id가 두 하위에 나오면 두 번 그려야 한다
+  assert.equal(html.split(SOURCE.url).length - 1, 2, '같은 출처가 두 하위에 있으면 두 번 그린다')
+
+  // 본문을 하위와 같이 그리면 답변이 두 벌로 보인다 — 하위로 대체돼야 한다
+  assert.equal(html.split('온라인과 방문 두 가지입니다.').length - 1, 1, '본문은 하위로 대체된다')
+}
+
+// 14. 오류 말풍선의 요청 ID — 값이 없으면 라벨째 그리지 않는다.
+//     백엔드가 SSE 오류에 request_id를 안 싣는 경로가 있어 null이 그대로 찍히면 안 된다
+{
+  const noId: ApiError = {
+    code: 'INTERNAL',
+    user_message: '일시적인 오류가 발생했습니다.',
+    retryable: false,
+    fallback_sources: [],
+    // 백엔드가 값을 안 실어 보내는 경로가 실재한다(미들웨어 이전 예외)
+    request_id: undefined as unknown as string,
+  }
+  const html = renderToStaticMarkup(<ErrorMessage error={noId} />)
+  assert.ok(!html.includes('요청 ID'), '요청 ID가 없으면 라벨도 안 그린다')
 }
 
 console.log('chat selfcheck: 통과')

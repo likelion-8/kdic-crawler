@@ -28,6 +28,7 @@ import type {
   ChatResponse,
   HealthResponse,
   Source,
+  SubAnswer,
   Suggestion,
 } from '../../lib/api/types'
 import type { BusinessFunction } from '../../lib/codes'
@@ -103,6 +104,8 @@ interface AnswerItem {
   requestId: string
   sources: Source[]
   attachments: Attachment[]
+  /** 복합 질문이면 하위 답변이 채워지고, 이때 최상위 sources는 규약상 빈 배열이다 */
+  subAnswers: SubAnswer[]
   outOfScope: boolean
   /** 스트리밍 중이면 섹션을 그리지 않고 커서만 보인다 */
   streaming: boolean
@@ -219,6 +222,8 @@ export function ChatPage() {
               requestId: m.request_id ?? '',
               sources: m.response?.sources ?? [],
               attachments: m.response?.attachments ?? [],
+              // 복원 응답(GET /api/sessions/{id})에는 하위 답변이 없다 — 본문만 되살린다
+              subAnswers: [],
               outOfScope: m.response?.out_of_scope ?? false,
               streaming: false,
             },
@@ -293,6 +298,7 @@ export function ChatPage() {
                   requestId: '',
                   sources: [],
                   attachments: [],
+                  subAnswers: [],
                   outOfScope: false,
                   streaming: true,
                 },
@@ -359,6 +365,7 @@ export function ChatPage() {
                 requestId: res.request_id,
                 sources: res.sources,
                 attachments: res.attachments,
+                subAnswers: res.sub_answers ?? [],
                 outOfScope: res.out_of_scope,
                 streaming: false,
               },
@@ -593,6 +600,7 @@ export function ChatPage() {
                       at={item.at}
                       sources={item.sources}
                       attachments={item.attachments}
+                      subAnswers={item.subAnswers}
                       outOfScope={item.outOfScope}
                       streaming={item.streaming}
                       // 말풍선 아래 왼쪽 — 오른쪽 시각과 한 줄로 마주 본다.

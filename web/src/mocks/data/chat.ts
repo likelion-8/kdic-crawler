@@ -6,7 +6,14 @@
  * ⚠ 자기보고 마커([SOURCE_USED]/[NO_SOURCE])는 answer에 넣지 않는다 — BE가 스트리밍 전에
  *   떼는 것이 계약이다(CB-DF-004 §7 I-12). 목도 같은 전제로 만든다. */
 import type { BusinessFunction, Intent, ResponseType } from '../../lib/codes'
-import type { ApiError, Attachment, Clarification, Source, Suggestion } from '../../lib/api/types'
+import type {
+  ApiError,
+  Attachment,
+  Clarification,
+  Source,
+  SubAnswer,
+  Suggestion,
+} from '../../lib/api/types'
 import { MOCK_SUGGESTED_QUESTIONS } from './admin'
 import { MOCK_PAGES } from './pages'
 
@@ -25,6 +32,8 @@ export interface ChatScenario {
   answer: string
   sources: Source[]
   attachments: Attachment[]
+  /** 복합 질문일 때만. 있으면 위 sources·attachments는 비운다 */
+  sub_answers?: SubAnswer[]
   out_of_scope: boolean
   response_type: ResponseType
   intent?: Intent
@@ -204,11 +213,35 @@ export const MOCK_SCENARIOS: ChatScenario[] = [
   {
     id: 'composite',
     triggers: ['그리고', '와 필요', '기간은'],
+    // 스트리밍으로 흘러가는 본문. 하위 답변을 이어붙인 것과 같다(sse.py 불변식:
+    // answer_delta를 이어붙인 것 == done.answer). done에서 sub_answers로 대체돼 그려진다
     answer:
       '착오송금 반환지원 신청 방법은?\n온라인과 방문(서울시 중구 청계천로 30 1층) 두 가지로 신청할 수 있습니다.\n\n필요한 서류는?\n온라인은 공동인증서와 이체(송금)확인증, 방문은 신분증과 이체(송금)확인증이 필요합니다.\n\n처리 기간은 얼마나 걸리나요?\n자진반환 및 지급명령을 통한 회수 절차에 따라 소요 기간이 달라집니다.',
-    // 하위 답변마다 독립 부착 — 같은 페이지가 두 번 나와도 중복 제거하지 않는다(pipeline.py _answer_one 주석)
-    sources: [sourceOf('kmrs_apply_mthd'), sourceOf('sender_docs'), sourceOf('faq_msdr_apply')],
+    // 🔴 sub_answers가 있으면 최상위 sources·attachments는 빈 배열이다 (백엔드 확정 2026-08-05)
+    sources: [],
     attachments: [],
+    // 하위 답변마다 독립 부착 — 같은 페이지가 두 번 나와도 중복 제거하지 않는다(pipeline.py _answer_one 주석)
+    sub_answers: [
+      {
+        title: '착오송금 반환지원 신청 방법은?',
+        answer: '온라인과 방문(서울시 중구 청계천로 30 1층) 두 가지로 신청할 수 있습니다.',
+        sources: [sourceOf('kmrs_apply_mthd')],
+        attachments: [],
+      },
+      {
+        title: '필요한 서류는?',
+        answer: '온라인은 공동인증서와 이체(송금)확인증, 방문은 신분증과 이체(송금)확인증이 필요합니다.',
+        // 같은 페이지가 위 하위와 겹쳐도 지우지 않는다 — 하위별 근거가 독립이라는 뜻이다
+        sources: [sourceOf('sender_docs')],
+        attachments: senderFormLinks,
+      },
+      {
+        title: '처리 기간은 얼마나 걸리나요?',
+        answer: '자진반환 및 지급명령을 통한 회수 절차에 따라 소요 기간이 달라집니다.',
+        sources: [sourceOf('faq_msdr_apply')],
+        attachments: [],
+      },
+    ],
     out_of_scope: false,
     response_type: 'ANSWER',
     intent: 'informational',

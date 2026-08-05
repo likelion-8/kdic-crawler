@@ -32,8 +32,9 @@ export function RetryExhaustedPanel({ requestId }: RetryExhaustedPanelProps) {
         공식 문의처를 이용해 주세요. 문의 시 요청 ID를 알려주시면 확인에 도움이 됩니다.
       </p>
       <p className="mt-1 text-[13px] text-muted-foreground">
-        {/* 서버에 닿지도 못한 오류는 요청 ID가 없다 — 빈 값이면 ID 자리를 통째로 뺀다 */}
-        {requestId !== '' && (
+        {/* 서버에 닿지도 못한 오류는 요청 ID가 없다 — 빈 값이면 ID 자리를 통째로 뺀다.
+            null·undefined로 오는 경로도 있어 truthy 검사로 받는다 */}
+        {requestId && (
           <>
             요청 ID <span className="font-mono text-foreground">{requestId}</span> ·{' '}
           </>

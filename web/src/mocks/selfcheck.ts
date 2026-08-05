@@ -35,9 +35,13 @@ async function collectSse(message: string) {
     .split('\n\n')
     .filter(Boolean)
     .map((frame) => {
-      const name = frame.match(/^event: (.+)$/m)![1]
-      const data = JSON.parse(frame.match(/^data: (.+)$/m)![1])
-      return { name, data }
+      // 이 함수는 BASE만 바꾸면 실서버 계약 테스트로 그대로 쓴다(frontend-handoff §목).
+      // 단언(!)으로 두면 서버가 event: 라인을 빼먹었을 때 TypeError만 나고 원인이 안 보인다
+      const named = frame.match(/^event: (.+)$/m)
+      const payload = frame.match(/^data: (.+)$/m)
+      assert.ok(named, `SSE 프레임에 event: 라인이 없다 — 프론트 파서는 이름으로 분기한다:\n${frame}`)
+      assert.ok(payload, `SSE 프레임에 data: 라인이 없다:\n${frame}`)
+      return { name: named[1], data: JSON.parse(payload[1]) }
     })
 }
 

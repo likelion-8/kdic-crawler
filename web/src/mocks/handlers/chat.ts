@@ -95,6 +95,7 @@ function sseStream(scenario: ChatScenario, sessionId: string, slow: boolean): Re
         answer: scenario.answer,
         sources: scenario.sources,
         attachments: scenario.attachments,
+        sub_answers: scenario.sub_answers,
         out_of_scope: scenario.out_of_scope,
         session_id: sessionId,
         request_id: requestId,
