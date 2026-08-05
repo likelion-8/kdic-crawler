@@ -1,4 +1,4 @@
-"""공개(비인증) 엔드포인트 — readiness 헬스체크.
+"""공개(비인증) 엔드포인트 — readiness 헬스체크, 추천 질문.
 
 계층 규칙: 라우터는 얇게 유지한다. 여기서는 상태 소스(DB·워밍업)를 조합해 응답만
 만든다. 실제 리소스 로딩/판단은 api/rag/engine.py 와 src/db.py 소관이다.
@@ -10,12 +10,40 @@ liveness 와 readiness 를 나눈다:
 import logging
 
 from fastapi import APIRouter
+from sqlalchemy import select
 
+from api.deps import DbSession
 from api.rag.engine import is_warmed_up
+from api.schemas.feedback import Suggestion
+from schema import suggested_questions  # src/schema.py 의 테이블 정의 (flat import)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["public"])
+
+# 활성 노출 상한. 기획서 CB-001 「자주 묻는 질문 TOP 10」.
+SUGGESTIONS_LIMIT = 10
+
+
+@router.get("/suggestions", response_model=list[Suggestion])
+def suggestions(db: DbSession):
+    """CB-001 웰컴 화면의 자주 묻는 질문. 활성만 노출 순서대로, 최대 10건.
+
+    원천은 Supabase suggested_questions 테이블이다(초기 10건은 src/schema.py 가 시드).
+    관리자 화면(AD-009)이 생기기 전까지는 Supabase 대시보드에서 행을 고치는 게 관리 수단이다
+    — 문구·순서·활성 여부를 코드 배포 없이 바꿀 수 있다.
+
+    active/display_order/click_count 는 관리자용이라 공개 응답에는 싣지 않는다.
+    """
+    rows = db.execute(
+        select(suggested_questions.c.id,
+               suggested_questions.c.text,
+               suggested_questions.c.business_function)
+        .where(suggested_questions.c.active.is_(True))
+        .order_by(suggested_questions.c.display_order)
+        .limit(SUGGESTIONS_LIMIT)
+    ).all()
+    return [Suggestion(id=r.id, text=r.text, business_function=r.business_function) for r in rows]
 
 
 def _db_ok() -> bool:

@@ -94,11 +94,14 @@ def _build_attachments(civil: dict) -> list[Attachment]:
     return out
 
 
-def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> SubAnswer:
+def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubAnswer, bool]:
     """스트리밍이 끝난 하위 답변을 구조화한다. 근거 사용 여부는 pipeline 과 동일하게 판정한다:
     마커가 [SOURCE_USED]면 그대로 첨부, [NO_SOURCE]면 source_check.recheck_source_usage 로 한 번
     더 확인해 실제로 근거를 썼으면 뒤집는다(인사·거절엔 출처가 안 붙게 하기 위함). 근거 미사용이면
-    sources/attachments 를 비운다."""
+    sources/attachments 를 비운다.
+
+    (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
+    여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = marker_used_source
     if not used:
         try:
@@ -108,48 +111,92 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> SubAnswer:
             used = False
     sources = _build_sources(sp.top) if used else []
     attachments = _build_attachments(sp.civil) if (used and sp.civil) else []
-    return SubAnswer(title=sp.question, answer=body, sources=sources, attachments=attachments)
+    return SubAnswer(title=sp.question, answer=body, sources=sources, attachments=attachments), used
 
 
-def to_chat_response(finalized: list[SubAnswer], full_answer: str, composite: bool,
-                     session_id: str, request_id: str) -> ChatResponse:
+def to_chat_response(finalized: list[SubAnswer], used_flags: list[bool], full_answer: str,
+                     composite: bool, session_id: str, request_id: str,
+                     latency_ms: int) -> ChatResponse:
     """확정된 하위 답변들을 최종 ChatResponse 로. full_answer 는 sse.py 가 실제로 흘린
     answer_delta 들을 그대로 이어붙인 문자열이라, done.answer == 스트림 합계가 보장된다.
 
     - 단일: 상위 answer/sources/attachments 채우고 sub_answers 는 비운다.
-    - 복합: sub_answers 에 하위별로 담고, 상위 answer 는 스트림 합계(구분자 포함) 그대로 둔다
-      (상위 sources/attachments 는 하위에 있으므로 비운다).
-    out_of_scope/clarification 은 파이프라인에 구조화된 신호가 없어 기본값(False/None).
+    - 복합: sub_answers 에 하위별로 담고, 상위 answer 는 스트림 합계(구분자 포함) 그대로 둔다.
+      상위 sources/attachments 는 비운다 — 프론트 계약(types.ts SubAnswer 주석)이 "sub_answers 가
+      비어 있지 않으면 최상위는 빈 배열"로 확정돼 있다.
+
+    out_of_scope: 근거를 하나도 안 쓴 답변(인사·정체성·범위 밖)을 뜻한다. 프론트는 이 값이 true 면
+    출처·서류 섹션을 통째로 그리지 않는다(mocks/README §3-2). 파이프라인에 별도 OOS 판정기가 없어
+    "모든 하위가 근거 미사용"으로 대신한다.
+    clarification 은 되묻기 로직 자체가 아직 없어 None.
     """
+    out_of_scope = not any(used_flags)
     if composite:
         return ChatResponse(
-            answer=full_answer, sources=[], attachments=[],
-            sub_answers=finalized, session_id=session_id, request_id=request_id,
+            answer=full_answer, sources=[], attachments=[], sub_answers=finalized,
+            out_of_scope=out_of_scope, session_id=session_id, request_id=request_id,
+            latency_ms=latency_ms,
         )
     s = finalized[0]
     return ChatResponse(
-        answer=full_answer, sources=s.sources, attachments=s.attachments,
-        sub_answers=[], session_id=session_id, request_id=request_id,
+        answer=full_answer, sources=s.sources, attachments=s.attachments, sub_answers=[],
+        out_of_scope=out_of_scope, session_id=session_id, request_id=request_id,
+        latency_ms=latency_ms,
     )
 
 
-def error_from_exception(exc: Exception, phase: str = "llm") -> ApiError:
-    """예외를 프론트가 분기하는 대문자 5종 code 로 매핑한다(errors.py 는 안 건드리고 chat
-    경로에서만 매핑 — 팀 결정 A). timeout/rate 는 어느 단계든 우선 감지하고, 그 외에는 단계
-    (retrieval/llm)로 가른다. 사용자 문구는 담되 내부 원문은 로그로만 남긴다."""
+def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int) -> None:
+    """실사용 질의 1건을 Supabase rag_runs 에 남긴다.
+
+    pipeline.rag_answer() 는 자기 안에서 이걸 부르지만 API 는 그 함수를 우회해 흐름을
+    재조립하므로(파일 상단 참고), 여기서 따로 불러야 한다. 이 호출이 없으면 웹 챗봇 대화가
+    DB에 한 줄도 남지 않고, request_id 가 저장되지 않아 피드백을 붙일 답변도 사라진다.
+
+    복합 질문은 하위마다 intent·검색경로가 다를 수 있어 쉼표로 잇는다(단일이면 값 하나).
+    log_rag_run 은 내부에서 모든 예외를 삼키므로 호출부가 실패를 신경 쓰지 않아도 된다.
+    """
+    from rag_logger import log_rag_run
+    intents = ",".join(dict.fromkeys(sp.intent for sp in sub_plans)) or None
+    routes = ",".join(dict.fromkeys(
+        getattr(sp, "route", None) or "" for sp in sub_plans)).strip(",") or None
+    log_rag_run(
+        question=question,
+        answer=resp.answer,
+        intent=intents,
+        question_type=None,      # 검색 라우팅 내부에서만 쓰고 응답 경로엔 노출되지 않는다
+        retrieval_route=routes,
+        total_latency_ms=latency_ms,
+        request_id=resp.request_id,
+        session_id=resp.session_id,
+    )
+
+
+def error_from_exception(exc: Exception, phase: str = "llm", request_id: str = "") -> ApiError:
+    """예외를 프론트가 분기하는 대문자 5종 code 로 매핑한다(codes.ts ErrorCode). timeout/rate 는
+    어느 단계든 우선 감지하고, 그 외에는 단계(retrieval/llm)로 가른다. 사용자 문구는 담되 내부
+    원문은 로그로만 남긴다.
+
+    fallback_sources 는 codes.ts 의 ERROR_HAS_FALLBACK 표를 그대로 따른다 — LLM_* 3종만 폴백
+    출처를 싣고 RETRIEVAL_ERROR·INTERNAL 은 싣지 않는다(프론트가 그 표로 렌더를 가른다).
+    request_id 는 항상 채운다 — 비면 화면의 문의용 요청 ID 줄이 사라진다(핸드오프 §6 B11).
+    """
     msg = f"{type(exc).__name__} {exc}".lower()
-    fb = _FALLBACK_SOURCES
     if isinstance(exc, TimeoutError) or "timeout" in msg or "timed out" in msg:
-        return ApiError(code="LLM_TIMEOUT", retryable=True, fallback_sources=fb,
+        return ApiError(code="LLM_TIMEOUT", retryable=True, fallback_sources=_FALLBACK_SOURCES,
+                        request_id=request_id,
                         user_message="답변 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.")
     if "rate" in msg or "429" in msg or "too many" in msg or "quota" in msg:
-        return ApiError(code="LLM_RATE_LIMIT", retryable=True, fallback_sources=fb,
+        return ApiError(code="LLM_RATE_LIMIT", retryable=True, fallback_sources=_FALLBACK_SOURCES,
+                        request_id=request_id,
                         user_message="요청이 많아 잠시 지연되고 있어요. 잠시 후 다시 시도해 주세요.")
     if phase == "retrieval":
-        return ApiError(code="RETRIEVAL_ERROR", retryable=True, fallback_sources=fb,
+        return ApiError(code="RETRIEVAL_ERROR", retryable=True, fallback_sources=[],
+                        request_id=request_id,
                         user_message="관련 자료를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.")
     if phase == "llm":
-        return ApiError(code="LLM_ERROR", retryable=True, fallback_sources=fb,
+        return ApiError(code="LLM_ERROR", retryable=True, fallback_sources=_FALLBACK_SOURCES,
+                        request_id=request_id,
                         user_message="답변 생성 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.")
-    return ApiError(code="INTERNAL", retryable=False, fallback_sources=fb,
+    return ApiError(code="INTERNAL", retryable=False, fallback_sources=[],
+                    request_id=request_id,
                     user_message="일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요.")

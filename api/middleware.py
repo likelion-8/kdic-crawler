@@ -163,12 +163,14 @@ class RateLimitMiddleware:
         if not self._is_allowed(key, time.monotonic()):
             request_id = scope.get("state", {}).get("request_id")
             logger.warning("[%s] rate_limited: %s %s", request_id, key, scope["path"])
+            # code 는 프론트 codes.ts ErrorCode 5종 중 하나여야 한다. retryable 은 false —
+            # 자동 재호출을 금지하고 사용자가 직접 다시 보내게 한다(mocks/README §3-3).
             response = JSONResponse(
                 status_code=429,
                 content=build_error_body(
-                    code="rate_limited",
+                    code="LLM_RATE_LIMIT",
                     user_message="요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
-                    retryable=True,
+                    retryable=False,
                     fallback_sources=[],
                     request_id=request_id,
                 ),

@@ -115,6 +115,12 @@ rag_runs = Table(
     "rag_runs", metadata,
     _uuid_pk(),
     Column("trace_id", String),
+    # 답변 1건의 식별자. API가 응답(ChatResponse.request_id)으로 내보낸 값을 그대로 저장한다.
+    # 사용자가 그 답변에 피드백을 남길 때 이 값으로 대상을 찾으므로, 없으면 feedback을 붙일
+    # 곳이 사라진다. 미들웨어의 요청추적 request_id(X-Request-ID)와는 다른 값이다.
+    Column("request_id", String, unique=True),
+    # 대화(세션) 식별자. 한 대화의 여러 질문을 묶어 보거나 복원할 때 쓴다.
+    Column("session_id", String),
     Column("question", Text, nullable=False),
     Column("intent", String),
     Column("question_type", String),
@@ -128,6 +134,49 @@ rag_runs = Table(
     Column("embedding_model", String),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
+
+# 답변 1건에 대한 사용자 피드백. 프론트는 👍/👎를 먼저 보내고(POST), 👎일 때만 사유 칩·자유
+# 의견을 뒤이어 보낸다(PATCH). 그래서 vote는 필수, reason_codes/comment는 나중에 채워진다.
+#
+# request_id에 unique를 건 이유: 같은 답변에 대한 피드백은 최종 1건만 남는다(사용자가 👍를
+# 눌렀다 👎로 바꾸면 덮어쓴다). 이 제약이 있어야 애플리케이션이 upsert로 그 규칙을 강제할 수 있다.
+# rag_runs.request_id를 가리키지만 FK는 걸지 않는다 — 로깅(rag_logger)이 실패-안전이라 답변
+# 행이 없을 수 있고, 그때 피드백까지 거부되면 사용자에게 이유 없는 실패가 보인다.
+feedback = Table(
+    "feedback", metadata,
+    _uuid_pk(),
+    Column("request_id", String, nullable=False, unique=True),
+    Column("session_id", String),
+    Column("vote", String, nullable=False),          # 'up' | 'down'
+    Column("reason_codes", ARRAY(String)),           # codes.ts ReasonCode (INACCURATE 등)
+    Column("comment", Text),                         # 마스킹 후 저장 · 최대 200자
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+)
+
+
+# 웰컴 화면의 자주 묻는 질문(CB-001) + 관리자 추천질문 관리(AD-009)가 함께 쓰는 목록.
+# 원천을 하나로 둬야 두 화면이 서로 다른 질문을 보여주는 일이 없다.
+#
+# 컬럼은 프론트 SuggestedQuestion(web/src/routes/admin/settings/promptops/api.ts:158)과 맞췄다.
+# 공개 API(GET /api/suggestions)는 이 중 id/text/business_function만 내보내고, active/order/
+# click_count는 관리자 화면 몫이다.
+#
+# id를 uuid가 아니라 문자열 PK로 둔 이유: 프론트가 'sq_01' 같은 읽히는 값을 쓰고 있고,
+# 사람이 Supabase 대시보드에서 직접 행을 편집하는 게 당분간 유일한 관리 수단이라
+# 눈으로 알아볼 수 있는 편이 낫다.
+suggested_questions = Table(
+    "suggested_questions", metadata,
+    Column("id", String, primary_key=True),
+    Column("text", Text, nullable=False),
+    Column("business_function", String),      # codes.ts BUSINESS_FUNCTIONS 6종
+    Column("active", Boolean, nullable=False, server_default=text("true")),
+    Column("display_order", Integer, nullable=False),   # 'order'는 SQL 예약어라 이름을 바꿨다
+    Column("click_count", Integer, nullable=False, server_default=text("0")),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+)
+
 
 # 수정 3: documents.is_active가 바뀌면 그 문서의 청크 전부를 같은 값으로 맞춘다.
 # 애플리케이션 레이어에서 매번 챙기게 두면 한 곳이라도 빠뜨렸을 때 "비활성 문서의
@@ -150,6 +199,35 @@ EXECUTE FUNCTION sync_document_chunks_is_active();
 """
 
 
+# 추천질문 초기값 — 기획서 CB-001 §2.4 「자주 묻는 질문 TOP 10」 원문 그대로다(순서 포함).
+# 착오송금에 편중돼 있는데 오타가 아니라 기획서 그대로이며, AD-009의 '업무 균형 경고'를 그
+# 화면에서 실제로 보여주기 위한 예시다(프론트 mocks/data/admin.ts:203 주석과 같은 근거).
+# 테이블이 비어 있을 때만 넣는다 — 운영에서 지운 질문이 재실행 때 되살아나면 안 된다.
+_SUGGESTED_QUESTIONS_SEED = [
+    ("sq_01", "착오송금 반환까지 얼마나 걸리나요?", "착오송금 반환 신청", 1),
+    ("sq_02", "반환지원 대상이 아닌 경우는 어떤 경우인가요?", "착오송금 반환 신청", 2),
+    ("sq_03", "반환지원 대상 금액은 얼마까지인가요?", "착오송금 반환 신청", 3),
+    ("sq_04", "어떤 금융회사·앱이 반환지원 대상인가요?", "착오송금 반환 신청", 4),
+    ("sq_05", "방문 신청도 가능한가요?", "착오송금 반환 신청", 5),
+    ("sq_06", "상속인 금융거래 조회 기간은 어떻게 되나요?", "고객 미수령금 신청", 6),
+    ("sq_07", "보이스피싱 피해도 신청할 수 있나요?", "착오송금 반환 신청", 7),
+    ("sq_08", "토스·카카오페이 간편송금도 지원되나요?", "착오송금 반환 신청", 8),
+    ("sq_09", "착오송금 후 언제까지 신청해야 하나요?", "착오송금 반환 신청", 9),
+    ("sq_10", "은행 반환절차 없이 바로 신청할 수 있나요?", "착오송금 반환 신청", 10),
+]
+
+
+def _seed_suggested_questions(conn):
+    if conn.execute(text("SELECT count(*) FROM suggested_questions")).scalar():
+        return 0
+    conn.execute(
+        suggested_questions.insert(),
+        [{"id": i, "text": t, "business_function": bf, "display_order": o, "active": True}
+         for i, t, bf, o in _SUGGESTED_QUESTIONS_SEED],
+    )
+    return len(_SUGGESTED_QUESTIONS_SEED)
+
+
 def main():
     engine = get_engine()
     with engine.begin() as conn:
@@ -158,7 +236,21 @@ def main():
         # evaluation_dataset이 embedding 컬럼 추가 전에 이미 만들어졌을 수 있어 create_all이
         # 건너뛴다(테이블 존재 여부만 봄, 컬럼 diff는 안 함) — 별도로 멱등하게 추가.
         conn.execute(text("ALTER TABLE evaluation_dataset ADD COLUMN IF NOT EXISTS embedding vector(1024)"))
+        # rag_runs도 같은 이유로 뒤늦게 추가한 컬럼이 있다(피드백 연결용 request_id/session_id).
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS request_id text"))
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS session_id text"))
+        # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
+        # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.
+        conn.execute(text("""
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'rag_runs_request_id_key') THEN
+                    ALTER TABLE rag_runs ADD CONSTRAINT rag_runs_request_id_key UNIQUE (request_id);
+                END IF;
+            END $$;
+        """))
+        seeded = _seed_suggested_questions(conn)
     print("생성 완료:", ", ".join(t.name for t in metadata.sorted_tables))
+    print(f"추천질문 시드: {seeded}건 삽입" if seeded else "추천질문 시드: 이미 데이터가 있어 건너뜀")
     print("트리거 생성 완료: trg_sync_document_chunks_is_active (documents.is_active → document_chunks.is_active)")
 
 

@@ -31,8 +31,9 @@ from api.middleware import REQUEST_ID_HEADER, RateLimitMiddleware, RequestIDMidd
 logger = logging.getLogger(__name__)
 
 # 요청 제한에서 빼는 경로. 헬스체크는 오케스트레이터/로드밸런서가 수초마다 호출하므로
-# 여기에 걸리면 안 된다.
-RATE_LIMIT_EXEMPT_PATHS = ("/health",)
+# 여기에 걸리면 안 된다. /api/health(readiness)는 프론트도 점검 배너 판정에 주기적으로 부르므로,
+# 같은 IP 의 실사용자 채팅 요청과 분당 한도를 나눠 쓰면 안 된다.
+RATE_LIMIT_EXEMPT_PATHS = ("/health", "/api/health")
 
 
 def _configure_logging(settings):
@@ -55,8 +56,15 @@ async def lifespan(app: FastAPI):
         # 분류기를 처음 검색할 때 조립한다(수십 초). 이걸 첫 사용자가 물지 않도록
         # 여기서 미리 돌린다.
         #
+        # 실패해도 서버는 뜬다. 여기서 예외를 올리면 프로세스가 죽어서 프론트는 그냥
+        # "연결할 수 없음"만 보게 되고, /api/health 의 degraded 분기(=준비 중 안내 + 입력창
+        # 잠금)가 도달 불가능한 죽은 코드가 된다. 뜨게 두면 health 가 chat 불가를 알려
+        # 화면이 이유 있는 안내를 띄운다(원인은 아래 로그에 남는다).
         from api.rag.engine import warmup
-        await warmup()
+        try:
+            await warmup()
+        except Exception:
+            logger.exception("RAG 워밍업 실패 — chat 불가 상태로 기동한다(/api/health 가 degraded 를 알린다)")
 
     yield
 
@@ -107,9 +115,10 @@ def create_app() -> FastAPI:
     # 라우터를 만들면 여기서 붙인다. 이 파일에는 엔드포인트를 정의하지 않는다
     # (main.py = 조립, routers/ = 엔드포인트).
     #
-    from api.routers import chat, public
+    from api.routers import chat, feedback, public
     app.include_router(public.router)
     app.include_router(chat.router)
+    app.include_router(feedback.router)
 
     # ⚠️ 임시 — routers/public.py 를 만드는 사람이 그쪽으로 옮기고 여기서 지울 것.
     #
