@@ -6,10 +6,10 @@ switch 하므로, event 줄이 없으면 이름이 'message' 가 되어 **모든
 
   event: accepted      data: {request_id, session_id}
   event: answer_delta  data: {text}                     ← 여러 번(내부 마커 제거됨)
-  event: sources       data: {sources: Source[]}        ← 비었으면 보내지 않는다
-  event: attachments   data: {attachments: Attachment[]}
   event: done          data: ChatResponse 전문           ← 프론트가 최종으로 신뢰
   event: error         data: ApiError                    ← done 대신 온다
+
+프론트 파서는 sources·attachments 이벤트도 알지만 우리는 보내지 않는다(끝의 주석 참고).
 
 data 는 봉투로 한 번 더 감싸지 않는다 — done 의 data 가 곧 ChatResponse, error 의 data 가 곧
 ApiError 다(프론트 ChatStreamEvent 타입이 그렇게 선언돼 있다).
@@ -187,13 +187,9 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     resp = answer.to_chat_response(
         finalized, used_flags, "".join(full_parts), composite, session_id, request_id, latency_ms)
 
-    # sources/attachments 는 done 앞에 미리 흘려 화면이 출처를 먼저 그리게 한다. 비었으면 보내지
-    # 않는다 — 특히 out_of_scope(근거 미사용)면 절대 보내면 안 된다. 그렸다가 done 에서 걷어내는
-    # 깜빡임이 생긴다(mocks/README §3-2). 복합 질문은 상위가 비고 근거가 하위로 내려가므로
-    # 자연히 건너뛰고, 프론트가 done 의 sub_answers 로 그린다.
-    if resp.sources:
-        yield _sse("sources", {"sources": [s.model_dump() for s in resp.sources]})
-    if resp.attachments:
-        yield _sse("attachments", {"attachments": [a.model_dump() for a in resp.attachments]})
-
+    # sources/attachments 이벤트는 보내지 않는다(프론트 합의 2026-08-05).
+    # 출처는 근거 사용 여부(source_check)가 확정돼야 정해지는데 그 판정이 스트리밍이 끝난 뒤라,
+    # 여기서 보내봐야 done 과 같은 시점이 되어 실익이 없다. 프론트는 done 의 sources/attachments
+    # (복합이면 sub_answers 안의 것)로 그린다. 나중에 하위 답변별로 스트리밍을 나누게 되면
+    # 그때는 하위가 끝날 때마다 흘려보낼 실익이 생긴다.
     yield _sse("done", resp.model_dump())
