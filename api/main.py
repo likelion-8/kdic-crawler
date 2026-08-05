@@ -55,10 +55,8 @@ async def lifespan(app: FastAPI):
         # 분류기를 처음 검색할 때 조립한다(수십 초). 이걸 첫 사용자가 물지 않도록
         # 여기서 미리 돌린다.
         #
-        # TODO(다음 배치): api/rag/engine.py 를 만들면 아래 두 줄을 살린다.
-        #   from api.rag.engine import warmup
-        #   await warmup()
-        logger.info("RAG 워밍업 대기 — api/rag/engine.py 구현 후 활성화")
+        from api.rag.engine import warmup
+        await warmup()
 
     yield
 
@@ -109,9 +107,9 @@ def create_app() -> FastAPI:
     # 라우터를 만들면 여기서 붙인다. 이 파일에는 엔드포인트를 정의하지 않는다
     # (main.py = 조립, routers/ = 엔드포인트).
     #
-    #   from api.routers import chat, public
-    #   app.include_router(public.router)
-    #   app.include_router(chat.router)
+    from api.routers import chat, public
+    app.include_router(public.router)
+    app.include_router(chat.router)
 
     # ⚠️ 임시 — routers/public.py 를 만드는 사람이 그쪽으로 옮기고 여기서 지울 것.
     #

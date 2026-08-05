@@ -17,7 +17,7 @@ Depends 로 받으면 두 가지를 얻는다.
 처럼 쓰라고 아래에서 Annotated 별칭을 만들어 둔다. 매번
 `db: Session = Depends(get_db)` 라고 쓰는 것보다 짧고, 의존성을 바꿀 때 한 곳만 고친다.
 """
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
@@ -59,7 +59,7 @@ def get_db():
         yield session
 
 
-def get_request_id(request: Request) -> str | None:
+def get_request_id(request: Request) -> Optional[str]:
     """미들웨어가 scope 에 넣어둔 요청 id. 응답 본문에 request_id 를 함께 실어
     보내야 하는 라우터에서 쓴다(오류 응답은 errors.py 가 알아서 채운다)."""
     return getattr(request.state, "request_id", None)
@@ -67,7 +67,7 @@ def get_request_id(request: Request) -> str | None:
 
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 DbSession = Annotated[Session, Depends(get_db)]
-RequestId = Annotated[str | None, Depends(get_request_id)]
+RequestId = Annotated[Optional[str], Depends(get_request_id)]
 
 # 인증 의존성(get_current_user 등)은 여기 들어올 자리지만, auth 라우터를 실제로
 # 만들 때 함께 추가한다 — 지금 만들면 아무도 안 쓰는 죽은 코드가 된다.
