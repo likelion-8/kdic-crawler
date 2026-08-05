@@ -1,9 +1,11 @@
 beautifulsoup4
+fastapi
 kiwipiepy
 langchain-naver
 openai
 pgvector
 psycopg[binary]
+pydantic-settings
 python-dotenv
 qdrant_client
 rank_bm25
@@ -13,3 +15,4 @@ sqlalchemy
 streamlit==1.60.0
 torch
 urllib3
+uvicorn
