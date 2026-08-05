@@ -7,18 +7,21 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+# 2026-08-03: Python 템플릿의 lib/ · build/ · dist/ · var/ 는 하위 경로까지 다 걸린다.
+# web/src/lib(프론트 API 클라이언트·enum·상수)가 통째로 무시되어 커밋에서 빠졌다.
+# setuptools가 만드는 건 리포 루트의 그 디렉터리들이므로 루트로 앵커(/)한다.
 .Python
-build/
+/build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
-var/
+/var/
 wheels/
 share/python-wheels/
 *.egg-info/
