@@ -1,6 +1,7 @@
 beautifulsoup4
 kiwipiepy
 langchain-naver
+openai
 pgvector
 psycopg[binary]
 python-dotenv
