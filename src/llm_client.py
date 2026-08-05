@@ -44,3 +44,14 @@ def call_hyperclova(messages):
     반환한 [(role, content), ...] 튜플 리스트. 응답 텍스트(str)만 반환한다."""
     response = _get_client().invoke(messages)
     return response.content
+
+
+def stream_hyperclova(messages):
+    """call_hyperclova와 같은 클라이언트·설정을 쓰되 응답을 토큰 조각(str)으로 순차 yield한다.
+    SSE 스트리밍(api/rag/sse.py)이 이 제너레이터를 소비한다 — .invoke() 대신 .stream()을 쓴다.
+    각 청크의 content만 흘리고 빈 조각은 건너뛴다. 호출부가 조각을 이어붙이면 call_hyperclova의
+    반환 문자열과 동일해야 한다(동일 모델·프롬프트 기준)."""
+    for chunk in _get_client().stream(messages):
+        text = getattr(chunk, "content", "") or ""
+        if text:
+            yield text
