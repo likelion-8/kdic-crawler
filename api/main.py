@@ -56,8 +56,15 @@ async def lifespan(app: FastAPI):
         # 분류기를 처음 검색할 때 조립한다(수십 초). 이걸 첫 사용자가 물지 않도록
         # 여기서 미리 돌린다.
         #
+        # 실패해도 서버는 뜬다. 여기서 예외를 올리면 프로세스가 죽어서 프론트는 그냥
+        # "연결할 수 없음"만 보게 되고, /api/health 의 degraded 분기(=준비 중 안내 + 입력창
+        # 잠금)가 도달 불가능한 죽은 코드가 된다. 뜨게 두면 health 가 chat 불가를 알려
+        # 화면이 이유 있는 안내를 띄운다(원인은 아래 로그에 남는다).
         from api.rag.engine import warmup
-        await warmup()
+        try:
+            await warmup()
+        except Exception:
+            logger.exception("RAG 워밍업 실패 — chat 불가 상태로 기동한다(/api/health 가 degraded 를 알린다)")
 
     yield
 
