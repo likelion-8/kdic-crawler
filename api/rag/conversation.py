@@ -74,28 +74,24 @@ def save_user_message(session_id: str, text: str) -> None:
 def save_assistant_message(session_id: str, request_id: str, resp) -> None:
     """답변을 저장한다. done 직전에 부른다.
 
-    resp 는 ChatResponse 다. 복합 질문이면 최상위 sources/attachments 가 비고 근거가
-    sub_answers 로 내려가므로, 복원 시 출처를 잃지 않도록 하위의 것을 합쳐서 담는다
-    (프론트 RestoredMessage.response 에 sub_answers 자리가 없다 — 아래 주석 참고).
+    resp(ChatResponse) 를 그대로 옮겨 담는다 — done 이벤트가 나가는 모양과 저장 모양을 같게
+    두는 것이 이 함수의 규칙이다. 그래서 복합 질문이면 최상위 sources/attachments 는 빈 배열이
+    되고 근거는 전부 sub_answers 로 들어간다(to_chat_response 가 이미 그렇게 만든다).
+
+    한때 하위 답변의 출처를 최상위로 평탄화했는데, 그건 프론트 RestoredMessage.response 에
+    sub_answers 자리가 없던 시절의 우회였다. 2026-08-06 프론트 계약에 추가됐으므로(types.ts 의
+    Pick<ChatResponse,'sources'|'attachments'|'sub_answers'|'out_of_scope'>) 구조를 그대로 남긴다.
+    평탄화를 되살리면 최상위와 하위 양쪽에 출처가 있어 화면에 두 배로 보인다.
     """
     try:
-        sources = [s.model_dump() for s in resp.sources]
-        attachments = [a.model_dump() for a in resp.attachments]
-        # ⚠️ 복합 질문의 한계: 프론트 RestoredMessage.response 는
-        # Pick<ChatResponse,'sources'|'attachments'|'out_of_scope'> 라 sub_answers 자리가 없다.
-        # 그대로 두면 복원된 복합 답변은 출처가 통째로 사라지므로, 하위의 출처를 평탄화해
-        # 최소한 '어떤 문서를 근거로 했는지'는 남긴다. 하위별 묶음 구조는 복원되지 않는다
-        # — 되살리려면 프론트 계약에 sub_answers 를 추가해야 한다.
-        for sub in resp.sub_answers:
-            sources.extend(s.model_dump() for s in sub.sources)
-            attachments.extend(a.model_dump() for a in sub.attachments)
-
         with get_session() as s:
             _touch_session(s, session_id)
             s.execute(chat_messages.insert().values(
                 session_id=session_id, seq=_next_seq(s, session_id),
                 role="assistant", text=resp.answer, request_id=request_id,
-                sources=sources, attachments=attachments,
+                sources=[x.model_dump() for x in resp.sources],
+                attachments=[x.model_dump() for x in resp.attachments],
+                sub_answers=[x.model_dump() for x in resp.sub_answers],
                 out_of_scope=resp.out_of_scope,
             ))
     except Exception:

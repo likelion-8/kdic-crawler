@@ -74,6 +74,8 @@ def _to_message(m) -> RestoredMessage:
         response = RestoredResponse(
             sources=m.sources or [],
             attachments=m.attachments or [],
+            # 컬럼을 나중에 추가했으므로 그 전에 저장된 행은 NULL 이다 — 빈 배열로 읽는다.
+            sub_answers=m.sub_answers or [],
             out_of_scope=bool(m.out_of_scope),
         )
     return RestoredMessage(
