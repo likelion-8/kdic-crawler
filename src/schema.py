@@ -192,6 +192,10 @@ chat_messages = Table(
     Column("request_id", String),
     Column("sources", JSONB),                         # citation.format_citation() 결과 배열
     Column("attachments", JSONB),                     # civil_petition 서류·링크 배열
+    # 복합 질문의 하위 답변 [{title, answer, sources[], attachments[]}]. 이게 채워지면 위의
+    # sources/attachments 는 빈 배열이다(근거가 전부 하위로 내려간다) — done 이벤트와 같은 규칙.
+    # 둘 다 채우면 프론트가 최상위와 하위를 모두 그려 출처가 두 배로 보인다.
+    Column("sub_answers", JSONB),
     Column("out_of_scope", Boolean),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
     # seq는 MAX(seq)+1로 계산하므로, 같은 세션에 동시 요청이 들어오면 같은 값이 나올 수 있다.
@@ -285,6 +289,10 @@ def main():
         # rag_runs도 같은 이유로 뒤늦게 추가한 컬럼이 있다(피드백 연결용 request_id/session_id).
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS request_id text"))
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS session_id text"))
+        # chat_messages.sub_answers 도 테이블을 만든 뒤에 추가했다. create_all 은 컬럼 diff 를
+        # 보지 않으니(테이블 존재 여부만 본다) 여기서 멱등하게 더한다 — 팀원들이 각자
+        # `python src/schema.py` 만 돌리면 반영되므로 손으로 SQL 을 칠 필요가 없다.
+        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sub_answers jsonb"))
         # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
         # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.
         conn.execute(text("""

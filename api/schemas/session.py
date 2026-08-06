@@ -8,16 +8,21 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from api.schemas.chat import Attachment
+from api.schemas.chat import Attachment, SubAnswer
 from api.schemas.common import SourceItem
 
 
 class RestoredResponse(BaseModel):
-    """답변 말풍선에 딸린 것. 프론트는 Pick<ChatResponse,'sources'|'attachments'|'out_of_scope'>
-    로 받는다 — sub_answers 자리가 없어서 복합 질문의 하위 묶음 구조는 복원되지 않는다
-    (출처는 잃지 않도록 conversation.py 가 하위의 것을 평탄화해 저장한다)."""
+    """답변 말풍선에 딸린 것. 프론트는
+    Pick<ChatResponse,'sources'|'attachments'|'sub_answers'|'out_of_scope'> 로 받는다
+    (web/src/lib/api/types.ts:155).
+
+    복합 질문이면 sub_answers 에 하위별 근거가 들어가고 sources/attachments 는 빈 배열이다 —
+    done 이벤트와 같은 규칙이다. 양쪽을 다 채우면 화면에 출처가 두 배로 보인다.
+    """
     sources: list[SourceItem] = Field(default_factory=list)
     attachments: list[Attachment] = Field(default_factory=list)
+    sub_answers: list[SubAnswer] = Field(default_factory=list)
     out_of_scope: bool = False
 
 
