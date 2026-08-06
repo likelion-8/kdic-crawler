@@ -1,5 +1,9 @@
 # 코드베이스 안내 (온보딩)
 
+> ⚠️ **이 문서는 P1(데이터 파이프라인, `src/crawler/`)만 다룬다.**
+> P2 RAG 코어는 `src/` 루트(`pipeline.py`·`retrieval.py`·`citation.py` 등), API는 `api/`,
+> 화면은 `web/`에 있다. 그쪽 구조는 `docs/backend-structure.md` 참고.
+
 KDIC 안내문서 기반 한국어 RAG 챗봇의 **데이터 파이프라인 + 검색 평가** 저장소.
 전체는 **수집 → 변환 → 코퍼스 → 검증 → 검색·평가** 5단계로 흐른다. 각 파일은 이 중 한 단계에 속한다.
 
@@ -26,11 +30,14 @@ flowchart TD
       EMB[chunking.py → retrieval.py<br/>→ embed_corpus.py]
     end
     RET --> DOCS[(docs/retrieval_experiment_results.md<br/>연구·비교 결과)]
-    EMB --> PROD[(dense_cache/*.npy + chunks_all.jsonl<br/>= 챗봇 런타임 입력)]
+    EMB --> PROD[(dense_cache/*.npy + chunks_all.jsonl<br/>= 임베딩·평가용 · 운영 검색은 Supabase)]
     MEDIA --> PROD
 ```
 
 ## 단계별 파일
+
+> 아래 표의 파일명은 모두 **`src/crawler/`** 아래에 있다(2026-08-04 P1 분리).
+> 예외는 `retrieval.py` 하나로, P2 런타임이 함께 쓰기 때문에 `src/` 루트에 남아 있다.
 
 ### 1. 수집 (Crawl) — 사이트에서 원본 HTML 저장
 | 파일 | 역할 |
@@ -64,7 +71,7 @@ flowchart TD
 | 파일 | 역할 |
 |---|---|
 | `chunking.py` | `build_units(mode)` — 색인 단위 결정(`page`/`faq_atomic`/`table_row`/`all`). FAQ·표 탐지는 규칙 기반 |
-| `retrieval.py` | **BM25 · Dense(bge-m3) · Hybrid(RRF)** 검색기 + `PageRanked`(유닛→페이지 접기) |
+| `retrieval.py` ⚠️ **`src/` 루트** | **BM25 · Dense · Hybrid(RRF)** 검색기 + `PageRanked`(유닛→페이지 접기). 운영 Dense는 `PgVectorDenseRetriever`(Supabase), `QdrantDenseRetriever`는 롤백 대비 잔존 |
 | `eval_retrieval.py` | 문서찾기(Recall@k·MRR) + 답뽑기(AnswerRecall) 평가 + 지표 selftest |
 | `embed_corpus.py` | **임베딩 일괄 생성 단일 진입점.** 4개 모드 벡터를 `data/dense_cache/`에 저장 + `data/chunks_all.jsonl` 덤프. 한 사람이 실행·커밋하면 팀 공유 |
 
@@ -77,52 +84,60 @@ flowchart TD
 | `meta/*.json` (58) | 페이지별 메타(URL·카테고리·수집일·해시 등) | 3단계 |
 | `media_summary_jh.json` | 착오송금 페이지의 **영상·첨부 위치** 추출. 챗봇이 "어디서 보라" 안내에 사용(코퍼스 본문과 별개). `crawl_mistaken_remittance_jh.py` 산출 | 1단계 |
 | **`corpus.jsonl`** (58줄) | **문서 코퍼스** = 메타+본문. 검색의 입력 | 3단계 |
-| `testset/testset_all.jsonl` (174) | 통합 평가셋(질문·정답 page_id·must_include) | 사람 작성 |
+| `testset/testset_all.jsonl` (851) | 통합 평가셋(골든셋) = 담당자별 세트 + `testset_ambiguous` 병합 | 사람 작성 |
+| `testset/testset_ambiguous.jsonl` (277) | 역할·범위가 모호한 질의 세트. `amb_` 접두 test_id | 사람 작성 |
+| `testset/testset_pipeline.jsonl` (89) | **held-out** 파이프라인 평가셋(`testset_all`과 겹치지 않음) | 사람 작성 |
 | `testset/testset_tail_probe.jsonl` (4) | 잘린 표 꼬리 겨냥 프로브 | 5단계 |
 | **`chunks_all.jsonl`** (494줄) | **제품용 청크** = `all` 모드 유닛. `{chunk_id, page_id, source_url, page_title, business_function, text}` — 출처 인용·필터링까지 self-contained. 임베딩과 순서 일치 | 5단계 |
-| `dense_cache/*.npy` (4) + `manifest.json` | **팀 공유 Dense 임베딩**(커밋됨). 파일명=내용 해시 → 코퍼스 변경 시 자동 무효화. `embed_corpus.py`로 생성 | 5단계 |
+| `dense_cache/*.npy` + `manifest.json` | **팀 공유 Dense 임베딩**(커밋됨). 파일명=내용 해시 → 코퍼스 변경 시 자동 무효화. `embed_corpus.py`로 생성 | 5단계 |
 
 ## 처음 보는 사람 — 읽기 순서
 
 1. **`README.md`** — 프로젝트가 뭘/왜 하는지 (연구계획서)
 2. **`data/corpus.jsonl` 첫 줄** — 데이터가 어떻게 생겼는지 (모든 것의 중심)
-3. **`src/inventory.py`** — 무엇을 수집하는지
-4. **`src/build_corpus.py`** docstring — 코퍼스가 어떻게 만들어지는지
-5. **`src/eval_retrieval.py`** + **`docs/retrieval_experiment_results.md`** — 검색을 어떻게 평가/비교하는지
+3. **`src/crawler/inventory.py`** — 무엇을 수집하는지
+4. **`src/crawler/build_corpus.py`** docstring — 코퍼스가 어떻게 만들어지는지
+5. **`src/crawler/eval_retrieval.py`** + **`docs/retrieval_experiment_results.md`** — 검색을 어떻게 평가/비교하는지
 
 ## 자주 쓰는 실행 커맨드
 
 ```bash
 # 코퍼스 재생성 (네트워크 불필요, 로컬 raw_html 사용)
-python3 src/build_corpus.py
+python3 src/crawler/build_corpus.py
 
 # 텍스트 변환만 다시
-python3 src/parse_raw_html.py
+python3 src/crawler/parse_raw_html.py
 
 # 테스트셋 정합성 검증
-python3 src/validate_testset.py
+python3 src/crawler/validate_testset.py
 
 # 검색기 비교 평가 (BM25/Dense/Hybrid × 색인단위) — 첫 실행 시 bge-m3 다운로드
-python3 src/eval_retrieval.py
+python3 src/crawler/eval_retrieval.py
 
 # 임베딩 + 제품 청크 재생성 (코퍼스 갱신 후 실행 → data/dense_cache/ 와 chunks_all.jsonl 재커밋)
-python3 src/embed_corpus.py
+python3 src/crawler/embed_corpus.py
 
-# intent 분류기 재학습 (testset_all.jsonl 갱신 후 실행 → data/intent_classifier/*.pkl 재커밋)
-python3 src/train_intent_morpheme.py
+# Supabase 적재 (검색이 실제로 읽는 곳)
+python3 src/schema.py                         # 스키마 생성 (재실행 안전)
+python3 src/crawler/index_document_chunks.py  # documents/document_chunks 전량 교체
+python3 src/crawler/index_evaluation_sets.py  # evaluation_dataset/test_set upsert
 
 # 개별 모듈 자가검증
-python3 src/chunking.py      # 청킹 단위 수 확인
-python3 src/hashing.py       # 해시 자체검사
+python3 src/crawler/chunking.py      # 청킹 단위 수 확인
+python3 src/crawler/hashing.py       # 해시 자체검사
 ```
 
 ## 제품(챗봇)이 실제로 쓰는 것
-검색 실험 산출물 중 **챗봇 런타임이 쓰는 건 `all` 모드 한 세트**다:
-- `data/dense_cache/2498028…npy` (494 벡터) + `data/chunks_all.jsonl` (494 청크 텍스트) + bge-m3 모델(질문 인코딩용).
-- 나머지 3개 모드(page/faq_atomic/table_row)는 "청킹이 왜 필요한지" 증명한 **실험 비교군**이지 제품용이 아니다. 근거는 `docs/retrieval_experiment_results.md`.
+
+**2026-08-03 Qdrant → Supabase Postgres(pgvector) 전환** 이후 런타임 경로가 바뀌었다(`src/retrieval.py:327`).
+
+- **Dense 검색**: Supabase `document_chunks`(494행, `embedding vector(1024)`)를 `PgVectorDenseRetriever`가 읽는다(`src/retrieval.py:148`). 질문 인코딩만 bge-m3를 쓴다.
+- **BM25**: `corpus.jsonl`에서 `build_units("all")`로 부팅 시 재구성한다.
+- ⚠️ **`dense_cache/*.npy`·`chunks_all.jsonl`은 런타임에 쓰이지 않는다** — 임베딩·평가 스크립트 전용이라 서버 이미지에 넣을 필요가 없다. 그래서 **DB만 갱신하고 `embed_corpus.py`를 안 돌리면 평가 수치가 운영을 설명하지 못한다.**
+- 나머지 3개 청킹 모드(page/faq_atomic/table_row)는 "청킹이 왜 필요한지" 증명한 **실험 비교군**이지 제품용이 아니다. 근거는 `docs/retrieval_experiment_results.md`.
 
 ## 참고
-- `data/intent_classifier/*.pkl`(TF-IDF 벡터라이저 + LogReg 모델)도 `dense_cache`처럼 **커밋됨** — 작은 파일이라 pull만 받으면 `classify_intent`가 바로 동작한다. `data/testset/testset_all.jsonl`이 갱신되면 `python3 src/train_intent_morpheme.py`를 한 번 실행해 재생성·재커밋할 것.
+- **의도 분류는 학습 모델이 아니라 API다** — 2026-08-03에 Kiwi+TF-IDF+LogReg에서 OpenAI Structured Output으로 갈아탔다(`src/query_classifier.py:99`). `data/intent_classifier/*.pkl`과 재학습 스크립트는 더 이상 없고, `OPENAI_API_KEY`가 없으면 예외를 삼키고 `informational`로 조용히 폴백해 민원처리 경로가 통째로 안 돈다.
 - 크롤러가 담당자별로 나뉜 건 팀원 5명이 업무 기능을 나눠 수집했기 때문 (`inventory.py` 상단 owner 매핑 참고).
 - 변환은 **전부 규칙 기반**(LLM 미사용) — 원문 보존·재현성이 원칙.
 - **크로스 플랫폼(맥·윈도우):** 모든 텍스트 파일 I/O는 `encoding="utf-8"` 명시(윈도우 기본 cp949로 한글 깨짐 방지), `.gitattributes`가 `.jsonl` 줄바꿈을 LF로 고정(CRLF면 공유 임베딩 캐시 해시가 틀어짐).

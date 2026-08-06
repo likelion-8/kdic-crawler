@@ -115,10 +115,11 @@ def create_app() -> FastAPI:
     # 라우터를 만들면 여기서 붙인다. 이 파일에는 엔드포인트를 정의하지 않는다
     # (main.py = 조립, routers/ = 엔드포인트).
     #
-    from api.routers import chat, feedback, public
+    from api.routers import chat, feedback, public, session
     app.include_router(public.router)
     app.include_router(chat.router)
     app.include_router(feedback.router)
+    app.include_router(session.router)
 
     # ⚠️ 임시 — routers/public.py 를 만드는 사람이 그쪽으로 옮기고 여기서 지울 것.
     #

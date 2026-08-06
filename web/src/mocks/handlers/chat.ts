@@ -24,7 +24,7 @@
  * - 질문에 `느리게` 를 넣으면 델타 간격이 5초로 늘어난다 → 30초 유휴 폴백·[중단] 개발용
  */
 import { HttpResponse, delay, http } from 'msw'
-import type { ChatRequest, ChatResponse, FeedbackPatch, FeedbackRequest, HealthResponse } from '../../lib/api/types'
+import type { ChatRequest, ChatResponse, FeedbackPatch, FeedbackRequest, HealthResponse, RestoredSession } from '../../lib/api/types'
 import { FEEDBACK_FREETEXT_MAX } from '../../lib/constants'
 import { MOCK_SCENARIOS, activeSuggestions, sourceOf } from '../data/chat'
 import type { ChatScenario } from '../data/chat'
@@ -79,16 +79,15 @@ function sseStream(scenario: ChatScenario, sessionId: string, slow: boolean): Re
         return
       }
 
-      // Type 5 되묻기 — 검색 전에 되묻으므로 answer_delta·sources가 없다
+      // Type 5 되묻기 — 검색 전에 되묻으므로 answer_delta가 없다
       if (!scenario.clarification) {
         for (const piece of chunkText(scenario.answer)) {
           await sleep(slow ? SLOW_DELTA_MS : DELTA_MIN_MS + Math.random() * (DELTA_MAX_MS - DELTA_MIN_MS))
           send('answer_delta', { text: piece })
         }
-        // 빈 배열이면 이벤트 자체를 보내지 않는다 — 어차피 섹션째 미렌더가 규칙이다(CB-DF-003 4-2).
-        // 특히 out_of_scope=true인데 sources를 흘리면 프론트가 출처를 그렸다 지우는 깜빡임이 생긴다
-        if (scenario.sources.length) send('sources', { sources: scenario.sources })
-        if (scenario.attachments.length) send('attachments', { attachments: scenario.attachments })
+        // sources·attachments 이벤트는 보내지 않는다 — 서버도 보내지 않는다(api/rag/sse.py,
+        // 2026-08-05). 근거 사용 판정이 스트리밍 뒤에 끝나 done과 같은 시점이 되므로 실익이
+        // 없다. 출처는 done의 sources/attachments(복합이면 sub_answers 안)로 그린다.
       }
 
       const done: ChatResponse = {
@@ -111,25 +110,9 @@ function sseStream(scenario: ChatScenario, sessionId: string, slow: boolean): Re
   })
 }
 
-/** GET /api/sessions/{session_id} 응답. types.ts에 없어 목이 정의했다(기획서 역기재 대상).
- *  PRD-02 §1은 이 기능을 `GET /api/conversation`이라 부르는데 CM-DF-003 04절 경로와 다르다. */
-export interface RestoredMessage {
-  role: 'user' | 'assistant'
-  text: string
-  request_id?: string
-  /** 이 메시지의 시각(ISO8601 · KST). 말풍선에 `오후 3:24`로 찍는다.
-   *  ⚠ 백엔드도 함께 내려야 한다 — 없으면 화면이 시각을 아예 그리지 않는다.
-   *  복원된 대화에 '지금' 시각을 찍으면 90분 전 대화에 방금 시각이 붙어 거짓이 되기 때문이다 */
-  at?: string
-  /** 답변 말풍선 복원용. 사용자 메시지는 비어 있다 */
-  response?: Pick<ChatResponse, 'sources' | 'attachments' | 'out_of_scope'>
-}
-export interface RestoredSession {
-  session_id: string
-  /** ISO8601 · KST. 이 시각이 24시간(CONVERSATION_RESTORE_WINDOW_H)보다 오래되면 서버가 404를 준다 */
-  last_activity_at: string
-  messages: RestoredMessage[]
-}
+/* RestoredMessage·RestoredSession은 lib/api/types.ts가 정본이다.
+ * ⚠ `at`은 백엔드도 함께 내려야 한다 — 없으면 화면이 시각을 아예 그리지 않는다.
+ * PRD-02 §1은 이 기능을 `GET /api/conversation`이라 부르는데 CM-DF-003 04절 경로와 다르다. */
 
 export const chatHandlers = [
   http.post('/api/chat', async ({ request }) => {
@@ -189,6 +172,7 @@ export const chatHandlers = [
 
   // 대화 복원 — 마지막 활동 24시간 이내 (CONVERSATION_RESTORE_WINDOW_H)
   http.get('/api/sessions/:sessionId', ({ params }) => {
+    const composite = MOCK_SCENARIOS.find((s) => s.id === 'composite')!
     const body: RestoredSession = {
       session_id: String(params.sessionId),
       last_activity_at: new Date(Date.now() - 90 * 60_000).toISOString(),
@@ -200,6 +184,22 @@ export const chatHandlers = [
           request_id: 'req_restored_1',
           at: new Date(Date.now() - 90 * 60_000).toISOString(),
           response: { sources: [sourceOf('dp_protlmts')], attachments: [], out_of_scope: false },
+        },
+        // 복합 질문도 한 건 넣는다 — 하위 답변이 복원되지 않으면 최상위 sources가 규약상
+        // 빈 배열이라 '본문만 있고 출처가 하나도 없는' 말풍선이 된다. 목이 이 경우를 안 내면
+        // 회귀해도 아무도 모른다
+        { role: 'user', text: '착오송금 반환지원 신청 방법과 필요한 서류는?', at: new Date(Date.now() - 89 * 60_000).toISOString() },
+        {
+          role: 'assistant',
+          text: composite.answer,
+          request_id: 'req_restored_2',
+          at: new Date(Date.now() - 88 * 60_000).toISOString(),
+          response: {
+            sources: [],
+            attachments: [],
+            sub_answers: composite.sub_answers,
+            out_of_scope: false,
+          },
         },
       ],
     }

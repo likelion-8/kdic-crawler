@@ -1,0 +1,19 @@
+# 실행: cd web && docker compose up
+# 브라우저에서 http://localhost:5173
+#
+# Node·pnpm을 설치하지 않아도 돕니다. 백엔드도 필요 없습니다 — 목(MSW)이 API를 대신합니다.
+services:
+  web:
+    build: .
+    ports:
+      - "5173:5173"
+    volumes:
+      # 소스를 마운트해 저장하면 바로 반영됩니다(HMR).
+      - .:/app
+      # 익명 볼륨으로 컨테이너의 node_modules를 지킵니다. 이게 없으면 호스트의 빈
+      # node_modules가 덮어써서 컨테이너가 의존성을 잃습니다.
+      - /app/node_modules
+    environment:
+      # 도커 볼륨에서는 파일 변경 이벤트가 호스트로 전달되지 않는 경우가 있어
+      # 폴링으로 감시합니다. 이게 없으면 코드를 고쳐도 화면이 안 바뀝니다.
+      - CHOKIDAR_USEPOLLING=true

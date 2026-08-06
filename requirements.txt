@@ -1,12 +1,7 @@
-# 파이썬 의존성 — 버전을 고정한다.
+# 파이썬 의존성 — 전원이 동일한 조합을 쓰기 위해 버전을 고정한다.
 #
-# 왜 고정하나: 예전에는 이름만 적혀 있어서 각자 설치한 시점과 PC에 원래 깔려 있던 패키지에
-# 따라 다른 조합이 깔렸고, "같은 코드인데 되는 사람과 안 되는 사람"이 갈렸다. 실제로
-# typing-extensions 3.10.0.2(2021년 버전)이 남아 있던 PC에서는 SQLAlchemy·FastAPI·Pydantic이
-# 통째로 import 실패했다(dataclass_transform 없음 / TypeVar(default=) 미지원).
-#
-# 설치 (프로젝트 전용 가상환경을 쓸 것 — 시스템 파이썬에 직접 깔면 다른 프로젝트가 이 환경을
-# 깨뜨린다):
+# 기준 환경: Python 3.10 (venv 만들 때 버전을 맞출 것. 다른 마이너 버전에서는
+# 아래 핀 조합이 그대로 풀리지 않을 수 있다.)
 #
 #   python -m venv .venv
 #   .\.venv\Scripts\Activate.ps1      # Windows PowerShell
@@ -14,10 +9,13 @@
 #   pip install -r requirements.txt
 #
 # 버전을 올릴 때는 혼자 올리지 말고 이 파일을 함께 고쳐 PR로 공유한다.
+# 자세한 배경은 docs/backend-structure.md 참고.
 
 # --- 웹 API (FastAPI) ---
 fastapi==0.141.1
-uvicorn==0.51.0
+uvicorn[standard]==0.51.0
+starlette==1.3.1
+pydantic==2.13.4
 pydantic-settings==2.14.2
 
 # --- DB (Supabase Postgres + pgvector) ---
@@ -27,7 +25,16 @@ pgvector==0.5.0
 
 # --- 검색·임베딩 ---
 sentence_transformers==5.6.0
+# transformers / huggingface_hub: sentence-transformers가 넓은 범위로만 요구해서, 안 박으면
+# 새로 까는 PC마다 다른 버전이 들어온다. 임베딩 모델 로딩이 여기 걸리므로 함께 고정한다.
+transformers==5.13.1
+huggingface_hub==1.22.0
+# torch: 리눅스용 기본 PyPI 휠에 CUDA 런타임이 같이 들어 있어 GPU 서버(AWS 등)에서도
+# 이 파일 그대로 설치하면 된다. 설치 후 torch.cuda.is_available()이 False면 드라이버
+# 문제이지 이 핀 문제가 아니다(윈도/맥 로컬은 원래 CPU로 떨어진다).
 torch==2.12.1
+numpy==1.26.4
+scikit-learn==1.7.2
 rank_bm25==0.2.2
 kiwipiepy==0.23.2
 qdrant_client==1.18.0
@@ -45,7 +52,7 @@ python-dotenv==1.2.2
 # --- 데모 UI (src/app.py) ---
 streamlit==1.60.0
 
-# --- 전이 의존성 하한 ---
-# 직접 import 하지는 않지만 버전이 낮으면 위 패키지들이 통째로 깨진다. 오래된 버전이 이미
-# 깔려 있는 PC를 강제로 끌어올리기 위해 명시한다.
-typing_extensions>=4.12
+# --- 직접 import 하지 않지만 고정이 필요한 것 ---
+# 오래된 typing_extensions(예: 3.10.0.2)가 남아 있는 PC에서 SQLAlchemy·FastAPI·Pydantic이
+# 통째로 import 실패한다. 강제로 끌어올리기 위해 명시한다.
+typing_extensions==4.16.0

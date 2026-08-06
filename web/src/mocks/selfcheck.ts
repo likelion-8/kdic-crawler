@@ -45,13 +45,17 @@ async function collectSse(message: string) {
     })
 }
 
-// 1. 정보성 답변 — accepted → answer_delta 여러 번 → sources → done
+// 1. 정보성 답변 — accepted → answer_delta 여러 번 → done.
+// 출처는 done에만 실린다. 이벤트 4종(accepted·answer_delta·done·error) 외엔 오면 안 된다.
 {
   const events = await collectSse('예금자보호 한도가 얼마인가요?')
   assert.equal(events[0].name, 'accepted')
   assert.ok(events[0].data.request_id && events[0].data.session_id)
   assert.ok(events.filter((e) => e.name === 'answer_delta').length > 5, '델타가 여러 번 와야 한다')
-  assert.ok(events.some((e) => e.name === 'sources'))
+  assert.ok(
+    events.every((e) => ['accepted', 'answer_delta', 'done', 'error'].includes(e.name)),
+    '서버가 보내지 않는 이벤트를 목이 보내고 있다',
+  )
   const done = events.at(-1)!
   assert.equal(done.name, 'done')
   assert.equal(done.data.out_of_scope, false)
@@ -64,16 +68,16 @@ async function collectSse(message: string) {
 {
   const events = await collectSse('착오송금 반환지원 신청 방법 알려줘')
   const done = events.at(-1)!.data
-  assert.ok(events.some((e) => e.name === 'attachments'))
   assert.ok(done.attachments.some((a: { kind: string }) => a.kind === 'document'))
   assert.ok(done.attachments.some((a: { kind: string }) => a.kind === 'link'))
 }
 
-// 3. 범위 외 — 본문만. 출처 이벤트가 오면 안 된다
+// 3. 범위 외 — 본문만. done에도 출처가 실리면 안 된다
 {
   const events = await collectSse('안녕')
-  assert.ok(!events.some((e) => e.name === 'sources'), 'out_of_scope인데 sources를 보냈다')
-  assert.equal(events.at(-1)!.data.out_of_scope, true)
+  const done = events.at(-1)!.data
+  assert.equal(done.out_of_scope, true)
+  assert.equal(done.sources.length, 0, 'out_of_scope인데 sources가 실렸다')
 }
 
 // 4. 역할 되묻기 — answer_delta도 sources도 없다
@@ -220,5 +224,23 @@ async function collectSse(message: string) {
   }
 }
 
+// 15. 대화 복원 — 복합 질문의 하위 답변이 살아서 온다.
+// sub_answers가 빠지면 최상위 sources가 규약상 빈 배열이라 본문만 남고 출처가 사라진다.
+{
+  const s = await (await fetch(`${BASE}/api/sessions/sess_restore_1`)).json()
+  const answers = s.messages.filter((m: { role: string }) => m.role === 'assistant')
+  const composite = answers.find((m: { response?: { sub_answers?: unknown[] } }) =>
+    (m.response?.sub_answers?.length ?? 0) > 0,
+  )
+  assert.ok(composite, '복원 응답에 복합 질문이 한 건은 있어야 회귀를 잡는다')
+  assert.equal(composite.response.sub_answers.length, 3)
+  // 하위가 있으면 최상위는 비어 있다 — 그래서 하위를 버리면 출처가 통째로 사라진다
+  assert.equal(composite.response.sources.length, 0)
+  assert.ok(
+    composite.response.sub_answers.every((sa: { sources: unknown[] }) => sa.sources.length > 0),
+    '근거는 전부 하위에 있다',
+  )
+}
+
 server.close()
-console.log('mocks selfcheck: 14개 항목 모두 통과')
+console.log('mocks selfcheck: 15개 항목 모두 통과')
