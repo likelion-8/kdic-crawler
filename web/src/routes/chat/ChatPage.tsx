@@ -25,8 +25,8 @@ import { apiRequest } from '../../lib/api/client'
 import type {
   ApiError,
   Attachment,
-  ChatResponse,
   HealthResponse,
+  RestoredSession,
   Source,
   SubAnswer,
   Suggestion,
@@ -94,22 +94,6 @@ const NOT_READY_FALLBACK = '잠시 후 [다시 시도]를 눌러 주세요. 준�
 /** Case 6·준비 실패 공용 배너 카드 (warning 톤) */
 const BANNER =
   'mx-auto mb-2 flex w-full max-w-(--chat-content-max) items-start gap-3 rounded-md border border-warning/30 bg-warning-bg px-4 py-3 text-warning'
-
-/** GET /api/sessions/{session_id} 응답. lib/api/types.ts에 스키마가 없어(기획서 역기재 대상)
- * 목(mocks/handlers/chat.ts의 RestoredSession)이 정의한 모양을 그대로 옮겼다. */
-interface RestoredMessage {
-  role: 'user' | 'assistant'
-  text: string
-  /** 이 메시지의 시각(ISO8601 · KST) — 말풍선에 찍는다. 없으면 시각을 그리지 않는다 */
-  at?: string
-  request_id?: string
-  response?: Pick<ChatResponse, 'sources' | 'attachments' | 'out_of_scope'>
-}
-interface RestoredSession {
-  session_id: string
-  last_activity_at: string
-  messages: RestoredMessage[]
-}
 
 interface AnswerItem {
   kind: 'answer'
@@ -240,8 +224,9 @@ export function ChatPage() {
               requestId: m.request_id ?? '',
               sources: m.response?.sources ?? [],
               attachments: m.response?.attachments ?? [],
-              // 복원 응답(GET /api/sessions/{id})에는 하위 답변이 없다 — 본문만 되살린다
-              subAnswers: [],
+              // 복합 질문은 근거가 전부 하위에 있다 — 여기서 버리면 최상위가 규약상 빈 배열이라
+              // 본문만 남고 출처가 하나도 없는 말풍선이 복원된다
+              subAnswers: m.response?.sub_answers ?? [],
               outOfScope: m.response?.out_of_scope ?? false,
               streaming: false,
             },

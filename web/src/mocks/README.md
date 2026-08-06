@@ -36,7 +36,7 @@ VITE_API_BASE=http://localhost:8000   # FastAPI 주소
 | 메서드 | 경로 | 요청 | 응답 |
 |---|---|---|---|
 | POST | `/api/chat` | `ChatRequest` `{message, session_id?}` | **SSE 스트림** (아래 3장) 또는 429 `ApiError` |
-| POST | `/api/feedback` | `FeedbackRequest` `{request_id, session_id, vote}` | `FeedbackResponse` `{feedback_id}` |
+| POST | `/api/feedback` | `FeedbackRequest` `{answer_request_id, session_id, vote}` | `FeedbackResponse` `{feedback_id}` |
 | PATCH | `/api/feedback/{feedback_id}` | `FeedbackPatch` `{reason_codes[], comment?}` | `{feedback_id}` |
 | GET | `/api/sessions/{session_id}` | — | `RestoredSession` `{session_id, last_activity_at, messages[]}` |
 | GET | `/api/health` | — | `HealthResponse` `{status, maintenance, disabled_features[], user_message?}` |
@@ -44,7 +44,8 @@ VITE_API_BASE=http://localhost:8000   # FastAPI 주소
 
 검증 규칙(목이 실제로 거는 것)
 
-- `POST /api/feedback` — `request_id`·`session_id`·`vote('up'|'down')` 없으면 **400**
+- `POST /api/feedback` — `answer_request_id`·`session_id`·`vote('up'|'down')` 없으면 **400**
+  (`answer_request_id` = 피드백을 붙일 **답변**의 id. 쓰기 멱등키 `request_id`와 뜻이 달라 이름을 나눴다 — B-07, 2026-08-05)
 - `PATCH /api/feedback/{id}` — `reason_codes` 비면 400, `comment` 200자 초과(`FEEDBACK_FREETEXT_MAX`)면 400
 - `GET /api/health?state=maintenance|degraded` — 점검 화면(CB-004 Case 6) 개발용 스위치.
   **`user_message`는 서버가 준다. 프론트는 오류·점검 문구를 만들지 않는다.**
@@ -64,19 +65,21 @@ PRD-01 B-2 API 인벤토리는 이 기능을 `GET /api/conversation`이라 적�
 ```
 accepted     {request_id, session_id}
 answer_delta {text}                    ← 여러 번. 글자 단위(목은 8자씩 50~80ms 간격)
-sources      {sources: Source[]}       ← 빈 배열이면 아예 보내지 않아도 된다
-attachments  {attachments: Attachment[]}
 done         ChatResponse 전문
 error        ApiError                  ← done 대신 온다
 ```
+
+이 4종이 전부다. `sources`·`attachments` 이벤트는 2026-08-05에 없앴다 — 근거 사용 판정이
+스트리밍이 끝난 뒤에 확정돼 어차피 `done`과 같은 시점에 나갔다. 출처는 `done`의
+`sources`·`attachments`(복합 질문이면 `sub_answers` 안의 것)로 그린다.
 
 **지켜야 하는 것**
 
 1. `answer_delta`에 자기보고 마커(`[SOURCE_USED]`/`[NO_SOURCE]`)를 **절대 넣지 마라.**
    `prompt_builder._strip_no_source_marker()`가 떼는 그 마커다. 스트리밍 전에 서버에서 제거한다.
    (프론트가 떼려면 첫 줄이 올 때까지 렌더를 붙들어야 해서 스트리밍 체감이 죽는다.)
-2. `out_of_scope`는 `done`에만 있다. 그래서 프론트는 **`sources` 이벤트를 받기 전까지 출처 섹션을
-   렌더하지 않는다.** 서버는 `out_of_scope=true`인 응답에 `sources` 이벤트를 보내면 안 된다.
+2. `out_of_scope=true`면 `done.sources`를 **빈 배열로** 준다. 프론트는 `done`을 받고서야 출처
+   섹션을 그리므로, 값이 실려 오면 그렸다 지우는 깜빡임이 아니라 잘못된 출처가 그대로 남는다.
 3. 429는 SSE를 열지 말고 **HTTP 429 + `Retry-After` 헤더 + `ApiError` 본문**으로 끊는다.
    `retryable=false`로 준다 — 자동 재호출은 금지고 사용자가 직접 다시 보낸다(PRD-02 §3-b).
 4. `[중단]`은 클라이언트 `AbortController`다. 서버 취소 API는 없다.
