@@ -224,5 +224,23 @@ async function collectSse(message: string) {
   }
 }
 
+// 15. 대화 복원 — 복합 질문의 하위 답변이 살아서 온다.
+// sub_answers가 빠지면 최상위 sources가 규약상 빈 배열이라 본문만 남고 출처가 사라진다.
+{
+  const s = await (await fetch(`${BASE}/api/sessions/sess_restore_1`)).json()
+  const answers = s.messages.filter((m: { role: string }) => m.role === 'assistant')
+  const composite = answers.find((m: { response?: { sub_answers?: unknown[] } }) =>
+    (m.response?.sub_answers?.length ?? 0) > 0,
+  )
+  assert.ok(composite, '복원 응답에 복합 질문이 한 건은 있어야 회귀를 잡는다')
+  assert.equal(composite.response.sub_answers.length, 3)
+  // 하위가 있으면 최상위는 비어 있다 — 그래서 하위를 버리면 출처가 통째로 사라진다
+  assert.equal(composite.response.sources.length, 0)
+  assert.ok(
+    composite.response.sub_answers.every((sa: { sources: unknown[] }) => sa.sources.length > 0),
+    '근거는 전부 하위에 있다',
+  )
+}
+
 server.close()
-console.log('mocks selfcheck: 14개 항목 모두 통과')
+console.log('mocks selfcheck: 15개 항목 모두 통과')

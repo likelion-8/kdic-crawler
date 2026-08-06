@@ -134,6 +134,34 @@ export interface FeedbackPatch {
   comment?: string
 }
 
+// ---------------------------------------------------------------- 대화 복원
+
+/** GET /api/sessions/{session_id} 의 메시지 1건.
+ *
+ * 이 타입은 화면(ChatPage)과 목(mocks/handlers/chat.ts) 두 곳이 쓴다. 전에는 각자 복사해
+ * 갖고 있어서 한쪽만 고치면 조용히 어긋났다 — 여기 하나만 둔다. */
+export interface RestoredMessage {
+  role: 'user' | 'assistant'
+  text: string
+  /** 이 메시지의 시각(ISO8601 · KST) — 말풍선에 찍는다. 없으면 시각을 그리지 않는다.
+   *  복원된 대화에 '지금' 시각을 찍으면 90분 전 대화에 방금 시각이 붙어 거짓이 된다 */
+  at?: string
+  request_id?: string
+  /** 답변 말풍선 복원용. 사용자 메시지는 비어 있다.
+   *
+   *  🔴 `sub_answers`가 빠지면 복합 질문이 복원될 때 근거가 통째로 사라진다 — 그 경우
+   *  최상위 `sources`·`attachments`는 규약상 빈 배열이고 근거가 전부 하위에 있기 때문이다
+   *  (SubAnswer 주석 참고). 본문만 남고 출처가 하나도 없는 말풍선이 된다. */
+  response?: Pick<ChatResponse, 'sources' | 'attachments' | 'sub_answers' | 'out_of_scope'>
+}
+
+export interface RestoredSession {
+  session_id: string
+  /** ISO8601 · KST. 이 시각이 24시간(CONVERSATION_RESTORE_WINDOW_H)보다 오래되면 서버가 404를 준다 */
+  last_activity_at: string
+  messages: RestoredMessage[]
+}
+
 // ---------------------------------------------------------------- 상태 점검
 
 /** GET /api/health — 점검·기능 비활성 시 전면 안내(CB-004 Case 6).
