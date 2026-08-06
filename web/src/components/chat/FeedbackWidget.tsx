@@ -5,7 +5,7 @@
  *
  * `FeedbackRequest.request_id`는 '피드백을 붙일 답변'의 id다. client.ts는 body에 request_id가
  * 이미 있으면 멱등키로 덮지 않으므로, 아래 body의 값이 그대로 서버에 도달한다 — 답변당 1건(upsert)의 키. */
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { REASON_CODES, REASON_CODE_LABEL } from '../../lib/codes'
 import type { ReasonCode } from '../../lib/codes'
@@ -20,6 +20,10 @@ export interface FeedbackWidgetProps {
   /** 피드백을 붙일 답변의 request_id */
   requestId: string
   sessionId: string
+  /** 사유 폼이 열리고 닫힐 때 알린다 — [새 대화]가 확인을 받을지 판단하는 데 쓴다
+   *  (CB-002 Desc ⑦ "작성 중인 입력이나 열린 피드백 폼이 있으면 먼저 확인을 받습니다").
+   *  언마운트될 때도 false가 나가므로 호출 쪽이 셈을 흘리지 않는다. */
+  onFormOpenChange?: (open: boolean) => void
 }
 
 type Vote = 'up' | 'down'
@@ -45,7 +49,7 @@ const CHIP =
 const VOTE =
   "relative inline-flex min-h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs text-muted-foreground transition-colors duration-200 hover:border-foreground/30 hover:text-foreground after:absolute after:-inset-x-0.5 after:-inset-y-2 after:content-[''] aria-pressed:border-foreground aria-pressed:font-bold aria-pressed:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
 
-export function FeedbackWidget({ requestId, sessionId }: FeedbackWidgetProps) {
+export function FeedbackWidget({ requestId, sessionId, onFormOpenChange }: FeedbackWidgetProps) {
   const toast = useToast()
   const commentId = useId()
   const hintId = `${commentId}-hint`
@@ -69,6 +73,14 @@ export function FeedbackWidget({ requestId, sessionId }: FeedbackWidgetProps) {
     mutationFn: (body: { reason_codes: ReasonCode[]; comment?: string }) =>
       apiRequest<FeedbackResponse>(`/api/feedback/${feedbackId ?? ''}`, { method: 'PATCH', body }),
   })
+
+  // 열림을 알리고, 닫히거나 언마운트되면 정리 함수가 닫힘을 알린다. 두 경로가 한 곳이라
+  // 셈이 어긋나지 않는다 — 답변이 사라져도 열린 폼이 남아 있는 것처럼 세지 않는다.
+  useEffect(() => {
+    if (!formOpen) return
+    onFormOpenChange?.(true)
+    return () => onFormOpenChange?.(false)
+  }, [formOpen, onFormOpenChange])
 
   /** 실패 문구는 서버 user_message 그대로 — FE가 오류 문구를 만들지 않는다(CB-002 공통 회색 박스) */
   const messageOf = (e: Error) => (isApiRequestError(e) ? e.error.user_message : e.message)

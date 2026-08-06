@@ -6,7 +6,7 @@
  *
  * 말풍선·출처·피드백 렌더는 components/chat(담당 chat-render)을 가져다 쓴다. 여기서 만들지 않는다.
  * 오류 문구는 서버 user_message 그대로 — 이 파일은 오류 문구를 만들지 않는다. */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -49,6 +49,22 @@ function msAt(iso?: string): number | undefined {
   const ms = new Date(iso).getTime()
   return Number.isNaN(ms) ? undefined : ms
 }
+/** [새 대화]가 확인 모달을 띄워야 하는가 — "작성 중인 입력이나 열린 피드백 폼이 있으면 먼저
+ * 확인을 받습니다"(CB-002 Desc ⑦). 잃을 게 없으면 묻지 않고 바로 시작한다.
+ * 컴포넌트 밖 순수 함수로 둬야 selfcheck가 조건을 직접 잡는다. */
+export function needsNewChatConfirm(draft: string, openFeedbackForms: number): boolean {
+  return draft.trim() !== '' || openFeedbackForms > 0
+}
+
+/** 확인 모달이 알릴 '잃는 것' 머리말. 실제로 열려 있는 것만 말한다. */
+export function newChatLoss(draft: string, openFeedbackForms: number): string {
+  const lost = [
+    ...(draft.trim() !== '' ? ['작성 중인 질문'] : []),
+    ...(openFeedbackForms > 0 ? ['작성 중인 피드백'] : []),
+  ]
+  return lost.length === 0 ? '' : `${lost.join('과 ')}이 사라지고 `
+}
+
 /** 역할(입장) 초기화 무응답 시간 (CM-DF-004 02절 "30분 미활동 시 역할을 초기화") */
 const ROLE_IDLE_RESET_MS = 30 * 60_000
 /** 점검 해제를 감지하는 폴링 주기. 기획서에 주기 값이 없어(CB-004 D-3 15) 30초로 정했다 */
@@ -151,6 +167,8 @@ export function ChatPage() {
   const [role, setRole] = useState<RoleContext | null>(null)
   const [lastActivityAt, setLastActivityAt] = useState(() => Date.now())
   const [confirmNewChat, setConfirmNewChat] = useState(false)
+  /** 열려 있는 피드백 사유 폼 수. 답변마다 위젯이 따로 있어 여러 개가 동시에 열릴 수 있다 */
+  const [openFeedbackForms, setOpenFeedbackForms] = useState(0)
   const [hasNewBelow, setHasNewBelow] = useState(false)
 
   const sessionIdRef = useRef<string | undefined>(routeSessionId)
@@ -428,8 +446,15 @@ export function ChatPage() {
     window.history.replaceState(null, '', '/')
   }
 
-  // 작성 중인 입력이 있으면 먼저 확인을 받는다 (CB-002 Desc ⑦)
-  const requestNewChat = () => (draft.trim() ? setConfirmNewChat(true) : startNewChat())
+  const requestNewChat = () =>
+    needsNewChatConfirm(draft, openFeedbackForms) ? setConfirmNewChat(true) : startNewChat()
+
+  /** 참조가 고정돼야 위젯의 effect가 매 렌더 다시 돌지 않는다 — 다시 돌면 false→true가
+   *  반복돼 셈이 튄다. 그래서 setState는 함수형으로 쓰고 의존성을 비운다. */
+  const handleFeedbackFormOpen = useCallback(
+    (open: boolean) => setOpenFeedbackForms((n) => (open ? n + 1 : n - 1)),
+    [],
+  )
 
   const handleScroll = () => {
     const el = scrollRef.current
@@ -610,6 +635,7 @@ export function ChatPage() {
                           <FeedbackWidget
                             requestId={item.requestId}
                             sessionId={sessionIdRef.current ?? ''}
+                            onFormOpenChange={handleFeedbackFormOpen}
                           />
                         ) : undefined
                       }
@@ -710,7 +736,8 @@ export function ChatPage() {
       <ConfirmModal
         open={confirmNewChat}
         title="새 대화를 시작할까요?"
-        impact="작성 중인 질문이 사라지고 지금까지의 대화와 선택한 입장(역할)이 초기화됩니다."
+        // 없는 것이 사라진다고 쓰지 않는다 — 피드백 폼만 열려 있는데 '작성 중인 질문'을 말하면 거짓이다
+        impact={`${newChatLoss(draft, openFeedbackForms)}지금까지의 대화와 선택한 입장(역할)이 초기화됩니다.`}
         confirmLabel="새 대화"
         onConfirm={startNewChat}
         onCancel={() => setConfirmNewChat(false)}
