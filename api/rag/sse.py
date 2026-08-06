@@ -31,7 +31,7 @@ import time
 from prompt_builder import _MARKER_RE  # [SOURCE_USED]/[NO_SOURCE] 판정 정규식(운영과 동일 기준)
 from llm_client import stream_hyperclova
 
-from api.rag import answer
+from api.rag import answer, conversation
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +116,10 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #    한다(핸드오프 §6 B3). 그래서 여기서 새로 만들지 않고 라우터가 준 값을 그대로 쓴다.
     yield _sse("accepted", {"request_id": request_id, "session_id": session_id})
 
+    # 0-1) 질문을 먼저 저장한다(대화 복원용). 답변 뒤에 저장하면 LLM 이 실패한 턴의 질문이
+    #      기록에 안 남아, 사용자는 분명 물어봤는데 복원하면 없는 상태가 된다.
+    conversation.save_user_message(session_id, message)
+
     # 1) 복합 여부 판단(분해). 분해 자체도 LLM 호출이라 실패할 수 있다.
     try:
         sub_qs = answer.decompose(message)
@@ -193,6 +197,9 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     # 남길 피드백(POST /api/feedback)의 연결 열쇠다 — 없으면 피드백을 붙일 곳이 사라진다.
     # log_rag_run 은 내부에서 예외를 삼키므로(실패-안전) 답변 전달을 막지 않는다.
     answer.log_run(message, resp, sub_plans, latency_ms)
+
+    # 답변을 저장한다(대화 복원용). 출처·범위외 판정이 확정된 뒤여야 하므로 여기가 맞다.
+    conversation.save_assistant_message(session_id, request_id, resp)
 
     # sources/attachments 이벤트는 보내지 않는다(프론트 합의 2026-08-05).
     # 출처는 근거 사용 여부(source_check)가 확정돼야 정해지는데 그 판정이 스트리밍이 끝난 뒤라,

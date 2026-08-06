@@ -35,7 +35,7 @@ from db import get_engine  # noqa: E402
 from pgvector.sqlalchemy import Vector  # noqa: E402
 from sqlalchemy import (  # noqa: E402
     Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String,
-    Table, Text, func, text,
+    Table, Text, UniqueConstraint, func, text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID  # noqa: E402
 
@@ -152,6 +152,52 @@ feedback = Table(
     Column("comment", Text),                         # 마스킹 후 저장 · 최대 200자
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+)
+
+
+# 대화 복원(GET /api/sessions/{id})용. 새로고침·재방문 시 24시간 이내 대화를 되살린다.
+#
+# rag_runs에 컬럼을 더하지 않고 따로 둔 이유는 신뢰성 요구가 다르기 때문이다. rag_logger는
+# 모든 예외를 삼킨다(로깅이 답변을 막으면 안 되므로) — 관측 기록으로는 맞지만, 대화 상태에
+# 그 방식을 쓰면 한 턴이 조용히 빠져 사용자가 '중간에 구멍 난 대화'를 보게 된다. 또 rag_runs는
+# 한 행이 Q&A 한 쌍이라 답변이 실패한 턴(질문만 있는 턴)을 표현할 자리가 없다.
+chat_sessions = Table(
+    "chat_sessions", metadata,
+    Column("session_id", String, primary_key=True),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    # 24시간 판정 기준. 턴마다 갱신한다. 오래된 세션도 행은 지우지 않고 조회에서 404로 막는다
+    # (삭제는 되돌릴 수 없고, 관리자 대화 로그(AD-005)는 더 오래 봐야 한다).
+    Column("last_activity_at", DateTime(timezone=True), server_default=func.now()),
+)
+
+
+# 대화의 말풍선 한 개. 프론트 RestoredMessage(web/src/routes/chat/ChatPage.tsx:84)와 1:1이라
+# user/assistant를 각각 한 행으로 넣는다.
+#
+# sources/attachments를 JSONB 스냅샷으로 두는 이유: page_id만 저장하고 조회 때 documents를
+# 조인하면 '그때 보여준 것'과 '지금 보여주는 것'이 달라진다(페이지가 비활성되거나 제목이
+# 바뀌면 과거 대화의 출처가 변하거나 사라진다). 복원은 그 순간의 화면을 그대로 되살리는
+# 것이라 통째로 박아둬야 맞고, 통째로 읽고 쓰는 데이터라 JSONB가 적합하다.
+#
+# seq가 필요한 이유: created_at으로만 정렬하면 user/assistant가 같은 순간에 들어갈 때 순서가
+# 뒤집혀 질문과 답변이 거꾸로 표시될 수 있다. 눈에 잘 안 띄면서 치명적인 종류의 버그다.
+chat_messages = Table(
+    "chat_messages", metadata,
+    _uuid_pk(),
+    Column("session_id", String, nullable=False, index=True),
+    Column("seq", Integer, nullable=False),           # 세션 내 순번 (1부터)
+    Column("role", String, nullable=False),           # 'user' | 'assistant'
+    Column("text", Text, nullable=False),
+    # 이 답변의 식별자(피드백 대상). assistant 행만 채운다 — rag_runs.request_id와 같은 값이다.
+    Column("request_id", String),
+    Column("sources", JSONB),                         # citation.format_citation() 결과 배열
+    Column("attachments", JSONB),                     # civil_petition 서류·링크 배열
+    Column("out_of_scope", Boolean),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    # seq는 MAX(seq)+1로 계산하므로, 같은 세션에 동시 요청이 들어오면 같은 값이 나올 수 있다.
+    # 프론트가 스트리밍 중 입력을 잠가 현실적으로 겹치지 않지만, 겹쳤을 때 순서가 조용히
+    # 어긋나는 것보다 여기서 실패하는 편이 낫다.
+    UniqueConstraint("session_id", "seq", name="chat_messages_session_seq_key"),
 )
 
 
