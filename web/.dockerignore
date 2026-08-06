@@ -1,0 +1,15 @@
+# COPY . . 가 호스트의 node_modules·빌드 산출물을 끌어오면 이미지가 커지고
+# 컨테이너가 설치한 의존성을 덮어써 깨진다. 여기서 미리 걷어낸다.
+node_modules
+dist
+.vite
+
+# 로컬 전용
+.env
+.env.*
+!.env.example
+
+# 도커 자신
+Dockerfile
+.dockerignore
+docker-compose.yml
