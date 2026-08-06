@@ -35,7 +35,7 @@
 | `content_sha256` | string | 본문 텍스트(`text`)의 SHA-256 해시(64자) — 콘텐츠 변경 및 재적재 감지용 |
 | `links` | list | 본문 영역 내부 링크 목록 — `text`(링크 텍스트), `url`(절대경로) |
 | `attachments` | list | 정적 `<a href>` 첨부파일 링크 목록(.hwp/.pdf/.doc 등) — 현재 코퍼스엔 0건, KDIC는 첨부를 JS 버튼으로 제공 |
-| `form_attachments` | list | JS 버튼 방식 첨부 목록 — `label`, `file_type`, `page_url`, `resolved_url` |
+| `form_attachments` | list | JS 버튼 방식 첨부 목록 — `label`, `file_type`, `page_url`, `resolved_url`, `download_method`, `download_params` (코퍼스 103건 전부 6키). ⚠️ `resolved_url`은 GET 직링크가 아닐 수 있다 — `download_method`가 `POST`면 `download_params`를 본문에 실어야 해서, 안내는 버튼이 있는 `page_url`로 보낸다 |
 | `videos` | list | 페이지 내 안내영상 URL 목록 |
 | `images` | list | 본문 영역 이미지 목록 — `alt`(대체텍스트), `url`(절대경로) |
 | `text` | string | 파싱된 본문 전문 |
@@ -112,7 +112,8 @@
 
 ## 3. testset_all.jsonl
 
-검색·응답 평가셋. 1줄 = 1평가 문항이며, 총 853개 문항 · 11개 필드로 구성된다.
+검색·응답 평가셋. 1줄 = 1평가 문항이며, 현재 **851개 문항** · 11개 필드로 구성된다
+(Supabase `evaluation_dataset`도 851행으로 일치).
 자동 채점이 가능하도록 정답을 서술형 한 덩어리로만 두지 않고, 채점 가능한 필드
 (`expected_sources`·`must_include`·`must_not_include`·`expected_links`)로 나눴다.
 
@@ -149,11 +150,16 @@ dp_syst_q3
 구조:
 
 ```
-{page_id}_q{문항번호}
+{page_id}_q{문항번호}          # 574문항
+amb_{page_id}_{순번}           # 277문항 — testset_ambiguous.jsonl 병합분
 ```
 
 이 규칙을 사용하면 어떤 문서의 평가 문항인지 바로 확인할 수 있고, 검색 결과와
 정답 문서를 연결하기 쉽다.
+
+⚠️ **형식이 두 가지다.** 역할·범위가 모호한 질의 세트(`testset_ambiguous.jsonl`, 277문항)가
+병합되면서 `amb_` 접두 + `_` 구분자를 쓰는 id가 들어왔다(예: `amb_dp_protlmts_1`).
+test_id에서 page_id를 되짚을 때는 `amb_` 접두를 먼저 떼고 `_q`·`_` 두 구분자를 모두 처리해야 한다.
 
 ### question_type — 질문 유형
 

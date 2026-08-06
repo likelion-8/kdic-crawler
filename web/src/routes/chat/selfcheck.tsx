@@ -11,6 +11,7 @@
 import assert from 'node:assert/strict'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { ToastProvider } from '../../components/ui'
+import { needsNewChatConfirm, newChatLoss } from './ChatPage'
 import { isSubmitKey } from './Composer'
 import { RetryExhaustedPanel } from './RetryExhaustedPanel'
 import { FALLBACK_SUGGESTIONS, WelcomeScreen } from './WelcomeScreen'
@@ -91,6 +92,21 @@ import { FALLBACK_SUGGESTIONS, WelcomeScreen } from './WelcomeScreen'
   assert.ok(html.includes('운영 시간과 준비 정보는 문의 안내에서 확인'))
   // 복사할 것이 없으면 버튼도 두지 않는다 — 사용자 화면에 '요청 ID가 없습니다'를 띄우지 않는다
   assert.ok(!html.includes('요청 ID 복사'), 'ID가 없으면 복사 버튼을 그리지 않는다')
+}
+
+// 6. [새 대화] 확인 조건 — "작성 중인 입력이나 열린 피드백 폼이 있으면"(CB-002 Desc ⑦).
+//    입력만 보던 시절에는 사유를 적다가 [새 대화]를 누르면 경고 없이 날아갔다.
+{
+  assert.equal(needsNewChatConfirm('', 0), false, '잃을 게 없으면 묻지 않는다')
+  assert.equal(needsNewChatConfirm('   ', 0), false, '공백만 있는 입력은 작성 중이 아니다')
+  assert.equal(needsNewChatConfirm('착오송금', 0), true)
+  assert.equal(needsNewChatConfirm('', 1), true, '피드백 폼만 열려 있어도 확인을 받는다')
+
+  // 모달 문구는 실제로 열려 있는 것만 말한다 — 없는 것이 사라진다고 쓰지 않는다
+  assert.equal(newChatLoss('', 0), '')
+  assert.equal(newChatLoss('', 1), '작성 중인 피드백이 사라지고 ')
+  assert.equal(newChatLoss('착오송금', 0), '작성 중인 질문이 사라지고 ')
+  assert.equal(newChatLoss('착오송금', 2), '작성 중인 질문과 작성 중인 피드백이 사라지고 ')
 }
 
 console.log('chat-page selfcheck: 통과')
