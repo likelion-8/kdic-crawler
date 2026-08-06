@@ -136,7 +136,7 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 | `src/llm_client.py` | `call_hyperclova(messages)` — ChatClovaX `.invoke()` | 🔴 **단발 호출이라 스트리밍이 안 된다.** `answer_delta`를 실제 토큰 단위로 흘리려면 `.stream()` 계열로 바꿔야 한다. 안 바꾸면 완성된 답변을 서버가 쪼개 보내는 흉내(목과 같은 방식)만 가능하다.<br>2026-08-04 이후 `source_check` 재확인 호출이 추가돼 `done`까지의 총 대기가 더 늘었다 |
 | `src/query_classifier.py` | `classify_intent(query)` → `informational`/`civil_petition` (OpenAI structured output, 실패 시 informational 폴백). `classify_query_type()`은 코사인 방식 | ⚠ **OpenAI 키가 필요하다**(`OPENAI_API_KEY`). 기본 모델은 코드상 `gpt-5.4-mini`(`.env`의 `OPENAI_INTENT_MODEL`로 교체 가능). 2026-08-04 커밋 주석이 모델 변천을 `HCX-007 → gpt-4o-mini → gpt-5.4-mini → gpt-5.6-luna`로 적어 기획서의 luna가 현재 방향임을 확인했다.<br>🔴 **이 폴백이 여태 상시 발동하고 있었다** — 일부 모델이 `temperature=0`을 거부해 `except`가 매번 삼켰다(2026-08-04 수정, `_parse_intent`). 즉 실서버 답변은 100% informational이었고 `civil_petition` 경로(필요 서류·신청 페이지)는 한 번도 실행된 적이 없다. **API를 붙일 때 이 경로를 반드시 E2E로 한 번 태울 것** |
 | `src/query_decomposer.py` | `decompose_query(query)` → 하위 질문 리스트 | **§6 B7의 `sub_answers[].title` 재료가 이미 여기 있다.** 하위 질문 문자열이 곧 제목이다 |
-| `src/candidate_ranking.py` | `rerank()`·`top_k_cut()` | 리랭커는 `pipeline.USE_RERANKER=False`로 꺼져 있다(품질 이득 0·질문당 27~210초). 켜지 말 것 |
+| `src/candidate_ranking.py` | `rerank()`·`top_k_cut()` | 리랭커는 `pipeline.USE_RERANKER=False`로 꺼져 있다 — CPU에서 문항당 96초가 걸려 실서비스에 못 쓴다. **CPU에서는 켜지 말 것.** GPU 재검증 후 도입 여부를 정한다(루트 `README.md` 2.4절) |
 | `src/performance.py` | `measure_time()` 컨텍스트 매니저 | 초 단위 → `latency_ms`는 ×1000 |
 | `src/db.py` | `get_engine()`·`get_session()` (Supabase transaction pooler, NullPool) | FastAPI 의존성으로 그대로 감싸면 된다 |
 | `src/app.py` | Streamlit 데모 UI | **이관 대상 아님.** 이 프론트가 대체한다 |
