@@ -79,16 +79,15 @@ function sseStream(scenario: ChatScenario, sessionId: string, slow: boolean): Re
         return
       }
 
-      // Type 5 되묻기 — 검색 전에 되묻으므로 answer_delta·sources가 없다
+      // Type 5 되묻기 — 검색 전에 되묻으므로 answer_delta가 없다
       if (!scenario.clarification) {
         for (const piece of chunkText(scenario.answer)) {
           await sleep(slow ? SLOW_DELTA_MS : DELTA_MIN_MS + Math.random() * (DELTA_MAX_MS - DELTA_MIN_MS))
           send('answer_delta', { text: piece })
         }
-        // 빈 배열이면 이벤트 자체를 보내지 않는다 — 어차피 섹션째 미렌더가 규칙이다(CB-DF-003 4-2).
-        // 특히 out_of_scope=true인데 sources를 흘리면 프론트가 출처를 그렸다 지우는 깜빡임이 생긴다
-        if (scenario.sources.length) send('sources', { sources: scenario.sources })
-        if (scenario.attachments.length) send('attachments', { attachments: scenario.attachments })
+        // sources·attachments 이벤트는 보내지 않는다 — 서버도 보내지 않는다(api/rag/sse.py,
+        // 2026-08-05). 근거 사용 판정이 스트리밍 뒤에 끝나 done과 같은 시점이 되므로 실익이
+        // 없다. 출처는 done의 sources/attachments(복합이면 sub_answers 안)로 그린다.
       }
 
       const done: ChatResponse = {
