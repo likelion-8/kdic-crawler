@@ -220,14 +220,15 @@ export function FeedbackWidget({ requestId, sessionId }: FeedbackWidgetProps) {
           {submitted.comment !== '' && (
             <p className="mb-2 text-sm text-foreground/80">&ldquo;{submitted.comment}&rdquo;</p>
           )}
-          {/* 등록 후에도 값을 고칠 수 있다(답변당 1건 유지) */}
-          <button
-            type="button"
-            className="py-1 text-sm font-medium text-primary underline underline-offset-2 transition-colors duration-200 hover:text-accent-foreground"
-            onClick={() => setFormOpen(true)}
-          >
-            의견 수정
-          </button>
+          {/* 등록 후에도 값을 고칠 수 있다(답변당 1건 유지).
+              div로 감싸 줄을 끊는다 — 위의 사유 칩이 inline-block이라 감싸지 않으면 링크가
+              칩 오른쪽에 끼어 붙는다. 스타일은 투표 버튼과 같은 VOTE — 이 위젯에서 색은
+              쓰지 않고, 밑줄 링크는 28px라 44px 터치 타깃에도 못 미친다 */}
+          <div className="mt-3">
+            <button type="button" className={VOTE} onClick={() => setFormOpen(true)}>
+              의견 수정
+            </button>
+          </div>
         </div>
       )}
     </div>
