@@ -120,7 +120,7 @@ HTML을 그대로 해시하면 내용이 안 바뀌어도 값이 계속 튄다(`
 3행 청킹으로 1.000. 문서찾기 지표(MRR)는 페이지 단위라 정답 페이지만 맞히면 만점을 줘서
 이 잘림 피해를 못 본다 — **"어느 지표로 보느냐"에 따라 정반대 결론이 나오는 경우**였다.
 
-- [retrieval_eval_169q.md](retrieval_eval_169q.md), [metadata_schema.md](metadata_schema.md)
+- [retrieval_eval.md](retrieval_eval.md), [metadata_schema.md](metadata_schema.md)
 
 ### 평가셋 구축과 검증 — "정답이 실제로 맞는가"를 스크립트로 전수 검사
 
@@ -194,7 +194,7 @@ Nemotron이 지표는 더 높았지만(MRR 0.846) 8B급이라 오프라인 CPU �
 predicted_types()`는 분류기가 실제로 예측한 유형으로 재서 "실서비스에서 실제로 겪을
 성능"을 별도로 측정한다.
 
-- [retrieval_eval_169q.md](retrieval_eval_169q.md), [retrieval_eval_557q.md](retrieval_eval_557q.md)
+- [retrieval_eval.md](retrieval_eval.md)
 
 ### 2.3 업무(business_function) 계층 필터 → 폐기
 
