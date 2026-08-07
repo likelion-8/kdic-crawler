@@ -202,5 +202,5 @@ HCX-007은 1차 실험 92.1%/구어체 81.3% → 2차(4자) 재실행 91.0%/구�
 - 모델 설정 분리: `.env`의 `INTENT_CLOVA_MODEL`(HCX용), `OPENAI_INTENT_MODEL`(OpenAI용) — 운영
   답변생성(`CLOVA_MODEL=DASH-002`)과 완전히 분리되어 파이프라인 영향 없음
 - 관련 문서: `docs/kiwi_config_investigation.md`(③), `docs/intent_baseline_optimization.md`(④⑤),
-  `docs/pipeline_evaluation_baseline.md`(②의 held-out 77.2% 근거)
+  `docs/pipeline_heldout_baseline_89q.md`(②의 held-out 77.2% 근거)
 - 운영 코드(query_classifier.py 등)는 이번 작업에서 **수정하지 않았다.**

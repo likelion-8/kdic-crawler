@@ -1,5 +1,5 @@
 """RAG 파이프라인 성능 baseline 측정 — rag_answer()의 단계별 소요 시간을 재서
-docs/performance_baseline.md에 표로 남긴다. 어느 단계가 병목인지 확인하기 위한
+docs/pipeline_latency_profile.md에 표로 남긴다. 어느 단계가 병목인지 확인하기 위한
 일회성 진단 스크립트(반복/통계 집계는 하지 않음 - 병목이 애매하면 그때 추가).
 
 대표 질문 4개(정보성/민원성/표조회/근거부족)는 새로 짓지 않고 data/testset/testset_all.jsonl에서
@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from pipeline import K_CANDIDATES, K_FINAL, _rag_answer_traced  # noqa: E402
 
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
-DOC_PATH = ROOT / "docs" / "performance_baseline.md"
+DOC_PATH = ROOT / "docs" / "pipeline_latency_profile.md"
 
 # (test_id, 표시용 유형 라벨) — testset_all.jsonl에서 실제 라벨 확인된 대표 질문
 REPRESENTATIVE = [

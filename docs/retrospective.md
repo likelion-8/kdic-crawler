@@ -120,7 +120,7 @@ HTML을 그대로 해시하면 내용이 안 바뀌어도 값이 계속 튄다(`
 3행 청킹으로 1.000. 문서찾기 지표(MRR)는 페이지 단위라 정답 페이지만 맞히면 만점을 줘서
 이 잘림 피해를 못 본다 — **"어느 지표로 보느냐"에 따라 정반대 결론이 나오는 경우**였다.
 
-- [retrieval_experiment_results.md](retrieval_experiment_results.md), [metadata_schema.md](metadata_schema.md)
+- [retrieval_eval_169q.md](retrieval_eval_169q.md), [metadata_schema.md](metadata_schema.md)
 
 ### 평가셋 구축과 검증 — "정답이 실제로 맞는가"를 스크립트로 전수 검사
 
@@ -194,7 +194,7 @@ Nemotron이 지표는 더 높았지만(MRR 0.846) 8B급이라 오프라인 CPU �
 predicted_types()`는 분류기가 실제로 예측한 유형으로 재서 "실서비스에서 실제로 겪을
 성능"을 별도로 측정한다.
 
-- [retrieval_experiment_results.md](retrieval_experiment_results.md), [retrieval_eval_testset_expanded.md](retrieval_eval_testset_expanded.md)
+- [retrieval_eval_169q.md](retrieval_eval_169q.md), [retrieval_eval_557q.md](retrieval_eval_557q.md)
 
 ### 2.3 업무(business_function) 계층 필터 → 폐기
 
@@ -232,7 +232,7 @@ predicted_types()`는 분류기가 실제로 예측한 유형으로 재서 "실�
 
 `bge-reranker-v2-m3`(8192토큰 지원)로 top-20을 재정렬하는 실험. 결과: **Recall@5 개선
 0, MRR은 오히려 소폭 하락**, 그런데 CPU에서 **질문당 27~210초**가 걸림(전체 응답 시간의
-97% 이상을 리랭킹이 잡아먹었다 — [performance_baseline.md](performance_baseline.md)).
+97% 이상을 리랭킹이 잡아먹었다 — [pipeline_latency_profile.md](pipeline_latency_profile.md)).
 
 원인 분석: 1차 검색(bge-m3-ko)이 이미 강해서 리랭커가 더 얹을 여지가 거의 없고, 오히려
 이미 맞게 배열된 순위를 흔드는 부작용까지 관찰됨(정답이 1위였는데 리랭커가 2위로 강등시킨
@@ -240,7 +240,7 @@ predicted_types()`는 분류기가 실제로 예측한 유형으로 재서 "실�
 = False`로 기본 비활성화. GPU 환경이나 경량 설정(작은 max_length·후보 수)에서 재검증
 가치는 있다고 판단해 재도입 조건을 코드 주석에 명시해뒀다.
 
-- [pipeline_issues.md](pipeline_issues.md) 이슈 1
+- [pipeline_issue_history.md](pipeline_issue_history.md) 이슈 1
 
 ### 2.5 역할 라우팅 — 가설은 확인, 구현은 미착수
 
@@ -407,7 +407,7 @@ BM25 점수 임계값으로 범위 밖 질문을 거르는 건 안 된다는 걸
 멀티쿼리 분해(4장)와 무관함은 A/B 검증(디컴포지션 On/Off 각 3회, 6/6 동일 재현)으로
 따로 확인 — 겉보기엔 새 기능이 원인처럼 보였지만 실제로는 기존 코드의 독립적인 결함이었다.
 
-- [pipeline_issues.md](pipeline_issues.md) 이슈 2·3
+- [pipeline_issue_history.md](pipeline_issue_history.md) 이슈 2·3
 
 ### 5.3 no-source에 대한 정중한 톤
 
@@ -437,7 +437,7 @@ BM25 점수 임계값으로 범위 밖 질문을 거르는 건 안 된다는 걸
 방향성 판단(2.4절)에는 충분했지만, 단계별 정확한 지연 수치로 SLA를 정하기엔 표본이
 부족하다. 정식 성능 튜닝 단계(종합 프로젝트)에서는 반복 측정이 필요하다.
 
-- [performance_baseline.md](performance_baseline.md)
+- [pipeline_latency_profile.md](pipeline_latency_profile.md)
 
 ---
 

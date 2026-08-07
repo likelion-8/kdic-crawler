@@ -2,7 +2,7 @@
 
 > 개인 테스트셋 5종을 페이지당 3→10문항으로 확장·통합한 `testset_all.jsonl`(580건) 기준 재평가.
 > 재현: `python3 src/eval_retrieval.py` (selftest 포함, 첫 실행 시 bge-m3 로딩).
-> 이전 baseline(169문항)은 [`retrieval_experiment_results.md`](./retrieval_experiment_results.md) 참고 — 청크 크기 스윕·제품 권고는 그 문서에 있으며 여기선 재실행하지 않음.
+> 이전 baseline(169문항)은 [`retrieval_eval_169q.md`](./retrieval_eval_169q.md) 참고 — 청크 크기 스윕·제품 권고는 그 문서에 있으며 여기선 재실행하지 않음.
 
 ## 실험 설계
 

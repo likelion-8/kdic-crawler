@@ -45,7 +45,7 @@ USE_QUERY_DECOMPOSITION = True
 # 2026-08-03: 마커가 [NO_SOURCE]로 판정한 답변만 source_check.recheck_source_usage()로 한 번
 # 더 확인한다(근거를 실제로 썼다고 나오면 출처를 붙인다). 자기보고 마커는 근거를 쓴 답변
 # 61건 중 33건(54%)에서 출처를 잃었고, 그 오판이 전부 [NO_SOURCE] 쪽에만 몰려 있었다
-# ([SOURCE_USED] 28건은 오판 0건 — docs/pipeline_issues.md 이슈 5). 프롬프트로 마커 정확도를
+# ([SOURCE_USED] 28건은 오판 0건 — docs/pipeline_issue_history.md 이슈 5). 프롬프트로 마커 정확도를
 # 올리는 길은 이미 35회 통제 실험으로 막혔으므로, 프롬프트가 아니라 판정 시점을 생성과
 # 분리하는 쪽으로 잡았다. 대가는 [NO_SOURCE] 답변당 LLM 호출 1회 추가다(정상 답변엔 없음).
 # 끄려면 False — 그러면 마커 판정만 쓰던 이전 동작으로 정확히 돌아간다.
@@ -57,7 +57,7 @@ def _answer_one(query, timings):
     수행한다. 하위 답변끼리는 출처를 포함해 완전히 독립이다 — 하위 답변 간 "중복 출처
     제거"를 하던 누적 집합(seen_pages/seen_urls)은 2026-07-30 제거했다. 출처를 실제로
     붙였는지가 아니라 검색됐는지 기준으로 걸러서, 앞 하위 답변이 [NO_SOURCE]로 거절한
-    경우 뒤 하위 답변의 진짜 출처까지 지우는 버그가 있었다(docs/pipeline_issues.md 이슈 4).
+    경우 뒤 하위 답변의 진짜 출처까지 지우는 버그가 있었다(docs/pipeline_issue_history.md 이슈 4).
     같은 문서가 여러 하위 답변의 근거면 각각에 보이는 게 맞다 — 다시 도입하지 말 것."""
     with measure_time(timings, "query_classification", accumulate=True):
         intent = classify_intent(query)

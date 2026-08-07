@@ -293,7 +293,7 @@
           사이트를 치지 않습니다(첫 실행 시 bge-m3 모델 ~2GB만 내려받음).
         </p>
         <div class="out">
-          <span class="art"><b>docs/retrieval_experiment_results.md</b> · 연구·비교 결과</span>
+          <span class="art"><b>docs/retrieval_eval_169q.md</b> · 연구·비교 결과</span>
           <span class="art"><b>data/dense_cache/*.npy</b> · 팀 공유 Dense 임베딩</span>
           <span class="art"><b>data/chunks_all.jsonl</b> · 494 청크 (메타 포함, 챗봇 런타임 입력)</span>
         </div>
@@ -309,7 +309,7 @@
       <b>챗봇 응답 생성 계층은 비어 있습니다.</b> 검색·평가·임베딩(5단계)까지는 구현돼
       <code>data/dense_cache/</code>와 <code>data/chunks_all.jsonl</code>이 나와 있지만, 이 청크를 받아
       질문에 답을 생성하는 RAG 런타임(LLM 호출·근거 인용·<code>media_summary_jh.json</code>으로 위치 안내)은
-      아직 없습니다. <b>실측 근거는 <code>docs/retrieval_experiment_results.md</code></b> — 어떤 청킹이
+      아직 없습니다. <b>실측 근거는 <code>docs/retrieval_eval_169q.md</code></b> — 어떤 청킹이
       어떤 유형 질문을 올리는지 비교해 <code>all</code> 모드를 제품용으로 골랐습니다. 응답 생성은 이 청크를
       입력으로 새로 만들면 됩니다.
     </div>
