@@ -2,6 +2,12 @@
 
 > KDIC 챗봇 검색 단계의 baseline 구축 및 청킹 처치 A/B 실험. `feature/retrieval-eval` 브랜치.
 > 재현: `python3 src/eval_retrieval.py` (selftest 포함, 첫 실행 시 bge-m3 다운로드).
+>
+> ⚠️ **이 문서는 169문항 1차 측정이다.** 같은 실험을 557문항으로 재측정한
+> [`retrieval_eval_557q.md`](./retrieval_eval_557q.md)에서 수치 일부가 갱신됐다
+> (예: Dense·page MRR 0.752 → 0.718 — 성능 저하가 아니라 표본이 커지며 낙관 편향이
+> 해소된 것이다). **최신 수치가 필요하면 그쪽을 본다.**
+> 다만 **청크 크기 스윕과 제품 권고는 이 문서에만 있고** 557문항에서 재실행하지 않았다.
 
 ## 실험 설계
 
