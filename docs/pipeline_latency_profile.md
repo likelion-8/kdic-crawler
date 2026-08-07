@@ -1,9 +1,16 @@
 # RAG 파이프라인 성능 baseline
 
-측정일: (측정 스크립트 실행 시점 기준, docs 커밋 시점 참고)
+> ⚠️ **이 파일은 `src/crawler/measure_baseline.py`가 생성한다 — 직접 편집하지 마라.**
+> 스크립트를 다시 돌리면 `write_text()`가 통째로 덮어써서 손으로 넣은 내용이 사라진다.
+> 설명을 덧붙이려면 문서가 아니라 생성 스크립트를 고칠 것.
+
+측정일: 2026-07-23
 
 ## 측정 시점 설정
 
+- USE_RERANKER: True (측정 시점엔 이 플래그가 없어 리랭킹이 조건 없이 항상 실행됐다.
+  같은 날 11:11에 플래그가 추가되며 기본 False가 됐으므로, 아래 수치는 **현재 동작이 아니라
+  리랭커 ON 시절의 기록**이다)
 - retrieval_top_n (1차 후보): 20
 - final_top_k (재정렬 후 최종): 5
 - reranker_model: BAAI/bge-reranker-v2-m3

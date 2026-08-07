@@ -98,7 +98,7 @@ def classify_question_type(query):
 # 채택 근거: held-out(testset_pipeline) 4자 비교에서 gpt-5.4-mini가 전체 92.1%·구어체 93.8%로
 # 최고이면서 응답 ~0.85초로 빠르고, native structured output으로 출력이 두 라벨 중 하나로 보장됨
 # (기존 TF-IDF baseline 77.2% 대비 큰 개선, HCX-007 91.0%보다 빠름).
-# 상세: docs/intent_classification_final_report.md. 스키마·프롬프트는 intent_llm_common.py 재사용.
+# 상세: docs/intent_classifier_comparison.md. 스키마·프롬프트는 intent_llm_common.py 재사용.
 # question_type 분류(위 QuestionTypeClassifier)는 코사인 방식 그대로 유지 — 이번 교체 대상 아님.
 _OPENAI_INTENT_MODEL = os.environ.get("OPENAI_INTENT_MODEL") or "gpt-5.4-mini"
 _openai = {}
@@ -106,7 +106,7 @@ _openai = {}
 # 2026-08-04: 모델마다 temperature 지원 여부가 다르다(gpt-5.4-mini는 0 허용, gpt-5.6-luna
 # 같은 일부 모델은 기본값 1만 허용하고 0을 주면 즉시 BadRequestError). 이 프로젝트는 지금까지
 # HCX-007 -> gpt-4o-mini -> gpt-5.4-mini -> gpt-5.6-luna로 모델을 계속 바꿔왔으므로(교체 근거
-# docs/intent_classification_final_report.md), "이 모델은 temperature 됨/안 됨" 목록을 코드에
+# docs/intent_classifier_comparison.md), "이 모델은 temperature 됨/안 됨" 목록을 코드에
 # 박아두면 모델 바꿀 때마다 또 손봐야 한다. 대신 일단 temperature=0으로 시도하고, 그 모델이
 # 거부하면(BadRequestError, 메시지에 "temperature" 포함) 이후로는 그 모델에 한해 파라미터 없이
 # (모델 기본값으로) 호출한다 — 새 모델로 바꿔도 코드 수정 불필요, 매 호출마다 재시도하지도 않음.

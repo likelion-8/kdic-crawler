@@ -129,7 +129,7 @@ SOURCE_USED_MARKER = "[SOURCE_USED]"
 # "여러 표현을 추측해서 거른다"는, 이 프로젝트가 이미 폐기한 접근과는 다르다.
 #
 # 2026-08-03: 대괄호 안쪽 공백 변형([ SOURCE USED ])을 추가로 흡수한다. 이 변형은 이슈 5
-# 라벨 수집 중 실제로 관측됐는데(docs/pipeline_issues.md), 정규식이 `[` 바로 뒤에 단어가
+# 라벨 수집 중 실제로 관측됐는데(docs/pipeline_issue_history.md), 정규식이 `[` 바로 뒤에 단어가
 # 오는 형태만 매치해서 (a) 출처가 통째로 누락되고 (b) 마커 텍스트가 본문에 노출되는,
 # 2026-07-30에 한 번 고쳤던 것과 똑같은 증상이 그대로 재현됐다. 볼드(**[SOURCE_USED]**)와
 # 마커 뒤 콜론도 같은 계열의 표기 흔들림이라 함께 흡수한다. 인식 대상은 여전히 고정된 두
@@ -146,11 +146,11 @@ def _strip_no_source_marker(llm_text):
     항상 top-k 청크를 반환한다 — 그래서 답변이 그 근거를 실제로 안 썼는데도(예: "안녕하세요"
     인사말, 정체성 질문) 무관한 출처가 붙는 문제가 있었다(2026-07-24). "이 문구가 답변에
     있으면 거절/잡담"식으로 여러 표현을 추측해서 걸러내는 방식은 표현이 다양해 계속 새므로
-    (이 프로젝트에서 여러 번 확인된 패턴 - docs/pipeline_issues.md 참고), LLM이 근거를
+    (이 프로젝트에서 여러 번 확인된 패턴 - docs/pipeline_issue_history.md 참고), LLM이 근거를
     실제로 썼는지를 고정된 마커로 직접 표시하게 해 그 결과만 확인한다.
 
     2026-07-30: "근거 미사용일 때만 [NO_SOURCE]를 붙여라"는 조건부 지시로는 LLM이 마커
-    자체를 빼먹고도 내용상으로는 올바르게 거절하는 사례가 재현됐다(docs/pipeline_issues.md
+    자체를 빼먹고도 내용상으로는 올바르게 거절하는 사례가 재현됐다(docs/pipeline_issue_history.md
     이슈 3) — 답변은 맞는데 마커가 없어 무관한 출처가 그대로 붙는 문제. 그래서 "항상 둘 중
     하나를 붙여라"는 강제 이지선다로 바꿨다. 그래도 마커가 하나도 없는 이상 응답이 오면
     안전한 쪽(출처 미첨부)으로 기본 처리한다 — 없는 출처를 안 보여주는 게, 무관한 출처를
@@ -171,7 +171,7 @@ def _resolve_used_source(llm_text, recheck):
     실측에서 마커의 오판은 [NO_SOURCE] 쪽에만 있었고(28건 중 0건 vs 79건 중 33건),
     맞고 있는 축을 건드리면 거절·인사에 무관한 출처가 붙는 문제가 되살아난다.
     recheck가 None이면(기본) 마커 판정을 그대로 쓴다 — 이 기능을 켜기 전과 동작이 같다.
-    상세: src/source_check.py, docs/pipeline_issues.md 이슈 5."""
+    상세: src/source_check.py, docs/pipeline_issue_history.md 이슈 5."""
     text, used_source = _strip_no_source_marker(llm_text)
     if not used_source and recheck is not None:
         used_source = recheck(text)

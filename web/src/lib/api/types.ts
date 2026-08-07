@@ -103,7 +103,7 @@ export interface ChatRequest {
 }
 
 /** SSE 이벤트 — CM-DF-003 03절 "실시간 출력(SSE)" 6종.
- * 순서: accepted → answer_delta* → (sources) → (attachments) → done | error */
+ * 순서: accepted → answer_delta* → done | error   (sources·attachments 이벤트는 2026-08-05 폐지) */
 export type ChatStreamEvent =
   | { event: 'accepted'; data: { request_id: string; session_id: string } }
   | { event: 'answer_delta'; data: { text: string } }
