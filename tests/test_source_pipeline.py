@@ -12,7 +12,7 @@ source_verifier.py·train_source_verifier.py·data/source_verifier/를 삭제했
 
 과거 사고 재발 방지 케이스:
 - 마커 형식 변형 미인식으로 마커가 본문에 노출 — 띄어쓰기·소문자는 이슈 3,
-  괄호 안 공백·볼드·콜론은 이슈 5 후속 2
+  괄호 안 공백·볼드·콜론은 이슈 5-B
 - 거절·인사에 무관한 출처 부착 (2026-07-24, docs/pipeline_issue_history.md 이슈 3)
 - 복합 질문에서 앞 하위 답변이 뒤 답변의 출처를 지움 (이슈 4)
 """

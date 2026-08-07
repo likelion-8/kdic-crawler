@@ -259,7 +259,7 @@ HyperCLOVA 호출 → 출처 결정론적 부착.
 교체됐다가 **2026-08-03 다시 마커로 롤백**됐다. 같은 날 그 누락을 마커 방식을 유지한 채
 수리했다 — 마커가 "근거를 안 썼다"고 판정한 경우에만 생성과 분리된 별도 LLM 호출로 한 번
 더 확인한다(`src/source_check.py`, `pipeline.USE_SOURCE_RECHECK`). 경위와 수치는
-`docs/pipeline_issue_history.md` 이슈 3 → 이슈 5 → "이슈 5 후속" → "이슈 5 후속 2" 순서로 이어진다.
+`docs/pipeline_issue_history.md` 이슈 3 → 이슈 5 → "이슈 5-A" → "이슈 5-B" 순서로 이어진다.
 
 멀티쿼리 입장에서 중요한 건 둘이다.
 
@@ -283,8 +283,8 @@ HyperCLOVA 호출 → 출처 결정론적 부착.
 | `src/pipeline.py` | `_answer_one()` 공통화 + `USE_QUERY_DECOMPOSITION` 플래그 + 결정론적 병합 (7절) |
 | `src/performance.py` | `measure_time(..., accumulate=True)` — 복합질문 하위질문별 시간 합산 |
 | `docs/pipeline_issue_history.md` 이슈 4 | 하위 답변 출처 소실 — 7절 3항의 근거 |
-| `docs/pipeline_issue_history.md` 이슈 3·5·5 후속·5 후속 2 | 출처 부착 판정 방식의 변천(마커 → 코드 판정 → 마커 롤백 → 마커 + 조건부 재확인) |
-| `src/source_check.py` | 마커가 "근거 미사용"으로 판정했을 때만 다시 묻는 재확인 호출 (이슈 5 후속 2) |
+| `docs/pipeline_issue_history.md` 이슈 3·5·5-A·5-B | 출처 부착 판정 방식의 변천(마커 → 코드 판정 → 마커 롤백 → 마커 + 조건부 재확인) |
+| `src/source_check.py` | 마커가 "근거 미사용"으로 판정했을 때만 다시 묻는 재확인 호출 (이슈 5-B) |
 
 1차 시도(규칙+형태소 게이트) 산출물은 위 경고대로 저장소에 없음 — 필요하면 이 문서의 2절 표를
 참고해 재구현할 것.
@@ -313,7 +313,7 @@ HyperCLOVA 호출 → 출처 결정론적 부착.
 내용 오표기가 남아 `source_verifier.py`(코드 판정)로 교체 → 2026-08-03 다시 마커로 롤백 →
 **2026-08-03 마커를 유지한 채 출처 누락 수리**(마커가 "근거 미사용"이라고 한 경우에만
 별도 호출로 재확인 — `source_check.py`). 착오송금 질문 3회 반복에서 출처 부착 0/3 → 3/3.
-현재 상태는 `docs/pipeline_issue_history.md` "이슈 5 후속 2" 참고.
+현재 상태는 `docs/pipeline_issue_history.md` "이슈 5-B" 참고.
 
 이때 **롤백 시점의 진단이 하나 틀렸던 것도 함께 확인됐다** — 착오송금 실패는 문서가 계속
 기록해온 `[NO_SOURCE]` 오표기가 아니라 **마커 자체의 누락**이었다(실제 응답에 두 마커 어느
