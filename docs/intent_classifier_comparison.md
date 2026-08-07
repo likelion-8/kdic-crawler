@@ -186,21 +186,44 @@ HCX-007은 1차 실험 92.1%/구어체 81.3% → 2차(4자) 재실행 91.0%/구�
 
 ---
 
-## 7. 다음 작업 (이 문서 범위 밖)
+## 7. 다음 작업 (이 문서 범위 밖) — ✅ 반영 완료
 
-- 최종 채택 방식을 `query_classifier.classify_intent`에 실제 반영 — **본 문서는 제안까지만.**
-  코드 교체는 별도 작업으로 분리한다(운영 파이프라인 영향·비용·지연을 팀 합의 후 진행).
-- 채택 시 결정할 것: intent 모델 설정 분리(`INTENT_*` 환경변수), 응답시간 SLA, 실패 폴백 경로.
+> 📌 **작성 당시(2026-08-02)에는 제안까지만이었고, 2026-08-03 커밋 `acf1df3`에서 실제로
+> 교체됐다.** 아래 항목은 그때의 할 일 목록이며 전부 처리됐다. 본문의 "코드는 수정하지
+> 않았다"류 서술은 이 시점 이전 기준이다.
+
+- ~~최종 채택 방식을 `query_classifier.classify_intent`에 실제 반영~~ → **완료.**
+  `classify_intent()`가 OpenAI structured output을 호출한다(`query_classifier.py:144-156`).
+  기존 Kiwi+TF-IDF+LogReg와 `data/intent_classifier/*.pkl`은 함께 제거됐다.
+- ~~채택 시 결정할 것: intent 모델 설정 분리~~ → **완료.** `OPENAI_INTENT_MODEL` 환경변수로
+  분리했고 기본값은 `gpt-5.4-mini`다(`query_classifier.py:103`).
+- 실패 폴백은 `informational`로 고정됐다. ⚠️ **이 폴백이 조용해서 문제가 된 적이 있다** —
+  `OPENAI_API_KEY`가 없거나 모델이 `temperature=0`을 거부하면 예외를 삼키고 항상
+  `informational`을 돌려줘 `civil_petition` 경로가 통째로 안 돈다(2026-08-04 수정,
+  `docs/frontend-handoff.md` §4).
+- **응답시간 SLA는 아직 정하지 않았다.** 남은 항목은 이것 하나다.
 
 ---
 
 ## 부록 — 산출물·재현
-- 구현: `src/intent_llm_common.py`(공유 스키마·프롬프트), `src/classify_intent_hyperclova.py`,
-  `src/classify_intent_openai.py`(모델은 `.env`의 `OPENAI_INTENT_MODEL`로 지정, 호출 시 `model=`로도 override)
-- 비교 실험: `src/eval_intent_final_comparison.py` → `data/intent_final_comparison_result.json`
-  (baseline/HCX-007/gpt-4o-mini/gpt-5.4-mini 4자)
-- 모델 설정 분리: `.env`의 `INTENT_CLOVA_MODEL`(HCX용), `OPENAI_INTENT_MODEL`(OpenAI용) — 운영
-  답변생성(`CLOVA_MODEL=DASH-002`)과 완전히 분리되어 파이프라인 영향 없음
-- 관련 문서: `docs/kiwi_config_investigation.md`(③), `docs/intent_baseline_optimization.md`(④⑤),
-  `docs/pipeline_heldout_baseline_89q.md`(②의 held-out 77.2% 근거)
-- 운영 코드(query_classifier.py 등)는 이번 작업에서 **수정하지 않았다.**
+
+⚠️ **아래 실험 산출물 대부분은 지금 저장소에 없다.** 2026-08-03 교체(`acf1df3`) 때 비교 전용
+스크립트와 결과 JSON이 함께 정리됐다. 이 실험을 다시 하려면 재구현해야 한다 — 수치는 본문
+5절 표에 남아 있다.
+
+| 항목 | 상태 |
+|---|---|
+| `src/intent_llm_common.py` (공유 스키마·프롬프트) | **있음** — 운영 `classify_intent()`가 계속 쓴다 |
+| `src/classify_intent_hyperclova.py` | 없음 (정리됨) |
+| `src/classify_intent_openai.py` | 없음 (정리됨) — 기능은 `query_classifier.py`에 흡수 |
+| `src/eval_intent_final_comparison.py` | 없음 (정리됨) |
+| `data/intent_final_comparison_result.json` (5절 수치 원본) | 없음 (정리됨) |
+| `docs/kiwi_config_investigation.md` (③의 근거) | **작성된 적 없음** |
+| `docs/intent_baseline_optimization.md` (④⑤의 근거) | **작성된 적 없음** |
+| [`docs/pipeline_heldout_baseline_89q.md`](pipeline_heldout_baseline_89q.md) (②의 held-out 77.2% 근거) | 있음 |
+
+- 모델 설정: `OPENAI_INTENT_MODEL`(OpenAI용, 기본 `gpt-5.4-mini`). 운영 답변생성
+  (`CLOVA_MODEL=DASH-002`)과 분리돼 있어 서로 영향이 없다. HCX용 `INTENT_CLOVA_MODEL`은
+  HCX 분류 경로가 사라지면서 쓰이지 않는다.
+- ~~운영 코드(query_classifier.py 등)는 이번 작업에서 수정하지 않았다.~~ → 작성 당시 사실.
+  **다음 커밋(`acf1df3`, 2026-08-03)에서 교체됐다** — 7절 참고.

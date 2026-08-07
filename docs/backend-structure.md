@@ -28,8 +28,21 @@
 
 ## 1. 🔴 구조보다 먼저 — 코드를 안 고치면 `api/`가 아예 안 뜬다
 
-초안 4절이 "기존 `src/` 기능을 불러 쓴다"고 전제하는데, **지금 상태로는 import가 안 된다.**
-구조를 정하는 것과 별개로 아래 3건은 선행 작업이다.
+> 📌 **2026-08-07 현황 — 이 절의 3건은 모두 처리됐다.** 아래 진단·처방은 작성 당시
+> (2026-08-05, `api/`가 없던 시점) 기준이며, 왜 그렇게 해야 했는지의 근거로 남겨 둔다.
+>
+> | | 처방 | 실제 |
+> |---|---|---|
+> | 1-1 | `api/__init__.py`에서 `src/`를 `sys.path`에 올린다 | ✅ **권고안 그대로.** `api/__init__.py`가 (b)안을 택한 이유까지 적어 두고 있다 |
+> | 1-2 | `_answer_one()`이 dict를 반환하도록 `pipeline.py`를 고친다 | ⚠️ **다른 방식으로 대체됐다.** `pipeline.py`는 문자열 반환 그대로 두고(Streamlit·CLI가 계속 쓴다), `api/rag/answer.py`가 `query_decomposer`·`query_classifier`·`retrieval`·`candidate_ranking`·`citation`·`civil_petition`·`prompt_builder`·`source_check`를 **직접 조립**해 구조화 응답을 만든다. `rag_answer_structured()`는 끝내 만들지 않았다 — 아래 (a)~(d) 표는 그래서 `pipeline.py`가 아니라 `api/rag/answer.py`가 지켜야 할 항목으로 읽어야 한다 |
+> | 1-3 | `llm_client`에 `.stream()` 계열 추가 | ✅ **완료.** `call_hyperclova()`(`.invoke()`)와 별도로 스트리밍 제너레이터가 있고 `api/rag/sse.py`가 이를 소비한다 |
+>
+> ⚠️ 그리고 **SSE 이벤트는 4종으로 줄었다** — `accepted → answer_delta* → done | error`.
+> `sources`·`attachments` 이벤트는 2026-08-05에 폐지됐고 출처는 `done`에 실린다
+> (`api/rag/sse.py`, `web/src/mocks/README.md` §3).
+
+초안 4절이 "기존 `src/` 기능을 불러 쓴다"고 전제하는데, **작성 당시 상태로는 import가 안 됐다.**
+구조를 정하는 것과 별개로 아래 3건이 선행 작업이었다.
 
 ### 1-1. `src/` 모듈은 평평하게 임포트한다 — `from src.pipeline import ...`는 터진다
 

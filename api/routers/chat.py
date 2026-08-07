@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api", tags=["chat"])
     responses={
         200: {
             "description": "SSE 스트림. `event: <이름>\\ndata: <JSON>` 프레임으로 "
-                           "accepted → answer_delta* → (sources) → (attachments) → done | error "
+                           "accepted → answer_delta* → done | error "
                            "순으로 흐른다. 아래 스키마는 done 프레임의 data 다.",
             "content": {"text/event-stream": {"schema": ChatResponse.model_json_schema()}},
         },

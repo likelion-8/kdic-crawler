@@ -1,7 +1,12 @@
 # 백엔드 핸드오프 — 예솜24 프론트엔드
 
-프론트(React·TS·Vite SPA)는 17화면이 다 만들어져 있고, **백엔드(FastAPI)는 아직 한 줄도 없다.**
-이 문서는 "무엇을 만들면 프론트가 그대로 붙는가"만 다룬다.
+프론트(React·TS·Vite SPA)는 17화면이 다 만들어져 있다. 이 문서는 "무엇을 만들면 프론트가
+그대로 붙는가"만 다룬다.
+
+> 📌 **이 문서는 2026-08-03 작성 시점 기준이고, 그때는 백엔드가 한 줄도 없었다.**
+> 이후 2026-08-05~06에 공개 API 6종이 구현됐다(§1 표 참고). **계약(§6 108행)과 작업
+> 순서(§3)는 그대로 유효하지만, "아직 없다"는 서술은 §3의 6번(관리자 인증) 이후에만
+> 해당한다.** 각 절의 현황 서술을 읽을 때 이 시점 차이를 감안할 것.
 
 **요청/응답 모양은 [`web/src/mocks/README.md`](../web/src/mocks/README.md)가 정본이다.**
 엔드포인트 표·SSE 프레임 계약·검증 규칙(400/403/409)·목 시나리오 트리거·파이썬 필드 매핑이 거기 있다.
@@ -16,10 +21,11 @@
 | | 상태 |
 |---|---|
 | 프론트 | 17화면 완성. 챗봇 5화면(CB-001~005)은 SPA 한 페이지, 관리자 12화면(AD-000~011)은 라우트 12개 (`web/src/app/router.tsx`) |
-| 백엔드 | 없음. FastAPI 프로젝트 자체가 리포에 없다 |
-| 데이터 | 목(MSW)이 전부 대신한다. 엔드포인트 **91개**(관리자 85 · 공개 6)를 목이 응답한다 |
+| 백엔드 (작성 당시) | 없음. FastAPI 프로젝트 자체가 리포에 없었다 |
+| 백엔드 (현재) | **`api/` 18파일 · 공개 API 6종 구현됨** — `POST /api/chat`(SSE) · `GET /api/health` · `GET /api/suggestions` · `POST /api/feedback` · `PATCH /api/feedback/{id}` · `GET /api/sessions/{id}`. 라우터 4개(public·chat·feedback·session). **관리자 API는 아직 없다** — `api/routers/`에 auth·knowledge·pipeline 등이 없고 `src/schema_admin.py`도 없다. 즉 §3의 0~5번은 끝났고 6~16번이 남았다 |
+| 데이터 | 목(MSW)이 전부 대신한다. 엔드포인트 **91개**(관리자 85 · 공개 6)를 목이 응답한다. 공개 6종은 이제 실서버로 전환 가능하다(§1 "목을 끄는 법") |
 | 코드량 | `web/src` 163파일 / ts·tsx 108개 · css 54개 / 약 19,300줄 |
-| git | ⚠ `web/`은 **아직 커밋되지 않았다**(`git status` → `?? web/`). 첫 커밋 전에 §8을 읽을 것 |
+| git | ~~`web/`은 아직 커밋되지 않았다~~ → **2026-08-05 커밋됨** (현재 `web/` 트래킹 169파일, `node_modules` 제외) |
 
 ### 실행
 
@@ -97,12 +103,12 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 
 | # | 만들 것 | 이게 없어 막힌 화면 | 기존 파이썬 재사용 |
 |---|---|---|---|
-| **0** | FastAPI 뼈대 — CORS(쿠키), 오류를 `ApiError{code,user_message,retryable,fallback_sources,request_id}`로 정규화하는 예외 핸들러, 목록 `Page<T>` 봉투, 쓰기 요청 `request_id`/`reason` 검증(없으면 400), 403에 request_id | 전부 | `db.py`(엔진·세션) |
-| **1** | ★ **`POST /api/chat` (SSE)** — `accepted → answer_delta* → (sources) → (attachments) → done \| error` | 챗봇 5화면(CB-001~005) 전부. 프론트에서 유일하게 "쓸모"가 걸린 지점 | `pipeline._answer_one()` 흐름 그대로. §4 참조 |
-| 2 | `GET /api/health` | CB-004 Case 6 점검 배너 · 입력 잠금 (`disabled_features`에 `chat` 포함 여부로 판정) | — |
-| 3 | `GET /api/suggestions` | CB-001 자주 묻는 질문 TOP 10. 없으면 `WelcomeScreen.tsx`의 `FALLBACK_SUGGESTIONS` 상수로 떨어진다 | — |
-| 4 | `POST /api/feedback` · `PATCH /api/feedback/{id}` | 답변 하단 피드백 위젯 | 없음. `feedback` 테이블 신설 필요 |
-| 5 | `GET /api/sessions/{session_id}` | 새로고침·재방문 대화 복원(24h). 대화 저장이 선행 | 없음. `chat_sessions`/`chat_messages` 신설 필요 |
+| **0** | ✅ FastAPI 뼈대 — CORS(쿠키), 오류를 `ApiError{code,user_message,retryable,fallback_sources,request_id}`로 정규화하는 예외 핸들러, 목록 `Page<T>` 봉투, 쓰기 요청 `request_id`/`reason` 검증(없으면 400), 403에 request_id | 전부 | `db.py`(엔진·세션) |
+| **1** | ✅ ★ **`POST /api/chat` (SSE)** — `accepted → answer_delta* → done \| error` (⚠️ `sources`·`attachments` 이벤트는 2026-08-05에 없앴다 — 출처는 `done`에 실린다) | 챗봇 5화면(CB-001~005) 전부 | **구현됨** — `api/rag/sse.py`. `pipeline._answer_one()`이 아니라 `api/rag/answer.py`가 빌딩블록을 직접 조립한다 |
+| 2 | ✅ `GET /api/health` | CB-004 Case 6 점검 배너 · 입력 잠금 (`disabled_features`에 `chat` 포함 여부로 판정) | — |
+| 3 | ✅ `GET /api/suggestions` | CB-001 자주 묻는 질문 TOP 10. 없으면 `WelcomeScreen.tsx`의 `FALLBACK_SUGGESTIONS` 상수로 떨어진다 | — |
+| 4 | ✅ `POST /api/feedback` · `PATCH /api/feedback/{id}` | 답변 하단 피드백 위젯 | **구현됨** — `feedback` 테이블 신설 완료 |
+| 5 | ✅ `GET /api/sessions/{session_id}` | 새로고침·재방문 대화 복원(24h) | **구현됨** — `chat_sessions`/`chat_messages` 신설 완료 |
 | 6 | 관리자 인증 — `login`·`logout`·`session`·`session/extend`·`reauth`·`roles`·`me/permissions` | **관리자 12화면 전부.** `RequireAuth`가 `GET /api/admin/session`으로 게이트한다 | 없음 |
 | 7 | 활동 로그 쓰기 — `admin_activity_logs` 적재 | 6번 이후의 모든 쓰기 API가 여기 기록된다. 나중에 붙이면 소급 불가라 6번과 같이 붙이는 게 싸다 | 없음 |
 | 8 | 지식베이스 조회 — `knowledge/pages`·`knowledge/chunks` | AD-002 | **`documents`·`document_chunks` 테이블이 이미 있다.** 가장 저렴한 관리자 화면 |
@@ -147,7 +153,9 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 
 ## 5. DB에 없는 테이블
 
-`src/schema.py`가 만드는 건 **6개뿐이다.** 파일 첫 주석이 "crawl_runs/crawl_results/document_versions/evaluation_runs/evaluation_results도 운영 단계 착수 전이라 아직 안 만든다"고 명시한다(schema.py:5-6).
+> 📌 **2026-08-07 갱신.** 작성 당시 `src/schema.py`는 6개(중 1개는 이후 삭제)를 만들었으나
+> 지금은 **9개**다 — 챗봇 저장·복원·피드백·추천질문 테이블이 §3의 3~5번을 구현하며 추가됐다.
+> 아래 두 표를 실제 스키마에 맞춰 갱신했다. **관리자용 테이블은 여전히 하나도 없다.**
 
 ### 있는 것
 
@@ -159,8 +167,13 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 | `test_set` | held-out(testset_pipeline) | AD-006 문항 |
 | `rag_runs` | 질의 1건의 실행 기록 | AD-005 대화 로그의 뼈대 |
 | ~~`rag_retrieval_results`~~ | **2026-08-04 삭제.** 질문 1건당 20행 부담 대비 실익이 낮다고 판단, Langfuse trace로 이관(팀 결정) | 프론트도 같은 방향으로 정리했다 — AD-005 상세의 `retrieval[]`·`stages[]`를 없애고 Langfuse 링크(§6 G5)로 대체 |
+| **`feedback`** ✨ | 답변별 좋아요·싫어요 + 사유·의견 | §3 4번 구현되며 추가됨. 아래 "없는 것"에서 올라왔다 |
+| **`chat_sessions`** ✨ | 대화 세션 | §3 5번(24h 복원) 구현되며 추가됨 |
+| **`chat_messages`** ✨ | 세션 내 메시지 | 〃 |
+| **`suggested_questions`** ✨ | 추천 질문(자주 묻는 질문 TOP 10) | `GET /api/suggestions` 구현되며 추가됨 |
 
-`documents.is_active` → `document_chunks.is_active` 동기화 트리거가 걸려 있다(schema.py:146-160). 관리자 '검색 제외'는 이 플래그로 처리하면 된다.
+`documents.is_active` → `document_chunks.is_active` 동기화 트리거가 걸려 있다
+(`sync_document_chunks_is_active`, schema.py:235-248). 관리자 '검색 제외'는 이 플래그로 처리하면 된다.
 
 ### 없는 것 — 관리자 화면이 요구하는 것
 
@@ -168,8 +181,6 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 
 | 없는 테이블(제안명) | 필요한 화면·엔드포인트 | 근거 |
 |---|---|---|
-| `chat_sessions` · `chat_messages` | `GET /api/sessions/{id}` 24시간 대화 복원 | `rag_runs`에 `session_id`·`request_id` 컬럼이 없다(schema.py:110-126) |
-| `feedback` | `POST`/`PATCH /api/feedback` | 계약은 있는데 저장소가 없다 |
 | `admin_accounts` · `admin_sessions` · `admin_login_failures` · `password_reset_tokens` | AD-000·AD-010 전부 | `admin_sessions`의 3필드(`session_started_at`·`last_activity_at`·`last_auth_at`)는 CM-DF-003 04절에 스펙이 있다 |
 | `admin_activity_logs` | AD-011 + 모든 쓰기 API | CM-DF-003 04절: 실행자·작업·대상·전후값·사유·결과 + `detail` JSONB. **추가 전용 · 90일 보관 · 상세는 이 레코드 하나로 렌더(조인 금지)** |
 | `pipeline_jobs` (+ 단계) | AD-004, AD-002/003의 재수집·재적재 | CM-DF-003 04절이 컬럼 목록까지 적어 뒀다: `job_type`·`status`·`current_stage`·`failed_stage`·`job_error`·`retry_count`·`stage_counts`·`reason`·실행자·시각 |
@@ -178,7 +189,7 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 | `testset_items` 버전 | AD-006 문항 편집·`testset_version` | 현 `evaluation_dataset`/`test_set`에 버전·편집 이력 컬럼이 없다 |
 | `rag_param_versions` (current/draft/history) | AD-007 | 파라미터가 지금은 파이썬 상수다(`pipeline.K_CANDIDATES` 등) |
 | `prompt_versions` · `prompt_drafts` · `prompt_publish_requests` · `guardrail_rules` | AD-008 | 프롬프트가 지금은 `prompt_builder.SYSTEM_INSTRUCTION` 문자열 상수다 |
-| `ops_policy` · `query_cache` · `rate_limit_blocks` · `suggested_questions` | AD-009, `GET /api/suggestions` | — |
+| `ops_policy` · `query_cache` · `rate_limit_blocks` | AD-009 | `suggested_questions`는 이제 있다(위 표) |
 | `admin_drafts` | `PUT /api/admin/drafts/{screen}` 10초 자동저장 | — |
 | `documents` 확장 컬럼 | AD-002 상세·수집 대상 탭 | `owner`·`collection_status`·`collection_note`·`link_check`·`first_indexed_at`·`split_rule`·`index_status`·`pending_action` — 전부 `corpus.jsonl` 16키에 없는 P3 확장 필드 (§6 K2·K3) |
 
@@ -391,7 +402,7 @@ shadcn 시맨틱 변수(--primary 등)로 브리지한다 — **색·치수를 �
 
 - **커밋 금지**: `.env`, HCX/NCP·OpenAI API Key. `.jsonl` LF 고정, dense 임베딩 캐시 규칙, "HTML→텍스트에 LLM 미사용" 같은 리포 불변식은 여기서 되풀이하지 않는다.
 - ⚠ **`.gitignore`의 Python 템플릿 함정.** 루트 `.gitignore`의 `lib/`·`build/`·`dist/`·`var/`는 앵커가 없어 **하위 경로까지 전부** 걸린다 — `web/src/lib/`(API 클라이언트·enum·상수)가 통째로 무시돼 커밋에서 빠져 있었다. 2026-08-03에 `/lib/`처럼 루트 앵커로 고쳤다(setuptools가 만드는 건 루트의 그 디렉터리들이다). **앞으로 루트 `.gitignore`에 디렉터리 규칙을 추가할 때는 반드시 `/`로 시작할 것.**
-- `web/`은 아직 git에 안 올라가 있다. 첫 커밋 전에 `git status --short`로 `node_modules`·`dist`가 빠졌는지 확인할 것(`web/.gitignore`가 이미 처리하지만 확인은 싸다).
+- ~~`web/`은 아직 git에 안 올라가 있다~~ → **2026-08-05 커밋 완료.** 위 `.gitignore` 함정은 그 커밋에서 실제로 문제가 됐던 것이라 기록을 남겨 둔다.
 - `web/public/mockServiceWorker.js`는 `pnpm exec msw init public/`가 생성한 파일이다. 손대지 말 것.
-- `web/README.md`는 Vite 템플릿 원문이라 이 프로젝트 내용이 아니다. 프론트 문서는 이 파일과 `web/src/mocks/README.md` 둘뿐이다.
+- ~~`web/README.md`는 Vite 템플릿 원문이라 이 프로젝트 내용이 아니다~~ → **작성 당시 사실이었으나 이후 예솜24 프론트 실행 안내로 다시 쓰였다.** 지금 프론트 문서는 셋이다 — 이 파일(백엔드 핸드오프) · [`web/README.md`](../web/README.md)(실행·목 시나리오) · [`web/src/mocks/README.md`](../web/src/mocks/README.md)(API 계약 정본).
 - 기획서 문구·수치를 인용할 때는 코드/데이터로 먼저 검증한다 — 산문 문서는 stale일 수 있다. 이 문서의 수치도 2026-08-03 기준이다.
