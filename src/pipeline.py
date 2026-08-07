@@ -25,10 +25,12 @@ from source_check import recheck_source_usage
 K_CANDIDATES = 20
 K_FINAL = 5
 
-# 2026-07-23 팀 결정: 리랭커 기본 Off (project_context 9.7). 현 설정(bge-reranker-v2-m3,
-# k=20, max_length=8192, CPU)에서 이득 없이(Recall 개선 0, MRR 소폭↓) 속도만 크게 악화
-# (질문당 27~210초). 코드는 남겨두고 여기서만 끈다 — 재도입 시 True로 바꾸면 됨(GPU/경량 설정
-# 재검증 후). Off면 1차 검색(route_search_chunks) 상위 K_FINAL을 그대로 사용.
+# 2026-07-23 팀 결정: 리랭커 기본 Off (project_context 9.7). 끈 직접 사유는 속도다 — 현 설정
+# (bge-reranker-v2-m3, k=20, max_length=8192, CPU)에서 질문당 27~210초가 걸려 실서비스에 못 쓴다.
+# ⚠️ 품질 효과는 결론난 게 아니다: 2026-07-23 6문항 측정은 Recall 개선 0·MRR 소폭↓였지만
+# 2026-07-30 재측정에서는 개선으로 나와 방향이 엇갈렸고, 표본이 작아 어느 쪽도 못 쓴다.
+# 판정은 GPU에서 held-out 전체로 다시 한다(조건표: 루트 README.md 2.4절, 상세: candidate_ranking.py).
+# 코드는 남겨두고 여기서만 끈다 — 재도입 시 True. Off면 1차 검색 상위 K_FINAL을 그대로 사용.
 USE_RERANKER = False
 
 # 2026-07-30: query_decomposer.decompose_query()로 복합 질문(예: "신청 방법과 필요한 서류,
