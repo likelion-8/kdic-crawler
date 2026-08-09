@@ -93,7 +93,7 @@ def _build_prompt(query):
     return [("system", SYSTEM_INSTRUCTION), ("human", human)]
 
 
-# 2026-08-04(docs/pipeline_issues.md 이슈 6): few-shot 프롬프트가 "질문: ...\n출력:" 형식을
+# 2026-08-04(docs/pipeline_issue_history.md 이슈 6): few-shot 프롬프트가 "질문: ...\n출력:" 형식을
 # 쓰다 보니, 드물게 LLM이 실제 하위 질문 대신 이 틀 자체("질문:", "출력:" 한 줄)를 그대로
 # 따라 써서 응답에 섞어 보낸다. decompose_query()가 줄바꿈만 보고 나누기 때문에 이런 줄이
 # 그대로 "하위 질문"으로 취급돼 pipeline.py에 넘어가면, "출력:" 같은 무의미한 문자열이 질문

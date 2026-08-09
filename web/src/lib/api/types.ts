@@ -102,13 +102,15 @@ export interface ChatRequest {
   session_id?: string
 }
 
-/** SSE 이벤트 — CM-DF-003 03절 "실시간 출력(SSE)" 6종.
- * 순서: accepted → answer_delta* → (sources) → (attachments) → done | error */
+/** SSE 이벤트 — CM-DF-003 03절 "실시간 출력(SSE)" 4종.
+ * 순서: accepted → answer_delta* → done | error
+ *
+ * `sources`·`attachments` 이벤트는 2026-08-05 폐지됐다 — 근거 사용 판정이 스트리밍이 끝난
+ * 뒤에 확정돼 어차피 `done`과 같은 시점에 나갔다(`api/rag/sse.py`). 출처는 `done`의
+ * `sources`·`attachments`(복합 질문이면 `sub_answers` 안의 것)로 그린다. */
 export type ChatStreamEvent =
   | { event: 'accepted'; data: { request_id: string; session_id: string } }
   | { event: 'answer_delta'; data: { text: string } }
-  | { event: 'sources'; data: { sources: Source[] } }
-  | { event: 'attachments'; data: { attachments: Attachment[] } }
   | { event: 'done'; data: ChatResponse }
   | { event: 'error'; data: ApiError }
 

@@ -29,7 +29,7 @@ flowchart TD
       RET[chunking.py → retrieval.py<br/>→ eval_retrieval.py]
       EMB[chunking.py → retrieval.py<br/>→ embed_corpus.py]
     end
-    RET --> DOCS[(docs/retrieval_experiment_results.md<br/>연구·비교 결과)]
+    RET --> DOCS[(docs/retrieval_eval.md<br/>연구·비교 결과)]
     EMB --> PROD[(dense_cache/*.npy + chunks_all.jsonl<br/>= 임베딩·평가용 · 운영 검색은 Supabase)]
     MEDIA --> PROD
 ```
@@ -97,7 +97,7 @@ flowchart TD
 2. **`data/corpus.jsonl` 첫 줄** — 데이터가 어떻게 생겼는지 (모든 것의 중심)
 3. **`src/crawler/inventory.py`** — 무엇을 수집하는지
 4. **`src/crawler/build_corpus.py`** docstring — 코퍼스가 어떻게 만들어지는지
-5. **`src/crawler/eval_retrieval.py`** + **`docs/retrieval_experiment_results.md`** — 검색을 어떻게 평가/비교하는지
+5. **`src/crawler/eval_retrieval.py`** + **`docs/retrieval_eval.md`** — 검색을 어떻게 평가/비교하는지
 
 ## 자주 쓰는 실행 커맨드
 
@@ -134,11 +134,11 @@ python3 src/crawler/hashing.py       # 해시 자체검사
 - **Dense 검색**: Supabase `document_chunks`(494행, `embedding vector(1024)`)를 `PgVectorDenseRetriever`가 읽는다(`src/retrieval.py:148`). 질문 인코딩만 bge-m3를 쓴다.
 - **BM25**: `corpus.jsonl`에서 `build_units("all")`로 부팅 시 재구성한다.
 - ⚠️ **`dense_cache/*.npy`·`chunks_all.jsonl`은 런타임에 쓰이지 않는다** — 임베딩·평가 스크립트 전용이라 서버 이미지에 넣을 필요가 없다. 그래서 **DB만 갱신하고 `embed_corpus.py`를 안 돌리면 평가 수치가 운영을 설명하지 못한다.**
-- 나머지 3개 청킹 모드(page/faq_atomic/table_row)는 "청킹이 왜 필요한지" 증명한 **실험 비교군**이지 제품용이 아니다. 근거는 `docs/retrieval_experiment_results.md`.
+- 나머지 3개 청킹 모드(page/faq_atomic/table_row)는 "청킹이 왜 필요한지" 증명한 **실험 비교군**이지 제품용이 아니다. 근거는 `docs/retrieval_eval.md`.
 
 ## 참고
 - **의도 분류는 학습 모델이 아니라 API다** — 2026-08-03에 Kiwi+TF-IDF+LogReg에서 OpenAI Structured Output으로 갈아탔다(`src/query_classifier.py:99`). `data/intent_classifier/*.pkl`과 재학습 스크립트는 더 이상 없고, `OPENAI_API_KEY`가 없으면 예외를 삼키고 `informational`로 조용히 폴백해 민원처리 경로가 통째로 안 돈다.
 - 크롤러가 담당자별로 나뉜 건 팀원 5명이 업무 기능을 나눠 수집했기 때문 (`inventory.py` 상단 owner 매핑 참고).
 - 변환은 **전부 규칙 기반**(LLM 미사용) — 원문 보존·재현성이 원칙.
 - **크로스 플랫폼(맥·윈도우):** 모든 텍스트 파일 I/O는 `encoding="utf-8"` 명시(윈도우 기본 cp949로 한글 깨짐 방지), `.gitattributes`가 `.jsonl` 줄바꿈을 LF로 고정(CRLF면 공유 임베딩 캐시 해시가 틀어짐).
-- 파이프라인 시각 자료는 `docs/pipeline.html`, 검색 실험 결과는 `docs/retrieval_experiment_results.md` 에 있음.
+- 파이프라인 시각 자료는 `docs/pipeline.html`, 검색 실험 결과는 `docs/retrieval_eval.md` 에 있음.
