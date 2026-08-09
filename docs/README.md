@@ -54,7 +54,9 @@
 | [`retrieval_eval.md`](retrieval_eval.md) | 검색기 3종 × 색인 단위 4종 비교. 169문항·557문항 두 규모, 확장 전후 비교, **청크 크기 스윕(3행 채택 근거)**, 제품 적용 결정 | 측정 2026-07-15(169) · 07-16(557) · 08-07 두 문서 병합 |
 | [`pipeline_heldout_baseline_89q.md`](pipeline_heldout_baseline_89q.md) | held-out 89문항 정식 평가(Recall@5 0.922 · MRR 0.806). **dev 평가 vs 최종 test 평가 원칙**이 여기에만 있다 | 측정 2026-07-30 · 리랭킹 Off |
 | [`intent_classifier_comparison.md`](intent_classifier_comparison.md) | intent 분류 4자 비교(TF-IDF/HCX-007/gpt-4o-mini/gpt-5.4-mini), 채택 근거, **데이터 국외 이전 검토** | 실험 2026-08-02 · 코드 반영은 08-03 완료(§7) · ⚠️ 부록 산출물 대부분은 저장소에 없다 |
-| [`multiquery_decomposition.md`](multiquery_decomposition.md) | 복합 질문 분해 1차(규칙, 폐기) vs 2차(항상-LLM, 채택). §7은 **현재 파이프라인 설계 명세** | 2026-08-03 |
+| [`multiquery_decomposition.md`](multiquery_decomposition.md) | 복합 질문 분해 1차(규칙, 폐기) vs 2차(항상-LLM, 채택). ⚠️ **§7의 "현재 설계 명세"는 2026-08-09 쿼리 플래너로 교체됐다** — 상단 「현재 상태」 절을 먼저 볼 것. 본문은 `USE_QUERY_PLANNER=False` 폴백 경로 명세로 유효 | 본문 2026-08-03 · 상단 현재 상태 08-09 |
+| [`query_planner_model_comparison.md`](query_planner_model_comparison.md) | 멀티쿼리+intent를 **한 번의 structured-output 호출**로 합치는 쿼리 플래너의 3모델 비교(HCX-007 / gpt-5.4-mini / gpt-5.6-luna, 100문항 joint). 채택 근거·현행 대비 개선폭 | 실험 2026-08-07 · 코드 반영 08-09(`28ab749`) |
+| [`query_planner_token_waste.md`](query_planner_token_waste.md) | 교체 **직전** 방식(HCX 분해 + 하위질문마다 별도 intent)의 토큰 낭비 실측. false split·단일 질문 분해 오버헤드·출처 재확인 비중(29%) | 측정 2026-08-07 · 위 비교 문서와 짝 |
 | [`retrospective.md`](retrospective.md) | P1~P2 전체를 "무엇을 채택·폐기했나"로 재구성. **8장 반복 패턴**(초기 측정 불신·지표 하나만 보면 반대 결론·형제 질문 누수) | 2026-08-03 · 2.4 리랭커 절만 08-07 정정 |
 
 ---
