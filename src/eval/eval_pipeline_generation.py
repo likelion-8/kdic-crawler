@@ -99,7 +99,7 @@ def main():
         # 추가될 때 OOS로 오분류된다(현재는 두 기준이 같은 10개라 결과 동일).
         is_oos = (r.get("question_type") == "out_of_scope")
         try:
-            answer, timings = pipeline._rag_answer_traced(q)
+            answer, timings, _ = pipeline._rag_answer_traced(q)
         except Exception as e:
             failed.append({"test_id": r.get("test_id"), "error": f"{type(e).__name__}: {e}"})
             print(f"  ✗ {r.get('test_id')} 실패: {type(e).__name__}: {e}", flush=True)

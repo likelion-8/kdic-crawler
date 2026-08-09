@@ -67,12 +67,12 @@ def main():
     questions = load_questions()
 
     print(f"웜업 실행(모델 로딩 포함): {questions[0][2]}")
-    _, warmup_timings = _rag_answer_traced(questions[0][2])
+    _, warmup_timings, _ = _rag_answer_traced(questions[0][2])
     print(f"  total: {warmup_timings['total']:.2f}s\n")
 
     rows = []
     for test_id, label, question in questions:
-        answer, timings = _rag_answer_traced(question)
+        answer, timings, _ = _rag_answer_traced(question)
         print(f"[{label}] {question}")
         print(f"  timings: {timings}")
         rows.append((label, question, timings))

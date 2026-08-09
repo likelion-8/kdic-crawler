@@ -16,6 +16,7 @@ from typing import Optional
 # src/ 빌딩블록 (flat import — api/__init__.py 가 sys.path 에 src/ 를 넣어줌). pipeline.py 와
 # 완전히 같은 함수들을 쓴다. src/ 는 읽기만 하고 수정하지 않는다.
 from query_decomposer import decompose_query
+from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent
 from retrieval import route_search_chunks
 from candidate_ranking import top_k_cut
@@ -50,17 +51,33 @@ class SubPlan:
     evidence: str = ""             # 근거 재확인(recheck)용 텍스트
 
 
-def decompose(query: str) -> list[str]:
-    """복합 질문이면 하위 질문 리스트로, 아니면 원본 1개짜리 리스트로. pipeline 과 동일하게
-    query_decomposer.decompose_query()를 쓴다(단일이면 원본 그대로 검색)."""
+def plan(query: str) -> list:
+    """(하위 질문, intent) 목록. pipeline._rag_answer_traced 와 동일 로직으로, 웹 SSE 경로도
+    같은 쿼리 플래너를 쓰게 한다(두 경로 동작 일치).
+
+    USE_QUERY_PLANNER면 query_planner.plan_query() 한 콜(structured output)로 분해+intent를
+    함께 얻는다. 단일이면 원본 질문으로 검색하고(pipeline 과 동일: 재질문판 문구로 검색 안 함)
+    intent만 플래너 결과를 쓴다. False면 기존 decompose_query 로 나누고 intent 는 prepare_sub 에서
+    분류하도록 None 을 넘긴다."""
+    if USE_QUERY_PLANNER:
+        p = plan_query(query)
+        items = p["items"] or [{"question": query, "intent": "informational"}]
+        if p["should_split"] and len(items) > 1:
+            return [(it["question"], it["intent"]) for it in items]
+        return [(query, items[0]["intent"])]
     subs = decompose_query(query)
-    return subs if subs and len(subs) > 1 else [query]
+    subs = subs if subs and len(subs) > 1 else [query]
+    return [(q, None) for q in subs]
 
 
-def prepare_sub(q: str) -> SubPlan:
+def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
     """하위 질문 하나에 대해 intent 분류·검색·근거조립·프롬프트까지 준비(동기, LLM 생성 전).
-    pipeline._answer_one 의 검색~프롬프트 단계와 동일하다(리랭커 off)."""
-    intent = classify_intent(q)
+    pipeline._answer_one 의 검색~프롬프트 단계와 동일하다(리랭커 off).
+
+    intent: 쿼리 플래너(plan)가 이미 판단한 값을 넘기면 그대로 쓴다. None이면(플래너 Off 폴백)
+    여기서 classify_intent 로 분류한다."""
+    if intent is None:
+        intent = classify_intent(q)
     candidates = route_search_chunks(q, k=K_CANDIDATES)
     top = top_k_cut(candidates, k=K_FINAL)
     if intent == "civil_petition":

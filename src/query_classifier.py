@@ -94,13 +94,18 @@ def classify_question_type(query):
     return _get_classifier("question_type").classify(query)
 
 
-# ── intent 분류: OpenAI GPT-5.4-mini Structured Output (2026-08-03, 기존 Kiwi+TF-IDF+LogReg에서 교체) ──
+# ── intent 분류: OpenAI Structured Output (2026-08-03, 기존 Kiwi+TF-IDF+LogReg에서 교체) ──
 # 채택 근거: held-out(testset_pipeline) 4자 비교에서 gpt-5.4-mini가 전체 92.1%·구어체 93.8%로
 # 최고이면서 응답 ~0.85초로 빠르고, native structured output으로 출력이 두 라벨 중 하나로 보장됨
 # (기존 TF-IDF baseline 77.2% 대비 큰 개선, HCX-007 91.0%보다 빠름).
 # 상세: docs/intent_classifier_comparison.md. 스키마·프롬프트는 intent_llm_common.py 재사용.
 # question_type 분류(위 QuestionTypeClassifier)는 코사인 방식 그대로 유지 — 이번 교체 대상 아님.
-_OPENAI_INTENT_MODEL = os.environ.get("OPENAI_INTENT_MODEL") or "gpt-5.4-mini"
+#
+# 2026-08-09: 멀티쿼리 분해 + intent를 한 콜로 처리하는 query_planner.plan_query()를 도입하면서
+# classify_intent()는 그 플래너를 끈(USE_QUERY_PLANNER=False) 경우의 폴백 경로가 됐다. 모델
+# 환경변수는 플래너와 공유한다(OPENAI_PLANNER_MODEL) — 같은 OpenAI 모델(gpt-5.6-luna)을 쓰므로
+# 하나로 통일. 이름이 OPENAI_INTENT_MODEL에서 바뀐 이유는 이 모델이 이제 intent만 하지 않기 때문.
+_OPENAI_INTENT_MODEL = os.environ.get("OPENAI_PLANNER_MODEL") or "gpt-5.6-luna"
 _openai = {}
 
 # 2026-08-04: 모델마다 temperature 지원 여부가 다르다(gpt-5.4-mini는 0 허용, gpt-5.6-luna

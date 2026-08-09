@@ -119,16 +119,23 @@ def test_recheck_direction():
 
 def test_subanswer_independence():
     """이슈 4 회귀 — 협력자를 전부 가짜로 바꿔, 앞 하위 답변(미사용)이 뒤 하위 답변(사용)의
-    출처를 지우지 않는지 확인한다."""
+    출처를 지우지 않는지 확인한다.
+
+    2026-08-09: 멀티쿼리 분해 + intent를 한 콜로 하는 query_planner.plan_query로 전환하면서,
+    decompose_query/classify_intent 대신 plan_query를 가짜로 바꾼다(복합으로 분해 + 하위 intent를
+    함께 반환). 하위 답변별 출처 독립 로직 자체는 그대로다."""
     import pipeline
 
     page = json.loads(open(ROOT / "data" / "corpus.jsonl", encoding="utf-8").readline())
     chunks = [(f"{page['page_id']}#0", 0.9, "본문")]
-    orig = (pipeline.decompose_query, pipeline.classify_intent, pipeline.route_search_chunks,
+    orig = (pipeline.plan_query, pipeline.classify_question_type, pipeline.route_search_chunks,
             pipeline.call_hyperclova, pipeline.recheck_source_usage)
     try:
-        pipeline.decompose_query = lambda q: ["질문1", "질문2"]
-        pipeline.classify_intent = lambda q: "informational"
+        # 플래너가 복합으로 분해 + 하위 intent를 함께 준다(질문1·질문2, 둘 다 informational).
+        pipeline.plan_query = lambda q: {"should_split": True, "items": [
+            {"question": "질문1", "intent": "informational"},
+            {"question": "질문2", "intent": "informational"}]}
+        pipeline.classify_question_type = lambda q: "fact"   # 로깅용 — DB 안 타게 가짜로
         pipeline.route_search_chunks = lambda q, k: chunks
         # ①이 [NO_SOURCE]라 재확인이 실제로 호출된다 — HCX를 타지 않도록 가짜로 막고,
         # '안 썼다'로 답하게 해 이 검사의 원래 시나리오(①은 출처 미부착)를 유지한다.
@@ -143,7 +150,7 @@ def test_subanswer_independence():
         assert "참고 출처" not in first, "①(미사용)에 출처가 붙음"
         assert page["source_url"] in second, "②(사용)의 출처가 사라짐 — 이슈 4 재발!"
     finally:
-        (pipeline.decompose_query, pipeline.classify_intent, pipeline.route_search_chunks,
+        (pipeline.plan_query, pipeline.classify_question_type, pipeline.route_search_chunks,
          pipeline.call_hyperclova, pipeline.recheck_source_usage) = orig
 
 
