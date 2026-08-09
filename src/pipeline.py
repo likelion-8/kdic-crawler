@@ -8,6 +8,7 @@ AnswerRecall@5 기준)을 그대로 재사용한다.
 import os
 
 from query_decomposer import decompose_query
+from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent, classify_question_type
 from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever, route_search_chunks
 from candidate_ranking import rerank, top_k_cut
@@ -31,15 +32,20 @@ K_FINAL = 5
 # 재검증 후). Off면 1차 검색(route_search_chunks) 상위 K_FINAL을 그대로 사용.
 USE_RERANKER = False
 
-# 2026-07-30: query_decomposer.decompose_query()로 복합 질문(예: "신청 방법과 필요한 서류,
-# 처리 기간을 알려주세요")을 감지해 하위 질문별로 따로 검색·답변한다(log/0729.md 3항).
+# 2026-08-09: 멀티쿼리 분해와 intent 분류를 gpt-5.6-luna structured output '한 콜'로 함께
+# 처리하는 쿼리 플래너(query_planner.plan_query)로 전환했다. 스위치는 query_planner.USE_QUERY_PLANNER
+# (여기로 import). True면 plan_query가 {should_split, items:[{question, intent}]}를 한 번에 주고,
+# 하위 질문별 intent가 여기서 바로 나오므로 _answer_one이 별도 classify_intent를 안 부른다.
+# 채택 근거(docs/query_planner_model_comparison.md, 100문항 joint 벤치마크): gpt-5.6-luna가 joint
+# 정확도 89%·intent macroF1 0.946·false split 0%로 최고. 현행(HCX 분해 + luna intent, 질문당
+# 2.6콜) 대비 joint 79→89%, 질문당 토큰 2,007→539(-73%), 호출 2.6→1.
+# USE_QUERY_PLANNER=False면 아래 기존 분리 방식(decompose_query + classify_intent)으로 폴백한다.
+#
+# 2026-07-30(폴백 경로): query_decomposer.decompose_query()로 복합 질문(예: "신청 방법과 필요한
+# 서류, 처리 기간을 알려주세요")을 감지해 하위 질문별로 따로 검색·답변한다(log/0729.md 3항).
 # 판단 자체가 매 질문마다 HyperCLOVA 호출 1회를 추가한다(단일 질문이어도 "쪼갤지 말지"를
-# 판단해야 하므로 피할 수 없는 비용) — 38문항 hard-tier 검증(eval_query_decomposition.py)
-# 기준 오분해 0%대·과소분해 ~5%까지 잡았지만, temperature=0.2(llm_client.py, 전체 파이프라인
-# 공유)에 따른 근본적 비결정성 때문에 10~20%대 잔여 흔들림은 프롬프트만으로는 못 없앴다.
-# 최악의 경우도 "원래 단일 질문을 비슷한 재질문 2개로 나눠 검색"하는 정도라 답 품질이
-# 완전히 틀어지진 않는다고 판단해 기본 On으로 둔다. E2E(Recall/환각률/응답시간) 재검증 후
-# 이 판단이 틀렸다면 USE_RERANKER처럼 여기서 끄면 된다.
+# 판단해야 하므로 피할 수 없는 비용). USE_QUERY_PLANNER가 False일 때만 이 경로를 쓰며,
+# 그때 USE_QUERY_DECOMPOSITION로 분해 자체를 켜고 끈다(둘 다 off면 원문 그대로 단일 처리).
 USE_QUERY_DECOMPOSITION = True
 
 # 2026-08-03: 마커가 [NO_SOURCE]로 판정한 답변만 source_check.recheck_source_usage()로 한 번
@@ -52,15 +58,19 @@ USE_QUERY_DECOMPOSITION = True
 USE_SOURCE_RECHECK = True
 
 
-def _answer_one(query, timings):
+def _answer_one(query, timings, intent=None):
     """질문 하나(원본 질문 또는 복합 질문의 하위 질문 하나)에 대해 검색부터 답변 조립까지
     수행한다. 하위 답변끼리는 출처를 포함해 완전히 독립이다 — 하위 답변 간 "중복 출처
     제거"를 하던 누적 집합(seen_pages/seen_urls)은 2026-07-30 제거했다. 출처를 실제로
     붙였는지가 아니라 검색됐는지 기준으로 걸러서, 앞 하위 답변이 [NO_SOURCE]로 거절한
     경우 뒤 하위 답변의 진짜 출처까지 지우는 버그가 있었다(docs/pipeline_issues.md 이슈 4).
-    같은 문서가 여러 하위 답변의 근거면 각각에 보이는 게 맞다 — 다시 도입하지 말 것."""
-    with measure_time(timings, "query_classification", accumulate=True):
-        intent = classify_intent(query)
+    같은 문서가 여러 하위 답변의 근거면 각각에 보이는 게 맞다 — 다시 도입하지 말 것.
+
+    intent: 쿼리 플래너(plan_query)가 이미 판단한 하위 질문 intent를 넘기면 그대로 쓴다.
+    None이면(USE_QUERY_PLANNER=False 폴백 경로) 여기서 classify_intent로 분류한다."""
+    if intent is None:
+        with measure_time(timings, "query_classification", accumulate=True):
+            intent = classify_intent(query)
 
     with measure_time(timings, "retrieval", accumulate=True):
         candidates = route_search_chunks(query, k=K_CANDIDATES)
@@ -109,28 +119,47 @@ def _answer_one(query, timings):
 
 
 def _rag_answer_traced(query):
-    """rag_answer()와 흐름은 동일하되, 단계별 소요 시간을 timings 딕셔너리에 함께
-    기록해 (답변, timings) 튜플로 반환한다. 성능 측정 스크립트 전용 — 서비스
-    경로(rag_answer)는 이 함수를 감싸 답변 문자열만 꺼내 쓴다."""
+    """rag_answer()와 흐름은 동일하되, 단계별 소요 시간을 timings 딕셔너리에 함께 기록해
+    (답변, timings, log_intent) 튜플로 반환한다. 성능 측정 스크립트 전용 — 서비스
+    경로(rag_answer)는 이 함수를 감싸 답변 문자열을 꺼내 쓰고, log_intent를 로깅에 재사용한다.
+
+    log_intent: 플래너 경로에선 대표 intent(첫 하위 질문의 것)를 담아 rag_answer가 추가
+    호출 없이 그대로 로깅하게 한다. 폴백 경로에선 None을 담고, rag_answer가 필요 시 별도로
+    classify_intent를 부른다(= 이 기능 도입 전과 동일 동작)."""
     timings = {}
 
-    if USE_QUERY_DECOMPOSITION:
-        with measure_time(timings, "decomposition"):
-            sub_queries = decompose_query(query)
-    else:
-        sub_queries = [query]
+    if USE_QUERY_PLANNER:
+        # 멀티쿼리 분해 + intent를 한 콜(structured output)로 함께 판단한다.
+        with measure_time(timings, "query_planning"):
+            plan = plan_query(query)
+        items = plan["items"]
+        log_intent = items[0]["intent"] if items else "informational"
 
-    if len(sub_queries) <= 1:
-        # 단일 질문(또는 기능 Off) - 분해기가 살짝 바꿔 쓴 표현(예: "이란"->"이라는 게")이
-        # 아니라 원본 질문 그대로 검색한다. 분해가 실제로 아무것도 바꾸지 않아야 할 상황에서
-        # 굳이 재질문판 문구를 쓸 이유가 없다(안전한 기본 동작 유지).
-        answer = _answer_one(query, timings)
+        if not (plan["should_split"] and len(items) > 1):
+            # 단일 질문 - 플래너가 하위 질문을 살짝 바꿔 썼어도 원본 질문 그대로 검색하고
+            # (기존 설계 유지: 재질문판 문구로 검색하지 않는다), intent만 플래너 결과를 쓴다.
+            answer = _answer_one(query, timings, intent=(items[0]["intent"] if items else None))
+        else:
+            sub_answers = [_answer_one(it["question"], timings, intent=it["intent"]) for it in items]
+            answer = "\n\n".join(f"**{it['question']}**\n{a}"
+                                 for it, a in zip(items, sub_answers))
     else:
-        sub_answers = [_answer_one(q, timings) for q in sub_queries]
-        answer = "\n\n".join(f"**{q}**\n{a}" for q, a in zip(sub_queries, sub_answers))
+        # 폴백: 기존 분리 방식(HCX 분해 + 하위 질문별 classify_intent).
+        if USE_QUERY_DECOMPOSITION:
+            with measure_time(timings, "decomposition"):
+                sub_queries = decompose_query(query)
+        else:
+            sub_queries = [query]
+
+        if len(sub_queries) <= 1:
+            answer = _answer_one(query, timings)
+        else:
+            sub_answers = [_answer_one(q, timings) for q in sub_queries]
+            answer = "\n\n".join(f"**{q}**\n{a}" for q, a in zip(sub_queries, sub_answers))
+        log_intent = None
 
     timings["total"] = round(sum(timings.values()), 4)
-    return answer, timings
+    return answer, timings, log_intent
 
 
 def rag_answer(query):
@@ -143,9 +172,11 @@ def rag_answer(query):
     (rag_retrieval_results)는 로깅하지 않는다 — 질문당 20행씩 쌓여 부담이고, 추후 Langfuse로
     trace를 붙이면 그쪽이 이 역할을 전담한다(2026-08-04 팀 결정).
     로깅은 log_rag_run 내부에서 전부 실패-안전(예외를 삼킴)이라 여기서 답변을 막지 않는다."""
-    answer, timings = _rag_answer_traced(query)
+    answer, timings, log_intent = _rag_answer_traced(query)
 
-    intent = classify_intent(query)
+    # 로깅용 intent: 플래너 경로는 이미 판단한 대표 intent를 재사용해 추가 호출을 안 한다
+    # (쿼리 플래너의 '한 콜' 이점 유지). 폴백 경로(log_intent None)에서만 별도로 분류한다.
+    intent = log_intent if log_intent is not None else classify_intent(query)
     qtype = classify_question_type(query)
     route = "hybrid" if qtype in RoutedRetriever.HYBRID_ONLY_TYPES else "dense"
     log_rag_run(

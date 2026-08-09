@@ -120,24 +120,25 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      기록에 안 남아, 사용자는 분명 물어봤는데 복원하면 없는 상태가 된다.
     conversation.save_user_message(session_id, message)
 
-    # 1) 복합 여부 판단(분해). 분해 자체도 LLM 호출이라 실패할 수 있다.
+    # 1) 쿼리 플래너: 멀티쿼리 분해 + 하위질문별 intent를 한 콜(structured output)로 판단한다.
+    #    LLM 호출이라 실패할 수 있다(내부에서 안전 폴백하지만 예외도 방어).
     try:
-        sub_qs = answer.decompose(message)
+        plan_items = answer.plan(message)   # [(하위질문, intent|None), ...]
     except Exception as e:  # noqa: BLE001
-        logger.exception("[%s] decompose 실패", request_id)
+        logger.exception("[%s] plan 실패", request_id)
         yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
         return
 
-    composite = len(sub_qs) > 1
+    composite = len(plan_items) > 1
     finalized = []
     used_flags = []
     sub_plans = []   # 로깅에 쓸 intent·검색경로 (하위질문마다 다를 수 있다)
     full_parts = []  # 흘려보낸 모든 조각(구분자 포함) — done.answer 로 쓴다(불변식 보장)
 
-    for i, q in enumerate(sub_qs):
-        # 2) 하위질문 준비(검색+프롬프트) — 동기. 여기 실패는 검색/자료 단계로 본다.
+    for i, (q, intent) in enumerate(plan_items):
+        # 2) 하위질문 준비(검색+프롬프트) — 동기. intent는 플래너 결과를 그대로 넘긴다.
         try:
-            sp = answer.prepare_sub(q)
+            sp = answer.prepare_sub(q, intent)
         except Exception as e:  # noqa: BLE001
             logger.exception("[%s] prepare_sub 실패: %s", request_id, q)
             yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
