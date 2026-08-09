@@ -4,9 +4,13 @@
 색인 단위·평가 산식은 프로젝트1 것을 그대로 재사용한다(build_units('all') 494청크,
 페이지 단위 Recall@k·MRR). 검색은 순수 dense(업무 필터 없음) — 모델 자체의 검색력만 격리한다.
 
-공유 프로덕션 캐시(retrieval.DenseRetriever)는 건드리지 않는다. 그 캐시는 텍스트 해시로만
-키를 잡아 모델이 달라도 같은 파일을 재사용하므로(모델 충돌), 비교용으로는 부적합하다.
-여기서는 모델마다 문서를 새로 인코딩한다(494청크는 GPU에서 초 단위라 캐시 불필요).
+팀 공유 캐시(data/dense_cache/, retrieval.DenseRetriever)는 건드리지 않고 모델마다 문서를
+새로 인코딩한다 — 494청크는 GPU에서 초 단위라 캐시가 필요 없다.
+
+⚠️ 이 문단은 원래 "그 캐시는 텍스트 해시로만 키를 잡아 모델이 달라도 같은 파일을 재사용한다
+(모델 충돌)"를 이유로 들었는데, 그건 지금 코드에서 사실이 아니다. 캐시 키에 모델명이
+들어가도록 고쳐졌다(retrieval.DenseRetriever._cache_path, 커밋 b455b83 "캐시 키 모델별 분리").
+캐시를 안 쓰는 결정 자체는 그대로 두지만, 근거로 '모델 충돌'을 인용하지는 말 것.
 
 실행(Colab GPU 권장): python3 src/crawler/eval_embeddings.py
 자가검증(모델 로드 불필요):   python3 src/crawler/eval_embeddings.py --selftest

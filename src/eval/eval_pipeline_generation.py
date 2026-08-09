@@ -9,9 +9,11 @@ held-out 세트(testset_pipeline.jsonl)로 답변 단계를 측정한다:
 설계 원칙(옛 evaluate_pipeline.py의 교훈): 문자열로 '의미'를 흉내내는 자동지표는 과신 금지.
 must_include·거절감지는 결정론 프록시(하한선)로만 쓰고, 애매한 건 manual_review로 빼 사람이 확인.
 
-리랭킹 on/off를 인자로 받는다(--rerank). 지금 Off 베이스라인 → 다음 주 리랭커 도입 시 재실행.
+리랭킹 on/off를 인자로 받는다(--rerank). 지금 Off 베이스라인 → GPU 확보 후 리랭커 도입 시 재실행.
 ⚠️ 문항당 HCX 1회 이상 호출(비용·시간). 전량 전 --limit 로 소규모 검증 권장.
-⚠️ Qdrant 단일 프로세스 — 평가 중 챗봇(streamlit) 켜지 말 것.
+※ "Qdrant 단일 프로세스라 평가 중 streamlit 켜지 말 것"이라는 경고가 여기 있었으나 더 이상
+   해당되지 않는다 — 2026-08-03에 Dense가 Supabase pgvector로 이관해 프로세스 배타 제약이
+   사라졌다(retrieval.PgVectorDenseRetriever). 챗봇과 동시에 돌려도 된다.
 
 읽기 전용: 기존 파일 수정/git 실행 없음.
 실행: python3 src/eval/eval_pipeline_generation.py [--limit N] [--rerank]
@@ -74,7 +76,7 @@ def load_page_urls():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="앞에서 N문항만(소규모 검증)")
-    ap.add_argument("--rerank", action="store_true", help="리랭킹 On(다음 주 GPU 도입 시)")
+    ap.add_argument("--rerank", action="store_true", help="리랭킹 On(GPU 확보 후 도입 시)")
     args = ap.parse_args()
 
     pipeline.USE_RERANKER = args.rerank  # 모듈 전역 토글 → _answer_one이 런타임에 참조

@@ -7,7 +7,7 @@ Starlette 문서에 나오는 `BaseHTTPMiddleware`(@app.middleware("http")) 는 
 SSE 처럼 "연결을 오래 열어두고 조금씩 흘려보내는" 응답에서는 클라이언트가 창을 닫아도
 그 사실이 제때 전달되지 않아, 이미 떠난 사용자를 위해 LLM 호출이 계속되는 일이 생긴다.
 
-api/rag/sse.py 가 바로 그 SSE 를 쓸 예정이라, 처음부터 순수 ASGI 미들웨어로 짰다.
+api/rag/sse.py 가 바로 그 SSE 이므로(POST /api/chat), 처음부터 순수 ASGI 미들웨어로 짰다.
 ASGI 미들웨어는 scope/receive/send 를 그대로 넘겨주므로 스트리밍에 개입하지 않는다.
 
 ## ASGI 미들웨어를 읽는 법

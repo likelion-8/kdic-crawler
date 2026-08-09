@@ -97,10 +97,15 @@ QDRANT_COLLECTION = "kdic_chunks_all"
 def build_retrievers(mode):
     """색인 단위(mode)로 BM25/Dense/Hybrid 페이지 랭킹 검색기 + 유닛 텍스트(답변평가용) 구성.
 
-    프로덕션 모드(all)는 Qdrant(로컬 임베디드)를 쓴다 — data/chunks_all.jsonl과 순서가
-    대응하는 실제 서비스 산출물이 거기 있으므로. 나머지 3개 모드(page/faq_atomic/table_row)는
+    제품 색인 모드(all)는 여기서 Qdrant(로컬 임베디드)를 쓴다 — data/chunks_all.jsonl과 순서가
+    대응하는 산출물이 거기 있으므로. 나머지 3개 모드(page/faq_atomic/table_row)는
     "청킹이 왜 필요한지" 증명한 실험 비교군일 뿐 제품용이 아니라(docs/CODEBASE.md 참고)
     Qdrant 색인 대상이 아니고, 기존 numpy DenseRetriever를 그대로 쓴다.
+
+    ⚠️ 여기서 Qdrant를 쓴다고 해서 운영이 Qdrant인 것은 아니다. 2026-08-03에 운영 Dense는
+    Supabase pgvector(retrieval.PgVectorDenseRetriever)로 이관했고 QdrantDenseRetriever는
+    롤백 대비로 남아 있을 뿐이다. 이 스크립트만 로컬 Qdrant 색인을 그대로 쓰고 있어서,
+    수치를 운영 성능으로 인용하려면 두 저장소가 같은 임베딩인지 먼저 확인해야 한다.
     """
     from pathlib import Path
 

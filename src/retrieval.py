@@ -89,7 +89,7 @@ class DenseRetriever:
         self.unit_ids = unit_ids
         self.unit2bf = unit2bf  # unit_id → business_function (업무 필터용, 없으면 필터 무시)
         # 유닛 임베딩은 (모델+texts) 해시로 캐시하며 data/dense_cache/ 는 팀 공유용으로 커밋된다
-        # (src/embed_corpus.py 로 생성). 같은 코퍼스·같은 모델이면 팀원 모두 동일 파일을 불러 써 재인코딩 불필요.
+        # (src/crawler/embed_corpus.py 로 생성). 같은 코퍼스·같은 모델이면 팀원 모두 동일 파일을 불러 써 재인코딩 불필요.
         cache = self._cache_path(texts, model)
         if cache.exists():
             self.doc_emb = np.load(cache)
@@ -299,11 +299,17 @@ class RoutedRetriever:
         return retriever.search(query, k, business_function=business_function)
 
 
-# ---- 함수형 진입점 — pipeline.py 등 실서비스 호출부는 이 4개 함수만 알면 된다 ----------
-# 클래스(BM25Retriever 등)는 route_eval.py/eval_retrieval.py/index_qdrant.py가 여전히
-# 직접 쓰므로 이름·구조를 바꾸지 않는다. 여기서는 그 클래스들을 "한 번만 조립해 재사용"하는
-# 얇은 래퍼만 추가한다 — 매 질문마다 BM25 토크나이저·Qdrant 연결·분류기를 새로 만들면
-# 느려지므로, query_classifier.py의 _classifiers 캐시와 같은 방식으로 싱글턴을 둔다.
+# ---- 함수형 진입점 --------------------------------------------------------------------
+# ⚠️ 아래 5개 중 실제로 호출되는 것은 route_search_chunks() 하나다(pipeline._answer_one ·
+# api/rag/answer.prepare_sub · eval_pipeline_retrieval). bm25_search·dense_search·
+# hybrid_search·route_search 는 지금 호출부가 없다 — 검색기별 비교나 디버깅용으로 남겨 둔
+# 것이라, "이게 운영 경로다"라고 읽으면 안 된다.
+# 클래스(BM25Retriever·DenseRetriever·PageRanked·RoutedRetriever 등)는 src/crawler/의 평가·적재
+# 스크립트 8개가 직접 import하므로 이름·구조를 바꾸지 않는다 — route_eval · eval_retrieval ·
+# eval_embeddings · bf_score_fusion_eval · embed_corpus · index_qdrant · index_document_chunks ·
+# index_evaluation_sets. 여기서는 그 클래스들을 "한 번만 조립해 재사용"하는 얇은 래퍼만 둔다 —
+# 매 질문마다 BM25 토크나이저·DB 연결·분류기를 새로 만들면 느려지므로,
+# query_classifier.py의 _classifiers 캐시와 같은 방식으로 싱글턴을 쓴다.
 _engines = {}
 
 
@@ -347,7 +353,8 @@ def bm25_search(query, k, business_function=None):
 
 
 def dense_search(query, k, business_function=None):
-    """Qdrant 벡터(의미) 검색 실행."""
+    """벡터(의미) 검색 실행 — 실체는 PgVectorDenseRetriever(Supabase pgvector).
+    2026-08-03 Qdrant에서 이관했다(_build_engines 참고)."""
     return _build_engines()["dense"].search(query, k, business_function=business_function)
 
 
@@ -357,9 +364,11 @@ def hybrid_search(query, k, business_function=None):
 
 
 def route_search(query, k):
-    """classify_query_type()/classify_intent() 격의 자동분류(RoutedRetriever 내부)로
-    Dense/Hybrid를 고르고, business_function도 자동 판별해 필터링까지 적용한 검색 실행.
-    질문 하나만 넘기면 되는, 실서비스가 실제로 부르는 최종 진입점."""
+    """질문 유형 자동분류(RoutedRetriever 내부)로 Dense/Hybrid를 골라 페이지 단위로 검색.
+
+    business_function 필터는 걸리지 않는다 — _build_engines()가 bf_classifier를 넘기지
+    않아 자동 업무분류가 비활성이다(그 결정 근거는 _build_engines 주석 참고).
+    답변 경로가 실제로 쓰는 것은 아래 route_search_chunks()다(청크 단위)."""
     return _build_engines()["routed"].search(query, k)
 
 

@@ -108,8 +108,11 @@ def _stream_one(prompt):
 
 
 def chat_event_stream(message: str, session_id: str, request_id: str):
-    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 분해 → 하위질문마다 (준비→토큰
-    스트리밍, 마커 제거) → sources/attachments → done."""
+    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 쿼리 플래너(분해+intent) →
+    하위질문마다 (준비 → 토큰 스트리밍, 마커 제거) → done.
+
+    sources/attachments 는 별도 이벤트로 보내지 않고 done 에 실린다(사유는 파일 맨 끝 주석).
+    실패하면 done 대신 error 가 나가고 스트림이 끝난다."""
     started = time.perf_counter()
 
     # 0) accepted — 프론트가 이 값으로 URL replaceState·피드백 키를 잡는다. done 의 값과 같아야

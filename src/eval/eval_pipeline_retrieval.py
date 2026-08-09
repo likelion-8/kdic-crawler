@@ -1,11 +1,23 @@
-"""1단계 파이프라인 평가 — 검색 + 분류 + 오타 강건성. LLM 호출 없음(빠름).
+"""1단계 파이프라인 평가 — 검색 + 분류 + 오타 강건성. 생성(HCX) 단계는 부르지 않는다.
+
+⚠️ "LLM 호출 없음(빠름)"이라고 적혀 있었으나 지금은 사실이 아니다. 작성 시점(2026-07-30,
+커밋 8bf1898)에는 intent 분류가 로컬 Kiwi+TF-IDF+LogReg 였지만, 2026-08-03(커밋 acf1df3)에
+OpenAI structured output으로 교체되면서 classify_intent()가 네트워크 호출이 됐다. 지금
+이 스크립트를 그대로 돌리면 **intent 라벨이 있는 in-scope 문항 수만큼 OpenAI 호출이
+나간다**(현재 testset_pipeline 89문항 기준 79회). 답변 생성(HCX)을 안 부른다는 뜻이지
+"LLM을 아예 안 쓴다"는 뜻이 아니다.
+
+⚠️ 그리고 여기서 재는 intent 정확도는 **더 이상 운영 경로의 성능이 아니다.** 운영 intent는
+2026-08-09부터 query_planner.plan_query()가 분해와 함께 내놓고, classify_intent()는
+USE_QUERY_PLANNER=False 폴백 전용이다(query_classifier.py 참고). 이 수치를 인용할 때는
+'폴백 분류기 기준'임을 밝힐 것. 운영 기준으로 재려면 plan_query 쪽을 평가해야 한다.
 
 held-out 세트(testset_pipeline.jsonl)로 '확정된 우리 파이프라인'의 실제 성능을 측정한다.
 지금까지의 recall 측정이 '어떤 방식을 쓸지 고르는 개발(dev)용, testset_all 기준'이었다면,
 이 평가는 '고른 시스템이 처음 보는 질문에 실제로 얼마나 하는지 재는 최종(test)용'이다.
 
-리랭킹 on/off를 인자로 받는다(--rerank). 지금은 Off로 베이스라인을 재고, 다음 주 GPU
-인스턴스로 리랭커 도입 시 --rerank로 같은 코드를 다시 돌려 향상폭을 비교한다(리랭커 하나만
+리랭킹 on/off를 인자로 받는다(--rerank). 지금은 Off로 베이스라인을 재고, GPU 인스턴스를
+확보해 리랭커를 도입할 때 --rerank로 같은 코드를 다시 돌려 향상폭을 비교한다(리랭커 하나만
 바뀌고 나머지 고정 → 통제 A/B). 결과는 리랭커 설정별 파일명으로 구분 저장한다.
 
 파일 구조에 의존하지 않는다 — test_id 네이밍이 아니라 각 행의 필드(expected_sources·intent·
@@ -13,7 +25,7 @@ question_type·note)로 대상을 정한다(팀원이 행을 더 추가해도 �
 
 읽기 전용: 기존 파일 수정/git 실행 없음.
 실행: python3 src/eval/eval_pipeline_retrieval.py            # 리랭킹 Off(베이스라인)
-      python3 src/eval_pipeline_retrieval.py --rerank   # 리랭킹 On(다음 주)
+      python3 src/eval/eval_pipeline_retrieval.py --rerank   # 리랭킹 On(GPU 확보 시)
 """
 import argparse
 import json
@@ -152,7 +164,7 @@ def eval_typo_robustness(rows, k_candidates, use_rerank):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--rerank", action="store_true", help="리랭킹 On(다음 주 GPU 도입 시)")
+    ap.add_argument("--rerank", action="store_true", help="리랭킹 On(GPU 확보 후 도입 시)")
     args = ap.parse_args()
 
     rows = [json.loads(l) for l in open(TESTSET, encoding="utf-8") if l.strip()]
@@ -161,7 +173,7 @@ def main():
     n_ans = sum(1 for r in rows if r.get("expected_sources"))
     n_oos = len(rows) - n_ans
     print(f"testset_pipeline: {len(rows)}행 (검색채점 대상 {n_ans} / out-of-scope {n_oos})")
-    print(f"리랭킹: {tag.upper()} · K_CANDIDATES={k_c} · (LLM 호출 없음)\n")
+    print(f"리랭킹: {tag.upper()} · K_CANDIDATES={k_c} · (생성 HCX 미호출 / intent 분류는 OpenAI 호출)\n")
 
     t0 = time.time()
     retr, per_row = eval_retrieval(rows, k_c, args.rerank)

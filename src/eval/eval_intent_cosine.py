@@ -1,9 +1,16 @@
 """intent(정보성 informational / 민원성 civil_petition) 코사인 유사도 분류의
 '진짜 정확도'를 데이터 누수(data leakage) 없이 검증한다.
 
-배경: 운영 분류기(query_classifier.py)는 testset_all.jsonl의 in-scope 질문 전체를
-'기준(참조 벡터)'으로 쓰고, 그 정확도도 같은 데이터로 재면 각 질문이 자기 자신을
-최근접으로 골라 정확도가 허위로 부풀려진다(1-NN self-match leak).
+배경: 코사인 1-NN 분류기는 testset_all.jsonl의 in-scope 질문 전체를 '기준(참조 벡터)'으로
+쓰는데, 그 정확도도 같은 데이터로 재면 각 질문이 자기 자신을 최근접으로 골라 정확도가
+허위로 부풀려진다(1-NN self-match leak).
+
+⚠️ 작성 당시(2026-08-02 이전) intent 분류가 이 코사인 1-NN이어서 본문이 그것을 '운영
+분류기'라고 부른다. 2026-08-03에 intent는 OpenAI structured output으로 교체됐고
+(query_classifier.classify_intent), 지금은 쿼리 플래너를 끈 폴백 경로 전용이다.
+따라서 아래 수치는 더 이상 운영 intent 분류의 성능이 아니다 — 다만 여기서 진단한 누수
+구조는 같은 1-NN 방식을 그대로 쓰는 question_type 분류(QuestionTypeClassifier)에 여전히
+적용된다. 그쪽을 평가할 때 이 스크립트의 방법론을 재사용하면 된다.
 
 이 스크립트는 두 가지를 한다:
   (진단) 운영 방식이 왜 부풀려지는지 구체 수치로 보여준다(1-NN self / leave-one-out).

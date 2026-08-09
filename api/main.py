@@ -121,14 +121,12 @@ def create_app() -> FastAPI:
     app.include_router(feedback.router)
     app.include_router(session.router)
 
-    # ⚠️ 임시 — routers/public.py 를 만드는 사람이 그쪽으로 옮기고 여기서 지울 것.
+    # liveness 만 여기 남긴다. readiness(DB·워밍업까지 확인)는 routers/public.py 의
+    # GET /api/health 다 — 둘은 판정 대상이 달라 일부러 나눠 뒀고, 둘 다
+    # RATE_LIMIT_EXEMPT_PATHS 에 들어 있다.
     #
-    # 라우터가 하나도 없으면 엔드포인트가 0개라 미들웨어·오류 봉투·request_id 가
-    # 실제로 도는지 확인할 수 없어서, 기반 계층 검증용으로만 넣어둔 것이다.
-    # 계층 규칙상 엔드포인트는 routers/ 소관이므로 main.py 에 남을 코드가 아니다.
-    #
-    # 옮길 때: liveness(/health, 아래 그대로)와 readiness(/ready, DB·검색엔진까지
-    # 확인) 를 나눠 두면 좋다. 옮긴 뒤 RATE_LIMIT_EXEMPT_PATHS 의 경로도 맞출 것.
+    # 엔드포인트는 routers/ 소관이라는 계층 규칙의 유일한 예외다. 옮기려면 옮겨도 되지만,
+    # 그때 RATE_LIMIT_EXEMPT_PATHS 의 "/health" 도 같이 확인할 것.
     @app.get("/health", tags=["ops"])
     async def health():
         """살아있는지만 보는 liveness probe. DB·LLM 등 외부 의존성은 확인하지 않는다."""

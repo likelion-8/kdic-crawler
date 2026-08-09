@@ -1,8 +1,22 @@
 """LLM 기반 intent 분류의 공유 스키마·시스템 프롬프트.
 
-HyperCLOVA X 구현(classify_intent_hyperclova.py)과 OpenAI 구현(classify_intent_openai.py)이
-'완전히 동일한' 스키마·프롬프트를 쓰도록 여기 한 곳에 두고 양쪽이 import한다 — 프롬프트가
-조금이라도 다르면 두 모델 비교가 공정하지 않기 때문이다.
+지금 이 모듈을 import하는 곳은 query_classifier.py 하나다(IntentResult·SYSTEM_PROMPT).
+그리고 그 classify_intent() 자체가 쿼리 플래너(query_planner)를 끈 USE_QUERY_PLANNER=False
+폴백 경로 전용이라, 평소 서비스 경로(pipeline._answer_one · api/rag/answer.prepare_sub)에서는
+둘 다 `if intent is None:` 가드 안에 있어 타지 않는다.
+
+단, 평가 스크립트 eval_pipeline_retrieval.py 는 가드 없이 classify_intent()를 직접 부른다.
+그래서 아래 SYSTEM_PROMPT 를 고치면 서비스 동작은 그대로여도 그 평가 수치는 움직인다.
+
+원래는 HCX 구현과 OpenAI 구현이 '완전히 동일한' 스키마·프롬프트를 쓰게 해서 두 모델을 공정
+비교하려고 분리한 파일이다(프롬프트가 조금이라도 다르면 비교가 성립하지 않으므로).
+그 비교 실험의 결과는 docs/intent_classifier_comparison.md 에 있다.
+※ 예전 주석이 양쪽 구현으로 지목하던 classify_intent_hyperclova.py·classify_intent_openai.py
+   두 파일은 이 저장소에 커밋된 적이 없다(git 이력 확인). 찾지 말 것.
+
+⚠️ query_planner.py 는 이 파일을 import하지 않는다 — 분해 규칙과 intent 규칙을 한 지시로
+합쳐야 해서 SYSTEM_PROMPT 를 자기 파일에 따로 갖고 있다. 라벨 정의(informational/
+civil_petition)를 고칠 때는 두 곳을 같이 고쳐야 판단 기준이 갈리지 않는다.
 
 Structured Output은 '이진분류 기능'이 아니라 'LLM 출력 형식을 제약'하는 기능이다. 실제
 판단은 LLM의 언어이해가 하고(확률론적 — 같은 입력도 100% 동일 출력 보장 안 됨), 여기서는

@@ -2,7 +2,7 @@
 채무조정 관련 8개 페이지의 원본 HTML을 저장합니다.
 
 실행:
-    python crawl_debt_adjustment_raw_html.py
+    python3 src/crawler/crawl_debt_adjustment_raw_html_jy.py
 
 출력:
     data/raw_html/DEBT-001.html

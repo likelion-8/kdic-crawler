@@ -30,9 +30,10 @@ bi-encoder(retrieval.py의 Dense/BM25)는 질문·문서를 따로 인코딩해 
 모델은 bge-reranker-v2-m3(8192토큰 지원) — 이 코퍼스 최대 토큰 길이(청크 5,502·
 통짜페이지 1,667)를 커버해 리랭킹 단계에서 잘림이 없다(bge-m3 계열 임베딩 때와 동일 이유).
 
-권장 사용: route_search_chunks(query, k=20)로 1차 후보를 뽑고(Recall@20 실측 99%+),
+재도입 시 권장 사용: route_search_chunks(query, k=20)로 1차 후보를 뽑고(Recall@20 실측 99%+),
 rerank()로 재정렬한 뒤 top_k_cut(..., k=5)로 최종 5개만 남긴다(기존 프로젝트 전체
 평가 기준인 AnswerRecall@5와 동일한 k).
+현재(USE_RERANKER=False)는 가운데 rerank() 없이 route_search_chunks → top_k_cut 두 단계다.
 """
 RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
 _reranker = {}
