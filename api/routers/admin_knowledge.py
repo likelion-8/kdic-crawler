@@ -107,6 +107,7 @@ def build_knowledge_page_queries(*, tab: str, q: str, business: str | None, stat
     chunk_count = (
         select(func.count(document_chunks.c.id))
         .where(document_chunks.c.document_id == documents.c.id)
+        .where(document_chunks.c.is_active.is_(True))
         .scalar_subquery()
         .label("chunk_count")
     )

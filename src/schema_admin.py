@@ -125,6 +125,29 @@ _NEW_INDEXES = [
 ]
 
 
+def _missing_indexes(conn):
+    """Return required admin index names that are absent from the current schema."""
+    missing = []
+    for index_name, table_name, _ in _NEW_INDEXES:
+        exists = conn.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                      FROM pg_indexes
+                     WHERE schemaname = current_schema()
+                       AND tablename = :table_name
+                       AND indexname = :index_name
+                )
+                """
+            ),
+            {"table_name": table_name, "index_name": index_name},
+        ).scalar_one()
+        if not exists:
+            missing.append(index_name)
+    return missing
+
+
 def main():
     engine = get_engine()
     with engine.begin() as conn:
@@ -135,9 +158,14 @@ def main():
             conn.execute(text(f"ALTER TABLE documents ADD COLUMN IF NOT EXISTS {name} {coltype}"))
         for name, table_name, cols in _NEW_INDEXES:
             conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON {table_name} ({cols})"))
+        missing_indexes = _missing_indexes(conn)
+        if missing_indexes:
+            raise RuntimeError(
+                "관리자 스키마 인덱스 적용 실패: " + ", ".join(missing_indexes)
+            )
     print("admin 테이블 생성/확인:", ", ".join(t.name for t in admin_metadata.sorted_tables))
     print("documents 확장 컬럼:", ", ".join(n for n, _ in _DOCUMENTS_NEW_COLUMNS))
-    print("인덱스 생성/확인:", ", ".join(n for n, _, _ in _NEW_INDEXES))
+    print("인덱스 생성 및 DB 확인 완료:", ", ".join(n for n, _, _ in _NEW_INDEXES))
 
 
 if __name__ == "__main__":
