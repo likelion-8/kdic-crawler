@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowDown, CircleAlert, Plus, RefreshCw, Square, Wrench, X } from 'lucide-react'
+import { ArrowDown, CircleAlert, Plus, RefreshCw, Wrench, X } from 'lucide-react'
 import {
   AnswerMessage,
   ClarificationMessage,
@@ -650,13 +650,11 @@ export function ChatPage() {
                 )
               })}
 
-              {/* 답변 생성 중 행 — 타이핑 인디케이터 + [중단] (CB-004 Case 1) */}
-              {pending && (
-                <li className="flex min-w-0 flex-wrap items-center gap-3">
-                  {!streamingStarted && <TypingIndicator />}
-                  <Button size="sm" className="min-h-11 px-4" onClick={stop}>
-                    <Square className="size-3 fill-current" aria-hidden="true" /> 중단
-                  </Button>
+              {/* 답변 생성 중 행 — 타이핑 인디케이터. [중단]은 별도 버튼 대신 입력창의
+                  전송 버튼이 중단 아이콘으로 바뀌는 방식이다(2026-08-10 변경, Composer.onStop) */}
+              {pending && !streamingStarted && (
+                <li>
+                  <TypingIndicator />
                 </li>
               )}
             </ol>
@@ -706,6 +704,7 @@ export function ChatPage() {
           onSubmit={(text) => send(text)}
           welcome={isWelcome}
           disabled={pending !== null || inputLocked}
+          onStop={pending !== null ? stop : undefined}
         />
 
         {/* 첫 진입 고지 — 입력창 바로 아래 (CB-001 Desc 0). 답변별 고지는 답변 말풍선이 담당한다 */}

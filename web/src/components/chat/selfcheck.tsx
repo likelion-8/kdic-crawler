@@ -39,6 +39,12 @@ const LINK: Attachment = { label: '착오송금 반환지원 신청방법', url:
 
   const noTime = renderToStaticMarkup(<AnswerMessage answer="보호 한도는 1억원입니다." />)
   assert.ok(!noTime.includes('<time'), '시각이 없으면 지어내지 않는다')
+
+  // LLM이 계약을 어기고 내보내는 `**볼드**`는 리터럴 별표 대신 <strong>으로 그린다(2026-08-10).
+  // 그 외 마크다운은 계속 파싱하지 않는다(CM-DF-003 02절)
+  const bold = renderToStaticMarkup(<AnswerMessage answer="1. **신청 자격 확인**: 1년 이내" />)
+  assert.ok(bold.includes('<strong>신청 자격 확인</strong>'), '**…**는 굵게 렌더')
+  assert.ok(!bold.includes('**'), '별표 리터럴을 남기지 않는다')
 }
 
 // 1. 정보성 + 근거 사용 → 본문 + 참고 출처 (서류·신청 페이지는 조합 자체가 없다)
@@ -76,7 +82,9 @@ const LINK: Attachment = { label: '착오송금 반환지원 신청방법', url:
   const html = renderToStaticMarkup(<AnswerMessage answer="① 신청 대상 확인" attachments={[DOC, LINK]} />)
   assert.ok(html.indexOf('필요 서류') < html.indexOf('신청 페이지'), '서류가 신청 페이지보다 먼저')
   assert.ok(html.includes('서식 다운로드 페이지로 이동'))
-  assert.ok(html.includes('kmrs.kdic.or.kr · 새 탭'), 'CTA 옆에 도메인과 새 탭을 알린다')
+  // 2026-08-10: 도메인·새 탭 시각 힌트 제거(버튼 옆 어수선) — 새 탭 고지는 sr-only로만 남긴다
+  assert.ok(!html.includes('· 새 탭'), '도메인·새 탭 시각 힌트는 그리지 않는다')
+  assert.ok(html.includes('(새 탭에서 열림)'), '새 탭 고지는 스크린리더용으로 유지')
 }
 
 // 5. 민원성 + 첨부 없음 → '필요 서류'만 사라지고 신청 페이지는 남는다
@@ -187,13 +195,13 @@ const LINK: Attachment = { label: '착오송금 반환지원 신청방법', url:
   assert.ok(fbStart < html.indexOf('오후 3:24'), '피드백이 시각보다 왼쪽')
 }
 
-// 12. CTA 보조 표기 — 도메인을 못 뽑으면 구분점 없이 '새 탭'만 남긴다
+// 12. CTA 보조 표기 — 시각 힌트 제거(2026-08-10) 후에도 잘못된 URL이 렌더를 죽이지 않는다
 {
-  // 스킴이 없는 값 — new URL이 던져 도메인을 못 뽑는 실제 케이스
+  // 스킴이 없는 값 — 과거 new URL이 던지던 실제 케이스
   const bad: Attachment = { label: '신청 페이지', url: 'kmrs.kdic.or.kr/apply', kind: 'link' }
   const html = renderToStaticMarkup(<AnswerMessage answer="절차 안내" attachments={[bad]} />)
-  assert.ok(html.includes('>새 탭<'))
-  assert.ok(!html.includes(' · 새 탭'), '빈 도메인 자리에 구분점만 남으면 안 된다')
+  assert.ok(html.includes('신청 페이지'), '잘못된 URL이어도 CTA는 그려진다')
+  assert.ok(!html.includes('· 새 탭'), '도메인·새 탭 시각 힌트는 그리지 않는다')
 }
 
 // 13. 복합 질문(Type 6) — 하위 질문마다 제목 → 답변 → 그 하위의 근거를 그린다.

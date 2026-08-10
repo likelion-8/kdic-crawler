@@ -8,7 +8,7 @@
  * 한글 IME 조합 중의 Enter는 '조합 확정'이지 전송이 아니다 — isComposing을 반드시 본다. */
 import { useEffect, useRef } from 'react'
 import type { CompositionEvent, KeyboardEvent } from 'react'
-import { Send } from 'lucide-react'
+import { Send, Square } from 'lucide-react'
 import { Button } from '../../components/ui'
 import { cn } from '@/lib/utils'
 
@@ -33,9 +33,12 @@ export interface ComposerProps {
   welcome?: boolean
   /** 답변 생성 중 · 점검 중이면 입력을 잠근다 (CB-004 Case 1·Case 6) */
   disabled?: boolean
+  /** 답변 생성 중 전송 버튼이 [중단]으로 바뀐다 (CB-004 Case 1 — 별도 버튼 대신 이 방식, 2026-08-10).
+   * 값이 있으면 중단 모드: 버튼이 중단 아이콘·활성 상태가 되고 클릭 시 이 콜백을 부른다 */
+  onStop?: () => void
 }
 
-export function Composer({ value, onChange, onSubmit, welcome = false, disabled = false }: ComposerProps) {
+export function Composer({ value, onChange, onSubmit, welcome = false, disabled = false, onStop }: ComposerProps) {
   const areaRef = useRef<HTMLTextAreaElement>(null)
   // onKeyDown이 조합 종료 직후에도 들어오는 브라우저가 있어 상태를 따로 들고 본다
   const composingRef = useRef(false)
@@ -109,16 +112,29 @@ export function Composer({ value, onChange, onSubmit, welcome = false, disabled 
             크기만 44×44로 올린다(터치 타깃 44 이상, CM-DF-004 09절 — 기획서 40보다 우선).
             반경 12px = 바깥 18px − 안쪽 여백 6px(p-1.5). 동심원 규칙이라 두 모서리가 나란히 돈다.
             입력이 생기면 회색에서 보라로 차오른다(기본 opacity-50 대신 명시적 회색) */}
-        <Button
-          variant="primary"
-          className="size-11 shrink-0 rounded-[12px] p-0 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
-          disabled={!canSend}
-          onClick={submit}
-          aria-label="전송"
-          title="전송"
-        >
-          <Send className="size-5" aria-hidden="true" />
-        </Button>
+        {onStop ? (
+          /* 중단 모드 — 생성을 멈추고 입력하던 질문을 되돌려준다 (CB-004 Case 1 ※) */
+          <Button
+            variant="primary"
+            className="size-11 shrink-0 rounded-[12px] p-0"
+            onClick={onStop}
+            aria-label="답변 생성 중단"
+            title="중단"
+          >
+            <Square className="size-4 fill-current" aria-hidden="true" />
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            className="size-11 shrink-0 rounded-[12px] p-0 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+            disabled={!canSend}
+            onClick={submit}
+            aria-label="전송"
+            title="전송"
+          >
+            <Send className="size-5" aria-hidden="true" />
+          </Button>
+        )}
       </div>
       {/* 글자 수는 상시 표시. 색만으로 알리지 않도록 500자 도달 시 텍스트도 함께 바뀐다(CM-DF-004 09절) */}
       <p
