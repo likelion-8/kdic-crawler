@@ -34,7 +34,7 @@ from db import get_engine  # noqa: E402
 
 from pgvector.sqlalchemy import Vector  # noqa: E402
 from sqlalchemy import (  # noqa: E402
-    Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String,
+    Boolean, Column, DateTime, ForeignKey, Integer, LargeBinary, MetaData, String,
     Table, Text, UniqueConstraint, func, text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID  # noqa: E402
@@ -81,6 +81,46 @@ document_chunks = Table(
     Column("is_active", Boolean, nullable=False, server_default=text("true")),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
+
+# 검색 인덱스의 "판(version)". 재적재는 운영 청크를 곧바로 덮어쓰지 않고, 그 판을 만든
+# 입력(corpus.jsonl)과 빌드 파라미터를 스냅샷으로 남긴 뒤 정합성·Smoke 평가를 통과했을 때만
+# 운영에 반영한다. 결정 근거 전문은 docs/search_index_versioning.md.
+#
+# 청크에 버전 컬럼을 달지 않은 이유: 롤백이 이미 비동기 잡으로 계약돼 있어서다
+# (POST /jobs/{id}/rollback -> 202 + PipelineJob). "플래그로 즉시 전환"이 요구사항이 아니면
+# 벡터를 두 벌 들고 있을 이유가 없다. 그래서 documents/document_chunks 는 언제나 한 벌이고
+# 이 테이블은 그 한 벌이 "어느 스냅샷에서 나왔는가"만 기록한다.
+#
+# status 흐름
+#   BUILDING -> READY -> ACTIVE     (정합성·평가 통과 후 전환)
+#   BUILDING -> FAILED              (미달. 운영은 손대지 않았으므로 되돌릴 것이 없다)
+#   ACTIVE   -> SUPERSEDED          (다음 버전이 활성화됨. 롤백 대상이 된다)
+#   ACTIVE   -> ROLLED_BACK         (긴급 롤백으로 내려감)
+#
+# 활성 버전이 둘이 되는 사고는 애플리케이션이 조심하는 대신 DB 가 막는다 — main() 이
+# status='ACTIVE' 행에만 걸리는 부분 유니크 인덱스를 만든다.
+search_index_versions = Table(
+    "search_index_versions", metadata,
+    _uuid_pk(),
+    Column("status", String, nullable=False, server_default=text("'BUILDING'")),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("activated_at", DateTime(timezone=True)),
+    # 이 버전을 만든 재적재 작업. pipeline_jobs 가 아직 없어 FK 는 걸지 않는다.
+    Column("created_by_job_id", String),
+    # 그때의 data/corpus.jsonl 전문을 gzip 으로. 0.46MB -> 압축 0.1MB 라 DB 에 넣어도 부담이
+    # 없고, 파일시스템에 두면 배포 때 볼륨을 붙여야 하며 컨테이너를 갈아끼우면 사라진다.
+    # 보관은 2개(활성+직전)이고, 그보다 오래된 행은 이 컬럼만 NULL 로 비워 이력은 남긴다.
+    Column("source_snapshot", LargeBinary),
+    # 스냅샷을 되돌릴 때 같은 결과가 나오려면 입력만으론 부족하다 — 청킹 방식·크기·임베딩
+    # 모델을 함께 박는다. P3 목표가 청킹 파라미터를 관리자가 바꾸는 것이라 실제로 달라진다.
+    Column("build_params", JSONB),
+    Column("doc_count", Integer),            # 정합성 검증 기준값
+    Column("chunk_count", Integer),
+    # Smoke 평가 결과(Recall·MRR·응답시간). 직전 ACTIVE 의 metrics 와 비교해 전환을 판정한다.
+    Column("metrics", JSONB),
+    Column("note", Text),                    # 실패 사유 등 사람이 읽을 메모
+)
+
 
 def _eval_question_columns():
     # evaluation_dataset/test_set이 컬럼 구성이 완전히 같아(testset_all.jsonl과
@@ -301,6 +341,12 @@ def main():
                     ALTER TABLE rag_runs ADD CONSTRAINT rag_runs_request_id_key UNIQUE (request_id);
                 END IF;
             END $$;
+        """))
+        # 활성 검색 버전은 언제나 최대 1개다. 애플리케이션이 조심하는 대신 DB 가 막는다 —
+        # 전환(기존 ACTIVE -> SUPERSEDED, 새 버전 -> ACTIVE)의 순서를 틀려도 여기서 거부된다.
+        conn.execute(text("""
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_search_index_versions_active
+                ON search_index_versions (status) WHERE status = 'ACTIVE'
         """))
         seeded = _seed_suggested_questions(conn)
     print("생성 완료:", ", ".join(t.name for t in metadata.sorted_tables))
