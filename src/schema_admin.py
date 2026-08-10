@@ -63,7 +63,9 @@ admin_accounts = Table(
 # ── 2. admin_sessions — 로그인 세션 (세션 3-타이머: 절대 8h / 유휴 30분 / 재인증 30분) ──
 admin_sessions = Table(
     "admin_sessions", admin_metadata,
-    Column("id", String, primary_key=True),                     # 세션 토큰(httpOnly 쿠키 값)
+    # 세션 토큰의 sha256 해시(64자 hex). 쿠키로 나가는 건 토큰 원문이고 여기 남는 건 해시다 —
+    # 같은 값을 양쪽에 두면 DB 가 새는 순간 모든 세션이 그대로 탈취된다(api/deps.py hash_token).
+    Column("id", String, primary_key=True),
     Column("account_id", UUID(as_uuid=True), ForeignKey("admin_accounts.id"), nullable=False),
     Column("session_started_at", DateTime(timezone=True), nullable=False, server_default=func.now()),  # 절대 만료 8h 기준
     Column("last_activity_at", DateTime(timezone=True), nullable=False, server_default=func.now()),     # 유휴 만료 30분 기준
