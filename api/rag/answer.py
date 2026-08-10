@@ -22,11 +22,13 @@ from query_decomposer import decompose_query
 from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent
 from retrieval import route_search_chunks
-from candidate_ranking import top_k_cut
+from candidate_ranking import gate_low_relevance, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
-from prompt_builder import build_civil_petition_prompt, build_informational_prompt
-from source_check import recheck_source_usage
+from llm_client import call_hyperclova
+from prompt_builder import (_strip_no_source_marker, build_civil_petition_prompt,
+                            build_informational_prompt)
+from source_check import judge_answer_majority
 
 from api.errors import DEFAULT_FALLBACK_SOURCES
 from api.schemas.chat import Attachment, ChatResponse, SourceItem, SubAnswer
@@ -40,6 +42,21 @@ K_FINAL = 5
 
 # 에러 응답에 실을 폴백 출처(공식 페이지). errors.py 것을 그대로 SourceItem 으로.
 _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
+
+# 사후 판정이 "근거 없는 내용을 사실처럼 서술"(ungrounded_claims)로 분류한 답변의 대체 문구.
+# 환각 본문이 정상 답변처럼 노출되는 것을 막는다(2026-08-10 "스파이더맨" 마블 설명 실측).
+# 스트리밍으로 이미 흘러간 델타는 못 무르지만, 프론트는 done 의 answer 를 최종으로 신뢰하므로
+# 완성 화면·대화 복원·rag_runs 로그에는 이 문구가 남는다. 인사·정체성·정상 거절문은 교체하지 않는다.
+OUT_OF_SCOPE_MESSAGE = (
+    "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 "
+    "어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+)
+
+# 재생성 가드의 점수 하한 변천(2026-08-10): 0.60 → 0.45 → 폐지. 처음엔 도메인 인접 범위외의
+# 재생성 채택을 점수로 막았지만, 그 역할은 다수결 판정 + 판정 입력에 질문 포함으로 대체됐다
+# ("보이스피싱" 0/6 채택 실측). 반면 하한은 정의형 질문(top-1 0.41~0.49)의 정당한 복구를
+# 계속 가로막았다. 이제 게이트(MIN_TOP1_SCORE)를 통과한 근거가 있으면 재생성 대상이다 —
+# 채택은 어차피 다수결 판정을 통과해야 한다.
 
 
 @dataclass
@@ -82,7 +99,13 @@ def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
     if intent is None:
         intent = classify_intent(q)
     candidates = route_search_chunks(q, k=K_CANDIDATES)
-    top = top_k_cut(candidates, k=K_FINAL)
+    top = gate_low_relevance(top_k_cut(candidates, k=K_FINAL))
+    if not top:
+        # 무관 질문 게이트에 걸림 — 저점수 청크를 근거로 주면 환각 소재가 되므로 근거 없이
+        # 인사 응대/범위외 거절 프롬프트로 보낸다(NO_EVIDENCE_NOTICE). civil_petition 조립은
+        # 근거가 있어야 의미가 있으므로 informational 경로로 통일한다.
+        return SubPlan(question=q, intent=intent, top=[],
+                       prompt=build_informational_prompt(q, []), civil=None, evidence="")
     if intent == "civil_petition":
         civil = build_civil_petition_answer(top)
         prompt = build_civil_petition_prompt(q, civil)
@@ -114,21 +137,68 @@ def _build_attachments(civil: dict) -> list[Attachment]:
     return out
 
 
+RETRY_NOTICE = (
+    "(직전 응답이 '근거에 답이 있는데도 거절'로 판정되었습니다. 근거 자료를 다시 읽고, "
+    "질문과 관련된 내용이 있으면 반드시 그 내용으로 답하세요. 정말로 관련 내용이 없을 때만 "
+    "안내가 어렵다고 하세요.)\n"
+)
+
+
+def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
+    """확률적 거절 복구용 1회 재생성(비스트리밍). (본문, 근거사용) 을 돌려준다 —
+    마커가 [SOURCE_USED]거나 판정이 근거 사용으로 보면 채택, 아니면 (원문 무관) 미채택.
+    실패는 미채택으로 떨어져 원래 거절문이 유지된다.
+
+    같은 프롬프트를 그대로 다시 돌리면 거절이 그대로 재현되기 쉬워(실측: 복구 1/4)
+    질문 직전에 RETRY_NOTICE 를 끼워 근거 재확인을 강제한다. 억지 답변 위험은 채택
+    조건(판정 통과)이 막는다 — 근거에 정말 없으면 판정이 거절을 유지시킨다."""
+    try:
+        role, human = sp.prompt[-1]
+        # few-shot 예시에도 "질문: "이 있으므로 마지막(실제 질문) 위치에 끼운다
+        idx = human.rfind("질문: ")
+        pushed = sp.prompt[:-1] + [(role, human[:idx] + RETRY_NOTICE + human[idx:] if idx >= 0 else human)]
+        raw = call_hyperclova(pushed)
+        body, marker_used = _strip_no_source_marker(raw)
+        if marker_used:
+            return body, True
+        j = judge_answer_majority(body, sp.evidence, sp.question)
+        return body, bool(j) and j.used_source
+    except Exception:
+        logger.warning("재생성 실패 — 원래 답변 유지", exc_info=True)
+        return "", False
+
+
 def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubAnswer, bool]:
-    """스트리밍이 끝난 하위 답변을 구조화한다. 근거 사용 여부는 pipeline 과 동일하게 판정한다:
-    마커가 [SOURCE_USED]면 그대로 첨부, [NO_SOURCE]면 source_check.recheck_source_usage 로 한 번
-    더 확인해 실제로 근거를 썼으면 뒤집는다(인사·거절엔 출처가 안 붙게 하기 위함). 근거 미사용이면
-    sources/attachments 를 비운다.
+    """스트리밍이 끝난 하위 답변을 구조화한다. 근거 사용 여부 판정:
+    마커가 [SOURCE_USED]면 그대로 첨부(107건+36건 실측에서 이 방향 오판 0건), 아니면
+    source_check.judge_answer(luna structured output)로 판정해 실제로 근거를 썼으면 뒤집는다.
+    근거 미사용이면 sources/attachments 를 비우고, 판정이 "근거 없는 내용을 사실처럼
+    서술"(ungrounded_claims)이면 본문을 OUT_OF_SCOPE_MESSAGE 로 교체한다 — 인사·정체성·정상
+    거절문은 kind 가 다르므로 교체되지 않는다.
 
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = marker_used_source
     if not used:
-        try:
-            used = recheck_source_usage(body, sp.evidence)
-        except Exception:
-            logger.warning("recheck_source_usage 실패 — 출처 미첨부로 처리", exc_info=True)
-            used = False
+        # 3표 다수결 판정 — 단일 판정은 경계 사례(정의형 답변·소관 밖 응대)에서 롤마다
+        # 뒤집혀서(실측), 부착(used) 판정과 교체·재생성 분기(kind)를 전부 다수결에 건다.
+        # 실패 시 None(경고 로그는 내부에서) = 마커의 원래 판정 유지.
+        j = judge_answer_majority(body, sp.evidence, sp.question)
+        if j is not None:
+            used = j.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
+            if not used and j.kind == "ungrounded_claims":
+                # 근거 없는 내용을 사실처럼 서술 — 본문을 표준 안내로 교체(환각 노출 차단)
+                body = OUT_OF_SCOPE_MESSAGE
+            elif not used and j.kind == "refusal" and sp.top:
+                # 근거가 강하게 검색돼 있는데 거절 — HCX 확률적 거절(같은 프롬프트로 정답·거절이
+                # 반반 갈리는 것이 실측됨)일 수 있어 딱 한 번 재생성한다. 재생성본도 판정을
+                # 통과해야만 채택하므로 정당한 거절(근거에 답이 정말 없는 경우)은 그대로 유지된다.
+                # top-1 점수 조건이 없으면 도메인 인접 범위외 질문("보이스피싱범 잡는 법", 0.54)의
+                # 정당한 소관 밖 거절까지 재생성돼 곁다리 근거로 답을 만들어버린다(실측 1/6).
+                # 스트리밍엔 이미 거절문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
+                body2, used2 = _regenerate_once(sp)
+                if used2:
+                    body, used = body2, True
     sources = _build_sources(sp.top) if used else []
     attachments = _build_attachments(sp.civil) if (used and sp.civil) else []
     return SubAnswer(title=sp.question, answer=body, sources=sources, attachments=attachments), used
@@ -151,15 +221,19 @@ def to_chat_response(finalized: list[SubAnswer], used_flags: list[bool], full_an
     clarification 은 되묻기 로직 자체가 아직 없어 None.
     """
     out_of_scope = not any(used_flags)
+    # answer 는 스트림 원문(full_answer)이 아니라 확정된 하위 본문으로 조립한다 — finalize_sub 가
+    # ungrounded 본문을 교체했을 때 done.answer 에도 반영되게 하기 위함. 교체가 없으면 스트림
+    # 합계와 동일하다(구분자 "\n\n" 포함). full_answer 는 하위 호환용 파라미터로 남긴다.
+    final_answer = "\n\n".join(s.answer for s in finalized) if finalized else full_answer
     if composite:
         return ChatResponse(
-            answer=full_answer, sources=[], attachments=[], sub_answers=finalized,
+            answer=final_answer, sources=[], attachments=[], sub_answers=finalized,
             out_of_scope=out_of_scope, session_id=session_id, request_id=request_id,
             latency_ms=latency_ms,
         )
     s = finalized[0]
     return ChatResponse(
-        answer=full_answer, sources=s.sources, attachments=s.attachments, sub_answers=[],
+        answer=final_answer, sources=s.sources, attachments=s.attachments, sub_answers=[],
         out_of_scope=out_of_scope, session_id=session_id, request_id=request_id,
         latency_ms=latency_ms,
     )

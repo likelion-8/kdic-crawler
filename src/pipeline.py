@@ -23,7 +23,7 @@ from query_decomposer import decompose_query
 from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent, classify_question_type
 from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever, route_search_chunks
-from candidate_ranking import rerank, top_k_cut
+from candidate_ranking import gate_low_relevance, rerank, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
 from prompt_builder import (
@@ -91,7 +91,12 @@ def _answer_one(query, timings, intent=None):
 
     with measure_time(timings, "reranking", accumulate=True):
         reranked = rerank(query, candidates) if USE_RERANKER else candidates
-        top = top_k_cut(reranked, k=K_FINAL)
+        # 무관 질문 게이트(2026-08-10) — api/rag/answer.py 와 동일 동작 유지.
+        # 게이트에 걸리면 근거 없이 informational 경로로 통일한다(civil 조립은 근거가 있어야
+        # 의미가 있고, 빈 근거 civil 프롬프트는 few-shot leak 이력이 있다).
+        top = gate_low_relevance(top_k_cut(reranked, k=K_FINAL))
+        if not top:
+            intent = "informational"
 
     with measure_time(timings, "context_building", accumulate=True):
         if intent == "civil_petition":

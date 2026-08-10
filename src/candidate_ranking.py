@@ -63,3 +63,21 @@ def rerank(query, candidates):
 def top_k_cut(reranked, k):
     """재정렬된 후보 리스트에서 상위 k개만 자른다."""
     return reranked[:k]
+
+
+# 2026-08-10 무관 질문 게이트 임계값. 실측(테스트셋 인스코프 137 vs 잡담 5):
+# 인스코프 top-1 최소 0.378, 잡담("스파이더맨" 0.227 등) 최대 0.362(인사말 "안녕하세요").
+# 0.40은 인스코프 꼬리 2/137을 오차단해("IT서비스 데스크 운영시간" 실측 확인) 갭 중간인
+# 0.35로 정함 — 인스코프 오차단 0/137, 잡담 차단 4/5(통과하는 1건은 인사말이라 무근거
+# 프롬프트 없이도 정상 응대). 도메인 인접 범위외(중앙값 0.512)는 점수로 안 갈리므로
+# 이 게이트가 아니라 source_check 사후 판정이 맡는다.
+MIN_TOP1_SCORE = 0.35
+
+
+def gate_low_relevance(top, threshold=MIN_TOP1_SCORE):
+    """top-1 점수가 임계값 미만이면 근거를 통째로 비운다(무관 질문이 저점수 청크를 근거로
+    받아 환각하는 것을 차단). 빈 근거를 받은 프롬프트는 인사·잡담 응대/범위외 거절로
+    유도된다(prompt_builder.NO_EVIDENCE_NOTICE)."""
+    if top and top[0][1] < threshold:
+        return []
+    return top

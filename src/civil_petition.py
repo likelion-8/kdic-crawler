@@ -9,16 +9,15 @@ USE_RERANKER=False라 호출되지 않는다.)
 import json
 from pathlib import Path
 
-from citation import format_all_citations
 
 ROOT = Path(__file__).resolve().parent.parent
 _page_docs = {}
 
 
 def _load_page_docs():
-    """page_id -> {attachments, form_attachments}. corpus.jsonl에서 한 번만 로드.
+    """page_id -> {attachments, form_attachments, business_function}. corpus.jsonl에서 한 번만 로드.
 
-    이 두 필드는 chunks_all.jsonl엔 없다(검색 색인에 불필요해 청크 단계에서 뺀 필드 —
+    이 필드들은 chunks_all.jsonl엔 없다(검색 색인에 불필요해 청크 단계에서 뺀 필드 —
     citation.py의 sub_category와 같은 이유). page_id로 corpus.jsonl을 되짚어 조회한다.
     """
     if not _page_docs:
@@ -28,6 +27,7 @@ def _load_page_docs():
                 _page_docs[d["page_id"]] = {
                     "attachments": d.get("attachments", []),
                     "form_attachments": d.get("form_attachments", []),
+                    "business_function": d.get("business_function"),
                 }
     return _page_docs
 
@@ -80,15 +80,49 @@ def build_document_section(chunks):
     return items
 
 
+# 업무별 공식 신청 진입점 — 기획서 CB-003 마커 3 "실제 공식 신청 URL만 CTA로 제공" 구현.
+# 종전에는 검색된 top 페이지 전부를 신청 페이지로 내보내 FAQ·유의사항까지 CTA 버튼이 되고
+# 참고 출처와 중복됐다(2026-08-10 보고: 버튼 5개). 신청 진입점은 업무당 하나뿐이므로 corpus의
+# 해당 페이지 URL로 고정한다. 예금자보호제도는 신청 개념이 없어 매핑하지 않는다(섹션 생략).
+OFFICIAL_APPLY_LINKS = {
+    "착오송금 반환 신청": {  # mtrs_stut_chc — kmrs_apply_mthd 본문의 '온라인 신청 사이트'
+        "title": "착오송금 반환지원 온라인 신청",
+        "url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do",
+        "breadcrumb": "소개와 방법안내 > 상황선택",
+    },
+    "고객 미수령금 신청": {  # uc_itgr_aply
+        "title": "미수령금 통합신청",
+        "url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do",
+        "breadcrumb": "미수령금통합신청 > 소개와 신청방법 안내",
+    },
+    "예금보험금 안내": {  # ms_aply_proc
+        "title": "예금보험금 신청절차",
+        "url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do",
+        "breadcrumb": "예금보험금 신청 절차",
+    },
+    "채무조정 안내": {  # dr_info_aply
+        "title": "채무정보 조회·상담신청",
+        "url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do",
+        "breadcrumb": "채무정보 조회 및 상담신청",
+    },
+    "은닉재산 신고": {  # ha_center
+        "title": "은닉재산 신고센터",
+        "url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+        "breadcrumb": "금융부실관련자 은닉재산신고",
+    },
+}
+
+
 def build_link_section(chunks):
-    """페이지 연결(신청 페이지 URL). citation.py가 이미 만든 출처 데이터를 그대로 재사용
-    한다 — "근거로 삼은 페이지"와 "신청하러 가야 할 페이지"가 같은 데이터이므로 중복
-    조회하지 않는다."""
-    chunk_ids = [cid for cid, _, _ in chunks]
-    return [
-        {"title": c["title"], "url": c["url"], "breadcrumb": c["breadcrumb"]}
-        for c in format_all_citations(chunk_ids)
-    ]
+    """신청 페이지 CTA — 가장 관련도 높은(top-1) 페이지의 업무에 해당하는 공식 신청 진입점
+    **하나만** 돌려준다. 종전처럼 근거 페이지 전부를 CTA로 내보내지 않는다 — 근거 페이지
+    목록은 참고 출처(sources)가 이미 보여준다."""
+    if not chunks:
+        return []
+    top_page = chunks[0][0].split("#")[0]
+    bf = _load_page_docs().get(top_page, {}).get("business_function")
+    link = OFFICIAL_APPLY_LINKS.get(bf)
+    return [dict(link)] if link else []
 
 
 def build_civil_petition_answer(chunks):
