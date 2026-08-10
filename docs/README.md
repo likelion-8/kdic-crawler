@@ -44,6 +44,7 @@
 | [`pipeline_issue_history.md`](pipeline_issue_history.md) | **상단 요약 = Current**(코드 대조 11행), 본문 = Historical(이슈 1~6 + 5-A·5-B 이력) | 요약은 2026-08-07 코드 대조 · 본문은 07-23~08-04 |
 | [`backend-structure.md`](backend-structure.md) | FastAPI 구조 개선안. **§3 함정 28건**, §6 프로세스 모델(bge-m3 2GB·`--workers 1`·`async def` 금지) | 2026-08-05 작성 + 08-07 현황 주석. §1의 처방 3건은 처리됨(그 표 참고) |
 | [`frontend-handoff.md`](frontend-handoff.md) | 프론트→백엔드 인수인계. **§6 프론트가 정한 계약 108행**, §5 DB 테이블 현황, §7 못 만든 것 8건 | 2026-08-03 작성 + 08-07 현황 갱신. **계약은 유효**, 현황 서술만 시점 차이 있음 |
+| [`search_index_versioning.md`](search_index_versioning.md) | 재적재 버전 관리 결정. **왜 청크가 아니라 입력 스냅샷인지**, 활성 전환·롤백 흐름, 설계가 성립하려면 지켜야 할 전제 2개, 근거로 쓰면 안 되는 주장 2건 | 2026-08-10 결정 · 워커 구현은 3주차 |
 | [`admin_account_setup.md`](admin_account_setup.md) | 관리자 계정 생성·비밀번호 변경 절차(운영 런북). 손으로 치면 깨지는 값 2개(`status`·`role`), 검증 명령 | 2026-08-10 · ⚠️ 계정 관리 API(AD-010)가 생기면 폐기한다(§6) |
 
 ---
