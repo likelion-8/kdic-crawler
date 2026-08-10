@@ -1,4 +1,4 @@
-# crawler_pure.py
+"""은닉재산 신고(기능6) 담당 크롤러 — inventory.pages_for("hw") 대상만 수집한다."""
 import os
 import requests
 from inventory import pages_for

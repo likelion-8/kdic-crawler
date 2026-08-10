@@ -1,7 +1,7 @@
 """공통 오류 처리 — 어떤 예외가 나든 응답 본문 모양을 하나로 통일한다.
 
     {
-      "code": "rag_timeout",            # 프론트가 분기할 기계용 식별자
+      "code": "LLM_TIMEOUT",            # 프론트가 분기할 기계용 식별자(대문자 5종만 — 아래 ApiError 참고)
       "user_message": "답변 생성이 ...",  # 사용자에게 그대로 보여줄 한국어 문장
       "retryable": true,                # 재시도 버튼을 띄울지
       "fallback_sources": [...],        # 답을 못 줄 때 대신 안내할 공식 페이지
@@ -85,12 +85,20 @@ class ApiError(Exception):
         super().__init__(detail or self.user_message)
 
 
+# 아래 예외들 중 지금 실제로 던져지는 것은 BadRequestError·NotFoundError 둘뿐이다
+# (routers/feedback.py · routers/session.py). 나머지 다섯(Unauthorized · Forbidden ·
+# RateLimit · RagTimeout · RagUnavailable)은 관리자 라우터·타임아웃 처리를 붙일 때 쓰려고
+# 미리 둔 것이라, "이미 어딘가에서 쓰이고 있다"고 보면 안 된다.
 class BadRequestError(ApiError):
     status_code = 400
     user_message = "요청 형식이 올바르지 않습니다."
 
 
 class UnauthorizedError(ApiError):
+    """⚠️ 공개(비인증) 엔드포인트에서는 절대 쓰지 마라 — 프론트는 경로를 보지 않고 401 이면
+    무조건 expireSession() 해서, 챗봇 쪽 401 하나가 열려 있던 관리자 세션까지 끊는다.
+    익명 차단은 403 등 다른 4xx 로 낸다(docs/backend-structure.md §3 함정 19)."""
+
     status_code = 401
     user_message = "로그인이 필요합니다."
 

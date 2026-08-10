@@ -14,6 +14,44 @@ LLM 호출 자체를 거르는 방식이었고, 원하는 성능이 안 나와 2
 
 ---
 
+## 현재 상태 — 이 문서가 설명하는 방식은 2026-08-09에 교체됐다
+
+> ⚠️ **이 문서의 §2~§9는 Historical이다.** 특히 §7("최종 형태, 2026-08-03 기준")은 더 이상
+> 현재 파이프라인이 아니다. 아래 표가 지금 코드다 — 본문을 읽기 전에 이걸 먼저 본다.
+
+**무엇이 바뀌었나 — 분해가 structured output이 됐다.**
+
+바뀌기 전에는 *intent만* structured output이었고 **분해는 평문(줄바꿈) 파싱**이었다. 지금은
+분해와 intent를 **한 번의 structured-output 호출**로 함께 판단한다.
+
+| | 이전 (2026-07-30 ~ 08-08) | 현재 (2026-08-09~, 커밋 `28ab749`) |
+|---|---|---|
+| 분해 | `query_decomposer.decompose_query()` · HCX-DASH-002 · **평문 응답을 줄바꿈으로 split** | `query_planner.plan_query()` · gpt-5.6-luna · **native structured output** |
+| intent | `query_classifier.classify_intent()` · OpenAI SO · **하위 질문마다 별도 호출** | 위 호출에 **함께 실려 옴**(하위 질문별 intent) |
+| 출력 형식 | 형식 보장 없음 → 프롬프트 부스러기(`질문:`·`출력:`)를 정규식으로 걸러야 했다(이슈 6) | `{should_split, items:[{question, intent}]}` 로 스키마 강제 |
+| 벤더 | 분해 HCX + intent OpenAI (**둘로 갈림**) | OpenAI 하나 |
+| 질문당 호출 | 2.6 | **1** |
+
+**실측 효과** (100문항 joint 벤치마크, 실험 2026-08-07 · [`query_planner_model_comparison.md`](query_planner_model_comparison.md))
+
+| 지표 | 이전(2콜) | 현재(플래너) | |
+|---|---|---|---|
+| joint 정확도 | 79.0% | **89.0%** | +10.0%p |
+| intent macro F1 | 0.890 | **0.946** | +0.056 |
+| false split(불필요 과잉분해) | 11.9% | **0.0%** | -11.9%p |
+| 질문당 토큰 | 2,007 | **539** | -73% |
+| 평균 지연 | 2.62s | **1.87s** | -29% |
+
+**왜 이 문서를 지우지 않는가.** 스위치 `query_planner.USE_QUERY_PLANNER`를 `False`로 두면
+파이프라인이 **정확히 이 문서가 설명하는 옛 경로**(`decompose_query` + `classify_intent`)로
+돌아간다. 폴백 코드가 살아 있으므로 §2~§9는 그 경로의 명세로 계속 유효하다.
+
+**같이 볼 것**
+- [`query_planner_model_comparison.md`](query_planner_model_comparison.md) — 3모델(HCX-007 / gpt-5.4-mini / gpt-5.6-luna) joint 비교와 채택 근거
+- [`query_planner_token_waste.md`](query_planner_token_waste.md) — 교체 직전 방식의 토큰 낭비 실측(false split 11.9%가 실제로 얼마를 먹었는지)
+
+---
+
 ## 1. 실험 개요
 
 | | 1차 시도 (규칙+형태소 게이트) | 2차 시도 — 최종 채택 (항상-LLM) |
@@ -197,10 +235,13 @@ LLM 호출 자체를 거르는 방식이었고, 원하는 성능이 안 나와 2
   testset_query_decomposition.jsonl`과 같은 형식으로 옮기고 `retrieval.route_search` +
   `query_decomposer.decompose_query`로 이 절차를 반복하면 된다.)
 
-## 7. 파이프라인 통합 — 실제 서비스 경로에서 어떻게 도는가 (최종 형태, 2026-08-03 기준)
+## 7. 파이프라인 통합 — 실제 서비스 경로에서 어떻게 도는가 (2026-08-03 기준 · ⚠️ 08-09 교체됨)
 
-분해기 단독 성능(5절)과 검색 개선(6절)까지 확인한 뒤 `pipeline.py`에 붙인 최종 형태다.
-분해 결과를 어떻게 쓰느냐가 답변 품질을 좌우하므로, 이 절이 실질적인 "채택안 명세"다.
+> ⚠️ 이 절은 **현재 파이프라인이 아니다.** 2026-08-09에 쿼리 플래너로 교체됐다(상단 「현재 상태」
+> 참고). 아래 흐름은 `USE_QUERY_PLANNER=False`로 되돌렸을 때의 폴백 경로 명세로 읽을 것.
+
+분해기 단독 성능(5절)과 검색 개선(6절)까지 확인한 뒤 `pipeline.py`에 붙인 형태다.
+분해 결과를 어떻게 쓰느냐가 답변 품질을 좌우하므로, 이 절이 실질적인 "채택안 명세"였다.
 
 ### 흐름
 

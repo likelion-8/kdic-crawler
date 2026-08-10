@@ -6,10 +6,15 @@
 안 잡혀서(구조적 섹션 생략까지 적용해봤지만 재현됨), 아예 URL을 LLM 손에서 뺐다.
 
 이제 LLM은 절차 설명(civil_petition) 또는 근거 기반 답변 본문(informational)
-텍스트만 쓰고, 실제 서류·페이지·출처 URL은 여기 없다 — pipeline.py가
-assemble_civil_petition_answer()/assemble_informational_answer()로 LLM 응답
-뒤에 citation.py/civil_petition.py가 이미 갖고 있는 실제 데이터를 결정론적으로
-붙인다. LLM이 URL을 아예 안 보므로 지어낼 소스 자체가 없다.
+텍스트만 쓰고, 실제 서류·페이지·출처 URL은 여기 없다 — 호출부가 LLM 응답 뒤에
+citation.py/civil_petition.py가 이미 갖고 있는 실제 데이터를 결정론적으로 붙인다.
+LLM이 URL을 아예 안 보므로 지어낼 소스 자체가 없다.
+
+⚠️ 붙이는 방식은 경로마다 다르다. pipeline.py(Streamlit·CLI)는 이 파일의
+assemble_civil_petition_answer()/assemble_informational_answer()로 마크다운 문자열에
+이어 붙이고, 웹 API(api/rag/answer.py finalize_sub)는 그 두 함수를 쓰지 않고 sources/
+attachments 를 구조화 필드로 따로 담는다. 다만 근거 사용 여부 판정에 쓰는 마커 정규식
+(_MARKER_RE)은 양쪽이 같은 것을 공유하므로, 마커 규칙을 고치면 두 경로가 함께 바뀐다.
 
 반환 형식은 (role, content) 튜플 리스트 — langchain 관례로, llm_client.py의
 ChatClovaX가 그대로 받아 호출한다.

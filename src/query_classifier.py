@@ -1,9 +1,18 @@
-"""질문 분류 — 유형(question_type: table_lookup 여부)과 업무(business_function) 판별.
+"""질문 분류 — 이 파일에는 성격이 다른 분류가 두 개 들어 있다.
 
-둘 다 같은 메커니즘(테스트셋 라벨링 질문과의 코사인 유사도 1-최근접)을 쓴다.
-retrieval.py의 라우팅/검색 실행과 분리해, "무엇으로 라우팅할지 판단"과 "그 판단으로
-검색을 실행"하는 책임을 나눈다. RoutedRetriever(retrieval.py)가 이 분류기들을 받아
-qtype/business_function을 자동으로 채워 넣는다.
+1) question_type (코사인 1-최근접, QuestionTypeClassifier) — **현재 서비스 경로에서 동작**.
+   RoutedRetriever(retrieval.py)가 이걸 받아 Dense/Hybrid 라우팅을 고른다. 테스트셋
+   라벨링 질문과의 코사인 유사도로 판단하며, 라우팅 판단과 검색 실행의 책임을 나누려고
+   retrieval.py 바깥인 여기에 둔다.
+2) intent (OpenAI structured output, classify_intent) — **폴백 전용**. 2026-08-09에
+   query_planner.plan_query()가 분해와 함께 intent를 처리하게 되면서, 이 함수는
+   USE_QUERY_PLANNER=False 일 때만 탄다.
+
+같은 파일에 있지만 서로 무관하다 — 1은 임베딩 1-NN, 2는 LLM 호출이다.
+
+business_function(업무) 분류도 1과 같은 메커니즘으로 만들어 뒀으나 2026-07-29에 비활성화
+했다(아래 BusinessFunctionClassifier 주석). RoutedRetriever는 그 인자를 받을 수 있지만
+retrieval._build_engines()가 넘기지 않아 업무 필터는 걸리지 않는다.
 """
 import os
 

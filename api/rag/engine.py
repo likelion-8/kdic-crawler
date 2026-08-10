@@ -55,8 +55,12 @@ async def warmup() -> None:
 async def run_in_thread(func, *args, **kwargs):
     """동기(blocking) 파이프라인 함수를 이벤트 루프를 막지 않고 스레드에서 실행한다.
 
+    ⚠️ 현재 아무도 부르지 않는다. 챗 경로는 async 라우터가 아니라 '평범한 def' 라우터 +
+    StreamingResponse 조합(routers/chat.py)이라, FastAPI 가 알아서 스레드풀로 돌려 이 헬퍼가
+    필요 없다. async 라우터에서 블로킹 함수를 부를 일이 생기면 그때 쓰라고 남겨 둔 것이다.
+
     RAG 경로(검색·LLM 호출)는 전부 동기 블로킹 코드라, async 라우터에서 그대로 부르면
-    이벤트 루프가 멈춰 다른 요청까지 막힌다. 이 헬퍼로 감싸 스레드풀에 넘긴다.
-        예)  result = await run_in_thread(rag_answer, query)
+    이벤트 루프가 멈춰 다른 요청까지 막힌다. 그때 이 헬퍼로 감싸 스레드풀에 넘긴다.
+        예)  result = await run_in_thread(some_blocking_fn, arg)
     """
     return await asyncio.to_thread(func, *args, **kwargs)

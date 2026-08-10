@@ -1,9 +1,12 @@
-"""답변 경로 재구성 + pipeline 산출물을 ChatResponse(구조화)로 매핑.
+"""답변 경로 재구성 + 그 결과를 ChatResponse(구조화)로 매핑.
 
-왜 rag_answer()를 안 부르고 재구성하나: rag_answer()는 (1) 문자열만 반환하고 (2) 모놀리식·
-비스트리밍이라 토큰을 흘릴 수 없다. 그래서 src/pipeline.py 는 건드리지 않고, 그 안이 쓰는
-'빌딩블록'(분해·분류·검색·근거조립·프롬프트)을 그대로 재사용해 SSE 가 토큰을 흘릴 수 있는
-형태로 다시 엮는다. 파라미터(K_CANDIDATES/K_FINAL·리랭커 off·분해 on)는 pipeline 과 동일하게 맞춘다.
+⚠️ 이 파일은 src/pipeline.py 를 호출하지 않는다. rag_answer()가 (1) 문자열만 반환하고
+(2) 모놀리식·비스트리밍이라 토큰을 흘릴 수 없어서다. 대신 pipeline 이 쓰는 것과 '같은
+빌딩블록'(쿼리 플래너·검색·근거조립·프롬프트)을 그대로 재사용해 SSE 가 토큰을 흘릴 수 있는
+형태로 다시 엮는다. src/ 는 읽기만 하고 수정하지 않는다.
+
+두 경로가 갈려 있으므로 파라미터(K_CANDIDATES/K_FINAL·리랭커 off·플래너 on)를 pipeline 과
+같게 유지하는 것은 수동 책임이다 — 한쪽만 바꾸면 CLI/Streamlit 과 웹 답변이 달라진다.
 
 여기서 LLM 생성 자체는 하지 않는다 — prepare_sub()가 '프롬프트까지'만 준비하고, 실제 토큰
 스트리밍은 api/rag/sse.py 가 llm_client.stream_hyperclova(prompt)로 돌린다. 스트리밍이 끝난

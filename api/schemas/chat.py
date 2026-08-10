@@ -1,8 +1,8 @@
 """채팅 요청/응답 스키마 — /chat 엔드포인트의 입출력 '형식' 정의.
 
-이 파일은 형식(계약)만 선언한다. 실제로 이 필드들에 값을 채우는 로직(RAG 파이프라인
-호출, civil_petition 결과 매핑, 복합 질문 분해 결과 취합 등)은 api/rag/answer.py(다음
-단계)의 몫이다. 여기서 파이프라인을 부르거나 변환을 구현하지 않는다.
+이 파일은 형식(계약)만 선언한다. 실제로 이 필드들에 값을 채우는 로직(RAG 빌딩블록 호출,
+civil_petition 결과 매핑, 복합 질문 하위 답변 취합)은 api/rag/answer.py 가 갖고 있고
+이미 구현돼 있다. 여기서 파이프라인을 부르거나 변환을 구현하지 않는다.
 
 필드명·구조는 프론트엔드 MSW 목 계약에 맞췄다(2026-08-05 프론트 대조 반영):
 sub_answers 항목 키는 title, Attachment.kind 로 서류/링크 구분, clarification 은 선택지까지
@@ -25,7 +25,7 @@ class Attachment(BaseModel):
     """민원(civil_petition) 안내 한 건. kind 로 '필요 서류'와 '신청 페이지 CTA'를 가른다
     (프론트가 이 값으로 두 섹션을 분리해 그린다 — 없으면 두 섹션이 통째로 안 나온다).
 
-    매핑 예정(다음 단계 answer.py):
+    매핑은 answer._build_attachments() 가 한다:
       - civil_petition documents -> kind="document"  ({page_id, label, url})
       - civil_petition links     -> kind="link"      ({title, url, breadcrumb} 중 url/label)
 
@@ -47,9 +47,12 @@ class SubAnswer(BaseModel):
     """복합(멀티쿼리) 질문의 하위 답변 한 건 — 문자열로 합치지 않고 배열 항목으로 유지.
 
     설계: 하위질문마다 검색·근거·출처가 독립적이라(pipeline._answer_one) 상위 답변과 같은
-    필드를 하위에도 둔다.
-    ⚠️ 매핑: 현재 pipeline 은 하위 답변을 문자열로 합쳐 내보내므로, 하위별 구조를 얻으려면
-    답변 경로 재구성이 필요하다(다음 단계 — 형식만 준비).
+    필드를 하위에도 둔다. 하위 간 출처 중복 제거는 금지다 — 같은 문서가 여러 하위 답변의
+    근거면 각각에 보여야 한다(되살리면 이슈 4 재발).
+
+    채우는 곳: api/rag/answer.py 의 finalize_sub() → to_chat_response(). src/pipeline.py 쪽
+    경로(Streamlit·CLI)는 여전히 하위 답변을 문자열로 합쳐 내보내므로 이 구조를 쓰지 않는다 —
+    그래서 answer.py 가 pipeline 을 부르지 않고 같은 빌딩블록으로 흐름을 다시 엮는다.
     """
     title: str = Field(description="분해된 하위 질문(프론트 표시용 제목).")
     answer: str = Field(description="그 하위 질문에 대한 답변 본문.")
@@ -65,7 +68,12 @@ class ClarificationOption(BaseModel):
 
 class Clarification(BaseModel):
     """질문이 애매할 때 서버가 되묻는 구조. 선택지까지 서버가 준다 — 역할축이 많아(41개) 버튼
-    라벨을 프론트에 박아둘 수 없으므로 서버가 question 과 options 를 함께 내려보낸다."""
+    라벨을 프론트에 박아둘 수 없으므로 서버가 question 과 options 를 함께 내려보낸다.
+
+    ⚠️ 형식만 있고 되묻기 판정 로직은 아직 없다 — answer.to_chat_response() 가 이 필드를
+    설정하지 않아 늘 기본값 None 으로 나간다. 붙일 때: options 가 비면 프론트에 버튼이 하나도
+    안 그려지고, done.clarification 이 있으면 answer 는 버려지므로 되묻기 턴에는 answer_delta
+    를 아예 보내면 안 된다."""
     question: str = Field(description="사용자에게 되물을 문구.")
     options: list[ClarificationOption] = Field(default_factory=list, description="고를 수 있는 선택지.")
 
@@ -93,7 +101,12 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     """/chat 응답 본문 — 최종 답변과 그에 딸린 구조화된 부가 정보.
 
-    이번 단계는 '형식'만 정의한다. 각 필드에 값을 채우는 건 answer.py(다음 단계)다.
+    여기는 '형식'만 정의하고, 값은 answer.py 의 to_chat_response() 가 채운다.
+    done 이벤트의 data 가 곧 이 모델이며 프론트는 이걸 확정본으로 삼는다 — 여기 빠진 필드는
+    화면에서 사라지고, 흘려보낸 answer_delta 도 done.answer 로 덮인다.
+
+    단일/복합 규칙: 복합이면 근거를 전부 sub_answers 에 담고 최상위 sources/attachments 는
+    빈 배열로 둔다(프론트 계약). 단일이면 그 반대로 최상위만 채우고 sub_answers 를 비운다.
     """
     answer: str = Field(description="최종 답변 본문(단일 질문일 때). 복합 질문은 sub_answers 참고.")
     sources: list[SourceItem] = Field(default_factory=list, description="답변 출처 목록.")
@@ -101,7 +114,8 @@ class ChatResponse(BaseModel):
         default_factory=list, description="민원 서류/신청 링크(civil_petition 의도일 때만 채워짐).")
     out_of_scope: bool = Field(
         default=False,
-        description="업무 범위 밖 질문 여부. ⚠️ 파이프라인에 구조화된 OOS 판정이 없어 값 채우기는 보류.")
+        description="업무 범위 밖 질문 여부. 별도 OOS 판정기가 없어 '모든 하위 답변이 근거 미사용'"
+                    "으로 대신 판정한다(answer.to_chat_response). true 면 프론트가 출처·서류 섹션을 안 그린다.")
     sub_answers: list[SubAnswer] = Field(
         default_factory=list, description="복합 질문(멀티쿼리)의 개별 답변들. 배열로 유지.")
     clarification: Optional[Clarification] = Field(

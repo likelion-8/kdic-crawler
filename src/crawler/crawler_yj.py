@@ -1,5 +1,4 @@
-# scripts/crawler.py
-"""크롤러 + 결정론적 HTML→텍스트 변환.
+"""크롤러 + 결정론적 HTML→텍스트 변환 (담당: yj).
 
 원칙(기획서): HTML→텍스트 변환은 규칙 기반. LLM 미사용. 원문 보존.
 저장 구조: data/raw_html/<id>.html · data/text/<id>.txt · data/meta/<id>.json
@@ -252,6 +251,10 @@ def render(page, session):
 
     body = soup.select_one(selector)
     if body is None:
+        # ⚠️ 아래 메시지가 안내하는 probe_structure.py 는 이 저장소에 없다(커밋된 적 없음).
+        #    문구는 P1 당시 그대로 두되, 실제로 할 일은 이렇다 — page["url"] 을 브라우저로 열어
+        #    본문 컨테이너를 확인하고, inventory.py 의 해당 항목에 body_selector 를 지정한다
+        #    (기본값은 위 241줄의 "div.contents").
         raise PageBroken(
             f"{page['id']}: 본문 컨테이너({selector}) 없음. 레이아웃이 바뀌었거나 페이지가 사라졌습니다 — "
             f"probe_structure.py {page['id']} 로 확인하세요"
@@ -353,7 +356,7 @@ def main():
 
 
 def _selftest():
-    """table_to_md 회귀 검사. python3 crawler.py --selftest"""
+    """table_to_md 회귀 검사. python3 src/crawler/crawler_yj.py --selftest"""
     def md(html):
         return table_to_md(BeautifulSoup(html, "lxml").find("table"))
 

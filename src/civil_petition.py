@@ -1,9 +1,10 @@
 """민원 처리(신청) 의도 질문에 대한 3단계 응답 조립 — 절차 안내·서류 안내·페이지 연결.
 
 intent=civil_petition으로 판별된 질문에서만 쓴다(informational은 근거 청크로 바로
-답변하면 되고 이 3단계 조립이 필요 없다). 새로 검색하지 않는다 — pipeline.py가
-route_search_chunks → rerank → top_k_cut으로 이미 뽑아둔 근거 청크를 그대로 받아
-용도별로 재가공만 한다.
+답변하면 되고 이 3단계 조립이 필요 없다). 새로 검색하지 않는다 — 호출부(pipeline._answer_one
+또는 api/rag/answer.prepare_sub)가 route_search_chunks → top_k_cut으로 이미 뽑아둔 근거
+청크를 그대로 받아 용도별로 재가공만 한다. (그 사이에 rerank가 낄 수 있으나 현재
+USE_RERANKER=False라 호출되지 않는다.)
 """
 import json
 from pathlib import Path
@@ -44,7 +45,8 @@ def _unique_page_ids(chunks):
 def build_procedure_section(chunks):
     """절차 안내(신청 대상·기한·단계). 근거 청크 본문을 그대로 이어붙인다 — 절차 정보는
     corpus에 별도 구조화 필드가 아니라 본문 텍스트 안에 이미 서술돼 있고(예: "1. 착오송금인은
-    예금보험공사..."), reranking이 이미 절차 관련 청크를 상위로 올려둔 상태이기 때문이다."""
+    예금보험공사..."), 넘어온 청크가 이미 관련도순 상위 K_FINAL개이기 때문이다.
+    (원래는 리랭커가 절차 청크를 상위로 올려준다는 전제였으나 현재 리랭커는 Off다.)"""
     return "\n\n".join(text for _, _, text in chunks)
 
 

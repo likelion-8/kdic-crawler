@@ -5,9 +5,10 @@ ApiError 는 api/errors.py 의 build_error_body() 가 내보내는 응답 봉투
 값을 채우는 건 errors.py 의 핸들러들이며, 그쪽은 이 모델을 거치지 않고 dict 를 직접
 만든다. 따라서 이 모델은 OpenAPI 문서·응답 직렬화용 '계약서' 역할이다.
 
-타입 표기: api/ 의 다른 파일들은 `str | None`(3.10+ 문법)을 쓰지만, 이 저장소의 .venv 는
-3.9라 그 문법이 런타임에 깨진다. 그래서 기능이 같고 3.9·3.12 모두에서 도는 typing.Optional
-을 쓴다.
+타입 표기: 선택 필드는 `str | None`(3.10+ 문법)이 아니라 typing.Optional 로 통일한다.
+api/ 전체가 이미 Optional 로만 쓰고 있어 표기를 섞지 않으려는 것이다(둘은 기능이 같다).
+※ 이 저장소의 venv 는 Python 3.11 이라 `str | None` 도 런타임에 문제없이 돈다 —
+   "3.9 라서 못 쓴다"는 예전 주석은 사실이 아니었으므로 근거로 삼지 말 것.
 """
 from typing import Optional
 

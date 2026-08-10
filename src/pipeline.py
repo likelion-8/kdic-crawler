@@ -1,6 +1,18 @@
-"""전체 흐름 조립 — 질문 하나를 받아 분해(복합 질문이면)→분류→검색→재정렬→근거조립→
-프롬프트→LLM호출까지 이어붙인 최종 진입점. 각 단계는 이미 만들어진 모듈을 그대로 호출만
-한다(새 로직 없음).
+"""전체 흐름 조립 — 질문 하나를 받아 계획(분해+intent)→검색→근거조립→프롬프트→LLM호출까지
+이어붙인 진입점. 각 단계는 이미 만들어진 모듈을 그대로 호출만 한다(새 로직 없음).
+
+현재 실행 순서 (2026-08-09 쿼리 플래너 도입 후):
+    plan_query(분해+intent 한 콜) → route_search_chunks → top_k_cut → 근거조립 → 프롬프트 → HCX
+재정렬(rerank)은 USE_RERANKER=False라 이 흐름에 끼지 않는다. 아래 각 스위치 주석 참고.
+
+rag_answer()를 부르는 곳은 Streamlit(app.py:316)과 이 파일의 CLI 둘뿐이다. 이 파일을
+import하는 나머지 셋(src/crawler/measure_baseline.py · src/eval/eval_pipeline_generation.py ·
+src/eval/eval_pipeline_retrieval.py)은 rag_answer()를 건너뛰고 _rag_answer_traced()나
+상수(K_CANDIDATES 등)만 가져다 쓴다 — rag_runs 로깅을 우회하기 위한 의도된 구조다.
+
+웹 API(api/rag/answer.py)는 여기를 아예 거치지 않고 같은 빌딩블록으로 흐름을 다시 엮는다 —
+rag_answer()가 문자열만 돌려주고 토큰 스트리밍을 못 하기 때문이다. 두 경로가 갈리므로,
+이 파일의 파라미터·스위치를 바꾸면 api/rag/answer.py 쪽도 같이 맞춰야 한다.
 
 K_CANDIDATES=20/K_FINAL=5는 candidate_ranking.py의 리랭킹 실측값(Recall@20 99%+, 기존 프로젝트
 AnswerRecall@5 기준)을 그대로 재사용한다.
