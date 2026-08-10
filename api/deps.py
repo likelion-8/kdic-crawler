@@ -17,16 +17,23 @@ Depends 로 받으면 두 가지를 얻는다.
 처럼 쓰라고 아래에서 Annotated 별칭을 만들어 둔다. 매번
 `db: Session = Depends(get_db)` 라고 쓰는 것보다 짧고, 의존성을 바꿀 때 한 곳만 고친다.
 """
+import hashlib
+import secrets
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
 
 from fastapi import Depends, Request
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from api.config import Settings, get_settings
+from api.errors import UnauthorizedError
 
 # src/db.py 를 flat import 한다 — api/__init__.py 가 sys.path 에 src/ 를 넣어줘서
 # 가능하다. src/ 쪽 import 스타일을 그대로 따르는 것이라 의도된 모양이다.
 from db import get_session
+from schema_admin import admin_accounts, admin_sessions
 
 
 def get_settings_dep() -> Settings:
@@ -69,5 +76,127 @@ SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 DbSession = Annotated[Session, Depends(get_db)]
 RequestId = Annotated[Optional[str], Depends(get_request_id)]
 
-# 인증 의존성(get_current_user 등)은 여기 들어올 자리지만, auth 라우터를 실제로
-# 만들 때 함께 추가한다 — 지금 만들면 아무도 안 쓰는 죽은 코드가 된다.
+
+# ---------------------------------------------------------------- 관리자 인증
+#
+# 세션은 httpOnly 쿠키 하나로 표현한다(프론트 lib/api/client.ts 가 credentials:'include'
+# 로 보낸다). 쿠키에 담기는 건 토큰 원문이고, DB(admin_sessions.id)에 남는 건 그 sha256
+# 해시다 — 이 비대칭이 핵심이다. 같은 값을 양쪽에 두면 DB 가 새는 순간 모든 세션이 그대로
+# 탈취된다.
+#
+# 3타이머(절대 8h · 유휴 30분 · 재확인 30분)는 admin_sessions 의 3필드에서 계산한다
+# (CM-DF-003 §04 가 정한 컬럼 구성 그대로다. src/schema_admin.py 참고).
+
+COOKIE_NAME = "kdic_admin_session"
+ABSOLUTE_WINDOW = timedelta(hours=8)
+IDLE_WINDOW = timedelta(minutes=30)
+REAUTH_WINDOW = timedelta(minutes=30)
+
+# 폴링 표시 헤더. 프론트가 진행 상태·세션 확인처럼 '사람의 활동이 아닌' 요청에 붙인다
+# (lib/api/client.ts POLL_HEADER). 서버는 이 요청을 유휴 타이머 갱신에서 뺀다.
+POLL_HEADER = "X-Poll"
+
+# 계정 상태 중 로그인·세션 유지가 허용되는 값. schema_admin.py 의 4종(활성/비활성/초대됨/잠김)
+# 중 하나다 — 문자열이 한 글자만 달라도 "로그인은 되는데 다음 요청부터 401" 이 되므로 상수로 둔다.
+ACTIVE_STATUS = "활성"
+
+
+def new_session_token() -> str:
+    """쿠키에 실어 보낼 세션 토큰 원문. 로그인할 때만 만든다."""
+    return secrets.token_urlsafe(32)
+
+
+def hash_token(token: str) -> str:
+    """쿠키 원문 -> DB 에 저장할 값. bcrypt 가 아니라 sha256 인 이유는 이 값이 사람이 고른
+    비밀번호가 아니라 256비트 난수라서다 — 사전 공격 대상이 아니므로 느린 해시가 필요 없고,
+    매 요청 검증에 쓰이니 빨라야 한다."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+@dataclass(frozen=True)
+class AdminIdentity:
+    """인증된 관리자 1명 + 그 세션. 라우터는 이 값만 보고 응답을 만든다."""
+    session_id: str
+    account_id: str
+    email: str
+    name: str
+    role: str
+    session_started_at: datetime
+    last_activity_at: datetime
+    last_auth_at: datetime
+
+
+def get_current_admin(request: Request, db: DbSession) -> AdminIdentity:
+    """쿠키 -> 세션 조회 -> 3타이머 검사 -> (폴링이 아니면) 유휴 타이머 갱신.
+
+    /api/admin/* 라우터에 router-level dependency 로 걸면 엔드포인트마다 인증 코드를
+    반복하지 않는다. 화면에서 버튼을 숨기는 건 UX 편의일 뿐이고 최종 판정은 여기서 한다.
+
+    401 을 쓰는 게 맞는 유일한 자리다 — 프론트는 401 을 보면 경로를 보지 않고
+    expireSession() 해서 로그인 화면으로 보낸다(lib/api/client.ts:107). 인증이 필요한
+    관리자 API 에서는 그게 정확히 원하는 동작이다. 반대로 '비밀번호가 틀렸다'는 401 이
+    아니라 403 이다(routers/admin_auth.py 참고).
+    """
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        raise UnauthorizedError("로그인이 필요합니다.")
+
+    row = db.execute(
+        select(
+            admin_sessions.c.id.label("session_id"),
+            admin_sessions.c.session_started_at,
+            admin_sessions.c.last_activity_at,
+            admin_sessions.c.last_auth_at,
+            admin_accounts.c.id.label("account_id"),
+            admin_accounts.c.email,
+            admin_accounts.c.name,
+            admin_accounts.c.role,
+            admin_accounts.c.status,
+        )
+        .join_from(admin_sessions, admin_accounts,
+                   admin_sessions.c.account_id == admin_accounts.c.id)
+        .where(admin_sessions.c.id == hash_token(token),
+               # 로그아웃·강제 종료된 세션은 행이 남아 있어도 무효다.
+               admin_sessions.c.revoked_at.is_(None))
+    ).first()
+
+    # 세션이 없는 경우와 계정이 잠긴 경우를 같은 응답으로 묶는다 — 어느 쪽이든 화면이
+    # 할 일은 '로그인 화면으로 되돌리기' 하나뿐이라 구분해 봐야 쓸 데가 없다.
+    if row is None or row.status != ACTIVE_STATUS:
+        raise UnauthorizedError("세션이 만료되었습니다. 다시 로그인해 주세요.")
+
+    now = datetime.now(timezone.utc)
+    if (now >= row.session_started_at + ABSOLUTE_WINDOW
+            or now >= row.last_activity_at + IDLE_WINDOW):
+        # 만료된 세션은 즉시 무효로 박아 둔다. 안 그러면 같은 쿠키로 계속 조회가 일어나고,
+        # 시각 비교에만 의존하면 서버 시계가 흔들릴 때 되살아날 수 있다.
+        db.execute(update(admin_sessions)
+                   .where(admin_sessions.c.id == row.session_id)
+                   .values(revoked_at=now))
+        db.commit()
+        raise UnauthorizedError("세션이 만료되었습니다. 다시 로그인해 주세요.")
+
+    # 🔴 폴링은 활동이 아니다. 프론트는 GET /api/admin/session 을 항상 X-Poll 로 부르는데
+    # (app/session.ts loadSession), 여기서 유휴를 갱신해 버리면 세션을 확인하는 행위가
+    # 곧 활동이 되어 유휴 만료가 영원히 오지 않는다.
+    last_activity_at = row.last_activity_at
+    if request.headers.get(POLL_HEADER) != "1":
+        db.execute(update(admin_sessions)
+                   .where(admin_sessions.c.id == row.session_id)
+                   .values(last_activity_at=now))
+        db.commit()
+        last_activity_at = now
+
+    return AdminIdentity(
+        session_id=row.session_id,
+        account_id=str(row.account_id),
+        email=row.email,
+        name=row.name,
+        role=row.role,
+        session_started_at=row.session_started_at,
+        last_activity_at=last_activity_at,
+        last_auth_at=row.last_auth_at,
+    )
+
+
+CurrentAdmin = Annotated[AdminIdentity, Depends(get_current_admin)]
