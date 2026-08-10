@@ -18,13 +18,14 @@ Depends 로 받으면 두 가지를 얻는다.
 `db: Session = Depends(get_db)` 라고 쓰는 것보다 짧고, 의존성을 바꿀 때 한 곳만 고친다.
 """
 import hashlib
+import logging
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
 
 from fastapi import Depends, Request
-from sqlalchemy import select, update
+from sqlalchemy import insert, select, update
 from sqlalchemy.orm import Session
 
 from api.config import Settings, get_settings
@@ -33,7 +34,9 @@ from api.errors import UnauthorizedError
 # src/db.py 를 flat import 한다 — api/__init__.py 가 sys.path 에 src/ 를 넣어줘서
 # 가능하다. src/ 쪽 import 스타일을 그대로 따르는 것이라 의도된 모양이다.
 from db import get_session
-from schema_admin import admin_accounts, admin_sessions
+from schema_admin import admin_accounts, admin_activity_logs, admin_sessions
+
+logger = logging.getLogger(__name__)
 
 
 def get_settings_dep() -> Settings:
@@ -200,3 +203,93 @@ def get_current_admin(request: Request, db: DbSession) -> AdminIdentity:
 
 
 CurrentAdmin = Annotated[AdminIdentity, Depends(get_current_admin)]
+
+
+# ---------------------------------------------------------------- 활동 로그(감사 기록)
+#
+# "누가 · 언제 · 어떤 작업을 · 무엇에 · 어떤 결과로" 한 행에 담는다(CM-DF-003 §04).
+# 추가 전용이고 조인하지 않는다 — 화면(AD-011)이 이 한 행만으로 상세를 그리므로 실행자
+# email·역할을 그 시점 값으로 박아 둔다. 계정이 나중에 바뀌거나 지워져도 기록이 안 흔들린다.
+#
+# 왜 CurrentAdmin 이 아니라 actor 문자열을 받나
+#   로그인 실패도 기록 대상인데(감사에서 제일 중요한 축이다) 그 시점엔 인증된 세션이 없다.
+#   CurrentAdmin 을 요구하는 모양으로 만들면 실패 경로를 아예 못 적는다.
+#
+# 최소 구현 범위(2026-08-10): 기록만 한다. 멱등키 중복 방지·재인증 검증·개인정보 마스킹은
+# 제외했다. 마스킹은 프론트가 이미 하고 있다(EventDetail.tsx maskIp — 서버가 마스킹해 주면
+# 그대로 통과시킨다는 주석). 다만 before_value/after_value 에 비밀번호 해시·세션 토큰 같은
+# 비밀값을 넣는 것은 최소 구현에서도 금지다 — 90일 남는 표다.
+
+# action 어휘. 자유 텍스트로 두면 안 된다 — 프론트가 이 문자열을 정규식으로 갈라 '관련 화면
+# 이동' 링크를 정한다(EventDetail.tsx NO_LINK / LINKS). 예를 들어 "계정 로그인" 이라고 쓰면
+# /권한|계정/ 에 걸려 엉뚱하게 계정 관리 화면으로 링크가 붙는다. 새 어휘는 그 표와 함께 정할 것.
+ACTION_LOGIN = "로그인"
+ACTION_LOGIN_FAILED = "로그인 실패"
+ACTION_LOGOUT = "로그아웃"
+
+# 결과 3종 고정(프론트 목 데이터와 같은 값).
+RESULT_SUCCESS = "성공"
+RESULT_FAILED = "실패"
+RESULT_DENIED = "거부됨"
+
+
+def client_ip(request: Request) -> Optional[str]:
+    """접속 IP. 미들웨어의 요청 제한이 쓰는 규칙과 같아야 해서 판단 기준을 맞춰 둔다
+    (api/middleware.py _client_key). X-Forwarded-For 는 프록시 뒤에 있을 때만 믿는다 —
+    직접 노출된 서버에서 믿으면 헤더를 위조해 남의 IP 로 기록을 남길 수 있다."""
+    if get_settings().trust_proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else None
+
+
+def write_activity_log(
+    db: Session,
+    request: Request,
+    *,
+    actor: str,
+    action: str,
+    actor_role: Optional[str] = None,
+    target: Optional[str] = None,
+    result: str = RESULT_SUCCESS,
+    reason: Optional[str] = None,
+    before_value: Optional[str] = None,
+    after_value: Optional[str] = None,
+    detail: Optional[dict] = None,
+) -> None:
+    """활동 로그 한 행. 키워드 인자로만 받는다 — actor/action/target 이 전부 문자열이라
+    위치 인자로 두면 순서가 바뀌어도 아무 데서도 안 걸린다.
+
+    ## 스스로 commit 한다
+
+    호출한 쪽이 곧바로 예외를 던지는 경우가 있어서다(로그인 실패 → 403). 그때 커밋을
+    호출자에게 맡기면 get_db 의 rollback 이 걸려 **실패 기록만 쏙 사라진다** — 감사 로그로는
+    최악의 동작이다. 성공 경로에서는 본 작업을 commit 한 뒤에 부를 것. 그래야 이 함수의
+    commit 이 남의 트랜잭션을 대신 확정하지 않는다.
+
+    ## 실패해도 예외를 올리지 않는다
+
+    로깅 때문에 로그인이 막히면 안 된다(src/rag_logger.py 와 같은 판단). 대신 조용히 넘기지
+    말고 logger.exception 으로 스택을 남긴다 — 감사 기록이 빠지는 건 그 자체로 사고다.
+    실패한 문장은 세션을 오염시키므로 반드시 rollback 해서 호출자의 후속 쿼리를 살려 둔다.
+    """
+    try:
+        db.execute(insert(admin_activity_logs).values(
+            occurred_at=datetime.now(timezone.utc),
+            actor=actor,
+            actor_role=actor_role,
+            action=action,
+            target=target,
+            result=result,
+            reason=reason,
+            before_value=before_value,
+            after_value=after_value,
+            request_id=getattr(request.state, "request_id", None),
+            ip=client_ip(request),
+            detail=detail,
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("활동 로그 기록 실패(무시하고 계속): action=%s actor=%s", action, actor)

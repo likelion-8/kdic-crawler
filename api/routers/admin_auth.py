@@ -24,12 +24,14 @@ import logging
 from datetime import datetime, timezone
 
 import bcrypt
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Request, Response
 from sqlalchemy import insert, select, update
 
-from api.deps import (ABSOLUTE_WINDOW, ACTIVE_STATUS, COOKIE_NAME, IDLE_WINDOW,
-                      REAUTH_WINDOW, CurrentAdmin, DbSession, SettingsDep,
-                      hash_token, new_session_token)
+from api.deps import (ABSOLUTE_WINDOW, ACTION_LOGIN, ACTION_LOGIN_FAILED,
+                      ACTION_LOGOUT, ACTIVE_STATUS, COOKIE_NAME, IDLE_WINDOW,
+                      REAUTH_WINDOW, RESULT_FAILED, CurrentAdmin, DbSession,
+                      SettingsDep, hash_token, new_session_token,
+                      write_activity_log)
 from api.errors import ForbiddenError
 from api.schemas.admin import ExtendResponse, LoginRequest, LoginResponse, SessionResponse
 from schema_admin import admin_accounts, admin_sessions  # src/schema_admin.py (flat import)
@@ -46,7 +48,8 @@ def _remaining_s(deadline: datetime, now: datetime) -> int:
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(req: LoginRequest, response: Response, db: DbSession, settings: SettingsDep):
+def login(req: LoginRequest, request: Request, response: Response,
+          db: DbSession, settings: SettingsDep):
     """로그인 — 계정 대조 후 세션 행을 만들고 쿠키를 굽는다."""
     row = db.execute(
         select(admin_accounts.c.id, admin_accounts.c.email, admin_accounts.c.name,
@@ -57,10 +60,32 @@ def login(req: LoginRequest, response: Response, db: DbSession, settings: Settin
 
     # 계정 없음과 비밀번호 불일치를 같은 문구로 돌려준다 — 응답이 갈리면 그 차이만으로
     # "이 이메일은 등록돼 있다"를 알아낼 수 있다(계정 탐색).
-    if row is None or not bcrypt.checkpw(req.password.encode(), row.password_hash.encode()):
+    #
+    # bcrypt.checkpw 는 해시가 bcrypt 형식이 아니면 False 가 아니라 ValueError 를 던진다.
+    # 계정을 손으로 INSERT 하다 평문을 넣으면 403 이 아니라 500 이 나 원인을 엉뚱한 데서
+    # 찾게 되므로, 여기서 잡아 '비밀번호 불일치'와 같은 취급을 한다(서버 로그에는 남긴다).
+    if row is None:
+        password_ok = False
+    else:
+        try:
+            password_ok = bcrypt.checkpw(req.password.encode(), row.password_hash.encode())
+        except ValueError:
+            logger.error("admin_accounts.password_hash 가 bcrypt 형식이 아니다: %s", req.email)
+            password_ok = False
+
+    if not password_ok:
         logger.warning("admin login failed: %s", req.email)
+        # 🔴 던지기 전에 기록한다. write_activity_log 가 스스로 commit 하므로 뒤따르는
+        #    403 에 딸려 rollback 되지 않는다 — 실패 기록이 사라지면 감사가 무의미하다.
+        #    actor 는 '시도한 이메일'이고 actor_role 은 없다(아직 누구인지 확정되지 않았다).
+        write_activity_log(db, request, actor=req.email, action=ACTION_LOGIN_FAILED,
+                           target=req.email, result=RESULT_FAILED)
         raise ForbiddenError("아이디 또는 비밀번호가 올바르지 않습니다.")
+
     if row.status != ACTIVE_STATUS:
+        write_activity_log(db, request, actor=row.email, actor_role=row.role,
+                           action=ACTION_LOGIN_FAILED, target=row.email,
+                           result=RESULT_FAILED, reason=f"계정 상태: {row.status}")
         raise ForbiddenError("사용할 수 없는 계정입니다. 관리자에게 문의해 주세요.")
 
     now = datetime.now(timezone.utc)
@@ -93,6 +118,10 @@ def login(req: LoginRequest, response: Response, db: DbSession, settings: Settin
         # 절대 만료와 같은 창. 쿠키가 먼저 사라져도 서버 판정과 어긋나지 않는다.
         max_age=int(ABSOLUTE_WINDOW.total_seconds()),
     )
+    # 세션 발급을 commit 한 다음에 기록한다 — 먼저 부르면 이 함수의 commit 이 위의 INSERT 까지
+    # 같이 확정해 버려서, 뒤에서 문제가 생겨도 되돌릴 수 없는 상태가 된다.
+    write_activity_log(db, request, actor=row.email, actor_role=row.role,
+                       action=ACTION_LOGIN, target=row.email)
     logger.info("admin login: %s (%s)", row.email, row.role)
     return LoginResponse(email=row.email, name=row.name, role=row.role)
 
@@ -125,7 +154,7 @@ def extend_session(me: CurrentAdmin):
 
 
 @router.post("/logout", status_code=204)
-def logout(me: CurrentAdmin, response: Response, db: DbSession):
+def logout(me: CurrentAdmin, request: Request, response: Response, db: DbSession):
     """로그아웃 — 세션 행을 무효로 박고 쿠키를 지운다. 204 + 빈 본문.
 
     행을 지우지 않고 revoked_at 을 채우는 이유: 세션 이력이 남아야 '언제 로그인해서 언제
@@ -135,6 +164,8 @@ def logout(me: CurrentAdmin, response: Response, db: DbSession):
                .where(admin_sessions.c.id == me.session_id)
                .values(revoked_at=datetime.now(timezone.utc)))
     db.commit()
+    write_activity_log(db, request, actor=me.email, actor_role=me.role,
+                       action=ACTION_LOGOUT, target=me.email)
     # 쿠키를 굽던 때와 path 가 같아야 브라우저가 지운다.
     response.delete_cookie(COOKIE_NAME, path="/")
     logger.info("admin logout: %s", me.email)
