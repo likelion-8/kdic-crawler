@@ -118,6 +118,10 @@ _DOCUMENTS_NEW_COLUMNS = [
 # 같게 맞춰 두 경로가 같은 인덱스를 가리키게 한다.
 _NEW_INDEXES = [
     ("ix_admin_activity_logs_occurred_at", "admin_activity_logs", "occurred_at"),
+    # 업무 분류는 목록 필터의 정확 일치 조건이고, 아래 청크 수 집계는
+    # document_chunks.document_id로 documents와 연결한다.
+    ("ix_documents_business_function", "documents", "business_function"),
+    ("ix_document_chunks_document_id", "document_chunks", "document_id"),
 ]
 
 

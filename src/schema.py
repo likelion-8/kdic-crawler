@@ -53,7 +53,7 @@ documents = Table(
     Column("page_id", String, unique=True, nullable=False),
     Column("source_url", String),
     Column("page_title", String),
-    Column("business_function", String),
+    Column("business_function", String, index=True),
     Column("sub_category", String),
     Column("content", Text),
     Column("summary", Text),
@@ -61,12 +61,21 @@ documents = Table(
     Column("collected_at", DateTime(timezone=True)),
     Column("is_active", Boolean, nullable=False, server_default=text("true")),
     Column("metadata", JSONB),
+    # 관리자 지식베이스 목록(AD-002)이 함께 쓰는 확장 필드. 크롤러는 이 값을
+    # 덮어쓰지 않는다(src/crawler/index_document_chunks.py의 _CRAWLER_OWNED 참고).
+    Column("owner", String),
+    Column("collection_status", String),
+    Column("index_status", String),
+    Column("split_rule", String),
+    Column("collection_note", Text),
+    Column("link_check", String),
+    Column("first_indexed_at", DateTime(timezone=True)),
 )
 
 document_chunks = Table(
     "document_chunks", metadata,
     _uuid_pk(),
-    Column("document_id", UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False),
+    Column("document_id", UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False, index=True),
     Column("chunk_id", String, unique=True, nullable=False),
     Column("chunk_index", Integer),
     Column("chunk_type", String),
