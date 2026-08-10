@@ -80,7 +80,10 @@ admin_sessions = Table(
 admin_activity_logs = Table(
     "admin_activity_logs", admin_metadata,
     _uuid_pk(),
-    Column("occurred_at", DateTime(timezone=True), nullable=False, server_default=func.now()),  # 발생 시각
+    # 쓰기 API 마다 한 행씩 쌓이는 테이블이라 제일 빨리 큰다. 화면은 항상 시간 역순 정렬이고
+    # 90일 보관 정리도 이 컬럼으로 도니 인덱스가 없으면 둘 다 풀스캔이 된다.
+    Column("occurred_at", DateTime(timezone=True), nullable=False,
+           server_default=func.now(), index=True),  # 발생 시각
     Column("actor", String, nullable=False),                    # 실행자 email
     Column("actor_role", String),                               # 실행자 역할(그 시점 스냅샷)
     Column("action", String, nullable=False),                   # 작업(예: 로그인, 변경 요청 승인)
@@ -108,6 +111,16 @@ _DOCUMENTS_NEW_COLUMNS = [
 ]
 
 
+# ── 기존 테이블에 뒤늦게 추가한 인덱스 ──
+# create_all(checkfirst=True) 은 테이블이 이미 있으면 통째로 건너뛴다 — 컬럼에 index=True 를
+# 나중에 붙여도 이미 만들어진 DB 에는 반영되지 않는다. 그래서 컬럼 쪽 index=True(새 DB 용)와
+# 아래 멱등 CREATE INDEX(기존 DB 용)를 둘 다 둔다. 이름은 SQLAlchemy 기본 규칙(ix_<표>_<열>)과
+# 같게 맞춰 두 경로가 같은 인덱스를 가리키게 한다.
+_NEW_INDEXES = [
+    ("ix_admin_activity_logs_occurred_at", "admin_activity_logs", "occurred_at"),
+]
+
+
 def main():
     engine = get_engine()
     with engine.begin() as conn:
@@ -116,8 +129,11 @@ def main():
         # documents 확장 — 기존 테이블이라 create_all 이 컬럼을 안 더하므로 멱등 ALTER.
         for name, coltype in _DOCUMENTS_NEW_COLUMNS:
             conn.execute(text(f"ALTER TABLE documents ADD COLUMN IF NOT EXISTS {name} {coltype}"))
+        for name, table_name, cols in _NEW_INDEXES:
+            conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON {table_name} ({cols})"))
     print("admin 테이블 생성/확인:", ", ".join(t.name for t in admin_metadata.sorted_tables))
     print("documents 확장 컬럼:", ", ".join(n for n, _ in _DOCUMENTS_NEW_COLUMNS))
+    print("인덱스 생성/확인:", ", ".join(n for n, _, _ in _NEW_INDEXES))
 
 
 if __name__ == "__main__":
