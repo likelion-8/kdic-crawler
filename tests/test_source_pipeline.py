@@ -103,18 +103,20 @@ def test_recheck_direction():
                                         recheck=lambda body: False)
     assert "참고 출처" not in out, "재확인이 '안 썼다'인데 출처가 붙음"
 
-    # 재확인 실패(예외)는 마커 판정 유지 — 이 기능이 죽어도 이전 동작으로 떨어질 뿐
-    def boom(body):
+    # 재확인 실패(예외)는 마커 판정 유지 — 이 기능이 죽어도 이전 동작으로 떨어질 뿐.
+    # 2026-08-10 판정기 교체(HCX call_hyperclova → OpenAI structured output)로 모킹 지점이
+    # source_check._parse 로 바뀌었다. 시나리오는 동일: 호출 실패 → False(안전한 쪽).
+    def boom(client, model, messages):
         raise RuntimeError("LLM 호출 실패")
 
     from source_check import recheck_source_usage
-    orig_call = sys.modules["source_check"].call_hyperclova
+    orig_parse = sys.modules["source_check"]._parse
     try:
-        sys.modules["source_check"].call_hyperclova = boom
+        sys.modules["source_check"]._parse = boom
         assert recheck_source_usage("반환 신청은 이렇게 합니다.", "근거 본문") is False, \
             "호출 실패가 True로 떨어짐 — 실패는 항상 안전한 쪽이어야 함"
     finally:
-        sys.modules["source_check"].call_hyperclova = orig_call
+        sys.modules["source_check"]._parse = orig_parse
 
 
 def test_subanswer_independence():

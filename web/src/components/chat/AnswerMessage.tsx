@@ -72,9 +72,11 @@ function sections(sources: Source[], attachments: Attachment[], prefix: string):
     out.push(
       <section className="reveal mt-4" key={`${prefix}-links`}>
         <h3 className={HEADING}>신청 페이지</h3>
-        {links.map((l) => (
-          <ApplyCta key={`${l.url}-${l.label}`} label={l.label} url={l.url} />
-        ))}
+        <div className="space-y-2">
+          {links.map((l) => (
+            <ApplyCta key={`${l.url}-${l.label}`} label={l.label} url={l.url} />
+          ))}
+        </div>
       </section>,
     )
   }

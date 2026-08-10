@@ -45,7 +45,9 @@ export function Bubble({ variant, hideAvatar = false, at, footer, children }: Bu
           data-variant={variant}
           role={variant === 'error' ? 'alert' : undefined}
           className={cn(
-            'px-5 py-3.5 text-[15px] leading-relaxed [overflow-wrap:anywhere]',
+            // break-keep: 한글을 음절이 아니라 어절 단위로 줄바꿈한다("중/입니다" 방지).
+            // 공백 없는 긴 문자열(URL 등)은 overflow-wrap:anywhere가 여전히 안전하게 꺾는다
+            'px-5 py-3.5 text-[15px] leading-relaxed break-keep [overflow-wrap:anywhere]',
             isUser
               ? 'rounded-(--chat-radius-user) bg-user-bubble text-user-bubble-fg'
               : 'rounded-(--chat-radius-bot) border bg-card text-card-foreground',
@@ -81,6 +83,16 @@ export function Bubble({ variant, hideAvatar = false, at, footer, children }: Bu
   )
 }
 
+/** `**볼드**`만 <strong>으로 바꾼다 — LLM이 계약(마크다운 미사용)을 어기고 내보내는 유일한
+ * 표기가 볼드라, 리터럴 별표가 그대로 노출되는 것(2026-08-10 보고)만 최소로 고친다.
+ * 그 외 마크다운은 계속 파싱하지 않는다(CM-DF-003 02절). 스트리밍 중 아직 안 닫힌 `**`는
+ * 잠시 리터럴로 보이다가 닫히는 순간 굵게 바뀐다. */
+function renderInline(p: string) {
+  const parts = p.split(/\*\*([^*]+)\*\*/g)
+  if (parts.length === 1) return p
+  return parts.map((s, i) => (i % 2 === 1 ? <strong key={i}>{s}</strong> : s))
+}
+
 /** 말풍선 본문 텍스트 — 마크다운 파싱 없이 문단 단위로만 나눈다 (CM-DF-003 02절 표기 원칙).
  * 문단 안의 홑 줄바꿈(①②③ 번호 목록 등)은 `whitespace-pre-wrap`이 그대로 살린다. */
 export function BubbleText({ text, caret = false }: { text: string; caret?: boolean }) {
@@ -91,7 +103,7 @@ export function BubbleText({ text, caret = false }: { text: string; caret?: bool
       {paragraphs.map((p, i) => (
         // 문단은 스트리밍 중 뒤에만 붙으므로 index key로 충분하다(중간 삽입·정렬 없음)
         <p key={i} className="whitespace-pre-wrap not-last:mb-2.5">
-          {p}
+          {renderInline(p)}
           {/* 커서는 반드시 마지막 문단 '안'에 둔다 — <p> 밖에 두면 블록 다음 줄로 떨어져
               글자와 떨어진 채 홀로 깜빡인다(사용자 지적). 글 끝을 따라다녀야 자연스럽다 */}
           {caret && i === last && <Caret />}

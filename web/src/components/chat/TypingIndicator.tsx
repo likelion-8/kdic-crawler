@@ -9,7 +9,8 @@ const DOT = 'size-1.5 animate-bounce rounded-full bg-muted-foreground [animation
 export function TypingIndicator() {
   return (
     <Bubble variant="bot">
-      <span className="flex items-center gap-2.5">
+      {/* 고정 상태 문구가 좁은 컨테이너에서 "중/입니다"로 꺾이지 않게 한 줄 고정 */}
+      <span className="flex items-center gap-2.5 whitespace-nowrap">
         <span className="flex items-center gap-1" aria-hidden="true">
           <span className={DOT} />
           <span className={`${DOT} [animation-delay:150ms]`} />

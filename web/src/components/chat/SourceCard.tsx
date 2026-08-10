@@ -41,7 +41,6 @@ export interface ApplyCtaProps {
 
 /** 신청 페이지 CTA — CB-003 마커 3 "실제 공식 신청 URL만 CTA로 제공하고 기관/도메인·새 탭 이동을 함께 알립니다". */
 export function ApplyCta({ label, url }: ApplyCtaProps) {
-  const host = hostOf(url)
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* 라벨은 서버가 주는 페이지 제목이라 길이를 화면이 통제할 수 없다. nowrap이면
@@ -57,19 +56,10 @@ export function ApplyCta({ label, url }: ApplyCtaProps) {
       >
         {label}
         <ExternalLink aria-hidden="true" />
+        {/* 도메인·새 탭 힌트는 시각 노출을 없앴다(2026-08-10, 버튼 옆이 어수선함) —
+            새 탭 이동 고지는 스크린리더에만 남긴다 */}
+        <span className="sr-only"> (새 탭에서 열림)</span>
       </a>
-      {/* 목업 원문 `kmrs.kdic.or.kr · 새 탭` — 도메인만 노출하고 URL 원문은 감춘다.
-          도메인을 못 뽑으면 구분점 없이 '새 탭'만 남긴다 */}
-      <span className="text-xs text-muted-foreground">{host === '' ? '새 탭' : `${host} · 새 탭`}</span>
     </div>
   )
-}
-
-/** 도메인만 뽑는다. 잘못된 URL이면 빈 문자열 — 힌트 한 줄 때문에 렌더가 죽으면 안 된다 */
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname
-  } catch {
-    return ''
-  }
 }
