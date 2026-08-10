@@ -61,6 +61,12 @@ def test_business_filter_is_an_exact_match_in_both_queries():
     assert "예금자보호제도" in total.params.values()
 
 
+def test_chunk_count_only_counts_active_chunks():
+    rows, _ = _compiled()
+
+    assert "document_chunks.is_active IS true" in str(rows)
+
+
 def test_response_contains_metadata_needed_by_the_existing_page():
     page = serialize_knowledge_page(
         {
@@ -108,6 +114,7 @@ def test_knowledge_list_route_is_exposed():
 if __name__ == "__main__":
     test_title_and_url_search_share_one_safe_filter()
     test_business_filter_is_an_exact_match_in_both_queries()
+    test_chunk_count_only_counts_active_chunks()
     test_response_contains_metadata_needed_by_the_existing_page()
     test_knowledge_list_route_is_exposed()
     print("OK - 관리자 지식베이스 제목·URL 검색 및 업무 분류 필터")

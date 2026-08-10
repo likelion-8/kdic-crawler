@@ -61,3 +61,6 @@ streamlit==1.60.0
 # (SQLAlchemy가 dataclass_transform을 쓴다 — sqlalchemy/util/typing.py, orm/decl_api.py.
 #  이게 없던 옛 버전이 남아 있으면 import 단계에서 통째로 실패한다.)
 typing_extensions==4.16.0
+
+# --- 테스트 ---
+pytest==9.1.1
