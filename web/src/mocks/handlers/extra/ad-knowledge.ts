@@ -199,6 +199,7 @@ export const adKnowledgeHandlers = [
       },
       chunks: MOCK_CHUNKS.filter((c) => c.page_id === sample.page_id),
       warnings: ['본문에서 표를 2개 발견했습니다. 청킹 결과를 확인해 주세요.'],
+      sub_category_extraction_failed: false,
     })
   }),
 
