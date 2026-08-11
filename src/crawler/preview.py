@@ -25,6 +25,22 @@ MAX_REDIRECTS = 5
 MAX_HTML_BYTES = 5 * 1024 * 1024
 MIN_BODY_CHARS = 40
 REQUEST_TIMEOUT = (5, 30)
+
+# documents.source_url 은 길이 제한 없는 text 라 DB 가 막아 주지 않는다. 브라우저·서버가
+# 실무에서 받아 주는 상한을 여기서 건다.
+MAX_URL_LENGTH = 2048
+
+# 🔴 kdic.or.kr 은 없는 주소를 두 가지로 처리한다. 실측:
+#     /sp/dpstrprot/NoSuchScrn.do -> 404              (fetch_html 의 상태코드 검사로 잡힌다)
+#     /no-such-page-xyz           -> 302 -> 200       (상태코드로는 못 잡는다. soft-404)
+# 뒤쪽을 통과시키면 관리자는 등록에 성공했다고 믿는데, 실제로 청킹되는 본문은
+# "## 연결 오류 / Page Not Found / 연결하려는 페이지에 문제가 있어서..." 다. 그대로 적재하면
+# 오류 안내문이 검색 색인에 들어가 답변 근거로 쓰인다.
+#
+# 상태코드 말고 남은 신호는 본문뿐이라 그것을 본다. 아래 표지는 실제 오류 페이지에서 뽑았고,
+# 사이트가 문구를 바꾸면 이 검사는 조용히 무력해진다(막지 못할 뿐, 정상 문서를 오탐하지는 않는다).
+ERROR_PAGE_TITLE_MARKERS = ("오류", "error")
+ERROR_PAGE_BODY_MARKERS = ("page not found", "연결하려는 페이지에 문제가 있어")
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (compatible; KDIC-Knowledge-Preview/1.0; "
@@ -148,8 +164,14 @@ def normalize_preview_url(raw_url: str) -> str:
     튀는 SSRF 우회도 차단한다.
     """
     value = raw_url.strip()
-    if not value or any(ord(ch) < 32 for ch in value):
+    # 양끝 공백은 붙여넣기 흔적이라 위에서 잘라내고, 가운데 남은 공백류는 거른다.
+    # ord < 32 만 보면 일반 공백(U+0020)과 줄바꿈 없는 공백(U+00A0)이 통과하는데, 후자는
+    # 웹페이지에서 URL 을 복사할 때 실제로 섞여 들어온다. 살려 두면 인코딩 과정에서 같은
+    # 주소가 다른 문자열이 되어 뒤쪽 중복 검사가 헛돈다.
+    if not value or any(ord(ch) < 32 or ch.isspace() for ch in value):
         raise PreviewUrlError("올바른 URL을 입력해 주세요.")
+    if len(value) > MAX_URL_LENGTH:
+        raise PreviewUrlError(f"URL이 너무 깁니다. {MAX_URL_LENGTH}자 이내로 입력해 주세요.")
 
     try:
         parts = urlsplit(value)
@@ -349,6 +371,23 @@ def _collapse_text(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def looks_like_error_page(title: str, text: str) -> bool:
+    """200 을 받았지만 실은 오류 안내문인 페이지(soft-404)인지.
+
+    제목만으로는 부족하다 — _extract_title() 이 "오류 | KDIC 예금보험공사"의 접미사를 떼어
+    "오류"로 만들기도 하고, soft-404 쪽은 "연결 오류"라 형태가 다르다. 그래서 제목에 표지가
+    있거나, 본문 앞부분에 오류 안내 문구가 있으면 오류 페이지로 본다.
+
+    본문은 앞부분만 본다. 정상 문서에도 "오류"라는 낱말이 본문 중간에 나올 수 있어서,
+    페이지 전체를 훑으면 멀쩡한 안내 문서를 오탐한다.
+    """
+    head = title.strip().lower()
+    if any(marker in head for marker in ERROR_PAGE_TITLE_MARKERS):
+        return True
+    body_head = text[:200].lower()
+    return any(marker in body_head for marker in ERROR_PAGE_BODY_MARKERS)
+
+
 def parse_document(html: str, source_url: str) -> ParsedDocument:
     """사이트 크롬을 제거하고 표/헤딩 구조를 보존한 본문과 메타데이터를 만든다."""
     soup = BeautifulSoup(html, "html.parser")
@@ -386,6 +425,10 @@ def parse_document(html: str, source_url: str) -> ParsedDocument:
         raise PreviewParseError("본문을 충분히 추출하지 못했습니다. 페이지 구조나 접근 권한을 확인해 주세요.")
     if not title:
         title = next((line.removeprefix("## ") for line in text.splitlines() if line), "제목 없음")[:200]
+    # HTTP 200 이어도 내용이 오류 안내문이면 수집 대상이 아니다(위 ERROR_PAGE_* 주석 참고).
+    # 본문을 다 만든 뒤에 보는 이유는, 제목이 비어 첫 줄에서 채워지는 경우까지 함께 걸러야 해서다.
+    if looks_like_error_page(title, text):
+        raise PreviewUrlError("존재하지 않거나 이동된 URL입니다. 대상 사이트가 오류 안내 페이지를 보여 줍니다.")
     if not summary:
         summary_text = re.sub(r"\s+", " ", text.replace("## ", "")).strip()
         summary = summary_text[:240]
