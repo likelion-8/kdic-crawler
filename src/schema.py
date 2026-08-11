@@ -310,6 +310,83 @@ pipeline_jobs = Table(
 )
 
 
+# 변경 요청(AD-002 삭제 · AD-003 신규 적재) — 지식베이스를 바꾸겠다는 '신청'의 기록.
+# 아직 이 테이블을 읽고 쓰는 API 는 없다(api/routers 에 change-requests 라우터 없음).
+#
+# ── 왜 DELETE 문 대신 이 테이블인가 ──
+# 관리자 화면의 삭제는 documents 를 지우는 게 아니라 여기 한 줄을 남기는 것이다(핸드오프 K7,
+# KnowledgePages.tsx:263-278). 크롤러 쪽도 같은 규칙을 이미 지키고 있다 — 코퍼스에서 빠진
+# 문서를 index_document_chunks.py 가 자동 삭제하지 않고 경고만 찍는 이유가 "페이지 삭제는
+# 변경 요청으로만"이기 때문이다. 그래서 이 테이블이 없으면 삭제를 기록할 자리가 아예 없다.
+#
+# ── 왜 schema_admin.py 가 아니라 여기인가 ──
+# pipeline_jobs 와 같은 이유다: 실행 주체는 관리자지만 다루는 대상이 서비스 데이터
+# (documents)다. 게다가 목록의 '적용 대기'는 documents 와 이 테이블을 조인해 계산하는 값이라
+# (schema_admin.py 상단, pending_action 을 컬럼으로 두지 않은 근거) 같은 MetaData 에 있는 편이 맞다.
+#
+# ── target_page_id 에 FK 를 걸지 않는다 ──
+# action='ADD' 는 아직 documents 에 없는 페이지를 넣어달라는 요청이라 FK 가 있으면 신규 적재
+# 요청 자체가 거부된다. 삭제 요청만 있었다면 FK 가 맞겠지만 한 테이블이 두 방향을 다 받는다.
+#
+# ── 그래서 존재 검증은 라우터가 해야 한다(POST /api/admin/change-requests) ──
+# FK 가 없다는 건 검사를 안 한다는 뜻이 아니라, DB 가 못 하니 애플리케이션이 한다는 뜻이다.
+# action 마다 요구하는 전제가 정반대라 어차피 FK 한 줄로는 표현이 안 된다.
+#
+#     ADD                      documents 에 그 page_id 가 **없어야** 한다   -> 있으면 400
+#     UPDATE / DELETE / EXCLUDE  documents 에 그 page_id 가 **있어야** 한다  -> 없으면 404
+#
+# EXCLUDE 도 있는 문서를 검색에서 빼는 동작이라 UPDATE·DELETE 와 같은 쪽이다(codes.ts
+# PendingAction 4값 중 ADD 만 반대). 빠뜨리면 존재하지 않는 페이지에 대한 제외 요청이 통과한다.
+#
+# ADD 의 중복 검사를 프리뷰에 맡기면 안 된다. POST /previews 가 막는 것은 **URL** 중복이고
+# (admin_previews.py find_existing_document_page_id 는 source_url 로 조회한다) page_id 는 화면에서
+# 사람이 고칠 수 있는 값이다 — 다른 URL 로 프리뷰를 받고 ID 만 기존 것과 같게 적어 넣으면
+# 프리뷰를 통과한다. 키가 다르므로 두 검사는 서로를 대체하지 않는다.
+#
+# ⚠ documents 조회만으로는 못 잡는 구멍이 하나 남는다: 같은 page_id 의 **PENDING ADD 가 이미
+# 있는 경우**. 신규 문서는 승인 뒤 REINDEX 잡이 실제로 돌아야 documents 에 생기는데 그 워커가
+# 아직 없어(pipeline_jobs 주석) PENDING 인 채로 오래 남는다. 그동안은 documents 가 비어 있어
+# 위 검사를 그대로 통과하므로, ADD 는 change_requests 의 PENDING 행도 함께 봐야 한다.
+# request_id 멱등키(아래)는 '같은 요청의 재전송'만 막지 다른 요청의 ID 충돌은 못 막는다.
+#
+# 컬럼 정본: web/src/mocks/data/admin.ts 의 ChangeRequest + 핸드오프 K8(page 객체)·K10(멱등키).
+# action 값 정본: web/src/lib/codes.ts PendingAction ('NONE' 제외 — 요청이 없다는 뜻이라 행이 안 생긴다).
+change_requests = Table(
+    "change_requests", metadata,
+    _uuid_pk(),
+    Column("action", String, nullable=False),          # ADD / UPDATE / DELETE / EXCLUDE
+    # page_id 문자열이다(documents.id UUID 가 아니다). ADD 요청 시점엔 그 문서가 없으므로
+    # UUID 를 가리킬 수가 없고, 프론트도 page_id 로만 보낸다.
+    Column("target_page_id", String, nullable=False, index=True),
+    Column("target_title", String),                    # 목록 표시용. 삭제 후에도 무엇이었는지 남기려고 복사해 둔다
+    Column("business_function", String),               # codes.ts BUSINESS_FUNCTIONS 6종
+    # K8: action='ADD' 는 본문에 page 객체(사람 입력 8키 + owner)를 싣고 온다. 대상 문서가 아직
+    # 없어 documents 에 미리 넣어둘 수 없으므로 승인 전까지 여기 통째로 보관한다 — 이 칸이
+    # 없으면 수집 근거(note·summary·required·owner)가 서버에 도달하고도 버려진다.
+    # ADD 외 action 에서는 NULL.
+    Column("payload", JSONB),
+    # 위험 작업은 사유가 필수다(CM-DF-004 · AD-011). 프론트가 확인 모달에서 반드시 받아 보낸다.
+    Column("reason", Text, nullable=False),
+    Column("requested_by", String, nullable=False),    # 신청자 email
+    Column("requested_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    # PENDING / APPROVED / REJECTED. 목록이 ?status= 로 거르므로 인덱스를 둔다.
+    Column("status", String, nullable=False, server_default=text("'PENDING'"), index=True),
+    # 확정·버리기 결과. status='PENDING' 인 동안은 셋 다 NULL 이다.
+    # ⚠ 요청/승인 2단계는 2026-08-04 팀 결정으로 없앴다 — 편집 권한자가 신청하고 곧바로
+    # 확정한다(NewPageForm.tsx:226-227 이 create 직후 approve 를 부른다). 그래도 이 컬럼들을
+    # 남기는 이유는 그게 감사 기록이기 때문이다: 누가 언제 확정했는지가 없으면 '신청만 있고
+    # 반영은 누가 했는지 모르는' 행이 된다. decided_by 가 requested_by 와 같아도 문제없다.
+    Column("decided_by", String),
+    Column("decided_at", DateTime(timezone=True)),
+    Column("decision_reason", Text),
+    # K10 멱등키. 적재 승인은 change-requests(ADD) -> approve -> jobs(REINDEX) 3콜 체인인데
+    # 중간에 실패해도 프론트가 자동 재시도하지 않는다. 사용자가 [적재 승인]을 다시 누르면
+    # 같은 request_id 로 다시 오므로, unique 로 DB 가 중복 생성을 막는다.
+    # 확정(approve) 쪽 중복은 별도 컬럼 없이 상태 전이로 막는다 — PENDING 이 아니면 409.
+    Column("request_id", String, unique=True),
+)
+
+
 # 수정 3: documents.is_active가 바뀌면 그 문서의 청크 전부를 같은 값으로 맞춘다.
 # 애플리케이션 레이어에서 매번 챙기게 두면 한 곳이라도 빠뜨렸을 때 "비활성 문서의
 # 청크가 검색에 걸리는" 조용한 버그가 나므로 DB 트리거로 강제한다.
