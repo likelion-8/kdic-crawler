@@ -9,12 +9,12 @@ from datetime import date, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Query
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import and_, case, exists, func, not_, or_, select
 
 from api.deps import CurrentAdmin, DbSession
 from api.errors import BadRequestError
 from api.schemas.knowledge import KbChunk, KbChunkList, KnowledgePage, KnowledgePageList
-from schema import document_chunks, documents
+from schema import change_requests, document_chunks, documents
 
 router = APIRouter(prefix="/api/admin/knowledge", tags=["admin-knowledge"])
 
@@ -50,18 +50,35 @@ def _resolved_index_status():
     )
 
 
-def _list_state(index_status: str) -> Literal["최신", "변경 감지", "적용 대기"]:
-    # 변경 감지는 별도 비교 작업이 채우는 index_status=PENDING으로 표현한다.
+def _has_pending_change():
+    """이 페이지에 처리 대기(PENDING) 변경 요청이 있는지 — '적용 대기'의 정본 근거.
+    schema_admin.py 가 명시하듯 '적용 대기'는 change_requests 조인으로 나오는 값이라(컬럼으로
+    두면 두 곳이 어긋나는 비정규화), documents 에 컬럼을 두지 않고 상관 EXISTS 로 파생한다.
+    change_requests 를 만드는 것 외엔 documents 를 아무도 안 바꾸므로, 이 조인이 없으면
+    삭제·적재 요청이 목록 배지에 아예 안 나타난다(KnowledgePages.tsx 가 요청 후 다시 읽는다)."""
+    return exists(
+        select(change_requests.c.id).where(
+            change_requests.c.target_page_id == documents.c.page_id,
+            change_requests.c.status == "PENDING",
+        )
+    )
+
+
+def _list_state(has_pending_change: bool, index_status: str) -> Literal["최신", "변경 감지", "적용 대기"]:
+    # 우선순위 적용 대기 > 변경 감지 > 최신 (CM-DF-002 05절). '적용 대기'의 정본은 PENDING
+    # 변경 요청 존재(change_requests)이며, 워커가 재색인 중인 index_status=REINDEXING 도 같은
+    # '적용 대기'로 접는다. '변경 감지'는 별도 비교 작업이 채우는 index_status=PENDING.
+    if has_pending_change or index_status == "REINDEXING":
+        return "적용 대기"
     if index_status == "PENDING":
         return "변경 감지"
-    if index_status == "REINDEXING":
-        return "적용 대기"
     return "최신"
 
 
 def _filters(*, tab: str, q: str, business: str | None, state: str | None):
     filters = []
     index_status = _resolved_index_status()
+    has_pending = _has_pending_change()
 
     # 수집 대상 탭은 이미 적재된 페이지와 적재 전 후보를 함께 보여 준다. 반대로
     # 적재 페이지 탭에는 수집이 끝난 문서만 둔다.
@@ -81,18 +98,21 @@ def _filters(*, tab: str, q: str, business: str | None, state: str | None):
         filters.append(documents.c.business_function == business)
 
     if state:
+        # 파생 상태(최신/변경 감지/적용 대기)는 _list_state 와 같은 규칙으로 걸러야 목록과
+        # 배지가 어긋나지 않는다. '적용 대기'는 PENDING 변경 요청 또는 REINDEXING 이고,
+        # 앞의 둘은 그 조건을 배제한다(우선순위 적용 대기 > 변경 감지 > 최신).
         if state in INDEX_STATUSES:
             filters.append(index_status == state)
         elif state == "최신":
-            filters.append(index_status.notin_(("PENDING", "REINDEXING")))
+            filters.append(and_(not_(has_pending), index_status.notin_(("PENDING", "REINDEXING"))))
         elif state == "변경 감지":
-            filters.append(index_status == "PENDING")
+            filters.append(and_(not_(has_pending), index_status == "PENDING"))
         elif state == "적용 대기":
-            filters.append(index_status == "REINDEXING")
+            filters.append(or_(has_pending, index_status == "REINDEXING"))
         else:
             raise BadRequestError("지원하지 않는 상태 필터입니다.")
 
-    return filters, index_status
+    return filters, index_status, has_pending
 
 
 def _sort_order(sort: str | None, chunk_count):
@@ -125,13 +145,31 @@ def build_knowledge_page_queries(*, tab: str, q: str, business: str | None, stat
     이 함수를 분리해 두면 제목·URL·업무 조건이 한 쿼리에만 적용되어 페이지 수와
     실제 목록이 어긋나는 회귀를 단위 테스트로 막을 수 있다.
     """
-    filters, index_status = _filters(tab=tab, q=q, business=business, state=state)
+    filters, index_status, has_pending = _filters(tab=tab, q=q, business=business, state=state)
     chunk_count = (
         select(func.count(document_chunks.c.id))
         .where(document_chunks.c.document_id == documents.c.id)
         .where(document_chunks.c.is_active.is_(True))
         .scalar_subquery()
         .label("chunk_count")
+    )
+    pending_change_id = (
+        select(change_requests.c.id)
+        .where(change_requests.c.target_page_id == documents.c.page_id,
+               change_requests.c.status == "PENDING")
+        .order_by(change_requests.c.requested_at.desc())
+        .limit(1)
+        .scalar_subquery()
+        .label("pending_change_request_id")
+    )
+    pending_change_action = (
+        select(change_requests.c.action)
+        .where(change_requests.c.target_page_id == documents.c.page_id,
+               change_requests.c.status == "PENDING")
+        .order_by(change_requests.c.requested_at.desc())
+        .limit(1)
+        .scalar_subquery()
+        .label("pending_change_action")
     )
     rows = (
         select(
@@ -152,6 +190,9 @@ def build_knowledge_page_queries(*, tab: str, q: str, business: str | None, stat
             documents.c.link_check,
             documents.c.first_indexed_at,
             index_status.label("resolved_index_status"),
+            has_pending.label("has_pending_change"),
+            pending_change_id,
+            pending_change_action,
             chunk_count,
         )
         .where(*filters)
@@ -302,7 +343,7 @@ def serialize_knowledge_page(row: Mapping[str, object]) -> KnowledgePage:
         collected_at=_iso_date(row.get("collected_at")),
         content_sha256=_as_text(row.get("content_sha256")),
         chunk_count=int(row.get("chunk_count") or 0),
-        list_state=_list_state(index_status),
+        list_state=_list_state(bool(row.get("has_pending_change")), index_status),
         index_status=index_status,
         asset_counts={
             "links": len(_as_list(metadata.get("links"))),
@@ -316,6 +357,9 @@ def serialize_knowledge_page(row: Mapping[str, object]) -> KnowledgePage:
         collection_note=_as_text(row.get("collection_note")),
         link_check=_as_text(row.get("link_check")),
         first_indexed_at=_iso_datetime(row.get("first_indexed_at")),
+        pending_change_request_id=(str(row.get("pending_change_request_id"))
+                                   if row.get("pending_change_request_id") else None),
+        pending_change_action=_as_text(row.get("pending_change_action")) or None,
     )
 
 
