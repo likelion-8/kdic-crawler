@@ -40,12 +40,12 @@ DB 접근(SQLAlchemy 동기 세션)이 블로킹이라 async def 로 두면 이�
 import uuid
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import func, insert, select
+from sqlalchemy import func, insert, select, update
 
 from api.deps import (ACTION_BY_JOB_TYPE, CurrentAdmin, DbSession,
                       get_current_admin, write_activity_log)
-from api.errors import ApiError, BadRequestError, NotFoundError
-from api.schemas.pipeline import JobCreate, PipelineJob, PipelineJobList
+from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
+from api.schemas.pipeline import JobCancel, JobCreate, PipelineJob, PipelineJobList
 from schema import pipeline_jobs
 
 router = APIRouter(
@@ -64,6 +64,7 @@ PIPELINE_STEPS = ("수집", "변환", "청킹", "검증", "색인", "반영")
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 SORT_COLUMNS = {"created_at": pipeline_jobs.c.created_at}
+ROLE_RANK = {"VIEWER": 0, "OPERATOR": 1, "EDITOR": 2, "ADMIN": 3}
 
 
 class JobConflictError(ApiError):
@@ -75,6 +76,13 @@ class JobConflictError(ApiError):
     code = "pipeline_busy"
     status_code = 409
     user_message = "이미 실행 중이거나 대기 중인 작업이 있습니다. 완료 후 다시 시도해 주세요."
+
+
+class JobCancelConflictError(ApiError):
+    """이미 끝난 작업은 취소할 수 없다."""
+    code = "pipeline_cancel_conflict"
+    status_code = 409
+    user_message = "이미 종료된 작업은 취소할 수 없습니다."
 
 
 def _initial_steps():
@@ -177,4 +185,43 @@ def get_job(job_id: str, db: DbSession):
     row = db.execute(select(pipeline_jobs).where(pipeline_jobs.c.id == job_id)).first()
     if row is None:
         raise NotFoundError("작업을 찾을 수 없습니다.")
+    return _row_to_job(row)
+
+
+@router.post("/jobs/{job_id}/cancel", response_model=PipelineJob)
+def cancel_job(job_id: str, body: JobCancel, request: Request,
+               db: DbSession, me: CurrentAdmin):
+    """대기/실행 중 작업을 원자적으로 취소한다."""
+    if ROLE_RANK.get(me.role, -1) < ROLE_RANK["OPERATOR"]:
+        raise ForbiddenError("작업 취소에는 OPERATOR 이상 권한이 필요합니다.")
+    try:
+        uuid.UUID(job_id)
+    except ValueError:
+        raise NotFoundError("작업을 찾을 수 없습니다.")
+
+    existing = db.execute(
+        select(pipeline_jobs.c.id).where(pipeline_jobs.c.id == job_id)
+    ).first()
+    if existing is None:
+        raise NotFoundError("작업을 찾을 수 없습니다.")
+
+    row = db.execute(
+        update(pipeline_jobs)
+        .where(pipeline_jobs.c.id == job_id,
+               pipeline_jobs.c.status.in_(ACTIVE_STATUSES))
+        .values(status="CANCELLED")
+        .returning(*pipeline_jobs.c)
+    ).first()
+    if row is None:
+        db.rollback()
+        raise JobCancelConflictError()
+    db.commit()
+
+    reason = body.reason.strip() or None
+    write_activity_log(
+        db, request,
+        actor=me.email, actor_role=me.role,
+        action="작업 취소", target=job_id, reason=reason,
+        detail={"job_type": row.type},
+    )
     return _row_to_job(row)

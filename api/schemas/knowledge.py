@@ -35,6 +35,8 @@ class KnowledgePage(BaseModel):
     collection_note: str = ""
     link_check: str = ""
     first_indexed_at: str | None = None
+    pending_change_request_id: str | None = None
+    pending_change_action: str | None = None
 
 
 class KnowledgePageList(BaseModel):

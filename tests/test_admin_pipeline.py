@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy.dialects import postgresql
 
 # `python tests/test_admin_pipeline.py`로도 실행되도록 저장소 루트를 먼저 넣는다.
@@ -17,8 +19,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from api.errors import ApiError, BadRequestError
+from api.deps import get_current_admin, get_db
+from api.routers import admin_pipeline
 from api.routers.admin_pipeline import (
     PIPELINE_STEPS,
+    JobCancelConflictError,
     JobConflictError,
     _initial_steps,
     _order_by,
@@ -55,6 +60,12 @@ def test_conflict_error_is_409_and_not_retryable():
     """동시 실행 초과는 409 + retryable=false. true 면 프론트가 [다시 시도]로 계속 409 를 맞는다."""
     err = JobConflictError()
     assert isinstance(err, ApiError)
+    assert err.status_code == 409
+    assert err.retryable is False
+
+
+def test_cancel_conflict_error_is_409():
+    err = JobCancelConflictError()
     assert err.status_code == 409
     assert err.retryable is False
 
@@ -119,6 +130,55 @@ def test_jobs_routes_are_exposed():
     paths = {r.path for r in router.routes if hasattr(r, "path")}
     assert "/api/admin/jobs" in paths
     assert "/api/admin/jobs/{job_id}" in paths
+    assert "/api/admin/jobs/{job_id}/cancel" in paths
+
+
+def test_cancel_endpoint_changes_queued_job_to_cancelled(monkeypatch):
+    """프론트가 보내는 POST 본문으로 실제 라우팅되고 CANCELLED 응답을 돌려준다."""
+    job_id = "33333333-3333-3333-3333-333333333333"
+    row = SimpleNamespace(
+        id=job_id, type="REINDEX", status="CANCELLED", targets=[], reason="실수",
+        created_by="admin@demo", created_at=datetime(2026, 8, 11, tzinfo=timezone.utc),
+        steps=_initial_steps(), error=None, rollback_of=None, target_summary=None,
+        target_count=None, index_impact=None, metrics=None,
+    )
+
+    class Result:
+        def __init__(self, value):
+            self.value = value
+
+        def first(self):
+            return self.value
+
+    class FakeDb:
+        def __init__(self):
+            self.results = [Result(SimpleNamespace(id=job_id)), Result(row)]
+            self.commits = 0
+
+        def execute(self, _statement):
+            return self.results.pop(0)
+
+        def commit(self):
+            self.commits += 1
+
+        def rollback(self):
+            raise AssertionError("성공 취소에서 rollback 되면 안 된다")
+
+    db = FakeDb()
+    me = SimpleNamespace(email="admin@demo", role="ADMIN")
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_current_admin] = lambda: me
+    monkeypatch.setattr(admin_pipeline, "write_activity_log", lambda *args, **kwargs: None)
+
+    response = TestClient(app).post(
+        f"/api/admin/jobs/{job_id}/cancel",
+        json={"reason": "실수", "request_id": "req-cancel"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "CANCELLED"
+    assert db.commits == 1
 
 
 if __name__ == "__main__":
@@ -126,6 +186,7 @@ if __name__ == "__main__":
     test_default_sort_is_created_at_desc()
     test_invalid_sort_is_rejected()
     test_conflict_error_is_409_and_not_retryable()
+    test_cancel_conflict_error_is_409()
     test_row_to_job_maps_all_fields()
     test_row_to_job_handles_null_json_columns()
     test_job_create_ignores_extra_fields()

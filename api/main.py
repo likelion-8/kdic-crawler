@@ -118,9 +118,9 @@ def create_app() -> FastAPI:
     # 관리자 라우터는 엔드포인트가 아직 없어도 여기 미리 등록해 둔다 — 이 파일은 모두가
     # 고치는 자리라, 각자 자기 기능을 만들면서 한 줄씩 더하면 머지 충돌이 확정적으로 난다.
     # 등록을 먼저 해 두면 각 라우터 파일 안에서만 작업이 끝난다.
-    from api.routers import (admin_activity, admin_auth, admin_knowledge,
-                             admin_pipeline, admin_previews, chat, feedback,
-                             public, session)
+    from api.routers import (admin_activity, admin_auth, admin_change_requests,
+                             admin_knowledge, admin_pipeline, admin_previews, chat,
+                             feedback, public, session)
     app.include_router(public.router)
     app.include_router(chat.router)
     app.include_router(feedback.router)
@@ -130,6 +130,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_previews.router)
     app.include_router(admin_pipeline.router)
     app.include_router(admin_activity.router)
+    app.include_router(admin_change_requests.router)
 
     # liveness 만 여기 남긴다. readiness(DB·워밍업까지 확인)는 routers/public.py 의
     # GET /api/health 다 — 둘은 판정 대상이 달라 일부러 나눠 뒀고, 둘 다

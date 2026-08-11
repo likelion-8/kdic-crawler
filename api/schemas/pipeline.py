@@ -61,3 +61,8 @@ class JobCreate(BaseModel):
     type: str
     targets: list[str] = Field(default_factory=list)
     reason: str = ""
+
+
+class JobCancel(BaseModel):
+    """취소 사유. 공통 request_id가 함께 와도 Pydantic 기본 정책으로 무시한다."""
+    reason: str = ""
