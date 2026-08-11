@@ -35,7 +35,7 @@ from db import get_engine  # noqa: E402
 from pgvector.sqlalchemy import Vector  # noqa: E402
 from sqlalchemy import (  # noqa: E402
     Boolean, Column, DateTime, ForeignKey, Integer, LargeBinary, MetaData, String,
-    Table, Text, UniqueConstraint, func, text,
+    Table, Text, UniqueConstraint, func, inspect, text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID  # noqa: E402
 
@@ -440,7 +440,13 @@ def _seed_suggested_questions(conn):
 def main():
     engine = get_engine()
     with engine.begin() as conn:
+        # create_all 은 무엇을 건너뛰었는지 알려주지 않는다(반환값이 없다). 그래서 실행 전
+        # 카탈로그를 먼저 찍어 두고 차집합으로 '이번에 새로 생긴 것'을 가려낸다 — 이게 없으면
+        # 아래 print 가 "파일에 선언된 목록"밖에 못 찍어서, 매번 전체 목록이 나오는 걸 보고
+        # 테이블이 새로 만들어졌다고 오해하게 된다.
+        before = set(inspect(conn).get_table_names())
         metadata.create_all(conn, checkfirst=True)
+        created = [t.name for t in metadata.sorted_tables if t.name not in before]
         conn.execute(text(_SYNC_TRIGGER_SQL))
         # evaluation_dataset이 embedding 컬럼 추가 전에 이미 만들어졌을 수 있어 create_all이
         # 건너뛴다(테이블 존재 여부만 봄, 컬럼 diff는 안 함) — 별도로 멱등하게 추가.
@@ -468,7 +474,8 @@ def main():
                 ON search_index_versions (status) WHERE status = 'ACTIVE'
         """))
         seeded = _seed_suggested_questions(conn)
-    print("생성 완료:", ", ".join(t.name for t in metadata.sorted_tables))
+    print(f"테이블 {len(metadata.sorted_tables)}개 확인(이미 있으면 건너뜀)")
+    print("  새로 생성:", ", ".join(created) if created else "없음 — 전부 이미 있었다")
     print(f"추천질문 시드: {seeded}건 삽입" if seeded else "추천질문 시드: 이미 데이터가 있어 건너뜀")
     print("트리거 생성 완료: trg_sync_document_chunks_is_active (documents.is_active → document_chunks.is_active)")
 
