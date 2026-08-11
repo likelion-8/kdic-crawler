@@ -49,6 +49,9 @@ export interface KbPage {
   split_rule: string
   /** 적재·협의 상태 3종의 원천 (B-9). 적재 페이지 탭 행은 항상 LOADED */
   collection_status: CollectionStatus
+  /** 적용 대기 변경을 취소할 때 호출할 change_requests 행 */
+  pending_change_request_id?: string | null
+  pending_change_action?: 'ADD' | 'UPDATE' | 'DELETE' | 'EXCLUDE' | null
 }
 
 /** POST /api/admin/change-requests (action='ADD') 본문 중 새 페이지 레코드 부분.

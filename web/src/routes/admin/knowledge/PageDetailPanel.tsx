@@ -43,6 +43,7 @@ export interface PageDetailActionProps {
   recrawlPending?: boolean
   onRecrawl: (page: KbPage) => void
   onDelete: (page: KbPage) => void
+  onCancelDelete: (page: KbPage) => void
 }
 
 export function PageDetailPanel({ page }: PageDetailPanelProps) {
@@ -204,8 +205,9 @@ export const pageDetailMeta = (p: KbPage) =>
 /** 모달 푸터의 행 동작 — 권한이 없으면 숨긴다.
  *  서버가 최종 판정이라 403은 목록 화면에서 따로 처리한다 */
 export function PageDetailActions({
-  page, canRecrawl, canDelete, recrawlPending = false, onRecrawl, onDelete,
+  page, canRecrawl, canDelete, recrawlPending = false, onRecrawl, onDelete, onCancelDelete,
 }: PageDetailActionProps) {
+  const deletePending = page.pending_change_action === 'DELETE' && page.pending_change_request_id
   return (
     <>
       {canRecrawl && (
@@ -213,7 +215,12 @@ export function PageDetailActions({
           재수집
         </Button>
       )}
-      {canDelete && <Button onClick={() => onDelete(page)}>삭제</Button>}
+      {canDelete &&
+        (deletePending ? (
+          <Button onClick={() => onCancelDelete(page)}>삭제 신청 취소</Button>
+        ) : (
+          <Button onClick={() => onDelete(page)}>삭제</Button>
+        ))}
     </>
   )
 }

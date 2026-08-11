@@ -53,7 +53,10 @@ type Tab = 'indexed' | 'targets'
 /** 확인 모달이 떠 있는 위험 작업. 사유는 모달이 받아 넘긴다.
  * 개별 재수집은 위험 작업 목록(CM-DF-004 03절 '신규 URL 적용·삭제·일괄 재수집·재색인…')에 없고
  * B-7도 중립 버튼으로만 규정해 모달 없이 바로 실행한다 */
-type ActionTarget = { kind: 'delete'; page: KbPage } | { kind: 'reindex'; count: number }
+type ActionTarget =
+  | { kind: 'delete'; page: KbPage }
+  | { kind: 'cancelDelete'; page: KbPage }
+  | { kind: 'reindex'; count: number }
 
 /** 모달 없는 쓰기라 화면이 고정 사유를 붙인다 — 쓰기 API는 reason 필수(CM-DF-003 04절) */
 const RECRAWL_REASON = '지식베이스 상세에서 개별 재수집'
@@ -260,6 +263,19 @@ export function KnowledgePages() {
 
   const runAction = (item: ActionTarget, reason: string) => {
     setTarget(null)
+    if (item.kind === 'cancelDelete') {
+      const requestId = item.page.pending_change_request_id
+      if (!requestId) return
+      action.mutate({
+        run: () =>
+          apiRequest(`/api/admin/change-requests/${requestId}/reject`, {
+            method: 'POST',
+            reason,
+          }),
+        success: '삭제 신청을 취소했습니다',
+      })
+      return
+    }
     if (item.kind === 'delete') {
       // 삭제는 즉시 지우는 게 아니라 변경 요청으로 남아 '적용 대기'가 된다 (B-7)
       action.mutate({
@@ -587,6 +603,7 @@ export function KnowledgePages() {
               recrawlPending={action.isPending}
               onRecrawl={runRecrawl}
               onDelete={(p) => setTarget({ kind: 'delete', page: p })}
+              onCancelDelete={(p) => setTarget({ kind: 'cancelDelete', page: p })}
             />
           )
         }
@@ -613,6 +630,19 @@ export function KnowledgePages() {
 
 /** 확인 모달 문구. 삭제 문구는 B-8 목업 원문, 나머지는 같은 어투로 맞췄다(원문 없음) */
 function confirmContent(target: ActionTarget) {
+  if (target.kind === 'cancelDelete') {
+    return {
+      variant: 'normal' as const,
+      title: '삭제 신청을 취소할까요?',
+      confirmLabel: '삭제 신청 취소',
+      impact: (
+        <>
+          <p>'{formatTarget(target.page.page_title, target.page.page_id)}'의 삭제 신청을 취소합니다.</p>
+          <p>· 문서와 기존 검색 인덱스는 그대로 유지됩니다</p>
+        </>
+      ),
+    }
+  }
   if (target.kind === 'delete') {
     return {
       variant: 'danger' as const,
