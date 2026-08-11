@@ -37,9 +37,15 @@ router 에 dependencies=[Depends(get_current_admin)] 가 붙어 있어, 여기 �
 DB 접근(SQLAlchemy 동기 세션)이 블로킹이라 async def 로 두면 이벤트 루프를 막는다.
 평범한 def 로 두면 FastAPI 가 스레드풀에서 돌린다(api/deps.py get_db 주석과 같은 이유).
 """
-from fastapi import APIRouter, Depends
+import uuid
 
-from api.deps import get_current_admin
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, insert, select
+
+from api.deps import CurrentAdmin, DbSession, get_current_admin
+from api.errors import ApiError, BadRequestError, NotFoundError
+from api.schemas.pipeline import JobCreate, PipelineJob, PipelineJobList
+from schema import pipeline_jobs
 
 router = APIRouter(
     prefix="/api/admin",
@@ -47,3 +53,113 @@ router = APIRouter(
     # 라우터 전체에 인증. 여기 추가되는 엔드포인트는 전부 자동으로 보호된다.
     dependencies=[Depends(get_current_admin)],
 )
+
+# JobType/JobStatus 정본: web/src/lib/codes.ts
+JOB_TYPES = frozenset(
+    {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL"})
+ACTIVE_STATUSES = ("QUEUED", "RUNNING")  # 동시 실행 1개 규칙의 판정 대상
+# 6단계 이름 정본: web/src/lib/constants.ts PIPELINE_STEPS (수집·변환·청킹·검증·색인·반영)
+PIPELINE_STEPS = ("수집", "변환", "청킹", "검증", "색인", "반영")
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 100
+SORT_COLUMNS = {"created_at": pipeline_jobs.c.created_at}
+
+
+class JobConflictError(ApiError):
+    """동시 실행 초과(409). constants.ts PIPELINE_CONCURRENCY=1 — QUEUED/RUNNING 잡이 있으면
+    새 잡 생성을 막는다. retryable 은 ApiError 기본값 False 그대로 둔다 — True 면 프론트에
+    [다시 시도] 버튼이 떠서 계속 409 를 맞는다(backend-structure §3 함정 #9). errors.py 에 409
+    클래스가 없어 여기 로컬로 둔다(다른 파일은 안 건드림). ApiError 서브클래스라 공통 예외
+    핸들러가 그대로 봉투로 만들어 준다."""
+    code = "pipeline_busy"
+    status_code = 409
+    user_message = "이미 실행 중이거나 대기 중인 작업이 있습니다. 완료 후 다시 시도해 주세요."
+
+
+def _initial_steps():
+    """생성 시 6단계를 전부 QUEUED 로 초기화. 안 채우면 프론트 진행바가 빈 채로 뜬다."""
+    return [{"name": name, "status": "QUEUED"} for name in PIPELINE_STEPS]
+
+
+def _row_to_job(row) -> PipelineJob:
+    """pipeline_jobs 한 행 -> PipelineJob. JSONB(targets/steps/error/metrics)는 psycopg 가
+    이미 파이썬 list/dict 로 넘겨준다."""
+    return PipelineJob(
+        id=str(row.id),
+        type=row.type,
+        status=row.status,
+        targets=row.targets or [],
+        reason=row.reason or "",
+        created_by=row.created_by,
+        created_at=row.created_at,
+        steps=row.steps or [],
+        error=row.error,
+        rollback_of=row.rollback_of,
+        target_summary=row.target_summary,
+        target_count=row.target_count,
+        index_impact=row.index_impact,
+        metrics=row.metrics,
+    )
+
+
+def _order_by(sort: str):
+    """정렬 파싱. 목록 정렬은 기능 계약이다 — 프론트가 '진행 중 잡은 1페이지 맨 위'라고
+    가정하므로(Pipeline.tsx) 기본 created_at:desc 를 지킨다."""
+    field, sep, direction = sort.partition(":")
+    if sep != ":" or field not in SORT_COLUMNS or direction not in {"asc", "desc"}:
+        raise BadRequestError("지원하지 않는 정렬 조건입니다.")
+    col = SORT_COLUMNS[field]
+    return col.desc() if direction == "desc" else col.asc()
+
+
+@router.post("/jobs", status_code=202, response_model=PipelineJob)
+def create_job(body: JobCreate, db: DbSession, me: CurrentAdmin):
+    """작업 생성 -> 202 + PipelineJob 본문. QUEUED 로만 만들고 실제 실행은 안 한다(워커는 다음
+    단계). 동시 실행 1개 규칙: QUEUED/RUNNING 잡이 있으면 409(retryable=false)."""
+    if body.type not in JOB_TYPES:
+        raise BadRequestError("지원하지 않는 작업 종류입니다.")
+
+    active = db.execute(
+        select(func.count()).select_from(pipeline_jobs)
+        .where(pipeline_jobs.c.status.in_(ACTIVE_STATUSES))
+    ).scalar_one()
+    if active:
+        raise JobConflictError()
+
+    row = db.execute(
+        insert(pipeline_jobs)
+        .values(type=body.type, status="QUEUED", targets=body.targets,
+                reason=body.reason, created_by=me.email, steps=_initial_steps())
+        .returning(*pipeline_jobs.c)
+    ).first()
+    db.commit()
+    return _row_to_job(row)
+
+
+@router.get("/jobs", response_model=PipelineJobList)
+def list_jobs(db: DbSession,
+              page: int = Query(1, ge=1),
+              size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+              sort: str = Query("created_at:desc")):
+    """목록 -> {items, total, page, size}. page 1-base, 기본 정렬 created_at:desc."""
+    order = _order_by(sort)
+    total = db.execute(select(func.count()).select_from(pipeline_jobs)).scalar_one()
+    rows = db.execute(
+        select(pipeline_jobs).order_by(order).limit(size).offset((page - 1) * size)
+    ).all()
+    return PipelineJobList(
+        items=[_row_to_job(r) for r in rows], total=total, page=page, size=size)
+
+
+@router.get("/jobs/{job_id}", response_model=PipelineJob)
+def get_job(job_id: str, db: DbSession):
+    """상세 -> PipelineJob. 없거나 형식이 틀린 id 면 404(UUID 컬럼이라 잘못된 형식은 쿼리가
+    500 을 내므로 먼저 걸러낸다)."""
+    try:
+        uuid.UUID(job_id)
+    except ValueError:
+        raise NotFoundError("작업을 찾을 수 없습니다.")
+    row = db.execute(select(pipeline_jobs).where(pipeline_jobs.c.id == job_id)).first()
+    if row is None:
+        raise NotFoundError("작업을 찾을 수 없습니다.")
+    return _row_to_job(row)

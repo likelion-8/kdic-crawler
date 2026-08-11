@@ -277,6 +277,39 @@ suggested_questions = Table(
 )
 
 
+# 데이터 파이프라인 작업(AD-004) — 재수집·재적재 잡의 접수·기록. 실제 실행(Redis·ARQ 워커)은
+# 아직 없다: 생성되면 QUEUED 로 남아 있고 상태는 바뀌지 않는다.
+#
+# schema_admin.py(관리자 인증)가 아니라 여기 있는 이유: 이 잡은 '관리자가 실행'하지만 다루는
+# 대상은 서비스 데이터(documents·색인)이고, 무엇보다 나중에 만들 search_index_versions.
+# created_by_job_id 가 이 테이블을 FK 로 가리켜야 한다. FK 는 같은 MetaData 안에서만 걸리므로
+# (schema_admin 은 별도 admin_metadata) 반드시 이 metadata 에 있어야 한다.
+#
+# 컬럼 정본: web/src/routes/admin/pipeline/api.ts 의 PipelineJob. enum 값은 web/src/lib/codes.ts,
+# steps 단계 이름은 web/src/lib/constants.ts PIPELINE_STEPS.
+pipeline_jobs = Table(
+    "pipeline_jobs", metadata,
+    _uuid_pk(),
+    Column("type", String, nullable=False),          # JobType: FULL_RECRAWL/SELECTED_RECRAWL/REINDEX/RECHUNK/REEMBED/SMOKE_EVAL
+    Column("status", String, nullable=False, server_default=text("'QUEUED'")),  # JobStatus: QUEUED/RUNNING/SUCCESS/FAILED/CANCELLED
+    Column("targets", JSONB),                         # 대상 page_id 배열
+    Column("reason", Text),                           # 실행 사유
+    Column("created_by", String, nullable=False),     # 실행자 email
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    # 6단계(수집·변환·청킹·검증·색인·반영) 진행상황 [{name,status,elapsed_ms?,count?}]. 항상
+    # 통째로 읽고 쓰므로 별도 테이블로 안 쪼갠다. 생성 시 6개 전부 QUEUED 로 초기화한다.
+    Column("steps", JSONB, nullable=False),
+    Column("error", JSONB),                           # 실행 실패 시 {code(JobErrorCode), stage, detail}
+    Column("rollback_of", String),                    # 되돌린 대상 job id(롤백 잡일 때)
+    Column("target_summary", String),                 # '전체 58페이지'처럼 대상을 그대로 쓸 문자열
+    Column("target_count", Integer),                  # 대상 건수(전체 작업은 서버만 안다)
+    Column("index_impact", String),                   # 실패가 색인에 준 영향
+    # 3주차 Smoke 평가 결과가 들어갈 자리. 미리 넣어둔다 — 나중에 추가하면 create_all 이 컬럼
+    # diff 를 안 봐서 ALTER 손패치가 또 쌓인다(이 파일 main() 의 evaluation_dataset 주석 참고).
+    Column("metrics", JSONB),
+)
+
+
 # 수정 3: documents.is_active가 바뀌면 그 문서의 청크 전부를 같은 값으로 맞춘다.
 # 애플리케이션 레이어에서 매번 챙기게 두면 한 곳이라도 빠뜨렸을 때 "비활성 문서의
 # 청크가 검색에 걸리는" 조용한 버그가 나므로 DB 트리거로 강제한다.
