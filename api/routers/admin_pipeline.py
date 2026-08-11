@@ -39,10 +39,11 @@ DB 접근(SQLAlchemy 동기 세션)이 블로킹이라 async def 로 두면 이�
 """
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, insert, select
 
-from api.deps import CurrentAdmin, DbSession, get_current_admin
+from api.deps import (ACTION_BY_JOB_TYPE, CurrentAdmin, DbSession,
+                      get_current_admin, write_activity_log)
 from api.errors import ApiError, BadRequestError, NotFoundError
 from api.schemas.pipeline import JobCreate, PipelineJob, PipelineJobList
 from schema import pipeline_jobs
@@ -113,7 +114,7 @@ def _order_by(sort: str):
 
 
 @router.post("/jobs", status_code=202, response_model=PipelineJob)
-def create_job(body: JobCreate, db: DbSession, me: CurrentAdmin):
+def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmin):
     """작업 생성 -> 202 + PipelineJob 본문. QUEUED 로만 만들고 실제 실행은 안 한다(워커는 다음
     단계). 동시 실행 1개 규칙: QUEUED/RUNNING 잡이 있으면 409(retryable=false)."""
     if body.type not in JOB_TYPES:
@@ -133,6 +134,20 @@ def create_job(body: JobCreate, db: DbSession, me: CurrentAdmin):
         .returning(*pipeline_jobs.c)
     ).first()
     db.commit()
+
+    # 재수집·재색인은 검색 결과를 바꾸는 작업이라 감사 기록에 남긴다(AD-011).
+    # 🔴 잡 생성을 commit 한 뒤에 부른다 — write_activity_log 가 스스로 commit 하므로,
+    #    먼저 부르면 이 함수의 commit 이 위의 INSERT 까지 같이 확정해 버린다(deps.py 주석과 동일).
+    #    기록이 실패해도 예외를 올리지 않으므로 잡 생성이 막히지는 않는다.
+    write_activity_log(
+        db, request,
+        actor=me.email, actor_role=me.role,
+        action=ACTION_BY_JOB_TYPE.get(body.type, body.type),
+        # 대상은 잡 id 다 — 화면에서 이 값으로 어느 작업인지 짚을 수 있어야 한다.
+        target=str(row.id),
+        reason=body.reason or None,
+        detail={"job_type": body.type, "targets": body.targets or []},
+    )
     return _row_to_job(row)
 
 

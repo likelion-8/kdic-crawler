@@ -227,6 +227,21 @@ ACTION_LOGIN = "로그인"
 ACTION_LOGIN_FAILED = "로그인 실패"
 ACTION_LOGOUT = "로그아웃"
 
+# 파이프라인 잡 생성. 재수집·재색인은 검색 결과를 실제로 바꾸는 작업이라 "누가 왜 돌렸는지"가
+# 남아야 한다. 값을 아무렇게나 정하면 안 된다 — 화면이 이 문자열을 정규식으로 갈라
+# '연결 보기' 이동처를 정한다(EventDetail.tsx LINKS). 파이프라인 규칙은
+#   /전체 재수집|선택 재수집|재색인|재적재|파이프라인|작업/
+# 이라, 앞의 셋은 그대로 걸리고 나머지 셋은 '작업'을 붙여 같은 화면으로 보낸다.
+# JobType 정본은 web/src/lib/codes.ts 이고 admin_pipeline.JOB_TYPES 와 키가 같아야 한다.
+ACTION_BY_JOB_TYPE = {
+    "FULL_RECRAWL": "전체 재수집",
+    "SELECTED_RECRAWL": "선택 재수집",
+    "REINDEX": "재색인",
+    "RECHUNK": "재청킹 작업",
+    "REEMBED": "재임베딩 작업",
+    "SMOKE_EVAL": "스모크 평가 작업",
+}
+
 # 결과 3종 고정(프론트 목 데이터와 같은 값).
 RESULT_SUCCESS = "성공"
 RESULT_FAILED = "실패"
