@@ -42,3 +42,25 @@ class KnowledgePageList(BaseModel):
     total: int
     page: int
     size: int
+
+
+class KbChunk(BaseModel):
+    """상세 패널의 청크 목록 한 줄. `#{seq} · {title} ({chars}자)`로 표기된다.
+
+    title은 저장된 값이 아니라 본문에서 만들어 내는 표시용 값이다. document_chunks에는
+    청크 제목에 해당하는 컬럼이 없고, 코퍼스(chunks_all.jsonl)에도 없다.
+    """
+
+    chunk_id: str
+    page_id: str
+    seq: int
+    title: str
+    chars: int
+    preview: str
+
+
+class KbChunkList(BaseModel):
+    items: list[KbChunk]
+    total: int
+    page: int
+    size: int
