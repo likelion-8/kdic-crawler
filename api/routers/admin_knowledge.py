@@ -3,6 +3,7 @@
 검색어는 제목과 원본 URL에만 적용한다. 업무 분류는 목록에서 사용하는 표준 값과
 정확히 일치시켜, 비슷한 이름의 다른 업무가 섞이지 않게 한다.
 """
+import re
 from collections.abc import Mapping
 from datetime import date, datetime
 from typing import Literal
@@ -12,12 +13,25 @@ from sqlalchemy import case, func, or_, select
 
 from api.deps import CurrentAdmin, DbSession
 from api.errors import BadRequestError
-from api.schemas.knowledge import KnowledgePage, KnowledgePageList
+from api.schemas.knowledge import KbChunk, KbChunkList, KnowledgePage, KnowledgePageList
 from schema import document_chunks, documents
 
 router = APIRouter(prefix="/api/admin/knowledge", tags=["admin-knowledge"])
 
 DEFAULT_PAGE_SIZE = 20
+# 두 값 모두 목 데이터(web/src/mocks/data/chunks.ts)에서 그대로 실측한 것이다.
+# 잘린 title은 예외 없이 29자(28+…), 잘린 preview는 71자(70+…)였다.
+CHUNK_TITLE_CHARS = 28
+CHUNK_PREVIEW_CHARS = 70
+# 본문에는 줄바꿈이 흔하다(활성 청크 494건 중 445건이 앞 70자 안에 포함). 공백으로
+# 접은 뒤에 자르는데, 접으면 길이가 줄기만 하므로 70자를 채우려면 넉넉히 받아야 한다.
+CHUNK_HEAD_CHARS = 200
+ELLIPSIS = "…"
+_WHITESPACE = re.compile(r"\s+")
+# 상세 패널은 페이지의 청크를 한 번에 다 받아 3장만 접어 보여 준다(PageDetailPanel.tsx의
+# CHUNK_FETCH_SIZE=300). 목록의 100건 상한을 그대로 쓰면 그 요청이 422로 막힌다.
+# 본문도 embedding도 싣지 않아 300건이라도 응답은 수십 KB에 그친다.
+CHUNK_MAX_PAGE_SIZE = 500
 INDEX_STATUSES = frozenset({"INDEXED", "PENDING", "REINDEXING", "FAILED", "EXCLUDED"})
 LIST_STATES = frozenset({"최신", "변경 감지", "적용 대기"})
 COLLECTION_STATUSES = frozenset({"CANDIDATE", "LOADED", "ROBOTS_BLOCKED", "SKIPPED", "FAILED"})
@@ -81,20 +95,28 @@ def _filters(*, tab: str, q: str, business: str | None, state: str | None):
     return filters, index_status
 
 
-def _sort_column(sort: str | None, chunk_count):
+def _sort_order(sort: str | None, chunk_count):
+    """정렬 키와 함께 page_id 보조 키를 돌려준다.
+
+    제목·수집일·청크 수는 값이 겹치는 행이 많은데(청크 1개짜리 페이지만 수십 건),
+    동률 행의 순서는 보장되지 않아 LIMIT/OFFSET 페이지 사이에서 같은 행이 두 번
+    나오거나 아예 빠질 수 있다. 유니크한 page_id를 뒤에 붙여 전순서를 만든다.
+    """
     columns = {
         "page_id": documents.c.page_id,
         "page_title": documents.c.page_title,
         "collected_at": documents.c.collected_at,
         "chunk_count": chunk_count,
     }
+    tiebreak = documents.c.page_id.asc()
     if sort is None:
-        return documents.c.page_id.asc()
+        return (tiebreak,)
 
     field, separator, direction = sort.partition(":")
     if separator != ":" or field not in columns or direction not in {"asc", "desc"}:
         raise BadRequestError("지원하지 않는 정렬 조건입니다.")
-    return columns[field].desc() if direction == "desc" else columns[field].asc()
+    primary = columns[field].desc() if direction == "desc" else columns[field].asc()
+    return (primary, tiebreak)
 
 
 def build_knowledge_page_queries(*, tab: str, q: str, business: str | None, state: str | None, sort: str | None):
@@ -133,10 +155,86 @@ def build_knowledge_page_queries(*, tab: str, q: str, business: str | None, stat
             chunk_count,
         )
         .where(*filters)
-        .order_by(_sort_column(sort, chunk_count))
+        .order_by(*_sort_order(sort, chunk_count))
     )
     total = select(func.count(documents.c.id)).where(*filters)
     return rows, total
+
+
+def build_knowledge_chunk_queries(*, page_id: str, q: str):
+    """청크 목록과 total에 같은 조건을 적용한다.
+
+    documents를 조인하는 이유는 두 가지다. page_id 필터를 chunk_id 문자열 파싱 없이
+    걸 수 있고, 응답의 page_id를 파생값이 아니라 실제 컬럼에서 가져올 수 있다.
+    (chunk_id는 단일 청크 페이지에 '#0'을 붙이지 않아 page_id와 값이 같다 — 문자열로
+    거르면 `LIKE 'page#%'`에 단일 청크 페이지가 통째로 걸리지 않는다.)
+    """
+    # embedding은 Vector(1024)라 목록 20건만 실어도 응답이 수 MB가 된다. 본문(text)도
+    # 1000자를 넘는 청크가 흔해서, 화면에 필요한 앞부분과 길이만 DB에서 계산해 받는다.
+    head = func.left(document_chunks.c.text, CHUNK_HEAD_CHARS).label("head")
+    chars = func.char_length(document_chunks.c.text).label("chars")
+    # 단일 청크 페이지는 chunk_index가 비어 있을 수 있다. 화면 표기는 #0이다.
+    seq = func.coalesce(document_chunks.c.chunk_index, 0).label("seq")
+
+    # 비활성 청크를 빼지 않으면 목록 건수가 목록 화면의 chunk_count와 어긋난다.
+    filters = [document_chunks.c.is_active.is_(True)]
+    if page_id:
+        filters.append(documents.c.page_id == page_id)
+    if q:
+        # 화면이 검색하는 대상은 title과 preview지만 둘 다 본문의 앞부분이라, 본문을
+        # 그대로 ILIKE하면 두 값을 모두 포함한다.
+        filters.append(document_chunks.c.text.ilike(f"%{_escape_like(q)}%", escape="\\"))
+
+    source = document_chunks.join(documents, document_chunks.c.document_id == documents.c.id)
+    rows = (
+        select(document_chunks.c.chunk_id, documents.c.page_id, seq, chars, head)
+        .select_from(source)
+        .where(*filters)
+        # page_id를 지정하지 않으면 여러 문서의 청크가 섞여 seq가 대량으로 겹친다.
+        # 유니크한 chunk_id를 보조 키로 붙여 페이지 사이 중복·누락을 막는다.
+        .order_by(seq.asc(), document_chunks.c.chunk_id.asc())
+    )
+    total = select(func.count(document_chunks.c.id)).select_from(source).where(*filters)
+    return rows, total
+
+
+def _clip(head: str, limit: int, clipped: bool) -> str:
+    """앞 limit자만 남기고, 뒤에 본문이 더 있으면 …를 붙인다.
+
+    clipped는 head 자체가 본문의 일부만 잘라 온 값이라는 뜻이다. head가 limit보다
+    짧아도 뒤에 본문이 남아 있으면 …가 필요하다.
+    """
+    if len(head) > limit:
+        return head[:limit] + ELLIPSIS
+    return head + ELLIPSIS if clipped else head
+
+
+def _chunk_title(head: str, clipped: bool) -> str:
+    """본문 앞부분을 목록 표시용 제목으로 줄인다.
+
+    FAQ 청크가 "질문 …인가요? 열기 답변 …" 형태라, 물음표까지만 쓰면 질문 한 줄이
+    그대로 제목이 된다. 마침표는 문장 끝으로 보지 않는다 — 본문에 fins.kdic.or.kr
+    같은 주소나 번호 표기가 흔해서 엉뚱한 자리에서 끊긴다.
+    """
+    question, mark, _ = head.partition("?")
+    if mark and len(question) <= CHUNK_TITLE_CHARS:
+        return question
+    return _clip(head, CHUNK_TITLE_CHARS, clipped)
+
+
+def serialize_knowledge_chunk(row: Mapping[str, object]) -> KbChunk:
+    chars = int(row.get("chars") or 0)
+    # 본문의 줄바꿈을 그대로 두면 "질문\n예금보호한도…"처럼 제목 한 줄에 개행이 섞인다.
+    head = _WHITESPACE.sub(" ", _as_text(row.get("head"))).strip()
+    clipped = chars > CHUNK_HEAD_CHARS
+    return KbChunk(
+        chunk_id=_as_text(row.get("chunk_id")),
+        page_id=_as_text(row.get("page_id")),
+        seq=int(row.get("seq") or 0),
+        title=_chunk_title(head, clipped),
+        chars=chars,
+        preview=_clip(head, CHUNK_PREVIEW_CHARS, clipped),
+    )
 
 
 def _as_dict(value: object) -> Mapping[str, object]:
@@ -247,6 +345,32 @@ def list_knowledge_pages(
     rows = db.execute(rows_query.offset((page - 1) * size).limit(size)).mappings().all()
     return KnowledgePageList(
         items=[serialize_knowledge_page(row) for row in rows],
+        total=total,
+        page=page,
+        size=size,
+    )
+
+
+@router.get("/chunks", response_model=KbChunkList)
+def list_knowledge_chunks(
+    admin: CurrentAdmin,
+    db: DbSession,
+    page_id: str = "",
+    q: str = "",
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=CHUNK_MAX_PAGE_SIZE),
+):
+    """상세 패널이 여는 페이지의 청크 목록.
+
+    없는 page_id는 404가 아니라 빈 목록으로 답한다. 상세 패널은 목록에서 이미 받은
+    행을 그리고 있어서, 청크만 없는 상태를 "이 페이지에는 청크가 없습니다"로 표시한다.
+    """
+    del admin  # 인증은 의존성이 처리하며, 청크 목록에 사용자별 데이터는 없다.
+    rows_query, total_query = build_knowledge_chunk_queries(page_id=page_id.strip(), q=q.strip())
+    total = db.execute(total_query).scalar_one()
+    rows = db.execute(rows_query.offset((page - 1) * size).limit(size)).mappings().all()
+    return KbChunkList(
+        items=[serialize_knowledge_chunk(row) for row in rows],
         total=total,
         page=page,
         size=size,
