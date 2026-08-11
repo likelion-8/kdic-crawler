@@ -1,0 +1,134 @@
+"""관리자 파이프라인 잡 API(AD-004) 계약 테스트 — DB·자격증명 없이 도는 부분만 자동 검증.
+
+기존 test_admin_knowledge.py 와 같은 방식이다: 실제 Supabase 접속 없이 순수 로직(스텝 초기화·
+정렬·행 매핑)·SQL 컴파일·라우팅·계약 상수를 검사한다. HTTP 레벨(401/202/409/404)은 서버를
+띄워 수동으로 확인한다(작업 지시서 검증 3항) — 로그인 세션이 필요하기 때문이다.
+"""
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from types import SimpleNamespace
+
+from sqlalchemy.dialects import postgresql
+
+# `python tests/test_admin_pipeline.py`로도 실행되도록 저장소 루트를 먼저 넣는다.
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from api.errors import ApiError, BadRequestError
+from api.routers.admin_pipeline import (
+    PIPELINE_STEPS,
+    JobConflictError,
+    _initial_steps,
+    _order_by,
+    _row_to_job,
+    router,
+)
+from api.schemas.pipeline import JobCreate, PipelineJob
+
+
+def test_initial_steps_are_six_queued():
+    """생성 시 6단계를 전부 QUEUED 로 초기화해야 진행바가 빈 채로 안 뜬다."""
+    steps = _initial_steps()
+    assert [s["name"] for s in steps] == list(PIPELINE_STEPS)
+    assert len(steps) == 6
+    assert all(s["status"] == "QUEUED" for s in steps)
+
+
+def test_default_sort_is_created_at_desc():
+    """목록 기본 정렬은 created_at 내림차순(진행 중 잡이 1페이지 맨 위라는 프론트 가정)."""
+    sql = str(_order_by("created_at:desc").compile(dialect=postgresql.dialect()))
+    assert "created_at DESC" in sql
+
+
+def test_invalid_sort_is_rejected():
+    for bad in ["", "created_at", "created_at:sideways", "unknown:desc"]:
+        try:
+            _order_by(bad)
+        except BadRequestError:
+            continue
+        raise AssertionError(f"{bad!r} 는 BadRequestError 를 내야 한다")
+
+
+def test_conflict_error_is_409_and_not_retryable():
+    """동시 실행 초과는 409 + retryable=false. true 면 프론트가 [다시 시도]로 계속 409 를 맞는다."""
+    err = JobConflictError()
+    assert isinstance(err, ApiError)
+    assert err.status_code == 409
+    assert err.retryable is False
+
+
+def test_row_to_job_maps_all_fields():
+    row = SimpleNamespace(
+        id="11111111-1111-1111-1111-111111111111",
+        type="REINDEX",
+        status="QUEUED",
+        targets=["p1", "p2"],
+        reason="갱신",
+        created_by="admin@demo",
+        created_at=datetime(2026, 8, 11, tzinfo=timezone.utc),
+        steps=_initial_steps(),
+        error=None,
+        rollback_of=None,
+        target_summary=None,
+        target_count=2,
+        index_impact=None,
+        metrics=None,
+    )
+    job = _row_to_job(row)
+    assert isinstance(job, PipelineJob)
+    assert job.id == "11111111-1111-1111-1111-111111111111"
+    assert job.type == "REINDEX"
+    assert job.targets == ["p1", "p2"]
+    assert len(job.steps) == 6 and job.steps[0].status == "QUEUED"
+
+
+def test_row_to_job_handles_null_json_columns():
+    """JSONB 컬럼이 NULL(targets/reason 미지정)이어도 빈 값으로 안전 변환된다."""
+    row = SimpleNamespace(
+        id="22222222-2222-2222-2222-222222222222",
+        type="REINDEX", status="QUEUED",
+        targets=None, reason=None, created_by="a@b",
+        created_at=datetime(2026, 8, 11, tzinfo=timezone.utc),
+        steps=[], error=None, rollback_of=None, target_summary=None,
+        target_count=None, index_impact=None, metrics=None,
+    )
+    job = _row_to_job(row)
+    assert job.targets == []
+    assert job.reason == ""
+
+
+def test_job_create_ignores_extra_fields():
+    """쓰기 요청엔 멱등키 request_id 가 섞여 온다 — extra='forbid' 면 400 이 나므로 무시돼야 한다."""
+    body = JobCreate.model_validate(
+        {"type": "REINDEX", "targets": ["p1"], "reason": "x", "request_id": "req_1"})
+    assert body.type == "REINDEX"
+    assert body.targets == ["p1"]
+    assert not hasattr(body, "request_id")
+
+
+def test_create_endpoint_returns_202():
+    route = next(
+        r for r in router.routes
+        if getattr(r, "path", "") == "/api/admin/jobs" and "POST" in getattr(r, "methods", set()))
+    assert route.status_code == 202
+
+
+def test_jobs_routes_are_exposed():
+    paths = {r.path for r in router.routes if hasattr(r, "path")}
+    assert "/api/admin/jobs" in paths
+    assert "/api/admin/jobs/{job_id}" in paths
+
+
+if __name__ == "__main__":
+    test_initial_steps_are_six_queued()
+    test_default_sort_is_created_at_desc()
+    test_invalid_sort_is_rejected()
+    test_conflict_error_is_409_and_not_retryable()
+    test_row_to_job_maps_all_fields()
+    test_row_to_job_handles_null_json_columns()
+    test_job_create_ignores_extra_fields()
+    test_create_endpoint_returns_202()
+    test_jobs_routes_are_exposed()
+    print("OK - 관리자 파이프라인 잡 API 계약")
