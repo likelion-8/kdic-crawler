@@ -96,6 +96,8 @@ export interface PreviewResponse {
   split_rule: string
   chunks: KbChunk[]
   warnings: string[]
+  /** true면 원문에서 하위분류를 찾지 못했으므로 적재 전에 사람이 입력해야 한다 */
+  sub_category_extraction_failed: boolean
 }
 
 export interface JobStep {

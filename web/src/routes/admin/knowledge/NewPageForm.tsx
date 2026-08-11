@@ -272,7 +272,8 @@ export function NewPageForm({ candidateId = null, onClose }: NewPageFormProps) {
       : undefined
 
   // 하위분류는 자동 추출 실패 시에만 필수로 승격되고, 입력 전까지 [적재 승인]이 잠긴다(ⓘ 각주 2)
-  const subCategoryMissing = preview !== null && form.sub_category.trim() === ''
+  const subCategoryMissing =
+    preview?.sub_category_extraction_failed === true && form.sub_category.trim() === ''
   const approveBlocked = !preview
     ? '수집 실행을 먼저 해 주세요'
     : subCategoryMissing
