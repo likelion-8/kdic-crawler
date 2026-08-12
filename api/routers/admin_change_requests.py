@@ -19,11 +19,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
-from api.deps import CurrentAdmin, DbSession, get_current_admin
+from api.deps import (CurrentAdmin, DbSession, RESULT_DENIED, RESULT_SUCCESS,
+                      get_current_admin, write_activity_log)
 from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
 from api.schemas.change_request import (
     ChangeRequest, ChangeRequestCreate, ChangeRequestDecision, ChangeRequestList)
@@ -43,6 +44,15 @@ STATUSES = frozenset({"PENDING", "APPROVED", "REJECTED"})
 ROLE_RANK = {"VIEWER": 0, "OPERATOR": 1, "EDITOR": 2, "ADMIN": 3}
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
+
+# 활동 로그 action 은 activity_overview() 의 distinct(action) 결과가 그대로 필터 선택지가 된다.
+# 같은 작업을 다른 표기로 쌓지 않도록 팀이 확정한 ADD/DELETE 결정 어휘만 여기서 관리한다.
+CHANGE_REQUEST_AUDIT_ACTIONS = {
+    ("ADD", "APPROVED"): "URL 적재 승인",
+    ("ADD", "REJECTED"): "URL 적재 반려",
+    ("DELETE", "APPROVED"): "페이지 삭제 승인",
+    ("DELETE", "REJECTED"): "페이지 삭제 반려",
+}
 
 
 class RequestConflictError(ApiError):
@@ -180,7 +190,7 @@ def _get_or_404(db, cr_id):
     return row
 
 
-def _decide(cr_id, new_status, body, db, me):
+def _decide(cr_id, new_status, body, request, db, me):
     """approve/reject 공통 — EDITOR 이상, PENDING 만 전이. 전이는 원자적(where status=PENDING)
     으로 걸어 동시 확정 경합에서도 하나만 성공한다."""
     _require_editor(me)
@@ -197,19 +207,35 @@ def _decide(cr_id, new_status, body, db, me):
         db.rollback()
         raise RequestConflictError()
     db.commit()
+
+    # 🔴 상태 전이를 먼저 commit 한다. write_activity_log 가 스스로 commit 하므로 순서가
+    # 반대면 감사 로그가 변경 요청 트랜잭션까지 대신 확정해 버린다(api/deps.py 주석).
+    audit_action = CHANGE_REQUEST_AUDIT_ACTIONS.get((updated.action, new_status))
+    if audit_action:
+        rejected = new_status == "REJECTED"
+        write_activity_log(
+            db, request,
+            actor=me.email,
+            actor_role=me.role,
+            action=audit_action,
+            target=f"{updated.target_title} ({updated.target_page_id})",
+            result=RESULT_DENIED if rejected else RESULT_SUCCESS,
+            reason=body.reason if rejected else None,
+            detail={"change_request_id": str(updated.id)},
+        )
     return _row_to_cr(updated)
 
 
 @router.post("/change-requests/{cr_id}/approve", response_model=ChangeRequest)
 def approve_change_request(cr_id: str, body: ChangeRequestDecision,
-                           db: DbSession, me: CurrentAdmin):
+                           request: Request, db: DbSession, me: CurrentAdmin):
     """변경 요청 확정 -> APPROVED. 없으면 404, 이미 처리됐으면 409. ⚠️ 상태만 바꾼다 —
     실제 적재/삭제(REINDEX 워커)는 별개·미구현."""
-    return _decide(cr_id, "APPROVED", body, db, me)
+    return _decide(cr_id, "APPROVED", body, request, db, me)
 
 
 @router.post("/change-requests/{cr_id}/reject", response_model=ChangeRequest)
 def reject_change_request(cr_id: str, body: ChangeRequestDecision,
-                          db: DbSession, me: CurrentAdmin):
+                          request: Request, db: DbSession, me: CurrentAdmin):
     """변경 요청 버리기 -> REJECTED. 없으면 404, 이미 처리됐으면 409."""
-    return _decide(cr_id, "REJECTED", body, db, me)
+    return _decide(cr_id, "REJECTED", body, request, db, me)
