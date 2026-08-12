@@ -38,15 +38,19 @@ DB 접근(SQLAlchemy 동기 세션)이 블로킹이라 async def 로 두면 이�
 평범한 def 로 두면 FastAPI 가 스레드풀에서 돌린다(api/deps.py get_db 주석과 같은 이유).
 """
 import uuid
+from datetime import timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, insert, select, update
 
-from api.deps import (ACTION_BY_JOB_TYPE, CurrentAdmin, DbSession,
+from api.deps import (ACTION_BY_JOB_TYPE, CurrentAdmin, DbSession, ReauthedAdmin,
                       get_current_admin, write_activity_log)
 from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
-from api.schemas.pipeline import JobCancel, JobCreate, PipelineJob, PipelineJobList
-from schema import pipeline_jobs
+from api.schemas.pipeline import (ChangedPage, ChangedPagesResponse, JobCancel,
+                                  JobCreate, JobEstimate, JobRetry, JobRollback,
+                                  PipelineJob, PipelineJobList)
+from schema import documents, pipeline_jobs, test_set
+from schema_admin import admin_activity_logs
 
 router = APIRouter(
     prefix="/api/admin",
@@ -59,6 +63,7 @@ router = APIRouter(
 JOB_TYPES = frozenset(
     {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL"})
 ACTIVE_STATUSES = ("QUEUED", "RUNNING")  # 동시 실행 1개 규칙의 판정 대상
+JOB_STATUSES = frozenset({"QUEUED", "RUNNING", "SUCCESS", "FAILED", "CANCELLED"})
 # 6단계 이름 정본: web/src/lib/constants.ts PIPELINE_STEPS (수집·변환·청킹·검증·색인·반영)
 PIPELINE_STEPS = ("수집", "변환", "청킹", "검증", "색인", "반영")
 DEFAULT_PAGE_SIZE = 20
@@ -83,6 +88,23 @@ class JobCancelConflictError(ApiError):
     code = "pipeline_cancel_conflict"
     status_code = 409
     user_message = "이미 종료된 작업은 취소할 수 없습니다."
+
+
+class JobRetryConflictError(ApiError):
+    """실패·취소된 작업만 재시도할 수 있다. 성공한 작업을 '재시도'로 부르면 이력이 헷갈린다."""
+    code = "pipeline_retry_conflict"
+    status_code = 409
+    user_message = "실패하거나 취소된 작업만 다시 시도할 수 있습니다."
+
+
+class JobRollbackConflictError(ApiError):
+    """되돌릴 것이 있으려면 실제로 반영된(성공한) 작업이어야 한다."""
+    code = "pipeline_rollback_conflict"
+    status_code = 409
+    user_message = "성공한 작업만 되돌릴 수 있습니다."
+
+
+KST = timezone(timedelta(hours=9))
 
 
 def _initial_steps():
@@ -135,10 +157,14 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
     if active:
         raise JobConflictError()
 
+    # 대상 요약·건수는 서버가 채운다(P2). 화면의 '대상' 열이 이 문자열을 그대로 쓰는데,
+    # 전체 작업은 targets 가 비어 있어 프론트가 건수를 알 방법이 없다.
+    summary, count = _resolve_targets(db, body.type, body.targets)
     row = db.execute(
         insert(pipeline_jobs)
         .values(type=body.type, status="QUEUED", targets=body.targets,
-                reason=body.reason, created_by=me.email, steps=_initial_steps())
+                reason=body.reason, created_by=me.email, steps=_initial_steps(),
+                target_summary=summary, target_count=count)
         .returning(*pipeline_jobs.c)
     ).first()
     db.commit()
@@ -163,12 +189,31 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
 def list_jobs(db: DbSession,
               page: int = Query(1, ge=1),
               size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
-              sort: str = Query("created_at:desc")):
-    """목록 -> {items, total, page, size}. page 1-base, 기본 정렬 created_at:desc."""
+              sort: str = Query("created_at:desc"),
+              status: str = Query("")):
+    """목록 -> {items, total, page, size}. page 1-base, 기본 정렬 created_at:desc.
+
+    status 는 쉼표로 여러 값을 받는다 — `?status=RUNNING,QUEUED&size=1` 이 '진행 중 작업
+    전용 조회'다(P4). 지금까지 프론트는 '동시 실행 1개니까 최신순 1페이지에 있다'는 가정으로
+    active job 을 찾고 있었는데(Pipeline.tsx:120-125), 그 가정은 잡이 쌓이면 조용히 깨진다.
+
+    total 은 필터를 적용한 뒤의 건수다 — 목록과 다른 모집단을 세면 '1건인데 3페이지'가 된다.
+    """
     order = _order_by(sort)
-    total = db.execute(select(func.count()).select_from(pipeline_jobs)).scalar_one()
+    filters = []
+    if status.strip():
+        wanted = [s.strip().upper() for s in status.split(",") if s.strip()]
+        unknown = [s for s in wanted if s not in JOB_STATUSES]
+        if unknown:
+            # 조용히 무시하면 필터가 안 걸린 전체 목록이 나가는데, 화면은 걸렀다고 믿는다.
+            raise BadRequestError(f"지원하지 않는 상태 값입니다: {', '.join(unknown)}")
+        filters.append(pipeline_jobs.c.status.in_(wanted))
+
+    total = db.execute(
+        select(func.count()).select_from(pipeline_jobs).where(*filters)).scalar_one()
     rows = db.execute(
-        select(pipeline_jobs).order_by(order).limit(size).offset((page - 1) * size)
+        select(pipeline_jobs).where(*filters).order_by(order)
+        .limit(size).offset((page - 1) * size)
     ).all()
     return PipelineJobList(
         items=[_row_to_job(r) for r in rows], total=total, page=page, size=size)
@@ -223,5 +268,244 @@ def cancel_job(job_id: str, body: JobCancel, request: Request,
         actor=me.email, actor_role=me.role,
         action="작업 취소", target=job_id, reason=reason,
         detail={"job_type": row.type},
+    )
+    return _row_to_job(row)
+
+
+# ─────────────────────────── 대상 건수 · 예상 소요 (P2·P3) ───────────────────────────
+#
+# target_summary·target_count 는 컬럼이 이미 있다(src/schema.py pipeline_jobs). 화면의 '대상'
+# 열이 이 문자열을 그대로 쓰므로(pipeline/api.ts PipelineJob.target_summary) 서버가 완성해서
+# 넣는다 — 프론트가 '전체'인지 '선택 3건'인지 판단하려면 targets 배열의 의미까지 알아야 한다.
+
+# ⚠️ 페이지당 예상 초. **실측이 아니다** — 완료된 잡이 아직 없어(워커 미구현) 평균을 낼
+# 원천이 자체가 없다. 수집은 네트워크 왕복이 있어 가장 느리고, 재색인은 임베딩 계산이,
+# 청킹은 문자열 처리라 가장 빠르다는 상대 순서만 반영한 어림값이다.
+# 🔴 잡이 실제로 돌기 시작하면 pipeline_jobs 의 소요 기록 평균으로 갈아야 한다.
+_SECONDS_PER_TARGET = {
+    "FULL_RECRAWL": 6.0,
+    "SELECTED_RECRAWL": 6.0,
+    "REINDEX": 3.0,
+    "RECHUNK": 0.5,
+    "REEMBED": 3.0,
+    "SMOKE_EVAL": 8.0,
+}
+
+
+def _active_document_count(db) -> int:
+    """전체 작업의 대상이 되는 페이지 수. 제외(EXCLUDED)된 문서는 빼야 화면의 '전체 N페이지'가
+    지식베이스 목록 건수와 맞는다."""
+    return db.execute(
+        select(func.count()).select_from(documents)
+        .where(documents.c.is_active.is_(True))
+    ).scalar_one()
+
+
+def _resolve_targets(db, job_type: str, targets: list) -> tuple[str, int]:
+    """(target_summary, target_count). 화면의 '대상' 열 문자열을 서버가 완성한다.
+
+    선택 작업은 받은 배열이 곧 대상이고, 전체 작업은 targets 가 비어 있어 서버가 센다.
+    SMOKE_EVAL 만 단위가 페이지가 아니라 평가 문항이라 문구가 다르다.
+    """
+    if job_type == "SMOKE_EVAL":
+        count = db.execute(select(func.count()).select_from(test_set)).scalar_one()
+        return f"평가 {count}문항", count
+    if targets:
+        return f"선택 {len(targets)}페이지", len(targets)
+    count = _active_document_count(db)
+    return f"전체 {count}페이지", count
+
+
+def _estimated_minutes(job_type: str, target_count: int) -> int:
+    """어림 소요(분). 0 분으로 내려보내지 않는다 — 화면이 '예상 0분'을 띄우면 즉시 끝난다는
+    뜻으로 읽히는데, 어떤 작업도 그렇지 않다."""
+    seconds = _SECONDS_PER_TARGET.get(job_type, 3.0) * max(target_count, 1)
+    return max(1, round(seconds / 60))
+
+
+@router.get("/pipeline/estimate", response_model=JobEstimate)
+def estimate_job(db: DbSession, type: str = Query(...)):
+    """확인 모달의 '대상 N건 · 예상 M분'(P3). 잡을 만들지 않는다."""
+    if type not in JOB_TYPES:
+        raise BadRequestError("지원하지 않는 작업 종류입니다.")
+    _, target_count = _resolve_targets(db, type, [])
+    return JobEstimate(type=type, target_count=target_count,
+                       estimated_minutes=_estimated_minutes(type, target_count))
+
+
+# ─────────────────────────── 변경 감지 (P3) ───────────────────────────
+#
+# '변경 감지'의 정본은 documents.index_status == 'PENDING' 이다 — 별도 비교 작업이 채우는
+# 값이고, admin_knowledge._list_state 가 같은 기준으로 목록 배지를 그린다. 두 화면이 다른
+# 기준을 쓰면 '변경 감지 3건'인데 목록에는 5건이 뜬다.
+#
+# ⚠️ last_checked_at 의 원천이 컬럼에 없다. 마지막 비교 시각을 저장하는 자리가 어디에도
+# 없어서(마이그레이션은 이번 범위 밖) **활동 로그에서 읽는다** — recheck 가 자기 실행을
+# 기록하므로 그 최신 시각이 곧 '마지막으로 확인한 때'다. 한 번도 안 돌렸으면 빈 문자열이고
+# 화면의 RefreshBar 는 그걸 '—' 로 그린다.
+ACTION_CHANGES_RECHECK = "변경 감지 재확인"
+
+
+def _last_checked_at(db) -> str:
+    latest = db.execute(
+        select(func.max(admin_activity_logs.c.occurred_at))
+        .where(admin_activity_logs.c.action == ACTION_CHANGES_RECHECK)
+    ).scalar_one_or_none()
+    if latest is None:
+        return ""
+    aware = latest if latest.tzinfo else latest.replace(tzinfo=timezone.utc)
+    return aware.astimezone(KST).isoformat()
+
+
+def _changed_pages(db) -> list:
+    rows = db.execute(
+        select(documents.c.page_id, documents.c.page_title, documents.c.collected_at)
+        .where(documents.c.index_status == "PENDING", documents.c.is_active.is_(True))
+        .order_by(documents.c.collected_at.desc().nullslast())
+    ).all()
+    out = []
+    for row in rows:
+        collected = row.collected_at
+        if collected is not None and collected.tzinfo is None:
+            collected = collected.replace(tzinfo=timezone.utc)
+        out.append(ChangedPage(
+            page_id=row.page_id,
+            title=row.page_title or row.page_id,
+            # ⚠️ 원본 사이트에서 읽은 제목을 따로 저장하는 컬럼이 없다. 비교 작업이 그 값을
+            # 남기게 되면 여기를 그 컬럼으로 바꾼다. 그때까지는 저장된 제목을 그대로 둔다 —
+            # 빈 문자열을 주면 화면이 '제목이 사라졌다'로 읽는다.
+            source_title=row.page_title or "",
+            detected_at=collected.astimezone(KST).isoformat() if collected else "",
+        ))
+    return out
+
+
+@router.get("/pipeline/changes", response_model=ChangedPagesResponse)
+def list_changes(db: DbSession):
+    """원본이 바뀐 것으로 감지된 페이지 목록(P3)."""
+    return ChangedPagesResponse(last_checked_at=_last_checked_at(db), items=_changed_pages(db))
+
+
+@router.post("/pipeline/changes/recheck", response_model=ChangedPagesResponse)
+def recheck_changes(request: Request, db: DbSession, me: CurrentAdmin):
+    """[지금 확인] — 재확인을 실행했다는 사실을 남기고 현재 목록을 돌려준다(P3).
+
+    🔴 실제 재크롤·본문 비교는 여기서 하지 않는다. 그 일은 워커의 몫인데 워커가 아직 없다
+    (POST /jobs 가 잡을 QUEUED 로만 만들고 실행하지 않는 것과 같은 상태다). 그래서 이
+    호출은 index_status 를 바꾸지 않으며, 목록도 직전과 같을 수 있다.
+
+    그런데도 기록을 남기는 이유는 last_checked_at 의 유일한 원천이라서다 — 이 행이 없으면
+    화면이 '마지막 확인'을 영원히 '—' 로 띄운다. 워커가 붙으면 이 자리에서 비교를 돌리고
+    기록은 그대로 두면 된다.
+    """
+    if ROLE_RANK.get(me.role, -1) < ROLE_RANK["OPERATOR"]:
+        raise ForbiddenError("변경 감지 재확인에는 OPERATOR 이상 권한이 필요합니다.")
+
+    write_activity_log(db, request, actor=me.email, actor_role=me.role,
+                       action=ACTION_CHANGES_RECHECK, target="지식베이스 전체")
+    return ChangedPagesResponse(last_checked_at=_last_checked_at(db), items=_changed_pages(db))
+
+
+# ─────────────────────────── 재시도 · 긴급 롤백 ───────────────────────────
+
+def _load_job(db, job_id: str):
+    """id 형식 검사까지 포함한 조회. UUID 컬럼이라 형식이 틀린 값을 그대로 넣으면 500 이 난다."""
+    try:
+        uuid.UUID(job_id)
+    except ValueError:
+        raise NotFoundError("작업을 찾을 수 없습니다.")
+    row = db.execute(select(pipeline_jobs).where(pipeline_jobs.c.id == job_id)).first()
+    if row is None:
+        raise NotFoundError("작업을 찾을 수 없습니다.")
+    return row
+
+
+def _guard_concurrency(db) -> None:
+    """동시 실행 1개(constants.ts PIPELINE_CONCURRENCY). 생성·재시도·롤백이 같은 규칙을 쓴다."""
+    active = db.execute(
+        select(func.count()).select_from(pipeline_jobs)
+        .where(pipeline_jobs.c.status.in_(ACTIVE_STATUSES))
+    ).scalar_one()
+    if active:
+        raise JobConflictError()
+
+
+@router.post("/jobs/{job_id}/retry", status_code=202, response_model=PipelineJob)
+def retry_job(job_id: str, body: JobRetry, request: Request, db: DbSession, me: CurrentAdmin):
+    """실패한 작업을 같은 조건으로 다시 돌린다 -> 202 + 새 PipelineJob.
+
+    원래 행을 되살리지 않고 **새 잡을 만든다.** 실패한 실행도 기록으로 남아야 '몇 번 만에
+    됐는가'를 볼 수 있고, steps 를 덮어쓰면 어느 단계에서 처음 깨졌는지가 사라진다.
+
+    202 + 본문이다(함정 #8). 204 나 빈 본문이면 화면이 방금 만든 잡을 못 찾아 폴링을 못 건다.
+    """
+    if ROLE_RANK.get(me.role, -1) < ROLE_RANK["OPERATOR"]:
+        raise ForbiddenError("작업 재시도에는 OPERATOR 이상 권한이 필요합니다.")
+
+    original = _load_job(db, job_id)
+    # 성공한 작업을 '재시도'라고 부르면 이력이 헷갈린다 — 같은 일을 또 하려면 새로 만들면 된다.
+    if original.status not in ("FAILED", "CANCELLED"):
+        raise JobRetryConflictError()
+    _guard_concurrency(db)
+
+    targets = list(original.targets or [])
+    summary, count = _resolve_targets(db, original.type, targets)
+    row = db.execute(
+        insert(pipeline_jobs)
+        .values(type=original.type, status="QUEUED", targets=targets,
+                reason=body.reason.strip() or original.reason, created_by=me.email,
+                steps=_initial_steps(), target_summary=summary, target_count=count)
+        .returning(*pipeline_jobs.c)
+    ).first()
+    db.commit()
+
+    write_activity_log(
+        db, request, actor=me.email, actor_role=me.role, action="작업 재시도",
+        target=str(row.id), reason=body.reason.strip() or None,
+        detail={"job_type": original.type, "retry_of": job_id},
+    )
+    return _row_to_job(row)
+
+
+@router.post("/jobs/{job_id}/rollback", status_code=202, response_model=PipelineJob)
+def rollback_job(job_id: str, body: JobRollback, request: Request, db: DbSession,
+                 me: ReauthedAdmin):
+    """긴급 롤백 — 성공한 작업의 결과를 직전 상태로 되돌리는 잡을 만든다. ADMIN 전용.
+
+    🔴 재인증을 **서버가 독립 검증**한다(P5). me 의 타입이 ReauthedAdmin 이라 마지막 확인이
+    30분을 넘겼으면 이 함수에 닿기 전에 403 이다. 프론트도 runRisky 로 먼저 재확인을
+    받지만 그 판정은 클라이언트 코드라 우회할 수 있다 — 화면을 거치지 않고 이 경로를 직접
+    때리면 재확인 없이 롤백이 돌아간다.
+
+    rollback_of 에 원본 잡 id 를 남긴다. 이 값이 없으면 목록에서 롤백 잡과 평범한 재수집
+    잡을 구분할 수 없다.
+    """
+    if me.role != "ADMIN":
+        raise ForbiddenError("긴급 롤백에는 ADMIN 권한이 필요합니다.")
+    if not body.reason.strip():
+        raise BadRequestError("롤백 사유를 입력해 주세요.")
+
+    original = _load_job(db, job_id)
+    # 되돌릴 것이 있으려면 실제로 반영된 작업이어야 한다.
+    if original.status != "SUCCESS":
+        raise JobRollbackConflictError()
+    _guard_concurrency(db)
+
+    targets = list(original.targets or [])
+    summary, count = _resolve_targets(db, original.type, targets)
+    row = db.execute(
+        insert(pipeline_jobs)
+        .values(type=original.type, status="QUEUED", targets=targets,
+                reason=body.reason.strip(), created_by=me.email, steps=_initial_steps(),
+                rollback_of=job_id, target_summary=summary, target_count=count)
+        .returning(*pipeline_jobs.c)
+    ).first()
+    db.commit()
+
+    # '긴급 롤백'은 RISKY_ACTIONS 에 들어 있어 접근 관리의 '오늘의 위험 작업'에도 뜬다.
+    write_activity_log(
+        db, request, actor=me.email, actor_role=me.role, action="긴급 롤백",
+        target=str(row.id), reason=body.reason.strip(),
+        detail={"job_type": original.type, "rollback_of": job_id},
     )
     return _row_to_job(row)

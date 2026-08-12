@@ -66,3 +66,50 @@ class JobCreate(BaseModel):
 class JobCancel(BaseModel):
     """취소 사유. 공통 request_id가 함께 와도 Pydantic 기본 정책으로 무시한다."""
     reason: str = ""
+
+
+class JobRetry(BaseModel):
+    """재시도 사유. 실패한 잡과 같은 type·targets 로 새 잡을 만든다."""
+    reason: str = ""
+
+
+class JobRollback(BaseModel):
+    """긴급 롤백 사유. ADMIN + 재인증이 필요하다(P5).
+
+    본문에 password 를 싣지 않는다 — 재확인은 POST /api/admin/reauth 를 **먼저** 따로
+    호출해 끝낸다(access/api.ts runRisky). 여기서 또 받으면 비밀번호가 두 요청에 남는다.
+    """
+    reason: str = ""
+
+
+class ChangedPage(BaseModel):
+    """원본 사이트 본문이 바뀐 것으로 감지된 페이지 한 줄(P3)."""
+    page_id: str
+    title: str
+    # 원본 사이트에서 읽은 제목. 우리 쪽 제목과 다르면 페이지가 통째로 바뀐 신호다.
+    # 별도 컬럼이 없어 지금은 저장된 제목을 그대로 쓴다(라우터 주석 참고).
+    source_title: str
+    detected_at: str
+
+
+class ChangedPagesResponse(BaseModel):
+    """GET /pipeline/changes · POST /pipeline/changes/recheck 공통 응답.
+
+    ⚠️ last_checked_at 은 '마지막으로 재확인을 실행한 시각'이고, 원천은 활동 로그다
+    (라우터 주석). 한 번도 실행한 적이 없으면 빈 문자열이다 — 화면의 RefreshBar 가
+    빈 값을 '—' 로 그린다.
+    """
+    last_checked_at: str = ""
+    items: list[ChangedPage] = Field(default_factory=list)
+
+
+class JobEstimate(BaseModel):
+    """확인 모달에 띄우는 대상 건수·예상 소요(P3).
+
+    ⚠️ estimated_minutes 는 **실측이 아니다.** 완료된 잡이 아직 한 건도 없어(워커 미구현)
+    평균을 낼 원천이 없다. 라우터의 페이지당 초 상수에서 계산한 어림값이고, 잡이 실제로
+    돌기 시작하면 그 기록의 평균으로 갈아야 한다.
+    """
+    type: str
+    target_count: int
+    estimated_minutes: int
