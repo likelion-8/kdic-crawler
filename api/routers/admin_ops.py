@@ -48,8 +48,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import delete, func, insert, select, update
 
-from api.deps import (REAUTH_WINDOW, CurrentAdmin, DbSession,
-                      get_current_admin, write_activity_log)
+from api.deps import (CurrentAdmin, DbSession, get_current_admin,
+                      require_reauth, write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.routers.admin_logs import _to_kst_iso
 from schema import suggested_questions
@@ -109,16 +109,15 @@ def _require_write_fields(body: dict) -> tuple[str, str]:
 
 
 def _require_recent_reauth(admin: CurrentAdmin) -> None:
-    """A 트랙 재인증 헬퍼 병합 전 seam.
+    """위험 작업 직전 재확인 검증 — A 트랙 정본(api.deps.require_reauth)에 위임한다.
 
-    원격 main과 모든 원격 브랜치에 아직 헬퍼가 없어 같은 정본(REAUTH_WINDOW)으로 서버 판정을
-    닫아 둔다. A 트랙 함수가 들어오면 이 함수 본문을 그 import 호출로 교체한다.
-    """
-    last_auth = admin.last_auth_at
-    if last_auth.tzinfo is None:
-        last_auth = last_auth.replace(tzinfo=timezone.utc)
-    if datetime.now(timezone.utc) >= last_auth + REAUTH_WINDOW:
-        raise ForbiddenError("위험 작업을 계속하려면 비밀번호를 다시 확인해 주세요.")
+    2026-08-12 seam 교체 완료: A 트랙 헬퍼가 없던 동안 REAUTH_WINDOW 로 직접 판정하던
+    임시 본문을, 예고해 둔 대로 정본 호출로 바꿨다. 검증 로직·403 문구가 rollback 등
+    다른 위험 엔드포인트와 한 곳(api/deps.py)에서 관리된다.
+
+    ReauthedAdmin 의존성 대신 함수 호출로 남긴 이유: cache purge 가 scope=all 일 때만
+    재인증을 거는 **조건부** 검증이라, 시그니처 레벨 의존성으로는 표현이 안 된다."""
+    require_reauth(admin)
 
 
 def _utc_aware(value: datetime) -> datetime:
