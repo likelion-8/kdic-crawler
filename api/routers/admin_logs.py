@@ -5,10 +5,10 @@
 
 ## 읽기 전용이다
 
-수정·삭제 엔드포인트를 만들지 않는다. 재실행(`/rerun`)·분류(`PATCH {triage}`)·평가 후보
-등록(`/evaluations/candidates`)은 프론트 계약(G1)에 있는 7종 중 나머지 3종인데 이번 주
-범위에서 뺐다(팀 결정). 만들지 말 것 — 화면이 그 버튼을 그리고 있으면 프론트에 숨김을
-요청하는 쪽이 맞다.
+수정·삭제 엔드포인트를 만들지 않는다. 재실행(`/rerun`)·분류(`PATCH {triage}`)는 프론트 계약
+(G1)의 7종 중 2종인데 이번 주 범위에서 뺐다(팀 결정) — 화면이 그 버튼을 그리고 있으면 프론트에
+숨김을 요청한다(사유·조치: docs/conversation_logs_field_sources.md §8). 나머지 평가 후보 등록은
+`POST /api/admin/evaluations/candidates`로 평가 라우터(admin_evaluations.py)에 구현했다.
 
 ## 권한이 활동 로그와 반대다
 
@@ -53,8 +53,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, func, select
 
-from api.deps import CurrentAdmin, DbSession, get_current_admin
+from api.deps import CurrentAdmin, DbSession, SettingsDep, get_current_admin
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
+from api.masking import mask_text
 from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
                               LogExportRequest, LogExportResponse, LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
@@ -63,21 +64,9 @@ from schema import rag_runs
 
 logger = logging.getLogger(__name__)
 
-
-def _mask(value: Optional[str]) -> Optional[str]:
-    """마스킹 자리(seam) — 지금은 원문을 그대로 통과시킨다.
-
-    공통 마스킹 함수(`api/masking.py`)는 다른 담당자가 만드는 중이라 아직 없다. 그때까지
-    호출 지점을 잃지 않으려고 여기에 통과 함수를 둔다. 그 파일이 들어오면
-
-        from api.masking import mask_text
-
-    를 추가하고 이 함수를 지우면 된다(호출부는 `_mask` -> `mask_text` 로 이름만 바뀐다).
-
-    🔴 이 함수가 있는 동안 `question_masked`·`answer_masked_*` 필드의 값은 **마스킹되지
-    않은 원문**이다. 필드 이름만 보고 안전하다고 판단하지 말 것.
-    """
-    return value
+# 🔴 mask_text 는 아직 패스스루 스텁이다(api/masking.py) — question_masked·answer_masked_*
+# 의 값은 마스킹되지 않은 원문이다. 필드 이름만 보고 안전하다 판단하지 말 것. 그 스텁이
+# 채워지면 이 파일을 고치지 않아도 전 경로가 함께 마스킹된다.
 
 router = APIRouter(
     prefix="/api/admin/logs",
@@ -277,9 +266,9 @@ def _row_to_log(row) -> dict:
         "request_id": row.request_id or "",
         # 🔴 KST(+09:00) ISO. UTC 로 주면 화면의 '오늘'이 9시간 어긋난다.
         "occurred_at": _to_kst_iso(row.created_at) or "",
-        # 마스킹은 이번 주 미구현이다(팀 결정). 호출 지점만 남겨 둔다 — _mask 를
-        # api/masking.py 의 mask_text 로 갈아끼우면 전 경로가 함께 바뀐다.
-        "question_masked": _mask(row.question) or "",
+        # 마스킹은 아직 미구현이다(api/masking.py 는 패스스루 스텁 — 값은 원문 그대로).
+        # 호출 지점만 남겨 두어, 그 스텁이 채워지면 전 경로가 함께 바뀐다.
+        "question_masked": mask_text(row.question) or "",
         "intent": row.intent,
         "status": _status_out(row.status),
         "feedback": row.vote,
@@ -371,8 +360,19 @@ def logs_summary(admin: CurrentAdmin, db: DbSession):
     }
 
 
+def _langfuse(trace_id: Optional[str], host: str) -> Optional[dict]:
+    """rag_runs.trace_id + 설정 호스트 -> {id, url}. 프론트가 호스트를 알 이유가 없어 서버가
+    완성 URL 을 만든다(G5). trace_id 가 없으면 링크할 대상이 없어 langfuse 자체를 null 로,
+    trace_id 는 있으나 호스트 설정이 없으면 url=null(화면은 id 만 글로 보여준다)."""
+    if not trace_id:
+        return None
+    if not host:
+        return {"id": trace_id, "url": None}
+    return {"id": trace_id, "url": f"{host.rstrip('/')}/trace/{trace_id}"}
+
+
 @router.get("/{request_id}", response_model=ConversationLogDetail)
-def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
+def get_log(request_id: str, admin: CurrentAdmin, db: DbSession, settings: SettingsDep):
     """질의 1건의 상세 = 목록 행 + 분류·피드백·오류.
 
     request_id 는 UUID 가 아니라 문자열 컬럼이다(rag_runs.request_id). 형식 검사를 하지
@@ -405,7 +405,7 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
     if row is None:
         raise NotFoundError("대화 기록을 찾을 수 없습니다.")
 
-    answer = _mask(row.answer) or ""
+    answer = mask_text(row.answer) or ""
     preview = answer if len(answer) <= PREVIEW_CHARS else answer[:PREVIEW_CHARS] + "…"
 
     return {
@@ -421,9 +421,9 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
             "marker": None,
             "normalized": None,
         },
-        # trace_id 는 있어도 완성 URL 을 만들 수 없다 — Langfuse 호스트가 아직 설정에 없다.
-        # 프론트는 url 이 null 이면 id 만 글로 보여준다(G5). 이번 주는 전체 null 고정.
-        "langfuse": None,
+        # trace_id + 설정 호스트로 완성 URL 을 만든다(G5). 호스트가 비면 {id, url:null},
+        # trace_id 자체가 없으면 langfuse=null. API_LANGFUSE_HOST 로 켠다(api/config.py).
+        "langfuse": _langfuse(row.trace_id, settings.langfuse_host),
         "total_latency_ms": row.total_latency_ms,
         "answer_masked_preview": preview,
         "answer_masked_full": answer,

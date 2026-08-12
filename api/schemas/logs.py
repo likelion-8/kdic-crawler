@@ -39,7 +39,7 @@ class ConversationLogRow(BaseModel):
     # 시각을 '오늘'로 읽는다). 원천은 rag_runs.created_at.
     occurred_at: str
     question_masked: str                    # mask_text(rag_runs.question) — 현재 패스스루
-    intent: str                             # rag_runs.intent
+    intent: Optional[str] = None            # rag_runs.intent — 플래너 전에 죽은 실패 건은 NULL
     # rag_runs.status/failure_stage 로 매핑. ⚠️ OUT_OF_SCOPE 는 source_used(미저장)에서 갈리므로
     # 지금은 NORMAL 과 구분 불가 — docs 참조. NORMAL/FAILED 만 실제로 판정된다.
     status: str
@@ -85,7 +85,7 @@ class LogErrorDetail(BaseModel):
 class LogClassification(BaseModel):
     """상세의 분류 블록. intent·question_type 만 rag_runs 에 있고 나머지는 원천이 없다(docs)."""
 
-    intent: str                             # rag_runs.intent
+    intent: Optional[str] = None            # rag_runs.intent — 플래너 전에 죽은 실패 건은 NULL
     business_function: Optional[str] = None  # ⚠️ 원천 없음(분류 비활성, 미저장) → null
     # ⚠️ 컬럼은 있지만 웹 경로가 항상 None 을 넘긴다(api/rag/answer.py:260 — "검색 라우팅
     # 내부에서만 쓰고 응답 경로엔 노출되지 않는다"). 2026-08-12 실측: 목록 대상 91건이 전부

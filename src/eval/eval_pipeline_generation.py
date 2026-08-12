@@ -73,6 +73,65 @@ def load_page_urls():
     return m
 
 
+def evaluate_generation(rows, page2url, *, rerank=False):
+    """생성 평가 채점 — main() 과 api 의 run_evaluation 이 공유하는 순수 함수.
+
+    채점 로직(출처 정확률·OOS 거절·must_include 커버리지·실패 기록)을 한 곳에 둔다. 감싸는
+    쪽(관리자 평가 API)이 이 로직을 다시 짜지 않게 하기 위함이다. rows 는 testset 행 dict
+    리스트(question·expected_sources·question_type·must_include·test_id), page2url 은
+    load_page_urls() 결과다. (summary, records, failed) 를 돌려준다.
+
+    ⚠️ 문항당 HCX 1회 이상 호출(비용·시간). 대량이면 rows 를 잘라 넘겨 소규모로 검증할 것.
+    """
+    pipeline.USE_RERANKER = rerank  # 모듈 전역 토글 → _answer_one 이 런타임에 참조
+    records, failed = [], []
+    t0 = time.time()
+    for i, r in enumerate(rows, 1):
+        q = r["question"]
+        gold = set(r.get("expected_sources") or [])
+        # OOS 판정은 명시적 의도 라벨(question_type=="out_of_scope")로 한다.
+        is_oos = (r.get("question_type") == "out_of_scope")
+        try:
+            answer, timings, _ = pipeline._rag_answer_traced(q)
+        except Exception as e:
+            failed.append({"test_id": r.get("test_id"), "error": f"{type(e).__name__}: {e}"})
+            print(f"  ✗ {r.get('test_id')} 실패: {type(e).__name__}: {e}", flush=True)
+            continue
+        gold_urls = [page2url.get(p) for p in gold]
+        records.append({
+            "test_id": r.get("test_id"),
+            "is_oos": is_oos,
+            "must_hit": must_include_hit(answer, r.get("must_include")),
+            "src_correct": (any(u and u in answer for u in gold_urls) if gold else None),
+            "has_source": "http" in answer,
+            "refused": is_refused(answer),
+            "elapsed": timings.get("total"),
+            "answer": answer,
+        })
+        if i % 10 == 0 or i == len(rows):
+            print(f"  {i}/{len(rows)} 처리 (누적 {time.time()-t0:.0f}s)", flush=True)
+
+    def rate(xs):
+        xs = [x for x in xs if x is not None]
+        return round(sum(bool(x) for x in xs) / len(xs), 4) if xs else None
+
+    ans_recs = [r for r in records if not r["is_oos"]]
+    oos_recs = [r for r in records if r["is_oos"]]
+    elapsed = [r["elapsed"] for r in records if r["elapsed"] is not None]
+    summary = {
+        "rerank": rerank,
+        "n_total": len(rows), "n_success": len(records), "n_failed": len(failed),
+        "생성_성공률": round(len(records) / len(rows), 4) if rows else None,
+        "평균_응답시간_s": round(sum(elapsed) / len(elapsed), 2) if elapsed else None,
+        "must_include_커버리지(답변형)": rate([r["must_hit"] for r in ans_recs]),
+        "출처_정확률(답변형)": rate([r["src_correct"] for r in ans_recs]),
+        "출처링크_포함률(답변형)": rate([r["has_source"] for r in ans_recs]),
+        "oos_적절거절률": rate([r["refused"] for r in oos_recs]),
+        "n_answerable": len(ans_recs), "n_oos": len(oos_recs),
+    }
+    return summary, records, failed
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="앞에서 N문항만(소규모 검증)")
@@ -91,61 +150,14 @@ def main():
     print(f"testset_pipeline: {len(rows)}행 (답변형 {n_ans} / out-of-scope {len(rows)-n_ans})")
     print(f"리랭킹: {tag.upper()} · ⚠️ 문항당 HCX 호출 — 챗봇 켜지 말 것\n")
 
-    records, failed = [], []
-    t0 = time.time()
-    for i, r in enumerate(rows, 1):
-        q = r["question"]
-        gold = set(r.get("expected_sources") or [])
-        # OOS 판정은 명시적 의도 라벨(question_type=="out_of_scope")로 한다.
-        # expected_sources 빈 값으로 판정하면, 나중에 '범위 안인데 정답 페이지 미기입' 행이
-        # 추가될 때 OOS로 오분류된다(현재는 두 기준이 같은 10개라 결과 동일).
-        is_oos = (r.get("question_type") == "out_of_scope")
-        try:
-            answer, timings, _ = pipeline._rag_answer_traced(q)
-        except Exception as e:
-            failed.append({"test_id": r.get("test_id"), "error": f"{type(e).__name__}: {e}"})
-            print(f"  ✗ {r.get('test_id')} 실패: {type(e).__name__}: {e}", flush=True)
-            continue
-        gold_urls = [page2url.get(p) for p in gold]
-        rec = {
-            "test_id": r.get("test_id"),
-            "is_oos": is_oos,
-            "must_hit": must_include_hit(answer, r.get("must_include")),
-            "src_correct": (any(u and u in answer for u in gold_urls) if gold else None),
-            "has_source": "http" in answer,
-            "refused": is_refused(answer),
-            "elapsed": timings.get("total"),
-            "answer": answer,
-        }
-        records.append(rec)
-        if i % 10 == 0 or i == len(rows):
-            print(f"  {i}/{len(rows)} 처리 (누적 {time.time()-t0:.0f}s)", flush=True)
-
-    # ── 집계 ──
-    def rate(xs):
-        xs = [x for x in xs if x is not None]
-        return round(sum(bool(x) for x in xs) / len(xs), 4) if xs else None
-
-    ans_recs = [r for r in records if not r["is_oos"]]
-    oos_recs = [r for r in records if r["is_oos"]]
-    elapsed = [r["elapsed"] for r in records if r["elapsed"] is not None]
-    summary = {
-        "rerank": args.rerank,
-        "n_total": len(rows), "n_success": len(records), "n_failed": len(failed),
-        "생성_성공률": round(len(records) / len(rows), 4) if rows else None,
-        "평균_응답시간_s": round(sum(elapsed) / len(elapsed), 2) if elapsed else None,
-        "must_include_커버리지(답변형)": rate([r["must_hit"] for r in ans_recs]),
-        "출처_정확률(답변형)": rate([r["src_correct"] for r in ans_recs]),
-        "출처링크_포함률(답변형)": rate([r["has_source"] for r in ans_recs]),
-        "oos_적절거절률": rate([r["refused"] for r in oos_recs]),
-        "n_answerable": len(ans_recs), "n_oos": len(oos_recs),
-    }
+    # 채점은 evaluate_generation 이 한다(관리자 평가 API 와 공유하는 순수 함수).
+    summary, records, failed = evaluate_generation(rows, page2url, rerank=args.rerank)
 
     # 사람이 확인할 표본: 답변형인데 must_include 실패 + oos인데 거절 안 함
     review = [{"test_id": r["test_id"], "why": "must_include 실패", "answer": r["answer"]}
-              for r in ans_recs if r["must_hit"] is False]
+              for r in records if not r["is_oos"] and r["must_hit"] is False]
     review += [{"test_id": r["test_id"], "why": "oos인데 거절 안 함(지어냈을 수 있음)",
-                "answer": r["answer"]} for r in oos_recs if not r["refused"]]
+                "answer": r["answer"]} for r in records if r["is_oos"] and not r["refused"]]
 
     print("\n=== 생성 평가 요약 ===")
     for k, v in summary.items():

@@ -72,6 +72,13 @@ class Settings(BaseSettings):
     # 그 비용을 물지 않게 한다. 개발 중 재시작이 잦으면 False 로 끄면 된다.
     warmup_on_startup: bool = True
 
+    # --- 관측(Langfuse) ---------------------------------------------------
+    # rag_runs.trace_id 로 완성 URL 을 만들어 대화 로그 상세에 링크로 내보낸다(AD-005 G5).
+    # 프론트가 Langfuse 호스트를 알 이유가 없어 서버가 URL 을 완성한다 — 조각으로 주면 배포
+    # 환경이 바뀔 때마다 프론트를 고쳐야 한다. 비어 있으면(기본) trace_id 는 있어도 url=null 로
+    # 내보내고, 화면은 링크 없이 id 만 글로 보여준다. 예: API_LANGFUSE_HOST=https://cloud.langfuse.com
+    langfuse_host: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
