@@ -1,50 +1,48 @@
-"""RAG 파라미터(AD-007) — 검색·생성 파라미터의 초안·평가·반영·이력·롤백.
+"""RAG 파라미터(AD-007) — 초안 평가·A/B 검색·운영 반영·이력·롤백.
 
-프론트 계약 정본: docs/frontend-handoff.md "R. RAG 파라미터"(R1~R4).
-컬럼 정본: src/schema_admin.py rag_param_versions (current 1 · draft 1 · history N —
-부분 유니크 인덱스 uq_rag_param_versions_current/draft 가 DB 에서 강제한다).
+🔴 계약 정본은 web/src/routes/admin/settings/rag/api.ts 다. 핸드오프 문서(R1~R4)가 아니라
+화면이 실제로 부르는 이 파일의 타입(RagParamsResponse·RagGate·AbSearchResponse·
+RagHistoryEntry)에 응답 모양을 1:1로 맞춘다 — 처음 구현을 핸드오프 기준으로 했다가
+필드명이 달라 화면이 통째로 비는 사고가 있었다(2026-08-12).
 
-## 엔드포인트 6종
-    GET  /                      params 메타 + current + draft + gate      — 읽기
-    POST /evaluate              초안 저장 + 검색 평가 실행(draft_signature) — EDITOR↑
-    POST /ab-search             질문 1개를 두 설정으로 검색해 나란히 비교    — 읽기
-    POST /apply                 초안 반영. 게이트 미통과 409 + 현재값 전문   — EDITOR↑(사유 필수)
-    GET  /history               버전 이력                                — 읽기
-    POST /history/{id}/rollback 지난 버전으로 되돌리기                    — EDITOR↑(사유 필수)
+## 엔드포인트 6종 (전부 EDITOR 이상 쓰기 / 읽기는 로그인만)
+    GET  /                      params 메타 + current + draft + gate
+    POST /evaluate  {draft}     초안 저장 + held-out 검색 실측 -> RagGate
+    POST /ab-search {query,draft}  현행(A) vs 초안(B) 검색 비교 -> AbSearchResponse
+    POST /apply     {draft}+reason 운영 반영 -> RagParamsResponse(반영 후 전체 상태)
+    GET  /history               버전 이력 -> Page<RagHistoryEntry>
+    POST /history/{id}/rollback 그 시점 값으로 **초안만** 복원 -> {draft}
 
-## 파라미터 메타는 서버가 정본이다 (R1)
+## 파라미터 메타는 서버가 정본이다
 
-PARAM_META 가 이름·라벨·타입·범위·기본값을 전부 내려준다. 프론트는 이 배열을 그대로
-그리므로 항목·범위가 바뀌어도 프론트 재배포가 필요 없다. **기본값은 코드 상수를 그 자리에서
-읽는다** — 각 상수 주석의 실측 근거(README 2.4절 리랭커 조건표 · MIN_TOP1_SCORE 0.35 실측 ·
-플래너 100문항 벤치마크)가 살아 있는 원본이고, 여기 복사해 두면 두 곳이 어긋난다.
+PARAM 목록의 key·label·control·범위를 서버가 내려주고 화면은 그대로 그린다 — 항목이
+바뀌어도 프론트 재배포가 없다. default 는 호출 시점에 코드 상수를 읽는다(상수 주석의
+실측 근거가 원본이라 숫자를 복사하면 두 곳이 어긋난다).
 
-⚠️ HYBRID_LINEAR_ALPHA(retrieval.py)는 목록에서 뺐다. 검색 엔진 싱글턴(_build_engines)을
-조립할 때 한 번 박히는 값이라 프로세스 재시작 없이는 반영되지 않는다 — 노브로 노출하면
-"바꿨는데 그대로"가 된다. 엔진 재조립 경로가 생기면 그때 추가한다.
+⚠️ HYBRID_LINEAR_ALPHA(융합 비중)는 노출하지 않는다 — 검색 엔진 싱글턴 조립 때 박히는
+값이라 재시작 없이는 반영이 안 된다. 노출하면 "바꿨는데 그대로"가 된다.
 
-## 평가(evaluate)는 검색 축만 잰다
+## 평가는 검색 축 실측이다
 
-여기 파라미터는 전부 검색·게이트 단계 값이라(k_candidates·k_final·min_top1_score·스위치)
-생성(HCX)까지 부를 필요가 없다. held-out(test_set, 89문항)의 expected_sources 로
-hit@5 비율·MRR 을 계산한다 — src/eval/eval_pipeline_retrieval.py 의 채점(page_of ·
-recall_mrr)과 같은 규약이다. 게이트도 검색 두 축(0.92↑/0.80↑)만 판정하고, 생성·latency
-축은 '해당 없음'으로 명시한다(지어내지 않는다 — E10 의 원칙).
+held-out(test_set)의 expected_sources 로 **현행(A)과 초안(B)을 둘 다** 재서
+hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 Smoke 는 이 화면의
+파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — smoke 0/0 + warning 으로 명시하고,
+게이트 판정은 검색 두 축(정확도 0.92↑ · MRR 0.80↑)으로만 한다. 지어내지 않는다.
 
-⚠️ 문항 수만큼 임베딩+pgvector 질의가 나가는 동기 작업이다(워밍업된 서버에서 수십 초).
-admin_evaluations.apply 가 같은 이유로 동기인 것과 같은 사정 — 워커(Redis·ARQ 예정)가
-서면 그쪽 방식대로 옮긴다.
+⚠️ 문항 수 × 2(A/B) 만큼 임베딩+pgvector 질의가 나가는 동기 작업(워밍업된 서버에서 1~2분).
 
-## 반영(apply)·롤백은 runtime_config 캐시를 즉시 무효화한다
+## 반영·롤백과 runtime_config
 
-파이프라인은 src/runtime_config.get_param() 으로 current 행을 읽는다(TTL 60초). 같은
-프로세스는 invalidate() 로 즉시, CLI·Streamlit 은 TTL 만료 때 따라온다.
+apply 는 저장된 초안 평가가 게이트를 통과했고 **보낸 초안 == 평가된 초안**(지문 대조)일
+때만 승격한다. 반영 즉시 runtime_config.invalidate("params") — 같은 프로세스는 즉시,
+CLI 는 TTL(60초) 내 반영. history 의 rollback 은 **초안 복원만** 한다(화면 계약 §1.7 —
+실제 적용은 [운영 반영]이 다시 게이트를 거친다).
 """
 import hashlib
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
@@ -57,7 +55,7 @@ import candidate_ranking
 import pipeline
 import query_planner
 import runtime_config
-from schema import test_set
+from schema import documents, test_set
 from schema_admin import evaluation_runs, rag_param_versions
 
 logger = logging.getLogger(__name__)
@@ -68,56 +66,58 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin)],
 )
 
-# 역할 계층 정본: web/src/lib/codes.ts ROLE_RANK. 쓰기는 전부 EDITOR 이상(R4 — AD-007 에는
-# 승인 분리가 없다는 기획서 0.4절 근거).
+KST = timezone(timedelta(hours=9))
 ROLE_RANK = {"VIEWER": 0, "OPERATOR": 1, "EDITOR": 2, "ADMIN": 3}
 
 ACTION_EVALUATE = "RAG 파라미터 평가"
 ACTION_APPLY = "RAG 파라미터 반영"
-ACTION_ROLLBACK = "RAG 파라미터 롤백"
+ACTION_ROLLBACK = "RAG 파라미터 초안 복원"
+
+# 검색 게이트 임계값 — admin_evaluations.GATE_CRITERIA 의 검색 두 축과 같은 값.
+GATE_ACCURACY = 0.92
+GATE_MRR = 0.80
 
 
 class ParamsConflictError(ApiError):
-    """반영 불가(409, R3). admin_pipeline 의 Job*ConflictError 와 같은 방식으로 라우터가
-    자기 409 를 정의한다. `extra` 로 현재 적용값 전문을 본문에 실어(errors.py extra 규약)
+    """반영 불가(409). `extra` 로 현재 적용값 전문을 본문에 실어(errors.py extra 규약)
     화면이 '실패 시 이전 버전 유지'를 그대로 다시 그린다."""
     status_code = 409
     retryable = False
 
-# 검색 게이트 정본(R3·E4) — admin_evaluations.GATE_CRITERIA 의 검색 두 축과 같은 임계값.
-# 생성 성공률·latency 는 이 평가가 재지 않으므로 목록에 넣지 않는다(값 없이 축만 보여주면
-# '미달'로 오독된다).
-GATE_CRITERIA = [
-    ("retrieval_accuracy@5", "검색 정확도@5", "0.92 이상", 0.92),
-    ("mrr", "MRR", "0.80 이상", 0.80),
-]
-
 
 def _param_meta() -> list:
-    """파라미터 메타 정본(R1). default 는 호출 시점에 코드 상수를 읽는다 — 상수 주석의
-    실측 근거가 원본이고, 여기 숫자를 복사하면 두 곳이 어긋난다."""
+    """화면 계약(rag/api.ts RagParam) 모양의 메타 정본. default 는 여기서만 쓰는 내부 값이라
+    응답의 params 배열에는 내보내지 않는다(현행값은 current 가 따로 든다)."""
     return [
-        {"name": "k_candidates", "label": "1차 검색 후보 수", "type": "int",
+        {"key": "k_candidates", "label": "1차 후보 수", "group": "retrieval",
+         "control": "stepper", "apply_timing": "무중단",
          "min": 5, "max": 50, "step": 5, "default": pipeline.K_CANDIDATES,
-         "description": "route_search_chunks 가 뽑는 1차 후보 청크 수. Recall@20 실측 99%+ 근거."},
-        {"name": "k_final", "label": "최종 근거 청크 수", "type": "int",
+         "note": "route_search_chunks 1차 후보 청크 수 (Recall@20 99%+ 실측)"},
+        {"key": "k_final", "label": "최종 근거 수", "group": "retrieval",
+         "control": "stepper", "apply_timing": "무중단",
          "min": 1, "max": 10, "step": 1, "default": pipeline.K_FINAL,
-         "description": "LLM 에 넘기는 최종 근거 수. 프로젝트 평가 기준(AnswerRecall@5)과 동일 k."},
-        {"name": "min_top1_score", "label": "무관 질문 게이트 임계값", "type": "float",
+         "note": "LLM 에 넘기는 근거 청크 수 (AnswerRecall@5 기준과 동일 k)"},
+        {"key": "min_top1_score", "label": "무관 질문 게이트 임계값", "group": "retrieval",
+         "control": "slider", "apply_timing": "무중단",
          "min": 0.0, "max": 1.0, "step": 0.05, "default": candidate_ranking.MIN_TOP1_SCORE,
-         "description": "top-1 점수가 이 값 미만이면 근거를 비워 환각을 차단. 0.35 는 인스코프 137건 오차단 0 실측."},
-        {"name": "use_reranker", "label": "리랭커(cross-encoder)", "type": "bool",
+         "scale_start": "관대(통과 많음)", "scale_end": "엄격(차단 많음)",
+         "note": "top-1 점수가 미만이면 근거를 비워 환각 차단 (0.35 = 인스코프 오차단 0 실측)"},
+        {"key": "use_reranker", "label": "리랭커(cross-encoder)", "group": "retrieval",
+         "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_RERANKER,
-         "description": "CPU 에서 문항당 96초라 기본 Off. GPU 확보 시 held-out 재검증 후 판단(README 2.4절)."},
-        {"name": "use_query_planner", "label": "쿼리 플래너(분해+intent 한 콜)", "type": "bool",
+         "note": "CPU 문항당 96초 실측으로 기본 Off — GPU 확보 시 재검증(README 2.4)"},
+        {"key": "use_query_planner", "label": "쿼리 플래너(분해+intent 한 콜)", "group": "retrieval",
+         "control": "toggle", "apply_timing": "무중단",
          "default": query_planner.USE_QUERY_PLANNER,
-         "description": "gpt-5.6-luna structured output. 100문항 joint 벤치마크 89% 근거."},
-        {"name": "use_query_decomposition", "label": "복합 질문 분해(플래너 Off 폴백)", "type": "bool",
+         "note": "gpt-5.6-luna structured output (100문항 joint 89% 실측)"},
+        {"key": "use_query_decomposition", "label": "복합 질문 분해(플래너 Off 폴백)",
+         "group": "retrieval", "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_QUERY_DECOMPOSITION,
-         "description": "플래너를 껐을 때만 쓰는 HCX 분해 경로."},
-        {"name": "use_source_recheck", "label": "출처 재확인(NO_SOURCE 사후 판정)", "type": "bool",
+         "note": "플래너를 껐을 때만 쓰는 HCX 분해 경로"},
+        {"key": "use_source_recheck", "label": "출처 재확인(NO_SOURCE 사후 판정)",
+         "group": "generation", "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_SOURCE_RECHECK,
-         "description": "마커 오표기(61건 중 33건 출처 소실 실측)를 별도 LLM 판정으로 복구."},
+         "note": "마커 오표기(출처 소실 54% 실측)를 별도 LLM 판정으로 복구"},
     ]
 
 
@@ -128,31 +128,25 @@ def _require_editor(me: CurrentAdmin, what: str) -> None:
 
 
 def validate_params(body_params: dict) -> dict:
-    """초안 파라미터를 메타(min/max/step·타입)로 검증해 정규화한 dict 를 돌려준다.
-
-    쓰기 쪽 검증이 정본이다 — 읽는 쪽(runtime_config.get_param)은 타입 검사를 하지 않으므로
-    여기서 걸러지지 않은 값은 파이프라인에 그대로 들어간다.
-    """
-    meta = {m["name"]: m for m in _param_meta()}
+    """초안 파라미터를 메타(범위·타입)로 검증해 정규화한다. 읽는 쪽(runtime_config)은 타입
+    검사를 안 하므로 여기서 걸러지지 않은 값은 파이프라인에 그대로 들어간다."""
+    meta = {m["key"]: m for m in _param_meta()}
     unknown = set(body_params) - set(meta)
     if unknown:
         raise BadRequestError(f"지원하지 않는 파라미터입니다: {', '.join(sorted(unknown))}")
     cleaned = {}
     for name, value in body_params.items():
         m = meta[name]
-        if m["type"] == "bool":
+        if m["control"] == "toggle":
             if not isinstance(value, bool):
                 raise BadRequestError(f"{name} 값은 true 또는 false여야 합니다.")
-        elif m["type"] == "int":
-            if isinstance(value, bool) or not isinstance(value, int):
-                raise BadRequestError(f"{name} 값은 정수여야 합니다.")
-            if not (m["min"] <= value <= m["max"]):
-                raise BadRequestError(f"{name} 값은 {m['min']}~{m['max']} 범위여야 합니다.")
-        else:  # float
+        else:
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise BadRequestError(f"{name} 값은 숫자여야 합니다.")
             if not (m["min"] <= value <= m["max"]):
                 raise BadRequestError(f"{name} 값은 {m['min']}~{m['max']} 범위여야 합니다.")
+            if m["control"] == "stepper":
+                value = int(value)
         cleaned[name] = value
     if not cleaned:
         raise BadRequestError("변경할 파라미터를 하나 이상 보내 주세요.")
@@ -160,8 +154,8 @@ def validate_params(body_params: dict) -> dict:
 
 
 def draft_signature(params: dict) -> str:
-    """초안의 지문(R2). '평가 이후 초안을 수정하면 평가 무효화'를 판정하는 유일한 근거라
-    키 정렬로 정규화해 같은 내용이면 항상 같은 값이 나오게 한다."""
+    """초안의 지문. '평가 이후 초안을 수정하면 평가 무효'(화면 Desc 0)를 판정하는 유일한
+    근거라 키 정렬로 정규화한다 — 같은 내용이면 항상 같은 값."""
     canon = json.dumps(params, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
 
@@ -177,71 +171,144 @@ def _next_version(db) -> int:
 
 
 def _effective_params(db) -> dict:
-    """현재 적용값 전문 = 코드 기본값 위에 current 행을 얹은 것. 파이프라인이 실제로 읽는
+    """현행 운영값 전문 = 코드 기본값 위에 current 행을 얹은 것 — 파이프라인이 실제로 읽는
     값과 같은 계산이다(runtime_config: DB 에 없으면 코드 상수)."""
+    values = {m["key"]: m["default"] for m in _param_meta()}
     current = _row(db, "current")
-    values = {m["name"]: m["default"] for m in _param_meta()}
     if current and current.params:
         values.update({k: v for k, v in dict(current.params).items() if k in values})
     return values
 
 
-def compute_gate(metrics: dict) -> dict:
-    """검색 두 축의 게이트 판정(passed + 기준별) — 목록·상세가 같은 값을 읽도록 한 덩어리로.
-    admin_evaluations.compute_gate 와 같은 모양({passed, criteria:[...]})을 따른다."""
-    criteria = []
-    for key, label, target, threshold in GATE_CRITERIA:
-        value = metrics.get(key)
-        ok = value is not None and value >= threshold
-        criteria.append({
-            "key": key, "label": label, "target": target,
-            "value": f"{value:.3f}" if value is not None else "—",
-            "passed": ok,
-        })
-    return {
-        "passed": all(c["passed"] for c in criteria),
-        "criteria": criteria,
-        # 이 평가가 재지 않은 축을 명시한다 — 값 없이 축만 실으면 화면에서 '미달'로 오독된다.
-        "not_measured": ["generation_success_rate", "avg_latency_s"],
-    }
+def _kst(dt: Optional[datetime]) -> Optional[str]:
+    if dt is None:
+        return None
+    aware = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return aware.astimezone(KST).isoformat()
 
 
-def _measure_retrieval(db, params: dict) -> tuple[dict, int]:
-    """초안 파라미터로 held-out 검색 평가 -> (metrics, 문항 수).
+# ──────────────────────────────── 게이트(RagGate) ───────────────────────────
 
-    src/eval/eval_pipeline_retrieval.py 와 같은 규약: chunk_id 의 '#' 앞이 page_id 이고,
-    expected_sources(정답 페이지 집합)에 대한 hit@5 비율과 MRR 을 잰다. 초안이 실제로
-    바꾸는 지점만 초안 값으로 돌린다 — k_candidates(1차 폭)·k_final(컷)·min_top1_score
-    (게이트, 걸리면 근거가 비어 miss). 리랭커는 CPU 에서 문항당 96초라 여기서 켜지 않는다
-    (use_reranker=True 초안이어도 검색 평가는 Off 로 잰다 — 응답에 명시).
+def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
+               signature: str = None, evaluated_at: str = None,
+               holdout_total: int = 0) -> dict:
+    """화면의 RagGate 모양을 만든다. 평가 전이면 passed=false + blocked_reason.
+
+    smoke 는 0/0 으로 명시한다 — 이 화면의 파라미터는 생성 품질을 직접 바꾸지 않아 생성
+    Smoke 를 재지 않는다(모듈 주석). 지어낸 30/30 을 넣으면 게이트가 거짓말을 한다.
     """
-    from retrieval import route_search_chunks  # 지연 import — 첫 호출에 엔진 조립(수십 초)
+    if draft_metrics is None:
+        return {"passed": False, "draft_signature": signature, "evaluated_at": None,
+                "blocked_reason": "초안 평가를 먼저 실행해 주세요.", "warning": None,
+                "holdout_total": 0, "holdout_passed": 0,
+                "smoke_total": 0, "smoke_passed": 0, "quantitative": None}
 
+    acc, mrr = draft_metrics["retrieval_accuracy@5"], draft_metrics["mrr"]
+    passed = acc >= GATE_ACCURACY and mrr >= GATE_MRR
+    blocked = None
+    if not passed:
+        parts = []
+        if acc < GATE_ACCURACY:
+            parts.append(f"검색 정확도@5 {acc:.3f} < {GATE_ACCURACY}")
+        if mrr < GATE_MRR:
+            parts.append(f"MRR {mrr:.3f} < {GATE_MRR}")
+        blocked = "게이트 미달 — " + " · ".join(parts)
+
+    warning = None
+    quantitative = None
+    if current_metrics is not None:
+        a_acc, a_mrr = current_metrics["retrieval_accuracy@5"], current_metrics["mrr"]
+        improved = sum(1 for a, b in ((a_acc, acc), (a_mrr, mrr)) if b > a)
+        regressed = sum(1 for a, b in ((a_acc, acc), (a_mrr, mrr)) if b < a)
+        quantitative = {
+            "basis": f"held-out {holdout_total}문항 · 검색 축 2종 (A=현행, B=초안 실측)",
+            "metrics": [
+                {"label": "검색 정확도@5", "a": round(a_acc, 4), "b": round(acc, 4)},
+                {"label": "MRR", "a": round(a_mrr, 4), "b": round(mrr, 4)},
+            ],
+            "improved": improved, "regressed": regressed,
+            "recommendation": ("→ B(초안) 반영 가능" if passed and regressed == 0
+                               else "→ A(현행) 유지 권장"),
+        }
+        if passed and regressed:
+            warning = "게이트는 통과했지만 현행보다 낮아진 지표가 있습니다."
+    if warning is None and passed:
+        warning = "생성 Smoke 는 이 평가에서 재지 않습니다(검색 축만 실측)."
+
+    return {"passed": passed, "draft_signature": signature, "evaluated_at": evaluated_at,
+            "blocked_reason": blocked, "warning": warning,
+            "holdout_total": holdout_total,
+            "holdout_passed": draft_metrics.get("holdout_passed", 0),
+            "smoke_total": 0, "smoke_passed": 0, "quantitative": quantitative}
+
+
+def _stored_gate(db) -> dict:
+    """저장된 초안 + 연결된 평가로 RagGate 를 복원한다(GET 응답용)."""
+    draft = _row(db, "draft")
+    if draft is None or draft.evaluation_run_id is None:
+        return build_gate(signature=draft.draft_signature if draft else None)
+    run = db.execute(
+        select(evaluation_runs.c.gate, evaluation_runs.c.finished_at)
+        .where(evaluation_runs.c.id == draft.evaluation_run_id)
+    ).first()
+    if not run or not run.gate:
+        return build_gate(signature=draft.draft_signature)
+    stored = dict(run.gate)
+    stored["draft_signature"] = draft.draft_signature
+    stored["evaluated_at"] = _kst(run.finished_at)
+    return stored
+
+
+# ──────────────────────────────── 검색 실측 ─────────────────────────────────
+
+def _holdout_rows(db):
+    # ⚠️ expected_sources 는 범위외 문항에서 **빈 배열**이다(NULL 아님). isnot(None) 만 걸면
+    # 정답이 없는 문항이 '무조건 miss'로 섞여 정확도가 부당하게 깎인다(2026-08-12 실측 —
+    # 0.786 vs 기준선 0.922 의 원인 중 하나). 원소가 1개 이상인 답변형 문항만 잰다
+    # (eval_pipeline_retrieval 의 "expected_sources 있는 행만"과 동일).
     rows = db.execute(
         select(test_set.c.question, test_set.c.expected_sources)
-        .where(test_set.c.is_active.is_(True), test_set.c.expected_sources.isnot(None))
+        .where(test_set.c.is_active.is_(True),
+               func.array_length(test_set.c.expected_sources, 1) >= 1)
         .order_by(test_set.c.question_id)
     ).all()
     if not rows:
         raise BadRequestError("평가할 held-out 문항이 없습니다(test_set 비어 있음).")
+    return rows
 
+
+def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> list:
+    """초안/현행 파라미터로 실검색 -> 페이지 순위. eval_pipeline_retrieval 과 같은 규약
+    (chunk_id 의 '#' 앞이 page_id, 같은 페이지 첫 등장 = 최고 순위).
+
+    for_scoring=True 면 k_final 컷 **없이** 후보 전체(k_candidates)에서 페이지를 접는다 —
+    기준선(0.922/0.806, retrieve_pages)이 그렇게 재기 때문이다. 컷 이후로 재면 페이지가
+    2~4개뿐이라 같은 검색이 기준선보다 불리하게 나와 게이트(0.92)가 영구 미달이 된다
+    (2026-08-12 실측). 컷은 LLM 에 넘길 근거 선택이지 검색 품질의 정의가 아니다.
+    for_scoring=False(A/B 화면)는 LLM 이 실제로 받는 것을 보여줘야 하므로 컷을 유지한다.
+    """
+    from retrieval import route_search_chunks
     k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
     k_final = params.get("k_final", pipeline.K_FINAL)
     threshold = params.get("min_top1_score", candidate_ranking.MIN_TOP1_SCORE)
+    candidates = route_search_chunks(query, k=k_candidates)
+    ranked = candidates if for_scoring else candidate_ranking.top_k_cut(candidates, k=k_final)
+    top = candidate_ranking.gate_low_relevance(ranked, threshold=threshold)
+    pages = []
+    for cid, _score, _text in top:
+        page = cid.split("#")[0]
+        if page not in pages:
+            pages.append(page)
+    return pages
 
+
+def _measure(rows, params: dict) -> dict:
+    """held-out 검색 실측 -> {retrieval_accuracy@5, mrr, holdout_passed}."""
     hits = 0
     rr_sum = 0.0
     for r in rows:
         gold = set(r.expected_sources or [])
-        chunks = route_search_chunks(r.question, k=k_candidates)
-        top = candidate_ranking.gate_low_relevance(
-            candidate_ranking.top_k_cut(chunks, k=k_final), threshold=threshold)
-        pages = []
-        for cid, _score, _text in top:
-            page = cid.split("#")[0]
-            if page not in pages:
-                pages.append(page)
-        ranked5 = pages[:5]
+        ranked5 = _search_pages(r.question, params, for_scoring=True)[:5]
         if gold & set(ranked5):
             hits += 1
         for i, page in enumerate(ranked5, 1):
@@ -249,72 +316,58 @@ def _measure_retrieval(db, params: dict) -> tuple[dict, int]:
                 rr_sum += 1.0 / i
                 break
     n = len(rows)
-    return {"retrieval_accuracy@5": hits / n, "mrr": rr_sum / n}, n
+    return {"retrieval_accuracy@5": hits / n, "mrr": rr_sum / n, "holdout_passed": hits}
 
 
 # ──────────────────────────────── 엔드포인트 ────────────────────────────────
 
-@router.get("")
-def get_rag_params(admin: CurrentAdmin, db: DbSession):
-    """메타 + current + draft + (초안에 연결된) 게이트. 프론트가 이 한 응답으로 화면 전체를
-    그린다 — 메타를 서버가 내려주므로(R1) 값·범위가 바뀌어도 재배포가 없다."""
-    del admin
-    current = _row(db, "current")
-    draft = _row(db, "draft")
-    gate = None
-    if draft and draft.evaluation_run_id:
-        run = db.execute(
-            select(evaluation_runs.c.gate)
-            .where(evaluation_runs.c.id == draft.evaluation_run_id)
-        ).first()
-        gate = run.gate if run else None
-
+def _full_response(db) -> dict:
+    """GET 과 apply 성공이 공유하는 화면 전체 상태(RagParamsResponse)."""
     effective = _effective_params(db)
-    meta = _param_meta()
-    for m in meta:
-        m["value"] = effective[m["name"]]
+    draft = _row(db, "draft")
+    meta = []
+    for m in _param_meta():
+        item = {k: v for k, v in m.items() if k != "default"}
+        meta.append(item)
     return {
         "params": meta,
-        "current": {
-            "version": current.version if current else None,
-            "applied_at": current.applied_at.isoformat() if current and current.applied_at else None,
-            "values": effective,
-        },
-        "draft": None if not draft else {
-            "values": dict(draft.params),
-            "draft_signature": draft.draft_signature,
-            "evaluated": draft.evaluation_run_id is not None,
-        },
-        "gate": gate,
+        "current": effective,
+        "draft": dict(draft.params) if draft else None,
+        "gate": _stored_gate(db),
     }
+
+
+@router.get("")
+def get_rag_params(admin: CurrentAdmin, db: DbSession):
+    del admin
+    return _full_response(db)
 
 
 @router.post("/evaluate")
 def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """초안 저장 + held-out 검색 평가(동기, 워밍업된 서버에서 수십 초 — 모듈 주석).
-
-    응답에 draft_signature 를 담는다(R2) — apply 는 이 지문이 초안과 일치할 때만 게이트를
-    믿는다. 평가 후 초안을 고치면 지문이 달라져 자동으로 무효가 된다.
-    """
+    """[초안 평가] — 초안을 서버에 저장하고 held-out 검색을 A(현행)/B(초안) 둘 다 실측한다.
+    응답은 화면의 RagGate 그대로. ⚠️ 동기 1~2분(모듈 주석)."""
     _require_editor(me, "RAG 파라미터 평가")
     if not str(body.get("request_id") or "").strip():
         raise BadRequestError("request_id가 필요합니다.")
-    params = validate_params(dict(body.get("params") or {}))
+    params = validate_params(dict(body.get("draft") or {}))
     signature = draft_signature(params)
 
-    metrics, n = _measure_retrieval(db, params)
-    gate = compute_gate(metrics)
+    rows = _holdout_rows(db)
+    current_metrics = _measure(rows, _effective_params(db))
+    draft_metrics = _measure(rows, params)
+    now = datetime.now(timezone.utc)
+    gate = build_gate(current_metrics=current_metrics, draft_metrics=draft_metrics,
+                      signature=signature, evaluated_at=_kst(now),
+                      holdout_total=len(rows))
 
     run_id = uuid.uuid4()
     db.execute(insert(evaluation_runs).values(
         id=run_id, target="RAG", source="RAG 파라미터 평가",
-        metrics=[
-            {"label": "검색 정확도@5", "value": f"{metrics['retrieval_accuracy@5']:.3f}"},
-            {"label": "MRR", "value": f"{metrics['mrr']:.3f}"},
-            {"label": "문항 수", "value": str(n)},
-        ],
-        gate=gate, triggered_by=me.email,
-        finished_at=datetime.now(timezone.utc), status="DONE",
+        metrics=[{"label": "검색 정확도@5", "value": f"{draft_metrics['retrieval_accuracy@5']:.3f}"},
+                 {"label": "MRR", "value": f"{draft_metrics['mrr']:.3f}"},
+                 {"label": "문항 수", "value": str(len(rows))}],
+        gate=gate, triggered_by=me.email, finished_at=now, status="DONE",
     ))
     draft = _row(db, "draft")
     if draft:
@@ -331,55 +384,58 @@ def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_EVALUATE,
         target=f"초안 {signature}",
-        detail={"params": params, "metrics": {k: round(v, 4) for k, v in metrics.items()},
-                "evaluated_n": n, "gate_passed": gate["passed"]},
+        detail={"params": params, "gate_passed": gate["passed"],
+                "holdout": f"{gate['holdout_passed']}/{gate['holdout_total']}"},
     )
-    return {
-        "draft_signature": signature,
-        "metrics": [{"label": "검색 정확도@5", "value": f"{metrics['retrieval_accuracy@5']:.3f}"},
-                    {"label": "MRR", "value": f"{metrics['mrr']:.3f}"},
-                    {"label": "문항 수", "value": str(n)}],
-        "gate": gate,
-        # 초안에 use_reranker=True 가 있어도 검색 평가는 Off 로 쟀다(문항당 96초 — 모듈 주석).
-        "notes": ["리랭커는 평가에서 항상 Off 다(CPU 문항당 96초). 생성·latency 축은 재지 않았다."],
-    }
+    return gate
 
 
 @router.post("/ab-search")
 def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
-    """질문 1개를 두 설정(a/b)으로 검색해 나란히 돌려준다. 평가 전에 노브 하나의 효과를
-    눈으로 확인하는 용도라 채점 없이 상위 페이지·점수만 준다."""
-    del db
+    """[비교 실행] — 같은 질문을 A(현행)/B(초안)로 동시 검색. 결과를 저장하지 않는다(§1.5)."""
     _require_editor(me, "A/B 검색")
     query = str(body.get("query") or "").strip()
     if not query:
         raise BadRequestError("query가 필요합니다.")
+    draft = validate_params(dict(body.get("draft") or {})) if body.get("draft") else {}
+    current = _effective_params(db)
+    merged = {**current, **draft}
 
-    from retrieval import route_search_chunks
+    # 정답 표시(✓): 이 질문이 평가셋에 있으면 그 expected_sources 를 쓴다. 임의 질문이면
+    # 정답을 알 수 없으므로 표시하지 않는다 — 지어내지 않는다.
+    gold_row = db.execute(
+        select(test_set.c.expected_sources).where(test_set.c.question == query)
+    ).first()
+    gold = set(gold_row.expected_sources or []) if gold_row else set()
 
-    def _side(raw) -> dict:
-        params = validate_params(dict(raw or {})) if raw else {}
-        k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
-        k_final = params.get("k_final", pipeline.K_FINAL)
-        threshold = params.get("min_top1_score", candidate_ranking.MIN_TOP1_SCORE)
-        top = candidate_ranking.gate_low_relevance(
-            candidate_ranking.top_k_cut(route_search_chunks(query, k=k_candidates), k=k_final),
-            threshold=threshold)
+    titles = dict(db.execute(select(documents.c.page_id, documents.c.page_title)).all())
+
+    def _chips(p: dict) -> list:
+        return [f"후보 {p['k_candidates']}", f"최종 {p['k_final']}",
+                f"게이트 {p['min_top1_score']}",
+                f"리랭커 {'On' if p['use_reranker'] else 'Off'}",
+                f"플래너 {'On' if p['use_query_planner'] else 'Off'}"]
+
+    def _column(label: str, p: dict, changed: list) -> dict:
+        pages = _search_pages(query, p)
         return {
-            "params": params,
-            "gated": not top,   # true 면 게이트가 근거를 통째로 비웠다(무관 질문 판정)
-            "chunks": [{"chunk_id": cid, "page_id": cid.split("#")[0], "score": round(s, 4)}
-                       for cid, s, _text in top],
+            "label": label, "chips": _chips(p), "changed_chips": changed,
+            "hits": [{"rank": i + 1, "title": titles.get(pid, pid), "doc_id": pid,
+                      "score": 0.0, "is_answer": pid in gold}
+                     for i, pid in enumerate(pages[:5])],
         }
 
-    return {"query": query, "a": _side(body.get("a")), "b": _side(body.get("b"))}
+    changed = [c for a, c in zip(_chips(current), _chips(merged)) if a != c]
+    return {"query": query,
+            "a": _column("A. 현행 운영값", current, []),
+            "b": _column("B. 초안 (편집 중)", merged, changed)}
 
 
 @router.post("/apply")
 def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """초안을 current 로 승격한다. 게이트 미통과·평가 없음·초안 변경(지문 불일치)은 전부
-    409 로 막고 **현재 적용값 전문을 실어** 화면이 '이전 버전 유지'를 그대로 다시 그리게
-    한다(R3)."""
+    """[운영 반영] — 저장된 초안 평가가 게이트 통과 + 보낸 초안이 평가된 초안과 동일(지문)
+    할 때만 승격한다. 실패는 409 + 현재 적용값(extra.current)으로, 화면이 '이전 버전 유지'
+    를 다시 그린다. 성공 응답은 반영 후 전체 상태(RagParamsResponse)."""
     _require_editor(me, "RAG 파라미터 반영")
     if not str(body.get("request_id") or "").strip():
         raise BadRequestError("request_id가 필요합니다.")
@@ -391,13 +447,10 @@ def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         return ParamsConflictError(msg, extra={"current": _effective_params(db)})
 
     draft = _row(db, "draft")
-    if draft is None:
-        raise _conflict("반영할 초안이 없습니다. 먼저 평가를 실행해 주세요.")
-    if draft.evaluation_run_id is None:
-        raise _conflict("평가되지 않은 초안입니다. 먼저 평가를 실행해 주세요.")
-    # 화면이 들고 있던 지문과 대조한다(R2) — 평가 후 다른 사람이 초안을 고쳤으면 여기서 걸린다.
-    sent_signature = str(body.get("draft_signature") or "").strip()
-    if sent_signature and sent_signature != draft.draft_signature:
+    if draft is None or draft.evaluation_run_id is None:
+        raise _conflict("평가된 초안이 없습니다. [초안 평가]를 먼저 실행해 주세요.")
+    sent = validate_params(dict(body.get("draft") or {})) if body.get("draft") else None
+    if sent is not None and draft_signature(sent) != draft.draft_signature:
         raise _conflict("평가 이후 초안이 수정되었습니다. 다시 평가해 주세요.")
     run = db.execute(
         select(evaluation_runs.c.gate).where(evaluation_runs.c.id == draft.evaluation_run_id)
@@ -408,7 +461,7 @@ def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
     now = datetime.now(timezone.utc)
     before = _effective_params(db)
     current = _row(db, "current")
-    # current -> history 를 먼저 눕혀야 부분 유니크(current 1개)가 안 걸린다. 같은 트랜잭션이다.
+    # current -> history 를 같은 트랜잭션에서 먼저 눕혀야 부분 유니크(current 1개)가 안 걸린다.
     if current:
         db.execute(update(rag_param_versions)
                    .where(rag_param_versions.c.id == current.id).values(status="history"))
@@ -416,45 +469,64 @@ def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
                .where(rag_param_versions.c.id == draft.id)
                .values(status="current", reason=reason, updated_by=me.email, applied_at=now))
     db.commit()
-    runtime_config.invalidate("params")   # 같은 프로세스는 즉시, CLI 는 TTL(60초) 내 반영
+    runtime_config.invalidate("params")   # 같은 프로세스 즉시 반영(CLI 는 TTL 60초)
 
-    after = _effective_params(db)
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_APPLY,
         target=f"RAG 파라미터 v{draft.version}", reason=reason,
         before_value=json.dumps(before, ensure_ascii=False, sort_keys=True),
-        after_value=json.dumps(after, ensure_ascii=False, sort_keys=True),
+        after_value=json.dumps(_effective_params(db), ensure_ascii=False, sort_keys=True),
         detail={"version": draft.version, "draft_signature": draft.draft_signature},
     )
-    return {"version": draft.version, "applied_at": now.isoformat(), "values": after}
+    return _full_response(db)
+
+
+def _summarize_change(prev: dict, cur: dict) -> str:
+    """이력 한 줄 요약 — '복합 질문 분해 Off → On' 같은 문구를 diff 로 만든다."""
+    labels = {m["key"]: m["label"] for m in _param_meta()}
+
+    def _fmt(v):
+        return ("On" if v else "Off") if isinstance(v, bool) else str(v)
+
+    parts = [f"{labels.get(k, k)} {_fmt(prev.get(k))} → {_fmt(v)}"
+             for k, v in cur.items() if prev.get(k) != v]
+    return " · ".join(parts[:3]) + (" 외" if len(parts) > 3 else "") if parts else "변경 없음"
 
 
 @router.get("/history")
 def param_history(admin: CurrentAdmin, db: DbSession):
+    """설정 이력 -> Page<RagHistoryEntry>. summary 는 직전 버전과의 diff 문구다."""
     del admin
     rows = db.execute(
-        select(rag_param_versions).order_by(rag_param_versions.c.version.desc())
+        select(rag_param_versions)
+        .where(rag_param_versions.c.status.in_(["current", "history"]))
+        .order_by(rag_param_versions.c.version.asc())
     ).all()
-    return {"items": [{
-        "id": str(r.id), "version": r.version, "status": r.status,
-        "values": dict(r.params or {}), "reason": r.reason, "updated_by": r.updated_by,
-        "created_at": r.created_at.isoformat() if r.created_at else None,
-        "applied_at": r.applied_at.isoformat() if r.applied_at else None,
-    } for r in rows], "total": len(rows)}
+    defaults = {m["key"]: m["default"] for m in _param_meta()}
+    items = []
+    prev = defaults
+    for r in rows:
+        cur = {**defaults, **dict(r.params or {})}
+        items.append({
+            "id": str(r.id),
+            "changed_at": _kst(r.applied_at or r.created_at) or "",
+            "summary": _summarize_change(prev, dict(r.params or {})),
+            "actor": r.updated_by or "",
+            "reason": r.reason or "",
+        })
+        prev = cur
+    items.reverse()   # 화면은 최신순
+    return {"items": items, "total": len(items), "page": 1, "size": len(items) or 1}
 
 
 @router.post("/history/{version_id}/rollback")
 def rollback_params(version_id: str, body: dict, request: Request,
                     me: CurrentAdmin, db: DbSession):
-    """지난 버전의 값으로 **새 버전을 만들어** 되돌린다. 옛 행을 다시 current 로 세우지 않는
-    이유: 이력이 '언제 무엇이 적용됐나'의 시간순 기록이어야 하는데, 행을 재사용하면 같은
-    버전이 두 시기에 걸쳐 적용된 것이 되어 활동 로그와 대조할 수 없다."""
-    _require_editor(me, "RAG 파라미터 롤백")
+    """[롤백] — 그 시점 값으로 **초안만** 복원한다(화면 §1.7). 실제 적용은 [운영 반영]이
+    다시 게이트를 거쳐야 한다 — 그래서 여기서는 평가 연결을 비운다(재평가 강제)."""
+    _require_editor(me, "RAG 파라미터 초안 복원")
     if not str(body.get("request_id") or "").strip():
         raise BadRequestError("request_id가 필요합니다.")
-    reason = str(body.get("reason") or "").strip()
-    if not reason:
-        raise BadRequestError("변경 사유를 입력해 주세요.")
     try:
         target_id = uuid.UUID(version_id)
     except ValueError:
@@ -464,28 +536,24 @@ def rollback_params(version_id: str, body: dict, request: Request,
     ).first()
     if target is None:
         raise NotFoundError("해당 버전을 찾을 수 없습니다.")
-    if target.status != "history":
-        raise BadRequestError("이력(history) 상태의 버전만 롤백 대상입니다.")
 
-    now = datetime.now(timezone.utc)
-    before = _effective_params(db)
-    current = _row(db, "current")
-    if current:
+    params = dict(target.params or {})
+    signature = draft_signature(params)
+    draft = _row(db, "draft")
+    if draft:
         db.execute(update(rag_param_versions)
-                   .where(rag_param_versions.c.id == current.id).values(status="history"))
-    new_version = _next_version(db)
-    db.execute(insert(rag_param_versions).values(
-        version=new_version, status="current", params=dict(target.params or {}),
-        reason=f"[v{target.version} 롤백] {reason}", updated_by=me.email, applied_at=now))
+                   .where(rag_param_versions.c.id == draft.id)
+                   .values(params=params, draft_signature=signature,
+                           evaluation_run_id=None, updated_by=me.email))
+    else:
+        db.execute(insert(rag_param_versions).values(
+            version=_next_version(db), status="draft", params=params,
+            draft_signature=signature, updated_by=me.email))
     db.commit()
-    runtime_config.invalidate("params")
 
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_ROLLBACK,
-        target=f"RAG 파라미터 v{target.version} -> v{new_version}", reason=reason,
-        before_value=json.dumps(before, ensure_ascii=False, sort_keys=True),
-        after_value=json.dumps(_effective_params(db), ensure_ascii=False, sort_keys=True),
-        detail={"from_version": target.version, "new_version": new_version},
+        target=f"v{target.version} 값으로 초안 복원",
+        detail={"from_version": target.version, "params": params},
     )
-    return {"version": new_version, "restored_from": target.version,
-            "values": _effective_params(db)}
+    return {"draft": params}

@@ -376,6 +376,9 @@ prompt_versions = Table(
     Column("smoke_passed", Integer),
     Column("smoke_total", Integer),
     Column("published_by", String),
+    # 게시 사유. 화면(promptops PromptVersion.reason)이 버전 목록 행마다 표시한다.
+    # 2026-08-12 추가 — 기존 DB 에는 main() 의 멱등 ALTER 로 반영된다.
+    Column("reason", Text),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
@@ -528,6 +531,8 @@ def main():
         # documents 확장 — 기존 테이블이라 create_all 이 컬럼을 안 더하므로 멱등 ALTER.
         for name, coltype in _DOCUMENTS_NEW_COLUMNS:
             conn.execute(text(f"ALTER TABLE documents ADD COLUMN IF NOT EXISTS {name} {coltype}"))
+        # prompt_versions.reason — 테이블 생성(2026-08-12 오전) 이후 추가된 컬럼이라 같은 방식.
+        conn.execute(text("ALTER TABLE prompt_versions ADD COLUMN IF NOT EXISTS reason text"))
         for name, table_name, cols in _NEW_INDEXES:
             conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON {table_name} ({cols})"))
         missing_indexes = _missing_indexes(conn)

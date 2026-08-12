@@ -134,7 +134,7 @@ def test_resources_do_not_invent_missing_token_or_cost_measurements():
 # ---------------------------------------------------------------- Ops policy
 
 
-def test_ops_routes_are_exactly_the_eight_requested_endpoints():
+def test_ops_routes_are_exactly_the_requested_endpoints():
     methods_and_paths = {
         (next(iter(route.methods - {"HEAD"})), route.path)
         for route in admin_ops.router.routes
@@ -146,6 +146,9 @@ def test_ops_routes_are_exactly_the_eight_requested_endpoints():
         ("POST", "/api/admin/cache/purge"),
         ("GET", "/api/admin/blocks"),
         ("POST", "/api/admin/blocks/{block_id}/release"),
+        # 2026-08-12 추가: 화면 fetchSuggestedQuestions() 의 편집 시작점. PUT 만 있어
+        # 405 가 나던 구멍을 전수 스모크에서 발견해 메웠다(원래 8종 계약 + 1).
+        ("GET", "/api/admin/suggested-questions"),
         ("PUT", "/api/admin/suggested-questions"),
         ("POST", "/api/admin/suggested-questions/validate"),
     }

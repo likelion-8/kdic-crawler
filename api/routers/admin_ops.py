@@ -435,6 +435,25 @@ def _validate_suggestions(raw_items) -> list[dict]:
     return items
 
 
+@router.get("/suggested-questions")
+def list_suggested_questions(admin: CurrentAdmin, db: DbSession,
+                             page: int = 1, size: int = 50):
+    """추천 질문 목록 -> Page<SuggestedQuestion>. 화면(fetchSuggestedQuestions)이 편집
+    시작점으로 부르는데 PUT 만 있어 405 가 나던 구멍(2026-08-12 전수 스모크에서 발견).
+    행 모양은 PUT 응답(_suggestion_out)과 동일하게 맞춘다 — click_count 는 O3(7일 집계
+    원천 없음) 결정대로 null 이다."""
+    del admin
+    rows = db.execute(
+        select(suggested_questions).order_by(suggested_questions.c.display_order)
+    ).all()
+    items = [_suggestion_out({
+        "id": r.id, "text": r.text, "business_function": r.business_function,
+        "active": r.active, "order": r.display_order,
+    }) for r in rows]
+    start = (page - 1) * size
+    return {"items": items[start:start + size], "total": len(items), "page": page, "size": size}
+
+
 @router.put("/suggested-questions")
 def replace_suggested_questions(
     body: dict,
