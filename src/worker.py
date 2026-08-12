@@ -19,10 +19,28 @@
 
 | 타입 | 실행 | 내용 |
 |---|---|---|
+| FULL_RECRAWL · SELECTED_RECRAWL | ✅ 실제 실행 | 수집(inventory.PAGES 기준 실제 재크롤, expect 판본 검증 + 재시도) -> 변환(파싱 + 코퍼스 재조립, **content_sha256 비교로 바뀐 페이지만 갱신 집계**) -> 이하 재적재와 동일 |
 | REINDEX · RECHUNK · REEMBED | ✅ 실제 실행 | 코퍼스(data/corpus.jsonl) -> 청킹 -> 검증 -> 색인(UPSERT) -> 버전 기록. index_document_chunks.py 의 정식 경로를 그대로 쓴다 |
 | 롤백 잡(rollback_of 있음)   | ✅ 실제 실행 | search_index_versions 의 직전 스냅샷으로 corpus.jsonl 을 되돌린 뒤 위와 동일 재적재(docs/search_index_versioning.md 의 복원 흐름) |
 | SMOKE_EVAL                  | ✅ 실제 실행 | admin_evaluations.run_evaluation 위임(문항 수만큼 OpenAI·HCX — 수 분) |
-| FULL_RECRAWL · SELECTED_RECRAWL | ❌ 수집 단계에서 실패 처리 | 수집(크롤링)은 아직 사람이 스크립트로 돌린다(src/crawler/ 의 담당자별 크롤러). 자동 실행을 붙일 때까지 "지원 안 함"을 지어내지 않고 명시적으로 실패시킨다 — error.code=CRAWL_UNSUPPORTED |
+
+## 재수집(수집 단계)이 하는 일 — 기존 크롤 파이프라인을 그대로 자동화
+
+담당자별 크롤러가 나눠 하던 일을 한 흐름으로 잇는다. 새 로직은 없다:
+
+  1. 정적 페이지: crawler_dy.fetch(HEADERS 포함) 로 원본 HTML 재수집.
+     inventory 의 `expect` 문자열로 판본을 검증한다 — 서버가 옛 판본을 번갈아 주는 것이
+     실측됐고(dp_protlmts 12회 중 3회), 불일치면 재시도한다. 요청 간 0.5초 간격.
+  2. 동적 표(dyn_table)·페이지네이션·게시판 상세: fetch_dyntable.py · fetch_extra.py 를
+     서브프로세스로 실행(각각 검증된 독립 스크립트 — import 로 엮으면 argv·전역 상태가 꼬인다).
+  3. 변환: parse_raw_html.run() -> build_corpus.build(). **해시 비교는 build_corpus 가 한다**
+     (hashing.content_sha256 — 본문이 같으면 collected_at 을 승계해 '변경 없음'이 기록에
+     남는다). 워커는 재조립 전후의 page_id->해시를 대조해 바뀐 페이지 수를 변환 단계
+     count 로 채운다.
+
+⚠️ data/raw_html·data/text·data/corpus.jsonl 은 git 추적 파일이다. 재수집이 이 파일들을
+갱신하므로 실행 후 git diff 로 무엇이 바뀌었는지 사람이 검토할 수 있다(의도된 동작 —
+코퍼스 변경은 리뷰 가능한 커밋으로 남기는 것이 팀 방식이다).
 
 ## 6단계(수집·변환·청킹·검증·색인·반영)와 그동안 못 채우던 값
 
@@ -170,6 +188,105 @@ def _run_stage(session, job_id, name: str, fn):
     return count
 
 
+# ──────────────────────────────── 수집(재크롤) ────────────────────────────────
+
+def _corpus_hashes() -> dict:
+    """corpus.jsonl 의 page_id -> content_sha256. 변환 단계의 '바뀐 페이지 수' 집계용."""
+    hashes = {}
+    if CORPUS.exists():
+        with CORPUS.open(encoding="utf-8") as f:
+            for line in f:
+                r = json.loads(line)
+                hashes[r["page_id"]] = r.get("content_sha256")
+    return hashes
+
+
+def _fetch_stage(job) -> int:
+    """수집: inventory.PAGES 를 실제로 재크롤한다(모듈 주석의 1·2번). 반환 = 수집한 페이지 수.
+
+    SELECTED_RECRAWL 은 job.targets(page_id 배열)만, FULL_RECRAWL 은 전체를 돈다.
+    expect 불일치·요청 실패는 페이지당 4회 재시도하고, 그래도 실패한 페이지가 있으면
+    단계 실패다 — 일부만 수집된 코퍼스로 조용히 색인하면 '최신처럼 보이는 옛 문서'가 남는다.
+    """
+    import subprocess
+    import requests as _requests  # noqa: F401 — crawler_dy.fetch 가 쓰는 의존성 확인용
+
+    sys.path.insert(0, str(ROOT / "src" / "crawler"))
+    from crawler_dy import fetch
+    from inventory import PAGES
+
+    targets = {t for t in (job.targets or []) if t}
+    pages = [p for p in PAGES if not targets or p["id"] in targets]
+    if targets:
+        unknown = targets - {p["id"] for p in pages}
+        if unknown:
+            raise StageFailed("수집", f"inventory 에 없는 page_id: {', '.join(sorted(unknown))}")
+    if not pages:
+        raise StageFailed("수집", "수집 대상이 없습니다.")
+
+    raw_dir = ROOT / "data" / "raw_html"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    failures = []
+    static_pages = [p for p in pages if not p.get("dyn_table")]
+    for p in static_pages:
+        last = ""
+        for _attempt in range(4):
+            try:
+                html = fetch(p["url"])
+            except Exception as exc:  # noqa: BLE001 — 페이지 단위 재시도로 수렴
+                last = f"{type(exc).__name__}: {exc}"
+                time.sleep(1.0)
+                continue
+            if p.get("expect") and p["expect"] not in html:
+                # 서버가 옛 판본을 준 것(실측: 판본 2종 혼재) — 사람이 inventory 에 못박은
+                # 문자열이 든 판본만 채택한다.
+                last = "expect 판본 불일치(옛 판본 수신)"
+                time.sleep(1.0)
+                continue
+            (raw_dir / f"{p['id']}.html").write_text(html, encoding="utf-8")
+            break
+        else:
+            failures.append(f"{p['id']}({last})")
+        time.sleep(0.5)   # 예의 있는 수집 간격 — 원 크롤러들과 같은 태도
+
+    # 동적 표·페이지네이션·게시판 상세는 검증된 독립 스크립트를 그대로 서브프로세스로.
+    dyn_ids = [p["id"] for p in pages if p.get("dyn_table")]
+    if dyn_ids:
+        r = subprocess.run([sys.executable, str(ROOT / "src" / "crawler" / "fetch_dyntable.py"),
+                            *dyn_ids], capture_output=True, text=True, timeout=1800)
+        if r.returncode != 0:
+            failures.append(f"동적 표({', '.join(dyn_ids)}): {(r.stderr or r.stdout)[-300:]}")
+    extra = subprocess.run([sys.executable, str(ROOT / "src" / "crawler" / "fetch_extra.py"),
+                            *sorted(targets)] if targets else
+                           [sys.executable, str(ROOT / "src" / "crawler" / "fetch_extra.py")],
+                           capture_output=True, text=True, timeout=1800)
+    if extra.returncode != 0:
+        failures.append(f"페이지네이션/상세: {(extra.stderr or extra.stdout)[-300:]}")
+
+    if failures:
+        raise StageFailed("수집", f"{len(failures)}건 수집 실패 — " + " · ".join(failures[:5]))
+    return len(pages)
+
+
+def _rebuild_corpus_stage() -> int:
+    """변환: 파싱 + 코퍼스 재조립. 반환 = **본문이 실제로 바뀐 페이지 수**(해시 대조).
+
+    해시 비교의 본체는 build_corpus 다(content_sha256 이 같으면 collected_at 승계 —
+    '변경 없음'이 기록에 남는다). 워커는 재조립 전후를 대조해 화면에 보일 숫자만 만든다.
+    """
+    sys.path.insert(0, str(ROOT / "src" / "crawler"))
+    import parse_raw_html
+    import build_corpus
+
+    before = _corpus_hashes()
+    parse_raw_html.run()
+    build_corpus.build()
+    after = _corpus_hashes()
+    changed = sum(1 for pid, h in after.items() if before.get(pid) != h)
+    logger.info("변환 완료: 페이지 %d건 중 본문 변경 %d건", len(after), changed)
+    return changed
+
+
 # ──────────────────────────────── 재적재 계열 ────────────────────────────────
 
 def _restore_snapshot_for_rollback(session, rollback_of: str) -> int:
@@ -201,7 +318,7 @@ def _restore_snapshot_for_rollback(session, rollback_of: str) -> int:
     return restored.count(b"\n")
 
 
-def _run_reindex(session, job) -> None:
+def _run_reindex(session, job, *, recrawl: bool = False) -> None:
     """변환 -> 청킹 -> 검증 -> 색인 -> 반영. index_document_chunks.py 의 정식 경로를 그대로
     쓴다(UPSERT — 관리자 소유 컬럼 보존). 각 단계는 실제 그 일을 한다:
 
@@ -219,6 +336,13 @@ def _run_reindex(session, job) -> None:
     state = {}
 
     def _transform():
+        # 재수집이면 파싱+코퍼스 재조립까지 하고 count 는 '본문이 바뀐 페이지 수'다 —
+        # 재적재는 기존 코퍼스 그대로라 count 가 '페이지 수'다. 의미가 다름을 화면이
+        # 단계명(변환)만으로는 못 가르니, 숫자의 정의는 여기와 모듈 주석이 정본이다.
+        if recrawl:
+            changed = _rebuild_corpus_stage()
+            state["records"] = load_records()
+            return changed
         state["records"] = load_records()
         return len(state["records"])
 
@@ -261,6 +385,8 @@ def _run_reindex(session, job) -> None:
     if job.rollback_of:
         _run_stage(session, job.id, "수집",
                    lambda: _restore_snapshot_for_rollback(session, job.rollback_of))
+    elif recrawl:
+        _run_stage(session, job.id, "수집", lambda: _fetch_stage(job))
     else:
         _set_step(session, job.id, "수집", "SKIPPED")   # 재적재는 기존 코퍼스를 쓴다
 
@@ -333,17 +459,13 @@ def run_job(session, job) -> None:
     logger.info("잡 시작: %s %s (rollback_of=%s, 대상 %s)",
                 job.id, job.type, job.rollback_of, job.target_summary or "전체")
     try:
-        if job.type in CRAWL_TYPES and not job.rollback_of:
-            # 수집(크롤링) 자동 실행은 아직 없다(모듈 주석 표). 지어내지 않고 명시적으로 실패 —
-            # _run_stage 를 거쳐야 수집 단계가 진행바에 FAILED 로 찍힌다.
-            def _unsupported():
-                raise StageFailed("수집", "크롤링 자동 실행은 아직 지원하지 않습니다 — 수집은 "
-                                        "src/crawler/ 스크립트로 사람이 실행한 뒤 REINDEX 를 돌리세요.")
-            _run_stage(session, job.id, "수집", _unsupported)
         if job.type == "SMOKE_EVAL":
             _run_smoke_eval(session, job)
         else:
-            _run_reindex(session, job)
+            # 재수집 계열은 수집(실제 크롤)·변환(파싱+해시 대조)까지 하고, 이후 단계는
+            # 재적재와 완전히 같다. 롤백 잡은 타입과 무관하게 스냅샷 복원 경로를 탄다.
+            _run_reindex(session, job,
+                         recrawl=job.type in CRAWL_TYPES and not job.rollback_of)
     except JobCancelled:
         logger.info("잡 취소됨: %s — 남은 단계를 접는다", job.id)
         _finish(session, job.id, "CANCELLED", skip_remaining=True)
@@ -352,8 +474,7 @@ def run_job(session, job) -> None:
         reached_index = exc.stage in ("색인", "반영")
         _finish(
             session, job.id, "FAILED", skip_remaining=True,
-            error={"code": "CRAWL_UNSUPPORTED" if "크롤링" in exc.detail else "STAGE_FAILED",
-                   "stage": exc.stage, "detail": exc.detail},
+            error={"code": "STAGE_FAILED", "stage": exc.stage, "detail": exc.detail},
             index_impact=("부분 반영 가능성 — 재실행 필요" if reached_index
                           else "색인 변경 없음(반영 전 실패)"),
         )
