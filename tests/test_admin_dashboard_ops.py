@@ -1,0 +1,304 @@
+"""AD-001 대시보드 + AD-009 운영 정책 계약 테스트(DB·네트워크 없음)."""
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+
+import pytest
+from fastapi import Request
+from sqlalchemy.dialects import postgresql
+
+from api.errors import BadRequestError, ForbiddenError
+from api.routers import admin_dashboard, admin_ops
+
+
+def _request():
+    return Request({"type": "http", "method": "POST", "path": "/", "headers": []})
+
+
+def _admin(role="ADMIN", *, fresh=True):
+    return SimpleNamespace(
+        email="test_admin@example.com",
+        role=role,
+        last_auth_at=datetime.now(timezone.utc) - (timedelta(minutes=1) if fresh else timedelta(hours=1)),
+    )
+
+
+class Result:
+    def __init__(self, value=None, *, rowcount=0):
+        self.value = value
+        self.rowcount = rowcount
+
+    def scalar_one(self):
+        return self.value
+
+    def first(self):
+        return self.value
+
+    def all(self):
+        return self.value
+
+    def scalars(self):
+        return self
+
+
+class FakeDb:
+    def __init__(self, results):
+        self.results = list(results)
+        self.executed = []
+        self.commits = 0
+        self.rollbacks = 0
+
+    def execute(self, statement, params=None):
+        self.executed.append((statement, params))
+        if not self.results:
+            raise AssertionError(f"예상하지 않은 DB 호출: {statement}")
+        return self.results.pop(0)
+
+    def commit(self):
+        self.commits += 1
+
+    def rollback(self):
+        self.rollbacks += 1
+
+
+# ---------------------------------------------------------------- Dashboard
+
+
+def test_dashboard_routes_are_exactly_the_three_contract_routes():
+    paths = {route.path for route in admin_dashboard.router.routes}
+    assert paths == {
+        "/api/admin/dashboard/summary",
+        "/api/admin/dashboard/trend",
+        "/api/admin/dashboard/resources",
+    }
+
+
+def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
+    latest = SimpleNamespace(
+        status="FAILED", created_at=datetime(2026, 8, 12, 1, tzinfo=timezone.utc))
+    db = FakeDb([
+        Result(58),
+        Result(812),
+        Result([("success", 3), ("FAILED", 1)]),
+        Result(5400),
+        Result([("informational", 3), ("civil_petition", 1)]),
+        Result(latest),
+        Result(1),
+        Result(2),
+    ])
+
+    response = admin_dashboard.dashboard_summary(_admin(), db)
+
+    assert response["kpi"]["questions_today"] == 4
+    assert response["service"] == {
+        "level": "ERROR",
+        "error_count": 4,  # RAG 1 + pipeline 1 + 활동 로그 2
+        "cause": "PIPELINE",
+    }
+    assert response["distribution"]["intent"] == {
+        "informational": 75,
+        "civil_petition": 25,
+    }
+    assert response["distribution"]["business"] == []
+    assert "indicators" not in response
+    assert [stage["name"] for stage in response["latency"]["stages"]] == list(
+        admin_dashboard.LATENCY_STAGE_NAMES)
+    assert len(response["latency"]["stages"]) == 8
+
+
+def test_dashboard_trend_query_groups_by_kst_date():
+    query = admin_dashboard.build_dashboard_trend_query(
+        start=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        end=datetime(2026, 8, 8, tzinfo=timezone.utc),
+    )
+    sql = str(query.compile(dialect=postgresql.dialect()))
+    assert "timezone" in sql
+    assert "Asia/Seoul" in query.compile(dialect=postgresql.dialect()).params.values()
+    assert "rag_runs.request_id IS NOT NULL" in sql
+
+
+@pytest.mark.parametrize("value", [0, 1, 14, 91])
+def test_dashboard_rejects_unsupported_ranges(value):
+    with pytest.raises(BadRequestError):
+        admin_dashboard._range_days(value)
+
+
+def test_resources_do_not_invent_missing_token_or_cost_measurements():
+    response = admin_dashboard.dashboard_resources(_admin(), object(), 30)
+    assert response["range"] == 30
+    assert response["tokens"] == []
+    assert response["cost"] == []
+    assert response["cost_breakdown"] == []
+    assert response["today"]["tokens_text"] == "집계 원천 없음"
+
+
+# ---------------------------------------------------------------- Ops policy
+
+
+def test_ops_routes_are_exactly_the_eight_requested_endpoints():
+    methods_and_paths = {
+        (next(iter(route.methods - {"HEAD"})), route.path)
+        for route in admin_ops.router.routes
+    }
+    assert methods_and_paths == {
+        ("GET", "/api/admin/ops-policy"),
+        ("PUT", "/api/admin/ops-policy"),
+        ("GET", "/api/admin/cache/stats"),
+        ("POST", "/api/admin/cache/purge"),
+        ("GET", "/api/admin/blocks"),
+        ("POST", "/api/admin/blocks/{block_id}/release"),
+        ("PUT", "/api/admin/suggested-questions"),
+        ("POST", "/api/admin/suggested-questions/validate"),
+    }
+
+
+def test_policy_patch_creates_a_version_then_writes_audit(monkeypatch):
+    current = SimpleNamespace(version=2, policy=dict(admin_ops.DEFAULT_POLICY))
+    db = FakeDb([Result(current), Result()])
+    captured = {}
+
+    def capture(log_db, log_request, **values):
+        assert log_db is db
+        assert db.commits == 1
+        captured.update(values)
+
+    monkeypatch.setattr(admin_ops, "write_activity_log", capture)
+    response = admin_ops.update_ops_policy(
+        {"ip_per_min": 12, "reason": "테스트 정책 조정", "request_id": "test_req_policy"},
+        _request(), _admin(), db,
+    )
+
+    assert response["version"] == "v3.0"
+    assert response["ip_per_min"] == 12
+    assert response["burst_per_10s"] == admin_ops.DEFAULT_POLICY["burst_per_10s"]
+    assert captured["actor"].startswith("test_")
+    assert captured["action"] == admin_ops.ACTION_POLICY_UPDATE
+    assert captured["detail"] == {"version": 3, "changed_fields": ["ip_per_min"]}
+
+
+def test_policy_rejects_read_only_burst_and_stale_reauth():
+    with pytest.raises(BadRequestError):
+        admin_ops.update_ops_policy(
+            {"burst_per_10s": 4, "reason": "테스트", "request_id": "test_req"},
+            _request(), _admin(), FakeDb([]),
+        )
+    with pytest.raises(ForbiddenError):
+        admin_ops.update_ops_policy(
+            {"ip_per_min": 12, "reason": "테스트", "request_id": "test_req"},
+            _request(), _admin(fresh=False), FakeDb([]),
+        )
+
+
+# ---------------------------------------------------------------- Cache
+
+
+def test_cache_question_normalization_collapses_spaces_and_ellipsis():
+    variants = [
+        "착오송금   반환은?",
+        " 착오송금 반환은?… ",
+        "착오송금\n반환은?...",
+    ]
+    assert len({admin_ops.cache_key_for_question(value) for value in variants}) == 1
+
+
+def test_query_cache_purge_commits_before_audit_and_uses_normalized_hash(monkeypatch):
+    aggregate = SimpleNamespace(entries=2, hits=3)
+    db = FakeDb([Result(rowcount=1), Result(aggregate), Result(None)])
+    captured = {}
+
+    def capture(log_db, log_request, **values):
+        assert db.commits == 1
+        captured.update(values)
+
+    monkeypatch.setattr(admin_ops, "write_activity_log", capture)
+    response = admin_ops.purge_cache(
+        {"query": "착오송금   반환은?…", "reason": "테스트 캐시 정리",
+         "request_id": "test_req_cache"},
+        _request(), _admin(role="OPERATOR"), db, "query",
+    )
+
+    compiled = db.executed[0][0].compile(dialect=postgresql.dialect())
+    assert admin_ops.cache_key_for_question("착오송금 반환은?") in compiled.params.values()
+    assert response["removed"] == 1
+    assert response["hit_rate"] == 0.6
+    assert captured["action"] == admin_ops.ACTION_CACHE_PURGE
+
+
+# ---------------------------------------------------------------- Blocks
+
+
+def test_block_release_updates_in_place_then_audits(monkeypatch):
+    block_id = "55555555-5555-5555-5555-555555555555"
+    future = datetime.now(timezone.utc) + timedelta(minutes=10)
+    existing = SimpleNamespace(
+        id=block_id, target="211.34.x.x", target_kind="ip", reason="테스트",
+        blocked_at=datetime.now(timezone.utc), expires_at=future,
+        released_at=None, released_by=None,
+    )
+    released = SimpleNamespace(**{**vars(existing), "released_at": datetime.now(timezone.utc),
+                                  "released_by": "test_admin@example.com"})
+    db = FakeDb([Result(existing), Result(released)])
+    captured = {}
+
+    def capture(log_db, log_request, **values):
+        assert db.commits == 1
+        captured.update(values)
+
+    monkeypatch.setattr(admin_ops, "write_activity_log", capture)
+    response = admin_ops.release_block(
+        block_id, {"reason": "테스트 수동 해제", "request_id": "test_req_release"},
+        _request(), _admin(role="OPERATOR"), db,
+    )
+    assert response.status_code == 204
+    assert captured["action"] == admin_ops.ACTION_BLOCK_RELEASE
+    assert captured["target"].startswith("IP 211.34.x.x")
+
+
+# ---------------------------------------------------------------- Suggested questions
+
+
+def test_suggestions_replace_commits_before_audit_and_returns_null_clicks(monkeypatch):
+    old = SimpleNamespace(
+        id="sq_01", text="기존 질문", business_function="착오송금 반환 신청",
+        active=True, display_order=1, click_count=412,
+    )
+    db = FakeDb([Result([old]), Result(), Result()])
+    captured = {}
+
+    def capture(log_db, log_request, **values):
+        assert db.commits == 1
+        captured.update(values)
+
+    monkeypatch.setattr(admin_ops, "write_activity_log", capture)
+    response = admin_ops.replace_suggested_questions(
+        {
+            "items": [{
+                "id": "sq_01", "text": "새 질문", "business_function": "예금자보호제도",
+                "active": True, "order": 1, "click_count": 999,
+            }],
+            "reason": "테스트 추천 질문 변경",
+            "request_id": "test_req_suggestions",
+        },
+        _request(), _admin(role="EDITOR"), db,
+    )
+    assert response["items"][0]["click_count"] is None
+    assert captured["action"] == admin_ops.ACTION_SUGGESTIONS_REPLACE
+
+
+def test_suggestion_validation_checks_active_blocklist():
+    db = FakeDb([Result(["수익 보장"])])
+    result = admin_ops.validate_suggested_question(
+        {"text": "수익 보장 상품이 있나요?", "business_function": "예금자보호제도"},
+        _admin(role="EDITOR"), db,
+    )
+    assert result["passed"] is False
+    assert "수익 보장" in result["message"]
+
+
+def test_suggestion_limits_are_enforced():
+    too_many_active = [
+        {"id": f"sq_{i}", "text": f"질문 {i}", "business_function": "예금자보호제도",
+         "active": True, "order": i}
+        for i in range(1, 12)
+    ]
+    with pytest.raises(BadRequestError):
+        admin_ops._validate_suggestions(too_many_active)
