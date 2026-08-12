@@ -262,9 +262,14 @@ def _stored_gate(db) -> dict:
 # ──────────────────────────────── 검색 실측 ─────────────────────────────────
 
 def _holdout_rows(db):
+    # ⚠️ expected_sources 는 범위외 문항에서 **빈 배열**이다(NULL 아님). isnot(None) 만 걸면
+    # 정답이 없는 문항이 '무조건 miss'로 섞여 정확도가 부당하게 깎인다(2026-08-12 실측 —
+    # 0.786 vs 기준선 0.922 의 원인 중 하나). 원소가 1개 이상인 답변형 문항만 잰다
+    # (eval_pipeline_retrieval 의 "expected_sources 있는 행만"과 동일).
     rows = db.execute(
         select(test_set.c.question, test_set.c.expected_sources)
-        .where(test_set.c.is_active.is_(True), test_set.c.expected_sources.isnot(None))
+        .where(test_set.c.is_active.is_(True),
+               func.array_length(test_set.c.expected_sources, 1) >= 1)
         .order_by(test_set.c.question_id)
     ).all()
     if not rows:
@@ -272,16 +277,23 @@ def _holdout_rows(db):
     return rows
 
 
-def _search_pages(query: str, params: dict) -> list:
+def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> list:
     """초안/현행 파라미터로 실검색 -> 페이지 순위. eval_pipeline_retrieval 과 같은 규약
-    (chunk_id 의 '#' 앞이 page_id, 같은 페이지 첫 등장 = 최고 순위)."""
+    (chunk_id 의 '#' 앞이 page_id, 같은 페이지 첫 등장 = 최고 순위).
+
+    for_scoring=True 면 k_final 컷 **없이** 후보 전체(k_candidates)에서 페이지를 접는다 —
+    기준선(0.922/0.806, retrieve_pages)이 그렇게 재기 때문이다. 컷 이후로 재면 페이지가
+    2~4개뿐이라 같은 검색이 기준선보다 불리하게 나와 게이트(0.92)가 영구 미달이 된다
+    (2026-08-12 실측). 컷은 LLM 에 넘길 근거 선택이지 검색 품질의 정의가 아니다.
+    for_scoring=False(A/B 화면)는 LLM 이 실제로 받는 것을 보여줘야 하므로 컷을 유지한다.
+    """
     from retrieval import route_search_chunks
     k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
     k_final = params.get("k_final", pipeline.K_FINAL)
     threshold = params.get("min_top1_score", candidate_ranking.MIN_TOP1_SCORE)
-    top = candidate_ranking.gate_low_relevance(
-        candidate_ranking.top_k_cut(route_search_chunks(query, k=k_candidates), k=k_final),
-        threshold=threshold)
+    candidates = route_search_chunks(query, k=k_candidates)
+    ranked = candidates if for_scoring else candidate_ranking.top_k_cut(candidates, k=k_final)
+    top = candidate_ranking.gate_low_relevance(ranked, threshold=threshold)
     pages = []
     for cid, _score, _text in top:
         page = cid.split("#")[0]
@@ -296,7 +308,7 @@ def _measure(rows, params: dict) -> dict:
     rr_sum = 0.0
     for r in rows:
         gold = set(r.expected_sources or [])
-        ranked5 = _search_pages(r.question, params)[:5]
+        ranked5 = _search_pages(r.question, params, for_scoring=True)[:5]
         if gold & set(ranked5):
             hits += 1
         for i, page in enumerate(ranked5, 1):

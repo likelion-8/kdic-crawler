@@ -270,17 +270,20 @@ def _generate(question: str, si: str, few_shot: list) -> tuple[str, bool, list]:
 
 def _eval_questions(db):
     """전후 비교용 고정 문항 — 골든셋에서 인스코프 앞 N + 범위외 앞 M (결정론적 순서)."""
+    from sqlalchemy import func as _f
     from schema import evaluation_dataset
+    # ⚠️ 범위외 문항의 expected_sources 는 NULL 이 아니라 **빈 배열**이다 — is_(None) 으로
+    # 거르면 0건이 나온다(2026-08-12 실측). array_length 가 NULL(빈 배열/NULL 모두)인지로 가른다.
     in_scope = db.execute(
         select(evaluation_dataset.c.question)
         .where(evaluation_dataset.c.is_active.is_(True),
-               evaluation_dataset.c.expected_sources.isnot(None))
+               _f.array_length(evaluation_dataset.c.expected_sources, 1) >= 1)
         .order_by(evaluation_dataset.c.question_id).limit(EVAL_IN_SCOPE)
     ).scalars().all()
     oos = db.execute(
         select(evaluation_dataset.c.question)
         .where(evaluation_dataset.c.is_active.is_(True),
-               evaluation_dataset.c.expected_sources.is_(None))
+               _f.array_length(evaluation_dataset.c.expected_sources, 1).is_(None))
         .order_by(evaluation_dataset.c.question_id).limit(EVAL_OUT_OF_SCOPE)
     ).scalars().all()
     return in_scope, oos
@@ -396,7 +399,8 @@ def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
     questions = db.execute(
         select(evaluation_dataset.c.question)
         .where(evaluation_dataset.c.is_active.is_(True),
-               evaluation_dataset.c.expected_sources.isnot(None))
+               # 빈 배열 제외(_eval_questions 와 같은 사정) — Smoke 는 인스코프만 잰다
+               func.array_length(evaluation_dataset.c.expected_sources, 1) >= 1)
         .order_by(evaluation_dataset.c.question_id).limit(SMOKE_TOTAL)
     ).scalars().all()
     if len(questions) < SMOKE_TOTAL:
