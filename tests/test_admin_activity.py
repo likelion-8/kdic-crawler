@@ -9,8 +9,10 @@ DB·네트워크 없이 돈다. 검사 대상은 세 가지다.
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+from fastapi import Request
 from sqlalchemy.dialects import postgresql
 
 # `python tests/test_admin_activity.py` 로도 실행되도록 저장소 루트를 먼저 넣는다.
@@ -18,17 +20,26 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from api.deps import ACTION_BY_JOB_TYPE
+from api.deps import ACTION_BY_JOB_TYPE, RESULT_DENIED, RESULT_SUCCESS
 from api.errors import BadRequestError
-from api.routers.admin_activity import (build_activity_event_queries,
-                                        build_snapshot, parse_snapshot_value,
-                                        router, _to_kst_iso)
+from api.routers import admin_activity, admin_change_requests
+from api.routers.admin_activity import (ACTION_ACTIVITY_EXPORT,
+                                        build_activity_event_queries,
+                                        build_snapshot, export_activity_events,
+                                        parse_snapshot_value, router,
+                                        _to_kst_iso)
+from api.routers.admin_change_requests import (
+    CHANGE_REQUEST_AUDIT_ACTIONS, approve_change_request,
+    reject_change_request)
 from api.routers.admin_pipeline import JOB_TYPES
+from api.schemas.activity import ActivityExportRequest
+from api.schemas.change_request import ChangeRequestDecision
 
 # EventDetail.tsx 의 LINKS·NO_LINK 를 그대로 옮긴 것. 화면이 action 문자열을 이 규칙으로
 # 갈라 '연결 보기' 이동처를 정하므로, 서버가 만드는 어휘가 여기에 걸려야 한다.
 PIPELINE_LINK = r"전체 재수집|선택 재수집|재색인|재적재|파이프라인|작업"
 URL_LINK = r"URL 적재"
+PAGE_LINK = r"페이지|재수집"
 NO_LINK = r"^로그인|^로그아웃|로그인 실패|임시 잠금|^로그 조회|^로그 내보내기|^활동 로그"
 
 
@@ -163,6 +174,165 @@ def test_login_actions_stay_unlinked():
     from api.deps import ACTION_LOGIN, ACTION_LOGIN_FAILED, ACTION_LOGOUT
     for action in (ACTION_LOGIN, ACTION_LOGIN_FAILED, ACTION_LOGOUT):
         assert re.search(NO_LINK, action)
+
+
+def test_change_request_actions_route_to_the_expected_screen():
+    """EventDetail.tsx 의 첫 일치 규칙 기준으로 ADD 는 AD-003, DELETE 는 AD-002다."""
+    import re
+
+    assert CHANGE_REQUEST_AUDIT_ACTIONS == {
+        ("ADD", "APPROVED"): "URL 적재 승인",
+        ("ADD", "REJECTED"): "URL 적재 반려",
+        ("DELETE", "APPROVED"): "페이지 삭제 승인",
+        ("DELETE", "REJECTED"): "페이지 삭제 반려",
+    }
+    for (request_action, _), audit_action in CHANGE_REQUEST_AUDIT_ACTIONS.items():
+        assert not re.search(NO_LINK, audit_action)
+        if request_action == "ADD":
+            assert re.search(URL_LINK, audit_action), f"{audit_action} 이 AD-003으로 못 간다"
+        else:
+            assert not re.search(URL_LINK, audit_action), f"{audit_action} 이 AD-003으로 잘못 간다"
+            assert re.search(PAGE_LINK, audit_action), f"{audit_action} 이 AD-002로 못 간다"
+
+
+class _FirstResult:
+    def __init__(self, value):
+        self.value = value
+
+    def first(self):
+        return self.value
+
+
+class _DecisionDb:
+    def __init__(self, row):
+        self.results = [_FirstResult(row), _FirstResult(row)]
+        self.commits = 0
+
+    def execute(self, _statement):
+        return self.results.pop(0)
+
+    def commit(self):
+        self.commits += 1
+
+    def rollback(self):
+        raise AssertionError("성공한 결정에서 rollback 되면 안 된다")
+
+
+def _decision_row(*, action: str, status: str):
+    decided_at = datetime(2026, 8, 12, tzinfo=timezone.utc)
+    return SimpleNamespace(
+        id="44444444-4444-4444-4444-444444444444",
+        action=action,
+        target_page_id="test_page_001",
+        target_title="테스트 페이지",
+        business_function="테스트",
+        payload=None,
+        reason="테스트 요청 사유",
+        requested_by="test_editor@example.com",
+        requested_at=decided_at,
+        status=status,
+        decided_by="test_admin@example.com",
+        decided_at=decided_at,
+        decision_reason="테스트 결정 사유",
+        request_id="test_req_change_request",
+    )
+
+
+@pytest.mark.parametrize(
+    ("handler", "request_action", "status", "expected_action", "expected_result", "expected_reason"),
+    [
+        (approve_change_request, "ADD", "APPROVED", "URL 적재 승인", RESULT_SUCCESS, None),
+        (reject_change_request, "ADD", "REJECTED", "URL 적재 반려", RESULT_DENIED, "테스트 반려 사유"),
+        (approve_change_request, "DELETE", "APPROVED", "페이지 삭제 승인", RESULT_SUCCESS, None),
+        (reject_change_request, "DELETE", "REJECTED", "페이지 삭제 반려", RESULT_DENIED, "테스트 반려 사유"),
+    ],
+)
+def test_change_request_decision_writes_audit_log_after_commit(
+        monkeypatch, handler, request_action, status, expected_action,
+        expected_result, expected_reason):
+    row = _decision_row(action=request_action, status=status)
+    db = _DecisionDb(row)
+    request = Request({"type": "http", "method": "POST", "path": "/", "headers": []})
+    me = SimpleNamespace(email="test_admin@example.com", role="ADMIN")
+    captured = {}
+
+    def capture_log(log_db, log_request, **values):
+        # write_activity_log 는 스스로 commit 한다. 호출 시점에 상태 전이가 이미 확정돼야 한다.
+        assert log_db is db
+        assert log_request is request
+        assert db.commits == 1
+        captured.update(values)
+
+    monkeypatch.setattr(admin_change_requests, "write_activity_log", capture_log)
+
+    response = handler(
+        str(row.id), ChangeRequestDecision(reason="테스트 반려 사유"),
+        request, db, me,
+    )
+
+    assert response.status == status
+    assert captured == {
+        "actor": "test_admin@example.com",
+        "actor_role": "ADMIN",
+        "action": expected_action,
+        "target": "테스트 페이지 (test_page_001)",
+        "result": expected_result,
+        "reason": expected_reason,
+        "detail": {"change_request_id": str(row.id)},
+    }
+
+
+class _ScalarResult:
+    def __init__(self, value):
+        self.value = value
+
+    def scalar_one(self):
+        return self.value
+
+
+class _ExportDb:
+    def execute(self, _statement):
+        return _ScalarResult(7)
+
+
+def test_activity_export_writes_an_audit_log(monkeypatch):
+    db = _ExportDb()
+    request = Request({"type": "http", "method": "POST", "path": "/", "headers": []})
+    admin = SimpleNamespace(email="test_admin@example.com", role="ADMIN")
+    body = ActivityExportRequest(
+        request_id="test_req_activity_export",
+        reason="테스트 감사 자료 확인",
+        filter={"action": "로그인", "from": "2026-08-01"},
+    )
+    captured = {}
+
+    def capture_log(log_db, log_request, **values):
+        assert log_db is db
+        assert log_request is request
+        captured.update(values)
+
+    monkeypatch.setattr(admin_activity, "write_activity_log", capture_log)
+
+    response = export_activity_events(body, request, admin, db)
+
+    assert response.status == "QUEUED"
+    assert response.estimated_rows == 7
+    assert captured == {
+        "actor": "test_admin@example.com",
+        "actor_role": "ADMIN",
+        "action": ACTION_ACTIVITY_EXPORT,
+        "target": response.export_id,
+        "result": RESULT_SUCCESS,
+        "reason": "테스트 감사 자료 확인",
+        "detail": {
+            "export_id": response.export_id,
+            "estimated_rows": 7,
+            "filter": {"action": "로그인", "from": "2026-08-01"},
+            "export_request_id": "test_req_activity_export",
+        },
+    }
+    assert ACTION_ACTIVITY_EXPORT == "활동 로그 내보내기"
+    assert __import__("re").search(NO_LINK, ACTION_ACTIVITY_EXPORT)
 
 
 def test_activity_routes_are_exposed():
