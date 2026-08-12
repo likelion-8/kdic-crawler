@@ -87,7 +87,10 @@ class LogClassification(BaseModel):
 
     intent: str                             # rag_runs.intent
     business_function: Optional[str] = None  # ⚠️ 원천 없음(분류 비활성, 미저장) → null
-    question_type: str                      # rag_runs.question_type
+    # ⚠️ 컬럼은 있지만 웹 경로가 항상 None 을 넘긴다(api/rag/answer.py:260 — "검색 라우팅
+    # 내부에서만 쓰고 응답 경로엔 노출되지 않는다"). 2026-08-12 실측: 목록 대상 91건이 전부
+    # NULL 이었다. non-Optional 로 두면 상세 요청이 매번 ValidationError 로 500 이 난다.
+    question_type: Optional[str] = None     # rag_runs.question_type
     source_used: Optional[bool] = None      # ⚠️ 답변시 계산·미저장 → null. false 지어내면 거짓(선례)
     marker: Optional[str] = None            # ⚠️ 답변시 계산·미저장 → null
     normalized: Optional[bool] = None       # ⚠️ 답변시 계산·미저장 → null

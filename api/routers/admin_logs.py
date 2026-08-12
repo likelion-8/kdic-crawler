@@ -28,21 +28,22 @@
 `to` 를 그 날 00:00 으로 비교하면 '오늘'을 골랐을 때 오늘 것이 한 건도 안 나온다.
 끝을 다음 날 00:00 **미만**으로 잡아 to 당일을 통째로 포함시킨다.
 
-## ⚠️ 응답 모델이 아직 dict 다
+## 응답 모델
 
-프론트 계약을 옮긴 Pydantic 스키마(`api/schemas/logs.py`)는 별도 담당자가 만드는 중이라,
-지금은 계약과 같은 모양의 dict 를 돌려준다. 그 파일이 들어오면 각 엔드포인트에
-`response_model=` 만 달면 된다 — 필드 이름·구조는 이미 정본
-(`web/src/routes/admin/logs/api.ts`)에 맞춰 뒀다.
+4종 전부 `api/schemas/logs.py` 의 모델을 `response_model=` 로 단다. 필드 이름·구조의 정본은
+`web/src/routes/admin/logs/api.ts` 이고, 스키마가 그것을 1:1로 옮긴 것이다.
 
 ## ⚠️ rag_runs 에 원천이 없는 필드가 있다
 
 `ConversationLogDetail` 이 요구하는 것 중 `source_count`·`triage`·`classification` 의
-`business_function`·`source_used`·`marker`·`normalized` 는 `rag_runs` 에 컬럼이 없다
-(src/schema.py:163-185). 지금은 None/기본값으로 내보내고, 처리 방침(컬럼 추가 · null 유지 ·
-프론트에 필드 제거 요청)은 별도 조사에서 정한다. **빈 값을 '사실'처럼 보이게 만들지 말 것** —
-logs/api.ts:39-49 에 같은 실수의 선례가 있다(원천 없는 구획을 목업대로 남겼더니 빈 상태
-문구가 운영자에게 거짓을 말했다).
+`business_function`·`source_used`·`marker`·`normalized` 는 `rag_runs` 에 컬럼이 없고
+(src/schema.py:163-185), `question_type` 은 컬럼은 있지만 웹 경로가 항상 None 을 넘겨
+실측 91건이 전부 NULL 이었다. 전부 null 로 내보낸다 — 처리 방침은
+docs/conversation_logs_field_sources.md 에 있다.
+
+**빈 값을 '사실'처럼 보이게 만들지 말 것.** logs/api.ts:39-49 에 같은 실수의 선례가 있다
+(원천 없는 구획을 목업대로 남겼더니 빈 상태 문구가 운영자에게 거짓을 말했다). 그래서
+`source_used=false` 같은 그럴듯한 기본값 대신 null 을 쓴다.
 """
 import logging
 import uuid
@@ -54,8 +55,8 @@ from sqlalchemy import and_, func, select
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
-from api.schemas.logs import (ConversationLogList, LogExportRequest,
-                              LogExportResponse, LogSummary)
+from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
+                              LogExportRequest, LogExportResponse, LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
 from schema import feedback as feedback_table
 from schema import rag_runs
@@ -370,15 +371,9 @@ def logs_summary(admin: CurrentAdmin, db: DbSession):
     }
 
 
-@router.get("/{request_id}")
+@router.get("/{request_id}", response_model=ConversationLogDetail)
 def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
     """질의 1건의 상세 = 목록 행 + 분류·피드백·오류.
-
-    ⚠️ 여기만 response_model 을 안 붙였다. api/schemas/logs.py 의
-    `LogClassification.question_type` 이 non-Optional `str` 인데 rag_runs 의 해당 컬럼은
-    **목록 대상 91건 전부 NULL** 이다(웹 경로가 항상 None 을 넘긴다 — api/rag/answer.py:260).
-    붙이면 상세 요청이 매번 ValidationError 로 500 이 난다.
-    스키마에서 `Optional[str] = None` 으로 열어 주면 그때 response_model 을 단다.
 
     request_id 는 UUID 가 아니라 문자열 컬럼이다(rag_runs.request_id). 형식 검사를 하지
     않고 그대로 조회한다 — 활동 로그의 event_id 와 달리 UUID 캐스팅이 없어 500 위험이 없다.
