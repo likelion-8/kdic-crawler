@@ -51,7 +51,11 @@ def _fake_request():
 # 남의 라우터가 같이 깨지므로 여기서 고정해 둔다.
 
 def test_reauth_is_valid_right_after_authenticating():
-    assert reauth_remaining_s(_identity()) == int(REAUTH_WINDOW.total_seconds())
+    # now 를 고정해서 넘긴다 — _identity() 생성과 reauth_remaining_s() 계산 사이에 1초 미만이
+    # 흘러도 int() 절삭으로 1799 가 나와 간헐 실패했다(2026-08-12 실측). 함수가 now 파라미터를
+    # 받는 이유가 정확히 이 재현성이다.
+    me = _identity()
+    assert reauth_remaining_s(me, now=me.last_auth_at) == int(REAUTH_WINDOW.total_seconds())
 
 
 def test_reauth_expires_after_the_window():
