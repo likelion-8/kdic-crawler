@@ -72,8 +72,29 @@ FEW_SHOT_EXAMPLES = [
 ]
 
 
+# ── 관리자 화면(AD-008)이 바꿀 수 있는 세 값 ──────────────────────────────────
+# 위 상수(SYSTEM_INSTRUCTION · FEW_SHOT_EXAMPLES · NO_EVIDENCE_NOTICE)는 지우지 않는다.
+# 게시된 프롬프트가 없으면 그대로 쓰이는 **문서화된 기본값**이고, 각 상수 주석의 근거가
+# "왜 이 문구인가"의 유일한 기록이다(src/runtime_config.py 참고).
+#
+# 모듈 최상단에서 한 번 읽지 않고 함수로 감싼 이유: 최상단에서 읽으면 import 시점에 값이
+# 굳어 관리자가 게시해도 재시작 전까지 반영되지 않는다. 프롬프트를 조립할 때마다 부른다.
+
+def _system_instruction():
+    from runtime_config import get_prompt
+    return get_prompt("system_instruction", SYSTEM_INSTRUCTION)
+
+
+def _no_evidence_notice():
+    from runtime_config import get_prompt
+    return get_prompt("no_evidence_notice", NO_EVIDENCE_NOTICE)
+
+
 def _format_examples():
-    return "\n\n".join(f"질문: {ex['question']}\n답변: {ex['answer']}" for ex in FEW_SHOT_EXAMPLES)
+    from runtime_config import get_prompt
+    # 게시본의 few_shot 은 JSONB 라 같은 모양([{question, answer}, ...])을 그대로 받는다.
+    examples = get_prompt("few_shot", FEW_SHOT_EXAMPLES) or FEW_SHOT_EXAMPLES
+    return "\n\n".join(f"질문: {ex['question']}\n답변: {ex['answer']}" for ex in examples)
 
 
 # 검색 게이트(candidate_ranking.gate_low_relevance)로 근거가 비었을 때 근거 자리에 넣는 지시.
@@ -92,7 +113,7 @@ def build_informational_prompt(query, chunks):
     LLM 응답 뒤에 별도로 붙인다.
     chunks: [(chunk_id, score, text), ...] — candidate_ranking.top_k_cut() 결과(근거 청크).
             게이트로 비어 있으면 근거 자리에 NO_EVIDENCE_NOTICE를 넣는다."""
-    context = "\n\n".join(text for _, _, text in chunks) if chunks else NO_EVIDENCE_NOTICE
+    context = "\n\n".join(text for _, _, text in chunks) if chunks else _no_evidence_notice()
     # 질문 직전 리마인더 — 근거에 답이 있는데도 거절하는 확률적 오류가 원칙 1 문구(프롬프트
     # 앞쪽)만으로는 안 잡혀서(실측 1~4/6) recency 위치에 한 번 더 둔다(실측 4/6→개선).
     # 잔여 거절은 api/rag/answer.py 의 재생성 가드가 처리한다.
@@ -104,7 +125,7 @@ def build_informational_prompt(query, chunks):
         f"근거 자료:\n{context}\n\n"
         f"{remind}질문: {query}\n답변:"
     )
-    return [("system", SYSTEM_INSTRUCTION), ("human", human)]
+    return [("system", _system_instruction()), ("human", human)]
 
 
 def build_civil_petition_prompt(query, civil_petition_answer):
@@ -124,7 +145,7 @@ def build_civil_petition_prompt(query, civil_petition_answer):
         " 제도·기관 이야기라면 절대 그걸로 답을 지어내지 말고 [NO_SOURCE]로 시작해서 확인할"
         " 수 없다고 답하세요 - 둘 중 하나는 반드시 맨 앞에 쓰세요):"
     )
-    return [("system", SYSTEM_INSTRUCTION), ("human", human)]
+    return [("system", _system_instruction()), ("human", human)]
 
 
 def _render_list(heading, items, line):

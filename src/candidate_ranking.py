@@ -74,10 +74,17 @@ def top_k_cut(reranked, k):
 MIN_TOP1_SCORE = 0.35
 
 
-def gate_low_relevance(top, threshold=MIN_TOP1_SCORE):
+def gate_low_relevance(top, threshold=None):
     """top-1 점수가 임계값 미만이면 근거를 통째로 비운다(무관 질문이 저점수 청크를 근거로
     받아 환각하는 것을 차단). 빈 근거를 받은 프롬프트는 인사·잡담 응대/범위외 거절로
-    유도된다(prompt_builder.NO_EVIDENCE_NOTICE)."""
+    유도된다(prompt_builder.NO_EVIDENCE_NOTICE).
+
+    threshold 를 기본 인자에 박지 않고 None 으로 두는 이유: 기본 인자는 **import 시점에 한 번**
+    평가된다. MIN_TOP1_SCORE 를 그대로 쓰면 관리자 화면(AD-007)이 값을 바꿔도 프로세스를
+    재시작하기 전까지 반영되지 않는다. 호출 시점에 풀어야 한다."""
+    if threshold is None:
+        from runtime_config import get_param
+        threshold = get_param("min_top1_score", MIN_TOP1_SCORE)
     if top and top[0][1] < threshold:
         return []
     return top

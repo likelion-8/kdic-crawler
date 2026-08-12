@@ -33,6 +33,10 @@ from prompt_builder import (
 from llm_client import call_hyperclova
 from performance import measure_time
 from rag_logger import log_rag_run
+# 아래 상수들은 지우지 않고 '문서화된 기본값'으로 남긴다 — 관리자 화면(AD-007)이 값을 바꿀 수
+# 있지만, DB 에 값이 없으면 get_param 이 이 값을 그대로 쓴다. 각 상수 주석의 실측 근거가
+# "왜 이 값인가"의 유일한 기록이라 DB 로 옮겼다고 지우면 안 된다(src/runtime_config.py 참고).
+from runtime_config import get_param
 from source_check import recheck_source_usage
 
 K_CANDIDATES = 20
@@ -86,15 +90,22 @@ def _answer_one(query, timings, intent=None):
         with measure_time(timings, "query_classification", accumulate=True):
             intent = classify_intent(query)
 
+    # 아래 파라미터들은 관리자 화면(AD-007)이 바꿀 수 있다. get_param 은 DB 에 값이 없으면
+    # 두 번째 인자(이 모듈의 전역 = 문서화된 기본값)를 그대로 돌려주므로, DB 가 비어 있으면
+    # 동작이 오늘과 완전히 같다. 모듈 최상단이 아니라 **쓰는 자리에서** 부르는 것이 중요하다 —
+    # 위에서 한 번 읽어 두면 값이 import 시점에 굳어 재시작 전까지 반영되지 않는다.
     with measure_time(timings, "retrieval", accumulate=True):
-        candidates = route_search_chunks(query, k=K_CANDIDATES)
+        candidates = route_search_chunks(query, k=get_param("k_candidates", K_CANDIDATES))
 
     with measure_time(timings, "reranking", accumulate=True):
-        reranked = rerank(query, candidates) if USE_RERANKER else candidates
+        # 전역 USE_RERANKER 를 default 로 넘기는 이유: eval_pipeline_generation.py 가
+        # `pipeline.USE_RERANKER = args.rerank` 로 전역을 덮어써 A/B 를 돌린다. DB 에 이
+        # 파라미터가 없는 동안은 그 덮어쓰기가 계속 이긴다(runtime_config 모듈 주석 참고).
+        reranked = rerank(query, candidates) if get_param("use_reranker", USE_RERANKER) else candidates
         # 무관 질문 게이트(2026-08-10) — api/rag/answer.py 와 동일 동작 유지.
         # 게이트에 걸리면 근거 없이 informational 경로로 통일한다(civil 조립은 근거가 있어야
         # 의미가 있고, 빈 근거 civil 프롬프트는 few-shot leak 이력이 있다).
-        top = gate_low_relevance(top_k_cut(reranked, k=K_FINAL))
+        top = gate_low_relevance(top_k_cut(reranked, k=get_param("k_final", K_FINAL)))
         if not top:
             intent = "informational"
 
@@ -126,7 +137,8 @@ def _answer_one(query, timings, intent=None):
             evidence = civil_petition_answer["procedure"]
         else:
             evidence = "\n\n".join(text for _, _, text in top)
-        recheck = (lambda body: recheck_source_usage(body, evidence)) if USE_SOURCE_RECHECK else None
+        recheck = ((lambda body: recheck_source_usage(body, evidence))
+                   if get_param("use_source_recheck", USE_SOURCE_RECHECK) else None)
 
         if intent == "civil_petition":
             answer = assemble_civil_petition_answer(
@@ -147,7 +159,7 @@ def _rag_answer_traced(query):
     classify_intent를 부른다(= 이 기능 도입 전과 동일 동작)."""
     timings = {}
 
-    if USE_QUERY_PLANNER:
+    if get_param("use_query_planner", USE_QUERY_PLANNER):
         # 멀티쿼리 분해 + intent를 한 콜(structured output)로 함께 판단한다.
         with measure_time(timings, "query_planning"):
             plan = plan_query(query)
@@ -164,7 +176,7 @@ def _rag_answer_traced(query):
                                  for it, a in zip(items, sub_answers))
     else:
         # 폴백: 기존 분리 방식(HCX 분해 + 하위 질문별 classify_intent).
-        if USE_QUERY_DECOMPOSITION:
+        if get_param("use_query_decomposition", USE_QUERY_DECOMPOSITION):
             with measure_time(timings, "decomposition"):
                 sub_queries = decompose_query(query)
         else:

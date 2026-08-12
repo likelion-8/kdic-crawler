@@ -28,6 +28,7 @@ from civil_petition import build_civil_petition_answer
 from llm_client import call_hyperclova
 from prompt_builder import (_strip_no_source_marker, build_civil_petition_prompt,
                             build_informational_prompt)
+from runtime_config import get_param
 from source_check import judge_answer_majority
 
 from api.errors import DEFAULT_FALLBACK_SOURCES
@@ -37,6 +38,10 @@ from api.schemas.common import ApiError
 logger = logging.getLogger(__name__)
 
 # pipeline.py 와 동일 값 — 리랭커 off 이므로 route_search_chunks 상위 K_FINAL 을 그대로 쓴다.
+#
+# 🔴 실사용자가 타는 경로는 pipeline.py 가 아니라 여기다(파일 상단 참고). 그래서 관리자
+# 화면(AD-007)이 바꾼 값이 실제로 먹으려면 **이 두 값도** runtime_config 를 거쳐야 한다.
+# 상수는 지우지 않고 문서화된 기본값으로 남긴다 — DB 가 비면 여기로 떨어진다.
 K_CANDIDATES = 20
 K_FINAL = 5
 
@@ -79,7 +84,7 @@ def plan(query: str) -> list:
     함께 얻는다. 단일이면 원본 질문으로 검색하고(pipeline 과 동일: 재질문판 문구로 검색 안 함)
     intent만 플래너 결과를 쓴다. False면 기존 decompose_query 로 나누고 intent 는 prepare_sub 에서
     분류하도록 None 을 넘긴다."""
-    if USE_QUERY_PLANNER:
+    if get_param("use_query_planner", USE_QUERY_PLANNER):
         p = plan_query(query)
         items = p["items"] or [{"question": query, "intent": "informational"}]
         if p["should_split"] and len(items) > 1:
@@ -98,8 +103,10 @@ def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
     여기서 classify_intent 로 분류한다."""
     if intent is None:
         intent = classify_intent(q)
-    candidates = route_search_chunks(q, k=K_CANDIDATES)
-    top = gate_low_relevance(top_k_cut(candidates, k=K_FINAL))
+    # 관리자 화면(AD-007)이 바꾼 값을 쓰되, DB 가 비면 위 상수로 떨어진다. 모듈 최상단이
+    # 아니라 여기서 부르는 것이 중요하다 — 위에서 읽어 두면 import 시점에 값이 굳는다.
+    candidates = route_search_chunks(q, k=get_param("k_candidates", K_CANDIDATES))
+    top = gate_low_relevance(top_k_cut(candidates, k=get_param("k_final", K_FINAL)))
     if not top:
         # 무관 질문 게이트에 걸림 — 저점수 청크를 근거로 주면 환각 소재가 되므로 근거 없이
         # 인사 응대/범위외 거절 프롬프트로 보낸다(NO_EVIDENCE_NOTICE). civil_petition 조립은
