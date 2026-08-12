@@ -1,12 +1,13 @@
 """관리자 활동 로그 조회(AD-011) — 누가·언제·무엇을 했는지 읽는 창구.
 
 `admin_activity_logs` 는 이미 쌓이고 있었지만 읽는 API 가 없어 화면이 404 를 받고 있었다.
-이 파일이 그 구멍을 메운다. 쓰기는 api/deps.py 의 write_activity_log 가 계속 맡는다.
+이 파일이 그 구멍을 메운다. 감사 기록 쓰기는 api/deps.py 의 write_activity_log 가 맡는다.
 
 ## 추가 전용이다
 
 수정·삭제 엔드포인트를 만들지 않는다. 감사 기록을 지울 수 있으면 감사 기록이 아니다.
-내보내기(POST /exports)도 행을 만들지 않고 읽기만 한다.
+내보내기(POST /exports)는 원장 행을 수정하지 않지만, ADMIN 전용 데이터 반출 행위 자체는
+새 감사 기록으로 남긴다.
 
 ## 권한이 다른 로그와 반대다
 
@@ -30,10 +31,11 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, or_, select
 
-from api.deps import CurrentAdmin, DbSession, get_current_admin
+from api.deps import (CurrentAdmin, DbSession, RESULT_SUCCESS,
+                      get_current_admin, write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.schemas.activity import (ActivityEventDetail, ActivityEventList,
                                   ActivityEventRow, ActivityExportRequest,
@@ -64,6 +66,7 @@ MAX_FILTER_CHOICES = 100
 
 SORT_COLUMNS = {"occurred_at": admin_activity_logs.c.occurred_at}
 EXPORT_ROLES = frozenset({"ADMIN"})
+ACTION_ACTIVITY_EXPORT = "활동 로그 내보내기"
 
 
 def _to_kst_iso(value: Optional[datetime]) -> Optional[str]:
@@ -290,7 +293,8 @@ def get_activity_event(event_id: str, admin: CurrentAdmin, db: DbSession):
 
 
 @router.post("/exports", response_model=ActivityExportResponse)
-def export_activity_events(body: ActivityExportRequest, admin: CurrentAdmin, db: DbSession):
+def export_activity_events(body: ActivityExportRequest, request: Request,
+                           admin: CurrentAdmin, db: DbSession):
     """내보내기 접수. 기록을 파일로 빼가는 행위라 ADMIN 만 할 수 있다.
 
     지금은 대상 건수를 세어 접수증만 돌려준다 — 실제 파일 생성·다운로드는 별도 작업이다.
@@ -318,5 +322,20 @@ def export_activity_events(body: ActivityExportRequest, admin: CurrentAdmin, db:
 
     export_id = f"exp_{uuid.uuid4().hex[:12]}"
     logger.info("활동 로그 내보내기 접수: %s (%s건, 요청자 %s)", export_id, estimated_rows, admin.email)
+    write_activity_log(
+        db, request,
+        actor=admin.email,
+        actor_role=admin.role,
+        action=ACTION_ACTIVITY_EXPORT,
+        target=export_id,
+        result=RESULT_SUCCESS,
+        reason=body.reason.strip(),
+        detail={
+            "export_id": export_id,
+            "estimated_rows": estimated_rows,
+            "filter": dict(body.filter),
+            "export_request_id": body.request_id.strip(),
+        },
+    )
     return ActivityExportResponse(
         export_id=export_id, status="QUEUED", estimated_rows=estimated_rows)
