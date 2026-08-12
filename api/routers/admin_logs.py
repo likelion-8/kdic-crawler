@@ -54,6 +54,8 @@ from sqlalchemy import and_, func, select
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
+from api.schemas.logs import (ConversationLogList, LogExportRequest,
+                              LogExportResponse, LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
 from schema import feedback as feedback_table
 from schema import rag_runs
@@ -291,7 +293,7 @@ def _row_to_log(row) -> dict:
 # ⚠️ /summary 는 /{request_id} 보다 **먼저** 선언해야 한다. 뒤에 두면 "summary" 가
 #    request_id 로 잡혀 상세 핸들러가 먼저 먹고 404 를 돌려준다.
 
-@router.get("")
+@router.get("", response_model=ConversationLogList)
 def list_logs(
     admin: CurrentAdmin,
     db: DbSession,
@@ -322,7 +324,7 @@ def list_logs(
     }
 
 
-@router.get("/summary")
+@router.get("/summary", response_model=LogSummary)
 def logs_summary(admin: CurrentAdmin, db: DbSession):
     """오늘(KST) 집계. **목록 필터와 무관하게** 항상 오늘 기준이다(G1: '항상 오늘 기준').
 
@@ -371,6 +373,12 @@ def logs_summary(admin: CurrentAdmin, db: DbSession):
 @router.get("/{request_id}")
 def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
     """질의 1건의 상세 = 목록 행 + 분류·피드백·오류.
+
+    ⚠️ 여기만 response_model 을 안 붙였다. api/schemas/logs.py 의
+    `LogClassification.question_type` 이 non-Optional `str` 인데 rag_runs 의 해당 컬럼은
+    **목록 대상 91건 전부 NULL** 이다(웹 경로가 항상 None 을 넘긴다 — api/rag/answer.py:260).
+    붙이면 상세 요청이 매번 ValidationError 로 500 이 난다.
+    스키마에서 `Optional[str] = None` 으로 열어 주면 그때 response_model 을 단다.
 
     request_id 는 UUID 가 아니라 문자열 컬럼이다(rag_runs.request_id). 형식 검사를 하지
     않고 그대로 조회한다 — 활동 로그의 event_id 와 달리 UUID 캐스팅이 없어 500 위험이 없다.
@@ -446,7 +454,7 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
     }
 
 
-@router.post("/exports")
+@router.post("/exports", response_model=LogExportResponse)
 def export_logs(body: dict, admin: CurrentAdmin, db: DbSession):
     """내보내기 접수. 데이터를 파일로 빼가는 행위라 ADMIN 만 할 수 있다.
 
@@ -459,18 +467,22 @@ def export_logs(body: dict, admin: CurrentAdmin, db: DbSession):
     request_id(멱등키)는 apiRequest 가 모든 쓰기 요청에 자동으로 넣어 준다(C2).
     """
     _require(admin, EXPORT_ROLES, "대화 로그 내보내기")
+    # 본문을 dict 로 받는 이유: LogExportRequest 에 request_id 필드가 없어서(화면 계약에
+    # 없다 — apiRequest 가 모든 쓰기 요청에 자동으로 넣는 공통 멱등키다) 모델로 바로 받으면
+    # 그 값이 버려진다. 멱등키는 원본에서 꺼내고, 필터만 모델로 검증한다.
     if not str(body.get("request_id") or "").strip():
         raise BadRequestError("request_id가 필요합니다.")
+    filters = LogExportRequest.model_validate(body)
 
     # 화면에 보이는 현재 필터 결과가 대상이다(G6). 목록과 같은 빌더를 써서 두 건수가
     # 어긋나지 않게 한다.
     _, total_query = build_log_queries(
-        q=str(body.get("q") or "").strip(),
-        status=str(body.get("status") or "").strip(),
-        intent=str(body.get("intent") or "").strip(),
-        feedback=str(body.get("feedback") or "").strip(),
-        from_raw=body.get("from"),
-        to_raw=body.get("to"),
+        q=filters.q.strip(),
+        status=filters.status.strip(),
+        intent=filters.intent.strip(),
+        feedback=filters.feedback.strip(),
+        from_raw=filters.from_ or None,
+        to_raw=filters.to or None,
         sort="occurred_at:desc",
     )
     estimated_rows = db.execute(total_query).scalar_one()
