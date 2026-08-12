@@ -27,6 +27,7 @@ UTC 문자열을 그대로 내보내면 화면의 '오늘'이 9시간 어긋난�
 """
 import json
 import logging
+import re
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
@@ -34,13 +35,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, or_, select
 
-from api.deps import (CurrentAdmin, DbSession, RESULT_SUCCESS,
+from api.deps import (CurrentAdmin, DbSession, RESULT_SUCCESS, RISKY_ACTIONS,
                       get_current_admin, write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.schemas.activity import (ActivityEventDetail, ActivityEventList,
                                   ActivityEventRow, ActivityExportRequest,
                                   ActivityExportResponse, ActivityOverview,
-                                  ActivitySnapshot)
+                                  ActivitySnapshot, RiskyOpList, RiskyOpRow)
 from schema_admin import admin_activity_logs
 
 logger = logging.getLogger(__name__)
@@ -339,3 +340,73 @@ def export_activity_events(body: ActivityExportRequest, request: Request,
     )
     return ActivityExportResponse(
         export_id=export_id, status="QUEUED", estimated_rows=estimated_rows)
+
+
+# "제목 (page_id)" 형태로 저장된 target 을 되돌리는 규칙. 쓰는 쪽이 그 형식을 쓴다
+# (admin_change_requests.py:221 · admin_auth.patch_account). 컬럼을 target_name/target_id 로
+# 쪼개는 것은 마이그레이션이라 이번 범위 밖이고, 화면(RiskyOp)은 둘을 나눠 요구한다.
+_TARGET_WITH_ID = re.compile(r"^(?P<name>.+?)\s*\((?P<id>[^()]+)\)$")
+
+
+def split_target(target: Optional[str]) -> tuple[str, Optional[str]]:
+    """`"페이지 제목 (dp_003)"` -> `("페이지 제목", "dp_003")`.
+
+    형식이 안 맞으면 통째로 이름으로 본다. 억지로 쪼개면 이름의 일부가 id 로 둔갑해
+    화면의 딥링크가 없는 대상을 가리킨다 — 그때는 id 없이 이름만 보여주는 편이 정직하다.
+    """
+    if not target:
+        return "", None
+    match = _TARGET_WITH_ID.match(target.strip())
+    if match is None:
+        return target, None
+    return match.group("name").strip(), match.group("id").strip()
+
+
+@router.get("/risky-today", response_model=RiskyOpList)
+def risky_today(
+    admin: CurrentAdmin,
+    db: DbSession,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+):
+    """오늘(KST) 실행된 위험 작업(A4). 접근 관리 화면 하단에 뜬다.
+
+    '위험'의 정의는 api/deps.py 의 RISKY_ACTIONS 다 — 되돌리기 어렵거나 권한·보안을 바꾸는
+    행위. 다른 트랙이 새 위험 행위를 만들면 그 집합에 문자열을 더하면 여기 잡힌다.
+
+    성공한 것만 보여준다. 거부되거나 실패한 시도는 '실행된 위험 작업'이 아니고, 그건
+    활동 로그 목록에서 result 필터로 본다.
+    """
+    del admin  # 인증은 라우터 의존성이 했다. 활동 로그는 VIEWER 도 볼 수 있다.
+
+    now = datetime.now(timezone.utc)
+    today_start = _kst_day_start(now.astimezone(KST).date())
+    conditions = (
+        admin_activity_logs.c.occurred_at >= today_start,
+        admin_activity_logs.c.action.in_(sorted(RISKY_ACTIONS)),
+        admin_activity_logs.c.result == RESULT_SUCCESS,
+    )
+
+    total = db.execute(
+        select(func.count()).select_from(admin_activity_logs).where(*conditions)
+    ).scalar_one()
+    rows = db.execute(
+        select(admin_activity_logs).where(*conditions)
+        .order_by(admin_activity_logs.c.occurred_at.desc())
+        .offset((page - 1) * size).limit(size)
+    ).all()
+
+    items = []
+    for row in rows:
+        target_name, target_id = split_target(row.target)
+        items.append(RiskyOpRow(
+            # 🔴 AD-011 의 event_id 와 같은 값이다(L7). 화면이 이 id 로 상세를 연다.
+            id=str(row.id),
+            occurred_at=_to_kst_iso(row.occurred_at) or "",
+            action=row.action or "",
+            target_name=target_name,
+            target_id=target_id,
+            actor=row.actor or "",
+            reason=row.reason or "",
+        ))
+    return RiskyOpList(items=items, total=total, page=page, size=size)

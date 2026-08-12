@@ -29,7 +29,7 @@ from sqlalchemy import insert, select, update
 from sqlalchemy.orm import Session
 
 from api.config import Settings, get_settings
-from api.errors import UnauthorizedError
+from api.errors import ForbiddenError, UnauthorizedError
 
 # src/db.py 를 flat import 한다 — api/__init__.py 가 sys.path 에 src/ 를 넣어줘서
 # 가능하다. src/ 쪽 import 스타일을 그대로 따르는 것이라 의도된 모양이다.
@@ -205,6 +205,62 @@ def get_current_admin(request: Request, db: DbSession) -> AdminIdentity:
 CurrentAdmin = Annotated[AdminIdentity, Depends(get_current_admin)]
 
 
+# ---------------------------------------------------------------- 위험 작업 재인증
+#
+# 재확인이 필요한 쓰기는 3종이다 — 전체 캐시 비우기 · 권한 변경 · 롤백(A14 확정).
+# 프롬프트 게시에는 걸지 않는다(롤백으로 되돌릴 수 있고 게시 후 자동 롤백까지 있다).
+#
+# 🔴 서버가 독립 검증해야 한다(P5). 프론트도 needsReauth 를 보고 POST /reauth 를 먼저
+#    부르지만(access/api.ts runRisky), 그 판정은 클라이언트 코드라 우회할 수 있다. 화면을
+#    거치지 않고 위험 API 를 직접 때리면 재확인 없이 통과해 버린다.
+#
+# ## 다른 트랙이 쓰는 법
+#
+#     from api.deps import ReauthedAdmin
+#
+#     @router.put("/ops-policy")
+#     def update_ops_policy(me: ReauthedAdmin, ...):   # 만료면 여기 닿기 전에 403
+#
+# 역할 게이트와 같이 걸 때는 둘 다 본다 — 재인증은 '누구인가'가 아니라 '방금 확인했는가'라
+# 서로 대체하지 못한다. 역할 검사는 아직 공통 함수가 없어 각 라우터가 자기 방식으로 한다
+# (admin_logs._require · admin_activity 인라인):
+#
+#     @router.post("/jobs/{job_id}/rollback")
+#     def rollback(me: ReauthedAdmin, ...):
+#         if me.role != "ADMIN":
+#             raise ForbiddenError("긴급 롤백에는 ADMIN 권한이 필요합니다.")
+#
+# 401 이 아니라 403 인 이유: 프론트는 401 을 보면 경로를 보지 않고 expireSession() 한다
+# (lib/api/client.ts:107). 세션은 멀쩡한데 재확인만 만료된 상황에서 401 을 주면 위험 작업을
+# 누를 때마다 로그아웃되어, 사용자는 재확인을 할 기회조차 없다.
+
+
+def reauth_remaining_s(me: AdminIdentity, now: Optional[datetime] = None) -> int:
+    """재확인이 유효한 남은 초. 0 이면 재확인이 필요하다.
+
+    GET /api/admin/session 의 reauth_valid_until_s 와 **같은 계산**이어야 한다 — 화면이 그
+    값으로 비밀번호 슬롯을 띄울지 정하는데, 서버 판정과 어긋나면 '입력칸이 안 떴는데 403'
+    또는 '입력칸이 떴는데 안 물어봄'이 된다.
+    """
+    now = now or datetime.now(timezone.utc)
+    return max(0, int((me.last_auth_at + REAUTH_WINDOW - now).total_seconds()))
+
+
+def require_reauth(me: CurrentAdmin) -> AdminIdentity:
+    """위험 작업 의존성. 마지막 재확인이 30분을 넘겼으면 403 으로 막는다.
+
+    통과한 신원을 그대로 돌려주므로 CurrentAdmin 대신 써도 된다(ReauthedAdmin 별칭).
+    """
+    if reauth_remaining_s(me) <= 0:
+        raise ForbiddenError(
+            "보안을 위해 비밀번호를 다시 확인해 주세요.",
+            detail=f"reauth expired: {me.email} last_auth_at={me.last_auth_at.isoformat()}")
+    return me
+
+
+ReauthedAdmin = Annotated[AdminIdentity, Depends(require_reauth)]
+
+
 # ---------------------------------------------------------------- 활동 로그(감사 기록)
 #
 # "누가 · 언제 · 어떤 작업을 · 무엇에 · 어떤 결과로" 한 행에 담는다(CM-DF-003 §04).
@@ -226,6 +282,31 @@ CurrentAdmin = Annotated[AdminIdentity, Depends(get_current_admin)]
 ACTION_LOGIN = "로그인"
 ACTION_LOGIN_FAILED = "로그인 실패"
 ACTION_LOGOUT = "로그아웃"
+
+# 접근 관리(AD-010) 어휘. 위 표(EventDetail.tsx LINKS)에 대조해 정했다:
+#   "계정"·"권한" 이 들어간 셋은 /권한|계정/ 에 걸려 전체 계정 목록으로 간다 — 의도한 이동처다.
+#   "임시 잠금" 은 NO_LINK 에 이미 그 문자열이 있어 링크가 붙지 않는다(사전 "연결 없음").
+#   비밀번호 계열은 어느 규칙에도 안 걸려 링크가 없다 — 이동할 화면이 실제로 없어 맞다.
+ACTION_REAUTH = "비밀번호 재확인"
+ACTION_ACCOUNT_INVITED = "계정 초대"
+ACTION_ROLE_CHANGED = "권한 변경"            # A7 이 이 표기를 지정했다
+ACTION_ACCOUNT_DEACTIVATED = "계정 비활성화"
+ACTION_ACCOUNT_LOCKED = "임시 잠금"
+ACTION_PASSWORD_CHANGED = "비밀번호 변경"
+ACTION_PASSWORD_RESET_REQUESTED = "비밀번호 재설정 요청"
+ACTION_PASSWORD_RESET_COMPLETED = "비밀번호 재설정"
+
+# '오늘의 위험 작업'(AD-010) 에 뜨는 행위. 되돌리기 어렵거나 권한·보안을 바꾸는 것들이다.
+# 재인증이 필요한 3종(전체 캐시 비우기·권한 변경·롤백)이 출발점이고, 계정 수명주기를 바꾸는
+# 행위를 더했다. B·C·D 트랙이 새 위험 행위를 만들면 여기에 문자열을 더하면 화면에 잡힌다.
+RISKY_ACTIONS = frozenset({
+    ACTION_ROLE_CHANGED,
+    ACTION_ACCOUNT_INVITED,
+    ACTION_ACCOUNT_DEACTIVATED,
+    ACTION_PASSWORD_RESET_COMPLETED,
+    "전체 캐시 비우기",      # B 트랙(POST /cache/purge?scope=all)
+    "긴급 롤백",             # D 트랙(prompt emergency-rollback) · 본 트랙(jobs/{id}/rollback)
+})
 
 # 파이프라인 잡 생성. 재수집·재색인은 검색 결과를 실제로 바꾸는 작업이라 "누가 왜 돌렸는지"가
 # 남아야 한다. 값을 아무렇게나 정하면 안 된다 — 화면이 이 문자열을 정규식으로 갈라

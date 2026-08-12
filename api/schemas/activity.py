@@ -80,3 +80,33 @@ class ActivityExportResponse(BaseModel):
     export_id: str
     status: str
     estimated_rows: int
+
+
+class RiskyOpRow(BaseModel):
+    """'오늘의 위험 작업' 한 줄(AD-010). 정본은 settings/access/api.ts 의 RiskyOp.
+
+    🔴 id 는 활동 로그 이벤트의 id 와 **같은 값**이어야 한다(L7). 화면이 이 행에서 AD-011
+    상세로 딥링크를 걸기 때문에, 새로 만든 식별자를 주면 링크가 아무 데도 닿지 않는다.
+
+    ⚠️ target_name·target_id 가 나뉘어 있지만 저장은 `target` 한 컬럼이다. 컬럼을 쪼개는 건
+    마이그레이션이라 범위 밖이라, 쓸 때 정한 형식("제목 (id)")을 읽을 때 되돌린다. 형식이
+    안 맞으면 통째로 target_name 에 넣고 target_id 는 null 이다 — 억지로 쪼개 엉뚱한 값을
+    id 라고 부르는 것보다 낫다.
+    """
+
+    id: str
+    occurred_at: str
+    action: str
+    target_name: str
+    target_id: Optional[str] = None
+    actor: str
+    reason: str
+
+
+class RiskyOpList(BaseModel):
+    """Page<RiskyOp> — 화면이 Page 봉투로 받는다(fetchRiskyToday)."""
+
+    items: list[RiskyOpRow] = []
+    total: int
+    page: int
+    size: int

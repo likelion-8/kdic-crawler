@@ -342,6 +342,9 @@ def test_activity_routes_are_exposed():
         "/api/admin/activity/events",
         "/api/admin/activity/events/{event_id}",
         "/api/admin/activity/exports",
+        # AD-010 '오늘의 위험 작업'. 접근 관리 화면이 쓰지만 prefix 가 여기라 이 라우터에 산다
+        # (id 가 AD-011 event_id 와 같은 값이어야 딥링크가 해석된다 — L7).
+        "/api/admin/activity/risky-today",
     }
 
 

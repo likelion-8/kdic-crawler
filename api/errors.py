@@ -69,9 +69,17 @@ class ApiError(Exception):
     retryable = False
     include_fallback_sources = False
 
-    def __init__(self, user_message=None, *, retryable=None, fallback_sources=None, detail=None):
+    def __init__(self, user_message=None, *, retryable=None, fallback_sources=None, detail=None,
+                 extra=None):
         # detail 은 서버 로그 전용이다 — 응답 본문에는 절대 들어가지 않는다.
         self.detail = detail
+        # extra 는 반대로 본문에 **합쳐져** 나간다. 봉투 5필드로 표현 못 하는 값이 필요한
+        # 화면이 있어서다 — 임시 잠금의 locked_until 이 그 예다(A2: 잔여 카운트다운을 그리려면
+        # 시각이 필요한데 user_message 문자열에서 파싱하게 둘 수는 없다).
+        # 프론트 ApiError 타입은 닫힌 union 이 아니라 여분 필드를 그냥 무시하므로 안전하다.
+        # ⚠️ 봉투 5필드(code/user_message/retryable/fallback_sources/request_id)를 여기서
+        #    덮어쓰지 않는다 — build_error_body 뒤에 합치되 기존 키는 유지한다.
+        self.extra = dict(extra or {})
         if user_message is not None:
             self.user_message = user_message
         if retryable is not None:
@@ -111,6 +119,30 @@ class ForbiddenError(ApiError):
 class NotFoundError(ApiError):
     status_code = 404
     user_message = "요청한 자료를 찾을 수 없습니다."
+
+
+class GoneError(ApiError):
+    """410 — 있었지만 이제 못 쓰는 것. 비밀번호 재설정 링크의 만료·재사용이 유일한 용처다.
+
+    404 로 뭉뚱그리면 안 된다(A11). 화면은 410 일 때만 '재설정 요청으로 되돌리기'를 띄우고,
+    404 면 '잘못된 주소'로 읽어 사용자가 링크를 다시 받을 생각을 못 한다.
+    """
+
+    status_code = 410
+    user_message = "만료되었거나 이미 사용된 링크입니다. 재설정을 다시 요청해 주세요."
+
+
+class LockedError(ApiError):
+    """423 — 임시 잠금(A2). 로그인 실패가 임계치를 넘겨 일정 시간 막힌 상태다.
+
+    403 과 반드시 갈라야 한다. 화면이 상태코드로 분기해 '임시 잠금' 배너와 잔여 카운트다운을
+    그리고 제출 버튼을 잠근다(LoginPage.tsx:58, 302-333). 403 으로 주면 '권한 없음'으로 뜬다.
+
+    잔여 시간은 extra={"locked_until": ISO} 로 본문에 함께 싣는다.
+    """
+
+    status_code = 423
+    user_message = "로그인 시도가 많아 계정이 일시적으로 잠겼습니다. 잠시 후 다시 시도해 주세요."
 
 
 class RateLimitError(ApiError):
@@ -169,6 +201,8 @@ _STATUS_CODE_MAP = {
     403: ("INTERNAL", "접근 권한이 없습니다."),
     404: ("INTERNAL", "요청한 경로를 찾을 수 없습니다."),
     405: ("INTERNAL", "허용되지 않은 요청 방식입니다."),
+    410: ("INTERNAL", "만료되었거나 이미 사용된 링크입니다."),
+    423: ("INTERNAL", "일시적으로 잠긴 상태입니다. 잠시 후 다시 시도해 주세요."),
     429: ("LLM_RATE_LIMIT", "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
 }
 
@@ -178,16 +212,17 @@ async def api_error_handler(request: Request, exc: ApiError):
     # 5xx 는 우리 잘못이라 스택까지, 4xx 는 호출자 잘못이라 한 줄만 남긴다.
     log = logger.exception if exc.status_code >= 500 else logger.warning
     log("[%s] %s: %s", request_id, exc.code, exc.detail or exc.user_message)
-    return error_response(
-        exc.status_code,
-        build_error_body(
-            code=exc.code,
-            user_message=exc.user_message,
-            retryable=exc.retryable,
-            fallback_sources=exc.fallback_sources,
-            request_id=request_id,
-        ),
+    body = build_error_body(
+        code=exc.code,
+        user_message=exc.user_message,
+        retryable=exc.retryable,
+        fallback_sources=exc.fallback_sources,
+        request_id=request_id,
     )
+    # 봉투 5필드가 이긴다 — extra 가 code 나 request_id 를 덮어쓰면 프론트 분기가 통째로 깨진다.
+    for key, value in getattr(exc, "extra", {}).items():
+        body.setdefault(key, value)
+    return error_response(exc.status_code, body)
 
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
