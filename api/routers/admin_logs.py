@@ -50,7 +50,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
@@ -101,6 +101,20 @@ EXPORT_ROLES = frozenset({"ADMIN"})
 STATUSES = frozenset({"NORMAL", "OUT_OF_SCOPE", "FAILED"})   # logs/api.ts LogStatus
 INTENTS = frozenset({"informational", "civil_petition"})     # query_planner.PlanItem.intent
 FEEDBACKS = frozenset({"up", "down", "none"})                # logs/api.ts LogFilters.feedback
+
+# 2026-08-12 실측: 기존 238행이 **전부** status="success" 다. rag_logger 의 기본값이 그 문자열
+# 하나뿐이었고 다른 값을 넘기는 호출부가 없었기 때문이다(실패 기록 자체가 없었다).
+#
+# 화면은 이 값을 모른다 — LOG_STATUS_LABEL[status] 가 undefined 가 되어 상태 칩이 통째로
+# 빈 채로 뜬다. 실패 기록 작업이 새 어휘를 쓰기 시작해도 **이미 쌓인 행은 영원히 "success"**
+# 라, 읽는 쪽에서 옮겨 준다. UPDATE 마이그레이션 대신 읽기 매핑을 택한 이유는 되돌리기
+# 쉽고(이 줄만 지우면 된다) 원본 기록을 건드리지 않아서다.
+LEGACY_STATUS = {"success": "NORMAL"}
+
+
+def _status_out(value: Optional[str]) -> Optional[str]:
+    """저장값 -> 화면 어휘. 옛 "success" 를 NORMAL 로 옮긴다."""
+    return LEGACY_STATUS.get(value, value)
 
 SORT_COLUMNS = {"occurred_at": rag_runs.c.created_at}
 
@@ -195,7 +209,12 @@ def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
     joined = rag_runs.outerjoin(
         feedback_table, rag_runs.c.request_id == feedback_table.c.request_id)
 
-    filters = []
+    # 🔴 request_id 가 없는 행은 목록에 넣지 않는다(2026-08-12 실측 238건 중 147건).
+    # CLI(src/pipeline.py)·Streamlit 경로가 request_id 없이 로깅해서 생긴 행들이다. 이 값이
+    # 없으면 상세(GET /{request_id})도, 피드백 연결도 불가능해서 화면에서 행을 눌러도 할 수
+    # 있는 게 없다. 목록에 두면 '열리지 않는 행'이 절반을 넘는다.
+    # 되살리려면 이 한 줄을 지운다 — 그때는 프론트에 '상세 없는 행' 처리를 먼저 정해야 한다.
+    filters = [rag_runs.c.request_id.isnot(None), rag_runs.c.request_id != ""]
 
     start, end = _resolve_range(from_raw, to_raw)
     if start:
@@ -211,7 +230,10 @@ def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
     if status:
         if status not in STATUSES:
             raise BadRequestError("지원하지 않는 상태 값입니다.")
-        filters.append(rag_runs.c.status == status)
+        # 옛 저장값(LEGACY_STATUS)도 같은 필터에 걸려야 한다 — 안 그러면 화면에서
+        # '정상'을 골랐을 때 기존 기록이 통째로 사라진다.
+        legacy = [old for old, new in LEGACY_STATUS.items() if new == status]
+        filters.append(rag_runs.c.status.in_([status, *legacy]))
     if intent:
         if intent not in INTENTS:
             raise BadRequestError("지원하지 않는 intent 값입니다.")
@@ -256,7 +278,7 @@ def _row_to_log(row) -> dict:
         # api/masking.py 의 mask_text 로 갈아끼우면 전 경로가 함께 바뀐다.
         "question_masked": _mask(row.question) or "",
         "intent": row.intent,
-        "status": row.status,
+        "status": _status_out(row.status),
         "feedback": row.vote,
         "source_count": None,
         "latency_s": round(row.total_latency_ms / 1000, 2) if row.total_latency_ms else None,
@@ -310,7 +332,11 @@ def logs_summary(admin: CurrentAdmin, db: DbSession):
 
     now = datetime.now(timezone.utc)
     today_start = _kst_day_start(now.astimezone(KST).date())
-    today = rag_runs.c.created_at >= today_start
+    # 목록과 **같은 모집단**을 세야 한다 — request_id 없는 행(CLI·Streamlit 기록)을 여기서만
+    # 세면 '오늘 3건'인데 목록은 0건이 되어, 운영자가 사라진 3건을 찾게 된다.
+    today = and_(rag_runs.c.created_at >= today_start,
+                 rag_runs.c.request_id.isnot(None),
+                 rag_runs.c.request_id != "")
 
     # 상태 3종을 한 번에 센다 — 질의 4번을 왕복하는 것보다 낫고, 합계가 부분합과
     # 어긋날 여지도 없앤다.
@@ -318,7 +344,11 @@ def logs_summary(admin: CurrentAdmin, db: DbSession):
         select(rag_runs.c.status, func.count())
         .where(today).group_by(rag_runs.c.status)
     ).all()
-    by_status = {status: count for status, count in counts}
+    # 옛 저장값을 화면 어휘로 옮겨 합친다(LEGACY_STATUS). 매핑 없이 세면 오늘 기록이
+    # 전부 어느 칸에도 안 들어가 '오늘 0건'처럼 보인다.
+    by_status: dict = {}
+    for status, count in counts:
+        by_status[_status_out(status)] = by_status.get(_status_out(status), 0) + count
 
     votes = db.execute(
         select(feedback_table.c.vote, func.count())
@@ -372,13 +402,15 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
     if row is None:
         raise NotFoundError("대화 기록을 찾을 수 없습니다.")
 
-    answer = mask_text(row.answer) or ""
+    answer = _mask(row.answer) or ""
     preview = answer if len(answer) <= PREVIEW_CHARS else answer[:PREVIEW_CHARS] + "…"
 
     return {
         **_row_to_log(row),
         "classification": {
             "intent": row.intent,
+            # 컬럼은 있지만 웹 경로가 항상 None 을 넘긴다(api/rag/answer.py:260 — "검색 라우팅
+            # 내부에서만 쓰고 응답 경로엔 노출되지 않는다"). 2026-08-12 실측 238건 중 91건이 NULL.
             "question_type": row.question_type,
             # ⚠️ 아래 4개는 rag_runs 에 컬럼이 없다(모듈 주석 참고). 지어내지 않는다.
             "business_function": None,
@@ -402,7 +434,7 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
         },
         # 실패 건에만 싣는다. code·meaning·user_message·auto_retry·fallback 은 rag_runs 에
         # 원천이 없어 비워 둔다 — 처리 방침은 별도 조사에서 정한다(모듈 주석).
-        "error": None if row.status != "FAILED" else {
+        "error": None if _status_out(row.status) != "FAILED" else {
             "code": "",
             "meaning": "",
             "user_message": "",
