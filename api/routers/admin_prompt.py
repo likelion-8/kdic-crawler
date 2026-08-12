@@ -1,59 +1,54 @@
-"""프롬프트·가드레일(AD-008) — 초안·평가(Smoke)·게시·승인·롤백.
+"""프롬프트·가드레일(AD-008) — 기준값 제공·전후 비교 평가·게시·롤백.
 
-프론트 계약 정본: docs/frontend-handoff.md "M. 프롬프트·가드레일"(M1~M7) ·
-web/src/routes/admin/settings/promptops/api.ts.
-컬럼 정본: src/schema_admin.py (prompt_versions · prompt_drafts · prompt_publish_requests ·
-guardrail_rules).
+🔴 계약 정본은 web/src/routes/admin/settings/promptops/api.ts 다. 핸드오프 문서(M1~M7)와
+다르게 확정된 지점이 둘 있다(처음 구현을 핸드오프 기준으로 했다가 화면이 통째로 빈 사고,
+2026-08-12):
 
-## 엔드포인트 11종
-    GET/PUT /prompt/draft                 초안 조회/저장(서버가 change_count·dirty 관리, M2)
-    POST    /prompt/draft/discard         초안 폐기
-    POST    /prompt/evaluate              Smoke 30문항 실측(HCX 실호출 — 아래 참고)
-    GET     /prompt/versions              게시 이력
-    POST    /prompt/versions/{v}/rollback 지정 버전으로 되돌리기 — EDITOR↑(사유 필수)
-    POST    /prompt/versions/emergency-rollback  직전 버전 즉시 복귀 — ADMIN + 재인증(M5)
-    POST    /prompt/publish               초안 게시 — {version, smoke:{passed,total}}(M4)
-    GET/POST /prompt/publish-requests     게시 요청 목록/생성
-    POST    /prompt/publish-requests/{id}/approve|reject|cancel
-    POST    /guardrails/masking/validate  마스킹 정규식 서버 판정(M6)
+  1. **초안은 서버가 아니라 화면 로컬(localStorage)이다.** 서버는 GET /prompt/draft 로
+     게시본 기준값만 주고, 편집은 로컬에 쌓이다가 평가·게시 때 본문으로 실려 온다.
+     (PUT draft / discard 는 계약 파일에 @deprecated 로 남아 있어 호환 스텁만 둔다.)
+  2. **게시 요청/승인 2단계는 없앴다(팀 결정 2026-08-04).** EDITOR 이상이 바로 게시한다.
+     사전 차단은 회귀 게이트가, 사후 추적은 활동 로그(AD-011)와 긴급 롤백이 맡는다.
 
-## 초안 상태는 서버가 갖는다 (M2)
+## 엔드포인트 (화면이 실제로 부르는 것)
+    GET  /prompt/draft                      게시본 기준값 -> PromptDraft
+    POST /prompt/evaluate {draft}           전후 비교 실측 -> PromptEvaluation (무상태)
+    POST /prompt/publish  {draft,gate_passed}+reason -> PublishResult {version, smoke}
+    GET  /prompt/versions?page&size         -> Page<PromptVersion>
+    POST /prompt/versions/{v}/rollback      그 버전 내용으로 기준값 재구성 -> PromptDraft
+    POST /prompt/versions/{v}/emergency-rollback  ADMIN+재인증 -> PromptVersion
+    POST /guardrails/masking/validate       정규식 서버 판정 -> ValidationResult
 
-프론트는 diff 를 계산하지 않는다. PUT 마다 서버가 change_count 를 올리고, 게시본(없으면
-코드 기본값) 대비 어느 구획이 바뀌었는지(dirty)와 글자 수를 계산해 돌려준다. **내용이
-실제로 바뀌면 evaluation 을 비운다** — 평가는 특정 내용의 지문(signature)에 대한 판정이라
-내용이 달라지면 무효다. publish 는 그 지문이 일치할 때만 게시를 허용한다.
+## 프롬프트 ⇄ 원칙(principles) 변환
 
-## Smoke 는 실측이다 — 수 분짜리 동기 호출
+화면은 시스템 프롬프트를 "번호 붙은 원칙" 행들로 편집한다. 서버가 전문(SYSTEM_INSTRUCTION)
+과 행 배열을 양방향 변환한다:
+  - 분해: 머리말(역할 소개)과 "다음 원칙을 반드시 지키세요:" 아래 번호 항목들로 나눈다.
+  - **마커 규칙([SOURCE_USED]/[NO_SOURCE])은 잠금 원칙**이다 — 출처 부착·사후 판정
+    (source_check)이 전부 이 마커에 걸려 있어 화면에서 지울 수 없어야 한다. 분해 시
+    편집 목록에서 빼서 locked_principle 로 주고, 조립 시 서버가 **무조건 마지막 번호로
+    다시 붙인다**(클라이언트가 빼고 보내도 살아남는다).
 
-evaluate 는 골든셋(evaluation_dataset) 상위 SMOKE_TOTAL 문항을 **초안 프롬프트로 실제
-생성**해 판정한다(검색 -> 초안 SI·few-shot 으로 프롬프트 조립 -> HCX 호출 -> 마커·금칙어
-검사). 문항당 HCX 1콜이라 2~4분 걸린다. admin_evaluations.apply 가 같은 이유로 동기인
-것과 같은 사정이고(워커 예정), 지어낸 숫자로 게이트를 통과시키지 않기 위한 선택이다.
-게시(publish)는 저장된 평가를 재사용하므로 LLM 을 다시 부르지 않는다.
+## 평가(전후 비교)와 게시 Smoke — 실측이다
 
-판정 축(promptops 계약의 회귀/인용/중대 위반):
-    회귀     = 근거가 검색된 문항에서 정상 답변(비거절)이 나오는가
-    인용     = 그 답변이 [SOURCE_USED] 마커를 다는가(출처 부착 규약 유지)
-    중대 위반 = 초안 가드레일 금칙어가 답변에 나타나는가(0건이어야 함)
+evaluate: 골든셋에서 인스코프 4문항 + 범위외 2문항을 뽑아, 같은 검색 근거로 현행(전)과
+초안(후) 프롬프트 각각 실제 생성한다(HCX 12콜, 동기 ~1분). 판정 축은 화면 게이트 그대로 —
+출처 부착(인스코프에서 [SOURCE_USED]) · 범위외 거절([NO_SOURCE]) · 가드레일(금칙어 0건).
+전{양호}→후{불량}이 REGRESSED 다. **서버에 아무것도 저장하지 않는다**(계약: 일시 평가).
 
-## 게시본이 없으면 파이프라인은 코드 상수를 쓴다
+publish: 초안 프롬프트로 Smoke 30문항을 실제 생성해(HCX 30콜, 동기 ~1-2분) 전건 통과면
+새 버전을 현행으로 활성화하고, 미달이면 **버전은 '실패'로 기록하되 현행을 유지**한다.
+gate_passed(클라이언트가 보낸 직전 평가 결과)는 진입 조건일 뿐 최종 판정은 Smoke 다.
 
-prompt_versions 가 비어 있는 것은 정상 상태다 — src/runtime_config.get_prompt() 가
-prompt_builder 의 SYSTEM_INSTRUCTION 등으로 떨어진다. 게시·롤백 후에는
-runtime_config.invalidate("prompt") 로 같은 프로세스에 즉시 반영한다.
+## 폴백
 
-## ⚠️ 미확정(M7): 게시·승인에 비밀번호 재확인을 걸지 않았다
-
-CM-DF-001 2.3 고위험 3종(전체 캐시 비우기·권한 변경·롤백)에 게시가 없어 화면도 재인증
-입력을 뺐다. 재인증은 긴급 롤백에만 건다. 다르게 가려면 프론트에 먼저 알릴 것.
+게시본이 없으면 파이프라인은 코드 상수(prompt_builder)로 동작한다(runtime_config).
+게시·롤백 후 runtime_config.invalidate("prompt") 로 같은 프로세스에 즉시 반영한다.
+버전 표기는 'v1.N'(N = DB 정수 버전), 코드 기본값은 v1.0 이다.
 """
-import hashlib
-import json
 import logging
 import re
-import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
@@ -65,7 +60,7 @@ from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다).
 import prompt_builder
 import runtime_config
-from schema_admin import prompt_drafts, prompt_publish_requests, prompt_versions
+from schema_admin import prompt_versions
 
 logger = logging.getLogger(__name__)
 
@@ -75,102 +70,131 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin)],
 )
 
+KST = timezone(timedelta(hours=9))
 ROLE_RANK = {"VIEWER": 0, "OPERATOR": 1, "EDITOR": 2, "ADMIN": 3}
 
 ACTION_PUBLISH = "프롬프트 게시"
 ACTION_ROLLBACK = "프롬프트 롤백"
 ACTION_EMERGENCY = "프롬프트 긴급 롤백"
-ACTION_REQUEST = "프롬프트 게시 요청"
-ACTION_APPROVE = "프롬프트 게시 승인"
-ACTION_REJECT = "프롬프트 게시 반려"
-ACTION_CANCEL = "프롬프트 게시 요청 취소"
 
-# Smoke 문항 수. admin_evaluations.SMOKE_REQUIRED(30of30 게이트)와 같은 값 — 30 미만이면
-# 전건 통과여도 게이트가 아니다.
+# Smoke 문항 수 — 서버가 정하는 값(화면 목도 "서버가 정한다"고 명시). 전건 통과만 활성화.
 SMOKE_TOTAL = 30
+# 전후 비교 평가 문항 수(인스코프/범위외). HCX 콜 수 = (IN+OOS)×2 라 작게 유지한다.
+EVAL_IN_SCOPE = 4
+EVAL_OUT_OF_SCOPE = 2
 
-# 초안의 세 구획(M2 dirty 축). guardrails 는 초안 객체 안에 함께 실린다(M3).
-SECTIONS = ("prompt", "fewshot", "guardrail")
+# 잠금 원칙의 화면 표시 라벨. 실제 규칙 전문은 서버가 조립 시 붙인다(모듈 주석).
+LOCKED_LABEL = "답변 첫 줄 근거 사용 마커([SOURCE_USED]/[NO_SOURCE]) 표기 — 시스템 필수 규칙"
 
-# 마스킹 정규식 과대 매칭 판정용 보존 표본(M6). api/masking.py 의 보존 원칙과 같은 목록 —
-# 이 서비스 답변의 핵심인 금액·기한·연락처·page_id·URL 이 가려지면 안 된다.
+# 마스킹 정규식 과대 매칭 판정용 보존 표본 — 이 서비스 답변의 핵심(금액·날짜·수량·기관
+# 연락처·page_id·URL)이 가려지면 안 된다. api/masking.py 의 계좌번호 제외 결정과 같은 원칙.
 PROTECTED_SAMPLES = [
     "5,000만원", "50000000원", "1억원 한도",
     "2024-03-15", "2024년 3월 15일",
-    "1332", "02-758-0114",   # 기관 대표번호류 — 상담 연락처는 답변의 핵심 정보다
+    "1332", "02-758-0114",
     "deposit_protection_faq#3",
     "https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do",
 ]
-# 단, 개인 연락처 형태(010-)는 가려지는 것이 목적이므로 보존 표본에서 뺀다.
 MASKING_MUST_MATCH_HINT = "010-1234-5678"
 
 
 class PromptConflictError(ApiError):
-    """게시·승인 불가(409). admin_rag_params.ParamsConflictError 와 같은 방식."""
     status_code = 409
     retryable = False
 
 
-# ──────────────────────────────── 초안 도우미 ────────────────────────────────
+# ──────────────────────── 프롬프트 ⇄ 원칙 변환 ────────────────────────
 
-def _default_content() -> dict:
-    """초안이 없을 때의 바탕 = 현재 게시본, 그것도 없으면 코드 상수(문서화된 기본값)."""
-    current = None
-    return {
-        "system_instruction": prompt_builder.SYSTEM_INSTRUCTION,
-        "few_shot": prompt_builder.FEW_SHOT_EXAMPLES,
-        "no_evidence_notice": prompt_builder.NO_EVIDENCE_NOTICE,
-        "guardrails": {"blocklist": {"active": False, "items": []},
-                       "masking": {"active": False, "items": []}},
-    } if current is None else current
+_NUMBERED = re.compile(r"^\d+\.\s*", re.MULTILINE)
 
 
-def _baseline_content(db) -> dict:
-    """dirty 판정의 기준선 — 현재 게시본이 있으면 그것, 없으면 코드 기본값."""
-    row = db.execute(
-        select(prompt_versions).where(prompt_versions.c.is_current)
-    ).first()
+def split_instruction(full: str) -> tuple[str, list, str]:
+    """전문 -> (머리말, 편집 가능 원칙들, 잠금 원칙 전문).
+
+    번호 항목은 '^숫자. ' 로 가른다(원칙 하나가 여러 줄이어도 다음 번호 전까지 한 항목).
+    마커 규칙은 '[SOURCE_USED]' 포함 여부로 식별해 편집 목록에서 뺀다.
+    """
+    marker_positions = [m.start() for m in _NUMBERED.finditer(full)]
+    if not marker_positions:
+        return full, [], ""
+    header = full[:marker_positions[0]].rstrip()
+    items = []
+    for i, start in enumerate(marker_positions):
+        end = marker_positions[i + 1] if i + 1 < len(marker_positions) else len(full)
+        items.append(_NUMBERED.sub("", full[start:end].strip(), count=1))
+    locked = next((it for it in items if "[SOURCE_USED]" in it), "")
+    principles = [it for it in items if it != locked]
+    return header, principles, locked
+
+
+def assemble_instruction(header: str, principles: list, locked: str) -> str:
+    """원칙들 -> 전문. **잠금(마커) 규칙을 서버가 무조건 마지막 번호로 붙인다** — 클라이언트가
+    빼고 보내도, 마커 규칙이 사라져 출처 부착 전체가 무너지는 사고를 서버가 막는다."""
+    rules = [p for p in principles if str(p).strip()]
+    if locked:
+        rules.append(locked)
+    numbered = "\n".join(f"{i}. {r}" for i, r in enumerate(rules, 1))
+    # 머리말은 자체적으로 "…지키세요:" 줄로 끝난다 — 빈 줄 없이 바로 규칙이 이어져야
+    # 원본(SYSTEM_INSTRUCTION)과 왕복 시 동일해진다(테스트로 고정).
+    return f"{header}\n{numbered}"
+
+
+def _current_row(db):
+    return db.execute(select(prompt_versions).where(prompt_versions.c.is_current)).first()
+
+
+def _effective(db) -> dict:
+    """지금 파이프라인이 실제로 쓰는 프롬프트 구성 — 게시본이 있으면 그것, 없으면 코드 상수."""
+    row = _current_row(db)
     if row is None:
-        return _default_content()
+        return {"version": 0, "system_instruction": prompt_builder.SYSTEM_INSTRUCTION,
+                "few_shot": prompt_builder.FEW_SHOT_EXAMPLES,
+                "guardrails": None, "updated_at": None}
+    return {"version": row.version, "system_instruction": row.system_instruction,
+            "few_shot": row.few_shot or prompt_builder.FEW_SHOT_EXAMPLES,
+            "guardrails": row.guardrails, "updated_at": row.created_at}
+
+
+def _vstr(n: int) -> str:
+    return f"v1.{n}"
+
+
+def _parse_vstr(v: str) -> int:
+    m = re.fullmatch(r"v1\.(\d+)", v.strip())
+    if not m:
+        raise NotFoundError("해당 버전을 찾을 수 없습니다.")
+    return int(m.group(1))
+
+
+def _kst(dt: Optional[datetime]) -> str:
+    if dt is None:
+        return ""
+    aware = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return aware.astimezone(KST).isoformat()
+
+
+def build_draft_response(db, *, base: dict = None) -> dict:
+    """화면의 PromptDraft(기준값) — 편집은 로컬에서 하므로 change_count 0·dirty false 로 준다."""
+    base = base or _effective(db)
+    header, principles, locked = split_instruction(base["system_instruction"])
+    del header  # 화면은 원칙 행만 편집한다 — 머리말은 조립 시 서버가 유지
+    guardrails = base.get("guardrails") or {}
+    next_version = (db.execute(select(func.max(prompt_versions.c.version))).scalar_one() or 0) + 1
     return {
-        "system_instruction": row.system_instruction,
-        "few_shot": row.few_shot or prompt_builder.FEW_SHOT_EXAMPLES,
-        "no_evidence_notice": row.no_evidence_notice or prompt_builder.NO_EVIDENCE_NOTICE,
-        "guardrails": row.guardrails or _default_content()["guardrails"],
-    }
-
-
-def content_signature(content: dict) -> str:
-    """초안 내용의 지문. 평가·게시가 '무엇에 대한 판정/게시인가'를 대조하는 근거다."""
-    canon = json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
-
-
-def compute_dirty(content: dict, baseline: dict) -> dict:
-    """구획별 변경 여부(M2). 프론트는 이 값으로 탭 변경 표시만 그린다 — diff 는 계산하지 않는다."""
-    return {
-        "prompt": (content.get("system_instruction") != baseline.get("system_instruction")
-                   or content.get("no_evidence_notice") != baseline.get("no_evidence_notice")),
-        "fewshot": content.get("few_shot") != baseline.get("few_shot"),
-        "guardrail": content.get("guardrails") != baseline.get("guardrails"),
-    }
-
-
-def _draft_row(db):
-    return db.execute(select(prompt_drafts).order_by(prompt_drafts.c.updated_at.desc())).first()
-
-
-def _draft_response(db, row) -> dict:
-    content = dict(row.content)
-    return {
-        "content": content,
-        "change_count": row.change_count,
-        "dirty": row.dirty or compute_dirty(content, _baseline_content(db)),
-        "char_count": row.char_count or len(content.get("system_instruction") or ""),
-        "evaluation": row.evaluation,
-        "base_version": row.base_version,
-        "updated_by": row.updated_by,
-        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "principles": [{"id": f"p{i+1}", "text": t, "dirty": False}
+                       for i, t in enumerate(principles)],
+        "fewshots": [{"id": f"fs{i+1}", "question": ex["question"], "answer": ex["answer"]}
+                     for i, ex in enumerate(base["few_shot"])],
+        "blocklist": guardrails.get("blocklist") or {"active": False, "items": []},
+        "masking": guardrails.get("masking") or {"active": False, "items": []},
+        "draft_version": _vstr(next_version),
+        "base_version": _vstr(base["version"]),
+        "base_updated_at": _kst(base.get("updated_at")),
+        "change_count": 0,
+        "locked_principle": LOCKED_LABEL,
+        "char_count": len(base["system_instruction"]),
+        "dirty": {"prompt": False, "fewshot": False, "guardrail": False},
+        "evaluation": None,
     }
 
 
@@ -185,488 +209,350 @@ def _require_request_id(body: dict) -> None:
         raise BadRequestError("request_id가 필요합니다.")
 
 
-def _blocklist_patterns(guardrails: dict) -> list:
-    """초안 가드레일에서 금칙어 목록을 꺼낸다. promptops 계약의 item 이 {word} 또는
-    {pattern} 형태라 둘 다 받는다(방어적 — 정본은 초안 쪽이다, M3)."""
+def _draft_to_content(db, draft: dict) -> dict:
+    """화면이 보낸 PromptDraftContent -> 서버 내부 구성(전문 SI + few_shot + guardrails).
+
+    머리말과 잠금 규칙은 **현행 게시본(없으면 코드 상수)에서 가져와** 유지한다 — 화면은
+    원칙 행만 편집하고, 마커 규칙은 어떤 경우에도 살아남아야 한다(모듈 주석).
+    """
+    base = _effective(db)
+    header, _base_principles, locked = split_instruction(base["system_instruction"])
+    if not locked:   # 방어 — 어떤 이유로든 현행에서 마커 규칙을 못 찾으면 코드 상수에서 가져온다
+        _, _, locked = split_instruction(prompt_builder.SYSTEM_INSTRUCTION)
+    principles = [str(p.get("text") or "").strip()
+                  for p in (draft.get("principles") or []) if str(p.get("text") or "").strip()]
+    if not principles:
+        raise BadRequestError("원칙이 비어 있습니다. 최소 한 줄은 있어야 합니다.")
+    fewshots = [{"question": f.get("question"), "answer": f.get("answer")}
+                for f in (draft.get("fewshots") or [])
+                if str(f.get("question") or "").strip() and str(f.get("answer") or "").strip()]
+    guardrails = {"blocklist": draft.get("blocklist") or {"active": False, "items": []},
+                  "masking": draft.get("masking") or {"active": False, "items": []}}
+    # 미통과 마스킹 규칙이 섞이면 400 — 검증(validated)은 저장 전 서버 판정이 정본이다.
+    for item in guardrails["masking"].get("items") or []:
+        if isinstance(item, dict) and item.get("validated") is False:
+            raise BadRequestError("검증을 통과하지 못한 마스킹 규칙이 있습니다. 먼저 검증해 주세요.")
+    return {"system_instruction": assemble_instruction(header, principles, locked),
+            "few_shot": fewshots or base["few_shot"], "guardrails": guardrails}
+
+
+def _blockwords(guardrails: dict) -> list:
     block = (guardrails or {}).get("blocklist") or {}
     if not block.get("active", True):
         return []
     words = []
     for item in block.get("items") or []:
-        word = item if isinstance(item, str) else (item.get("word") or item.get("pattern") or "")
-        if str(word).strip():
-            words.append(str(word).strip())
+        w = item if isinstance(item, str) else (item.get("pattern") or "")
+        if str(w).strip():
+            words.append(str(w).strip())
     return words
 
 
-# ──────────────────────────────── 초안 ────────────────────────────────
+# ──────────────────────── 생성 실측 공통 ────────────────────────
 
-@router.get("/prompt/draft")
-def get_draft(admin: CurrentAdmin, db: DbSession):
-    """초안이 없으면 기준선(게시본 또는 코드 기본값)으로 새 초안 모양을 돌려준다 —
-    화면이 빈 편집기 대신 현행 내용에서 시작하게."""
-    del admin
-    row = _draft_row(db)
-    if row is None:
-        content = _baseline_content(db)
-        return {
-            "content": content, "change_count": 0,
-            "dirty": {s: False for s in SECTIONS},
-            "char_count": len(content.get("system_instruction") or ""),
-            "evaluation": None, "base_version": None,
-            "updated_by": None, "updated_at": None,
-        }
-    return _draft_response(db, row)
-
-
-@router.put("/prompt/draft")
-def save_draft(body: dict, me: CurrentAdmin, db: DbSession):
-    """초안 저장(M2). 내용이 실제로 바뀌었을 때만 change_count 를 올리고 evaluation 을
-    비운다 — 같은 내용을 다시 저장했다고 평가를 무효화하면 화면이 평가를 반복해야 한다."""
-    _require_editor(me, "프롬프트 초안 저장")
-    _require_request_id(body)
-
-    baseline = _baseline_content(db)
-    row = _draft_row(db)
-    old_content = dict(row.content) if row else baseline
-
-    content = dict(old_content)
-    for key in ("system_instruction", "few_shot", "no_evidence_notice", "guardrails"):
-        if key in body:
-            content[key] = body[key]
-    if not str(content.get("system_instruction") or "").strip():
-        raise BadRequestError("시스템 프롬프트는 비울 수 없습니다.")
-
-    # 미통과 마스킹 규칙이 섞인 저장은 400 으로 막는다(M6).
-    masking = (content.get("guardrails") or {}).get("masking") or {}
-    for item in masking.get("items") or []:
-        if isinstance(item, dict) and item.get("validated") is False:
-            raise BadRequestError("검증을 통과하지 못한 마스킹 규칙이 있습니다. 먼저 검증해 주세요.")
-
-    changed = content != old_content
-    dirty = compute_dirty(content, baseline)
-    char_count = len(content.get("system_instruction") or "")
-    now = datetime.now(timezone.utc)
-    current = db.execute(
-        select(prompt_versions.c.version).where(prompt_versions.c.is_current)
-    ).scalar()
-
-    if row is None:
-        change_count = 1 if changed else 0
-        db.execute(insert(prompt_drafts).values(
-            content=content, change_count=change_count, dirty=dirty,
-            char_count=char_count, evaluation=None, base_version=current,
-            updated_by=me.email, updated_at=now))
-    else:
-        change_count = row.change_count + (1 if changed else 0)
-        db.execute(update(prompt_drafts).where(prompt_drafts.c.id == row.id).values(
-            content=content, change_count=change_count, dirty=dirty, char_count=char_count,
-            # 내용이 바뀌면 평가 무효(M2). 안 바뀌었으면 기존 평가를 유지한다.
-            evaluation=None if changed else row.evaluation,
-            updated_by=me.email, updated_at=now))
-    db.commit()
-    return {"change_count": change_count, "dirty": dirty, "char_count": char_count,
-            "evaluation": None if (changed or row is None) else row.evaluation}
-
-
-@router.post("/prompt/draft/discard")
-def discard_draft(body: dict, me: CurrentAdmin, db: DbSession):
-    _require_editor(me, "프롬프트 초안 폐기")
-    _require_request_id(body)
-    row = _draft_row(db)
-    if row is not None:
-        db.execute(prompt_drafts.delete().where(prompt_drafts.c.id == row.id))
-        db.commit()
-    return {"discarded": row is not None}
-
-
-# ──────────────────────────────── 평가(Smoke) ────────────────────────────────
-
-def _run_smoke(db, content: dict) -> dict:
-    """초안 프롬프트로 Smoke SMOKE_TOTAL 문항 실측(모듈 주석 — 문항당 HCX 1콜, 동기 수 분).
-
-    실서비스와 같은 검색 경로로 근거를 뽑고, 초안의 SI·few-shot·notice 로 프롬프트를
-    조립해 HCX 를 부른다. 판정: 회귀(비거절) · 인용([SOURCE_USED]) · 중대 위반(금칙어 0건).
-    """
+def _generate(question: str, si: str, few_shot: list) -> tuple[str, bool, list]:
+    """실서비스와 같은 검색 근거로 1문항 생성 -> (본문, 마커 SOURCE_USED, 출처 목록)."""
+    from candidate_ranking import gate_low_relevance, top_k_cut
+    from citation import format_all_citations
     from llm_client import call_hyperclova
     from retrieval import route_search_chunks
-    from candidate_ranking import gate_low_relevance, top_k_cut
-    from schema import evaluation_dataset
 
-    rows = db.execute(
+    top = gate_low_relevance(top_k_cut(route_search_chunks(question, k=20), k=5))
+    context = "\n\n".join(text for _, _, text in top) if top else "(근거 없음)"
+    examples = "\n\n".join(f"질문: {ex['question']}\n답변: {ex['answer']}" for ex in few_shot)
+    human = (f"{examples}\n\n--- 아래는 실제 질문입니다 ---\n\n"
+             f"근거 자료:\n{context}\n\n질문: {question}\n답변:")
+    raw = call_hyperclova([("system", si), ("human", human)])
+    body, marker_used = prompt_builder._strip_no_source_marker(raw)
+    sources = format_all_citations([cid for cid, _, _ in top]) if top else []
+    return body, marker_used, sources
+
+
+def _eval_questions(db):
+    """전후 비교용 고정 문항 — 골든셋에서 인스코프 앞 N + 범위외 앞 M (결정론적 순서)."""
+    from schema import evaluation_dataset
+    in_scope = db.execute(
         select(evaluation_dataset.c.question)
         .where(evaluation_dataset.c.is_active.is_(True),
                evaluation_dataset.c.expected_sources.isnot(None))
-        .order_by(evaluation_dataset.c.question_id)
-        .limit(SMOKE_TOTAL)
-    ).all()
-    if len(rows) < SMOKE_TOTAL:
-        raise BadRequestError(
-            f"Smoke 에 필요한 문항이 부족합니다({len(rows)}/{SMOKE_TOTAL}).")
+        .order_by(evaluation_dataset.c.question_id).limit(EVAL_IN_SCOPE)
+    ).scalars().all()
+    oos = db.execute(
+        select(evaluation_dataset.c.question)
+        .where(evaluation_dataset.c.is_active.is_(True),
+               evaluation_dataset.c.expected_sources.is_(None))
+        .order_by(evaluation_dataset.c.question_id).limit(EVAL_OUT_OF_SCOPE)
+    ).scalars().all()
+    return in_scope, oos
 
-    si = content["system_instruction"]
-    few_shot = content.get("few_shot") or []
-    examples = "\n\n".join(f"질문: {ex['question']}\n답변: {ex['answer']}" for ex in few_shot)
-    blockwords = _blocklist_patterns(content.get("guardrails") or {})
 
-    passed = cited = 0
-    violations = []
-    for r in rows:
-        top = gate_low_relevance(top_k_cut(route_search_chunks(r.question, k=20), k=5))
-        context = "\n\n".join(text for _, _, text in top) if top else "(근거 없음)"
-        human = (f"{examples}\n\n--- 아래는 실제 질문입니다 ---\n\n"
-                 f"근거 자료:\n{context}\n\n질문: {r.question}\n답변:")
-        try:
-            raw = call_hyperclova([("system", si), ("human", human)])
-        except Exception:  # noqa: BLE001 — 한 문항의 호출 실패는 그 문항 실패로 집계
-            logger.warning("smoke HCX 호출 실패: %s", r.question, exc_info=True)
-            continue
-        body_text, marker_used = prompt_builder._strip_no_source_marker(raw)
-        hit_words = [w for w in blockwords if w in body_text]
-        refused = "안내가 어렵" in body_text or "범위를 벗어난" in body_text
-        if hit_words:
-            violations.append({"question": r.question, "words": hit_words})
-        if marker_used:
-            cited += 1
-        # 근거가 검색된 문항이므로 정상 답변(비거절)+금칙어 0건이 통과다.
-        if top and not refused and not hit_words:
-            passed += 1
+# ──────────────────────── 엔드포인트 ────────────────────────
 
-    return {
-        "smoke": {"passed": passed, "total": SMOKE_TOTAL},
-        "metrics": [
-            {"label": "회귀(정상 답변)", "value": f"{passed}/{SMOKE_TOTAL}"},
-            {"label": "인용([SOURCE_USED])", "value": f"{cited}/{SMOKE_TOTAL}"},
-            {"label": "중대 위반(금칙어)", "value": f"{len(violations)}건"},
-        ],
-        "violations": violations[:5],   # 상세는 앞 5건만 — 응답이 무한히 크지 않게
-        "at": datetime.now(timezone.utc).isoformat(),
-    }
+@router.get("/prompt/draft")
+def get_draft(admin: CurrentAdmin, db: DbSession):
+    """편집 시작점 — 게시본 기준값. 편집은 화면 로컬에 쌓인다(서버 초안 없음)."""
+    del admin
+    return build_draft_response(db)
+
+
+@router.put("/prompt/draft")
+def save_draft_deprecated(body: dict, me: CurrentAdmin, db: DbSession):
+    """@deprecated — AD-008 은 로컬 초안이라 부르지 않는다(계약 파일 주석). 다른 화면과의
+    계약 대조를 위해 시그니처만 유지하고, 서버 상태 없이 기준값을 돌려준다."""
+    del body
+    _require_editor(me, "프롬프트 초안 저장")
+    return build_draft_response(db)
+
+
+@router.post("/prompt/draft/discard")
+def discard_draft_deprecated(body: dict, me: CurrentAdmin, db: DbSession):
+    """@deprecated — 되돌리기는 화면의 [초기화](로컬 비우기)로 끝난다. 기준값만 돌려준다."""
+    del body
+    _require_editor(me, "프롬프트 초안 폐기")
+    return build_draft_response(db)
 
 
 @router.post("/prompt/evaluate")
-def evaluate_draft(body: dict, me: CurrentAdmin, db: DbSession):
+def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
+    """[전후 비교] — 같은 검색 근거로 현행(전)/초안(후)을 실제 생성해 비교한다.
+    서버 초안을 만들지도 바꾸지도 않는다(무상태). ⚠️ HCX (4+2)×2 콜, 동기 ~1분."""
     _require_editor(me, "프롬프트 평가")
     _require_request_id(body)
-    row = _draft_row(db)
-    if row is None:
-        raise BadRequestError("평가할 초안이 없습니다. 먼저 저장해 주세요.")
-    content = dict(row.content)
-    evaluation = _run_smoke(db, content)
-    evaluation["signature"] = content_signature(content)
-    db.execute(update(prompt_drafts).where(prompt_drafts.c.id == row.id)
-               .values(evaluation=evaluation))
-    db.commit()
-    return evaluation
+    content = _draft_to_content(db, dict(body.get("draft") or {}))
+    base = _effective(db)
+    blockwords = _blockwords(content["guardrails"])
 
+    in_scope, oos = _eval_questions(db)
+    if not in_scope:
+        raise BadRequestError("평가 문항이 없습니다(evaluation_dataset 비어 있음).")
 
-# ──────────────────────────────── 게시 · 이력 · 롤백 ────────────────────────────
+    items = []
+    src_ok = 0
+    oos_ok = 0
+    guard_hits = 0
+    keep = improved = regressed = 0
+    for kind, questions in (("in", in_scope), ("oos", oos)):
+        for q in questions:
+            b_body, b_marker, b_sources = _generate(q, base["system_instruction"], base["few_shot"])
+            a_body, a_marker, a_sources = _generate(q, content["system_instruction"], content["few_shot"])
+            hits = [w for w in blockwords if w in a_body]
+            guard_hits += len(hits)
+            if kind == "in":
+                before_ok, after_ok = b_marker, a_marker and not hits
+                if after_ok:
+                    src_ok += 1
+                axis = "출처 부착"
+            else:
+                before_ok, after_ok = (not b_marker), (not a_marker) and not hits
+                if after_ok:
+                    oos_ok += 1
+                axis = "범위외 거절"
+            if before_ok and not after_ok:
+                verdict, note = "REGRESSED", f"{axis} 회귀"
+                regressed += 1
+            elif not before_ok and after_ok:
+                verdict, note = "IMPROVED", f"{axis} 개선"
+                improved += 1
+            else:
+                verdict, note = "KEEP", (f"{axis} 유지" if after_ok else f"{axis} 전후 모두 미통과")
+                keep += 1
+            if hits:
+                note += f" · 금칙어 {len(hits)}건"
+            items.append({
+                "id": f"ev{len(items)+1}", "question": q, "verdict": verdict, "note": note,
+                "before": {"answer": b_body, "sources": b_sources},
+                "after": {"answer": a_body, "sources": a_sources},
+            })
 
-def _publish_content(db, request: Request, me, content: dict, evaluation: dict,
-                     *, via: str) -> dict:
-    """게시 공통 경로 — publish(직접)와 approve(승인)가 같은 검증·같은 기록을 거친다.
-
-    게시본은 덮어쓰지 않는다(긴급 롤백이 직전 본문을 필요로 한다). is_current 는 부분
-    유니크가 1개를 강제하므로 기존 current 를 먼저 내리고 새 행을 올린다(한 트랜잭션).
-    """
-    if not evaluation:
-        raise PromptConflictError("평가되지 않은 내용은 게시할 수 없습니다. 먼저 평가를 실행해 주세요.")
-    if evaluation.get("signature") != content_signature(content):
-        raise PromptConflictError("평가 이후 내용이 수정되었습니다. 다시 평가해 주세요.")
-    smoke = evaluation.get("smoke") or {}
-    if not (smoke.get("total") == SMOKE_TOTAL and smoke.get("passed") == SMOKE_TOTAL):
-        raise PromptConflictError(
-            f"Smoke {smoke.get('passed', 0)}/{smoke.get('total', 0)} — "
-            f"{SMOKE_TOTAL}문항 전건 통과해야 게시할 수 있습니다. 현행 프롬프트가 유지됩니다.")
-
-    now = datetime.now(timezone.utc)
-    new_version = (db.execute(select(func.max(prompt_versions.c.version))).scalar_one() or 0) + 1
-    db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
-               .values(is_current=False))
-    db.execute(insert(prompt_versions).values(
-        version=new_version, is_current=True,
-        system_instruction=content["system_instruction"],
-        few_shot=content.get("few_shot"),
-        no_evidence_notice=content.get("no_evidence_notice"),
-        guardrails=content.get("guardrails"),
-        smoke_passed=smoke["passed"], smoke_total=smoke["total"],
-        published_by=me.email,
-    ))
-    # 게시로 초안의 역할이 끝난다 — 남겨 두면 '게시된 것과 같은 초안'이 dirty 없이 떠돈다.
-    row = _draft_row(db)
-    if row is not None:
-        db.execute(prompt_drafts.delete().where(prompt_drafts.c.id == row.id))
-    db.commit()
-    runtime_config.invalidate("prompt")   # 같은 프로세스는 즉시 반영(CLI 는 TTL 60초)
-
-    write_activity_log(
-        db, request, actor=me.email, actor_role=me.role, action=ACTION_PUBLISH,
-        target=f"프롬프트 v{new_version}",
-        detail={"version": new_version, "via": via, "smoke": smoke},
-    )
-    return {"version": new_version, "smoke": smoke}
+    gate = {
+        "passed": (src_ok == len(in_scope) and oos_ok == len(oos)
+                   and guard_hits == 0 and regressed == 0),
+        "source_attached": {"passed": src_ok == len(in_scope),
+                            "count": src_ok, "total": len(in_scope)},
+        "out_of_scope": {"passed": oos_ok == len(oos), "count": oos_ok, "total": len(oos)},
+        "guardrail": {"passed": guard_hits == 0},
+    }
+    return {"ran_at": _kst(datetime.now(timezone.utc)),
+            "summary": {"total": len(items), "keep": keep,
+                        "improved": improved, "regressed": regressed},
+            "items": items, "gate": gate}
 
 
 @router.post("/prompt/publish")
 def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """초안 직접 게시(M4). 저장된 평가를 재사용하므로 LLM 을 다시 부르지 않는다.
-    재인증은 걸지 않는다(M7 미확정 — 모듈 주석)."""
+    """[게시] — 이 시점에 비로소 초안이 서버에 저장된다. Smoke 30문항을 새 프롬프트로 실측해
+    전건 통과면 현행으로 활성화, 미달이면 '실패' 버전으로 기록하고 **현행을 유지**한다.
+    ⚠️ HCX 30콜, 동기 ~1-2분."""
     _require_editor(me, "프롬프트 게시")
     _require_request_id(body)
-    row = _draft_row(db)
-    if row is None:
-        raise PromptConflictError("게시할 초안이 없습니다.")
-    return _publish_content(db, request, me, dict(row.content), row.evaluation, via="direct")
+    reason = str(body.get("reason") or "").strip()
+    if not reason:
+        raise BadRequestError("게시 사유를 입력해 주세요.")
+    if not body.get("gate_passed"):
+        raise PromptConflictError("직전 [초안 평가]의 게이트를 통과해야 게시할 수 있습니다.")
+    content = _draft_to_content(db, dict(body.get("draft") or {}))
+
+    from schema import evaluation_dataset
+    questions = db.execute(
+        select(evaluation_dataset.c.question)
+        .where(evaluation_dataset.c.is_active.is_(True),
+               evaluation_dataset.c.expected_sources.isnot(None))
+        .order_by(evaluation_dataset.c.question_id).limit(SMOKE_TOTAL)
+    ).scalars().all()
+    if len(questions) < SMOKE_TOTAL:
+        raise BadRequestError(f"Smoke 문항이 부족합니다({len(questions)}/{SMOKE_TOTAL}).")
+
+    blockwords = _blockwords(content["guardrails"])
+    passed = 0
+    for q in questions:
+        try:
+            a_body, marker, _src = _generate(q, content["system_instruction"], content["few_shot"])
+        except Exception:  # noqa: BLE001 — 한 문항 호출 실패 = 그 문항 실패
+            logger.warning("smoke 호출 실패: %s", q, exc_info=True)
+            continue
+        if marker and not any(w in a_body for w in blockwords):
+            passed += 1
+
+    activate = passed == SMOKE_TOTAL
+    new_version = (db.execute(select(func.max(prompt_versions.c.version))).scalar_one() or 0) + 1
+    if activate:
+        db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
+                   .values(is_current=False))
+    db.execute(insert(prompt_versions).values(
+        version=new_version, is_current=activate,
+        system_instruction=content["system_instruction"],
+        few_shot=content["few_shot"],
+        no_evidence_notice=prompt_builder.NO_EVIDENCE_NOTICE,
+        guardrails=content["guardrails"],
+        smoke_passed=passed, smoke_total=SMOKE_TOTAL,
+        published_by=me.email, reason=reason,
+    ))
+    db.commit()
+    if activate:
+        runtime_config.invalidate("prompt")
+
+    write_activity_log(
+        db, request, actor=me.email, actor_role=me.role, action=ACTION_PUBLISH,
+        target=f"프롬프트 {_vstr(new_version)}" + ("" if activate else " (Smoke 미달 — 현행 유지)"),
+        reason=reason,
+        detail={"version": new_version, "smoke": {"passed": passed, "total": SMOKE_TOTAL},
+                "activated": activate},
+    )
+    return {"version": _vstr(new_version), "smoke": {"passed": passed, "total": SMOKE_TOTAL}}
 
 
 @router.get("/prompt/versions")
-def list_versions(admin: CurrentAdmin, db: DbSession):
+def list_versions(admin: CurrentAdmin, db: DbSession, page: int = 1, size: int = 20):
     del admin
     rows = db.execute(
         select(prompt_versions).order_by(prompt_versions.c.version.desc())
     ).all()
-    return {"items": [{
-        "version": r.version, "is_current": r.is_current,
-        "char_count": len(r.system_instruction or ""),
-        "smoke": {"passed": r.smoke_passed, "total": r.smoke_total},
-        "published_by": r.published_by,
-        "created_at": r.created_at.isoformat() if r.created_at else None,
-    } for r in rows], "total": len(rows)}
-
-
-def _switch_current(db, target_version: int) -> None:
-    """is_current 를 target 으로 옮긴다. 새 행을 만들지 않는 이유: 게시본은 불변이고
-    롤백은 '어느 게시본이 켜져 있나'의 전환이라, 파라미터 롤백(값 복사)과 성격이 다르다."""
-    target = db.execute(
-        select(prompt_versions).where(prompt_versions.c.version == target_version)
-    ).first()
-    if target is None:
-        raise NotFoundError("해당 버전을 찾을 수 없습니다.")
-    if target.is_current:
-        raise BadRequestError("이미 적용 중인 버전입니다.")
-    db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
-               .values(is_current=False))
-    db.execute(update(prompt_versions).where(prompt_versions.c.version == target_version)
-               .values(is_current=True))
-    db.commit()
-    runtime_config.invalidate("prompt")
+    # 긴급 롤백 후보 = 현행이 아닌 것 중 Smoke 를 통과했던 가장 최신 버전(직전 정상본).
+    candidate = next((r.version for r in rows
+                      if not r.is_current and (r.smoke_passed or 0) >= (r.smoke_total or 0)
+                      and r.smoke_total), None)
+    items = [{
+        "version": _vstr(r.version),
+        "created_at": _kst(r.created_at),
+        "author": r.published_by or "",
+        "reason": r.reason or "",
+        "status": ("현행" if r.is_current
+                   else "실패" if (r.smoke_passed or 0) < (r.smoke_total or 0) else "보관"),
+        "emergency_candidate": r.version == candidate,
+    } for r in rows]
+    start = (page - 1) * size
+    return {"items": items[start:start + size], "total": len(items), "page": page, "size": size}
 
 
 @router.post("/prompt/versions/{version}/rollback")
-def rollback_version(version: int, body: dict, request: Request,
+def rollback_version(version: str, body: dict, request: Request,
                      me: CurrentAdmin, db: DbSession):
+    """[이 버전으로 롤백] — 그 버전 내용을 기준값(PromptDraft)으로 돌려준다. 화면이 이걸
+    로컬 초안으로 얹어 검토·재게시한다 — 현행 전환은 게시(Smoke)를 다시 거쳐야 한다."""
     _require_editor(me, "프롬프트 롤백")
     _require_request_id(body)
     reason = str(body.get("reason") or "").strip()
     if not reason:
-        raise BadRequestError("변경 사유를 입력해 주세요.")
-    before = db.execute(
-        select(prompt_versions.c.version).where(prompt_versions.c.is_current)
-    ).scalar()
-    _switch_current(db, version)
+        raise BadRequestError("사유를 입력해 주세요.")
+    n = _parse_vstr(version)
+    row = db.execute(select(prompt_versions).where(prompt_versions.c.version == n)).first()
+    if row is None:
+        raise NotFoundError("해당 버전을 찾을 수 없습니다.")
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_ROLLBACK,
-        target=f"프롬프트 v{before} -> v{version}", reason=reason,
-        detail={"from_version": before, "to_version": version},
+        target=f"프롬프트 {version} 내용을 초안으로 복원", reason=reason,
+        detail={"version": n},
     )
-    return {"version": version}
+    return build_draft_response(db, base={
+        "version": row.version, "system_instruction": row.system_instruction,
+        "few_shot": row.few_shot or prompt_builder.FEW_SHOT_EXAMPLES,
+        "guardrails": row.guardrails, "updated_at": row.created_at,
+    })
 
 
-@router.post("/prompt/versions/emergency-rollback")
-def emergency_rollback(body: dict, request: Request, me: ReauthedAdmin, db: DbSession):
-    """직전 버전으로 즉시 복귀. ADMIN + **서버 독립 재인증**(M5·P5 — me 가 ReauthedAdmin
-    이라 재확인 만료면 여기 닿기 전에 403). 본 요청 바디에 password 를 싣지 않는다 —
-    재확인은 POST /reauth 별도 호출로 먼저 끝난 상태다."""
+@router.post("/prompt/versions/{version}/emergency-rollback")
+def emergency_rollback(version: str, body: dict, request: Request,
+                       me: ReauthedAdmin, db: DbSession):
+    """긴급 롤백 — 지정 버전을 **즉시 현행으로 전환**한다(Smoke 재실행 없음 — 이미 통과한
+    게시본만 후보다). ADMIN + 서버 독립 재인증(me: ReauthedAdmin — 만료면 진입 전 403)."""
     if me.role != "ADMIN":
         raise ForbiddenError(f"긴급 롤백에는 ADMIN 권한이 필요합니다. 현재 권한은 {me.role}입니다.")
     _require_request_id(body)
-
-    current = db.execute(
-        select(prompt_versions.c.version).where(prompt_versions.c.is_current)
-    ).scalar()
-    if current is None:
-        raise BadRequestError("게시된 프롬프트가 없어 되돌릴 대상이 없습니다.")
-    previous = db.execute(
-        select(func.max(prompt_versions.c.version))
-        .where(prompt_versions.c.version < current)
-    ).scalar_one()
-    if previous is None:
-        raise BadRequestError("직전 버전이 없습니다(첫 게시본).")
-    _switch_current(db, previous)
-    write_activity_log(
-        db, request, actor=me.email, actor_role=me.role, action=ACTION_EMERGENCY,
-        target=f"프롬프트 v{current} -> v{previous}",
-        reason=str(body.get("reason") or "").strip() or "긴급 롤백",
-        detail={"from_version": current, "to_version": previous},
-    )
-    return {"version": previous, "rolled_back_from": current}
-
-
-# ──────────────────────────────── 게시 요청(승인 흐름) ────────────────────────
-
-@router.get("/prompt/publish-requests")
-def list_publish_requests(admin: CurrentAdmin, db: DbSession):
-    del admin
-    rows = db.execute(
-        select(prompt_publish_requests)
-        .order_by(prompt_publish_requests.c.requested_at.desc())
-    ).all()
-    return {"items": [{
-        "id": str(r.id), "status": r.status,
-        "requested_by": r.requested_by,
-        "requested_at": r.requested_at.isoformat() if r.requested_at else None,
-        "decided_by": r.decided_by,
-        "decided_at": r.decided_at.isoformat() if r.decided_at else None,
-        "reason": r.reason, "published_version": r.published_version,
-    } for r in rows], "total": len(rows)}
-
-
-@router.post("/prompt/publish-requests")
-def create_publish_request(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """게시 요청 생성. **요청 시점 초안 스냅샷을 함께 박는다** — draft_id 만 두면 승인자가
-    본 것과 실제 게시본이 달라져 승인 절차의 의미가 없어진다(스키마 주석)."""
-    _require_editor(me, "프롬프트 게시 요청")
-    _require_request_id(body)
-    row = _draft_row(db)
-    if row is None:
-        raise BadRequestError("게시를 요청할 초안이 없습니다.")
-    if not row.evaluation:
-        raise PromptConflictError("평가되지 않은 초안은 게시를 요청할 수 없습니다.")
-    pending = db.execute(
-        select(func.count()).select_from(prompt_publish_requests)
-        .where(prompt_publish_requests.c.status == "PENDING")
-    ).scalar_one()
-    if pending:
-        raise PromptConflictError("대기 중인 게시 요청이 이미 있습니다.")
-
-    req_id = uuid.uuid4()
-    # 스냅샷에 평가를 함께 넣는다 — 승인 시 이 평가로 게이트를 다시 검증한다(LLM 재호출 없음).
-    snapshot = {"content": dict(row.content), "evaluation": row.evaluation}
-    db.execute(insert(prompt_publish_requests).values(
-        id=req_id, draft_id=row.id, content=snapshot, status="PENDING",
-        requested_by=me.email))
-    db.commit()
-    write_activity_log(
-        db, request, actor=me.email, actor_role=me.role, action=ACTION_REQUEST,
-        target=f"게시 요청 {req_id}", detail={"draft_signature": row.evaluation.get("signature")},
-    )
-    return {"id": str(req_id), "status": "PENDING"}
-
-
-def _load_pending(db, request_id: str):
-    try:
-        rid = uuid.UUID(request_id)
-    except ValueError:
-        raise NotFoundError("게시 요청을 찾을 수 없습니다.")
-    row = db.execute(
-        select(prompt_publish_requests).where(prompt_publish_requests.c.id == rid)
-    ).first()
-    if row is None:
-        raise NotFoundError("게시 요청을 찾을 수 없습니다.")
-    if row.status != "PENDING":
-        raise PromptConflictError(f"이미 처리된 요청입니다(현재 상태: {row.status}).")
-    return row
-
-
-@router.post("/prompt/publish-requests/{request_id}/approve")
-def approve_publish_request(request_id: str, body: dict, request: Request,
-                            me: CurrentAdmin, db: DbSession):
-    """승인 = 스냅샷 게시. 재인증은 걸지 않는다(M7 미확정 — 모듈 주석)."""
-    if me.role != "ADMIN":
-        raise ForbiddenError(f"게시 승인에는 ADMIN 권한이 필요합니다. 현재 권한은 {me.role}입니다.")
-    _require_request_id(body)
-    row = _load_pending(db, request_id)
-    snapshot = dict(row.content)
-    result = _publish_content(db, request, me, dict(snapshot["content"]),
-                              snapshot.get("evaluation"), via=f"approve:{request_id}")
-    db.execute(update(prompt_publish_requests)
-               .where(prompt_publish_requests.c.id == row.id)
-               .values(status="APPROVED", decided_by=me.email,
-                       decided_at=datetime.now(timezone.utc),
-                       published_version=result["version"]))
-    db.commit()
-    write_activity_log(
-        db, request, actor=me.email, actor_role=me.role, action=ACTION_APPROVE,
-        target=f"게시 요청 {request_id} -> v{result['version']}",
-        detail={"request_id": request_id, "version": result["version"]},
-    )
-    return {**result, "request_status": "APPROVED"}
-
-
-@router.post("/prompt/publish-requests/{request_id}/reject")
-def reject_publish_request(request_id: str, body: dict, request: Request,
-                           me: CurrentAdmin, db: DbSession):
-    if me.role != "ADMIN":
-        raise ForbiddenError(f"게시 반려에는 ADMIN 권한이 필요합니다. 현재 권한은 {me.role}입니다.")
-    _require_request_id(body)
     reason = str(body.get("reason") or "").strip()
     if not reason:
-        raise BadRequestError("반려 사유를 입력해 주세요.")
-    row = _load_pending(db, request_id)
-    db.execute(update(prompt_publish_requests)
-               .where(prompt_publish_requests.c.id == row.id)
-               .values(status="REJECTED", decided_by=me.email,
-                       decided_at=datetime.now(timezone.utc), reason=reason))
+        raise BadRequestError("사유를 입력해 주세요.")
+    n = _parse_vstr(version)
+    row = db.execute(select(prompt_versions).where(prompt_versions.c.version == n)).first()
+    if row is None:
+        raise NotFoundError("해당 버전을 찾을 수 없습니다.")
+    if row.is_current:
+        raise BadRequestError("이미 현행 버전입니다.")
+    if (row.smoke_passed or 0) < (row.smoke_total or 0):
+        raise PromptConflictError("Smoke 미달로 기록된 버전은 긴급 롤백 대상이 아닙니다.")
+
+    before = db.execute(
+        select(prompt_versions.c.version).where(prompt_versions.c.is_current)
+    ).scalar()
+    db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
+               .values(is_current=False))
+    db.execute(update(prompt_versions).where(prompt_versions.c.version == n)
+               .values(is_current=True))
     db.commit()
+    runtime_config.invalidate("prompt")
+
     write_activity_log(
-        db, request, actor=me.email, actor_role=me.role, action=ACTION_REJECT,
-        target=f"게시 요청 {request_id}", reason=reason, detail={"request_id": request_id},
+        db, request, actor=me.email, actor_role=me.role, action=ACTION_EMERGENCY,
+        target=f"프롬프트 v1.{before} -> {version}", reason=reason,
+        detail={"from_version": before, "to_version": n},
     )
-    return {"id": request_id, "status": "REJECTED"}
+    return {"version": _vstr(n), "created_at": _kst(row.created_at),
+            "author": row.published_by or "", "reason": row.reason or "",
+            "status": "현행", "emergency_candidate": False}
 
 
-@router.post("/prompt/publish-requests/{request_id}/cancel")
-def cancel_publish_request(request_id: str, body: dict, request: Request,
-                           me: CurrentAdmin, db: DbSession):
-    """취소는 요청자 본인만 — 남의 요청을 지우는 건 반려(ADMIN)의 몫이다."""
-    _require_editor(me, "게시 요청 취소")
-    _require_request_id(body)
-    row = _load_pending(db, request_id)
-    if row.requested_by != me.email:
-        raise ForbiddenError("본인이 올린 게시 요청만 취소할 수 있습니다.")
-    db.execute(update(prompt_publish_requests)
-               .where(prompt_publish_requests.c.id == row.id)
-               .values(status="CANCELLED", decided_by=me.email,
-                       decided_at=datetime.now(timezone.utc)))
-    db.commit()
-    write_activity_log(
-        db, request, actor=me.email, actor_role=me.role, action=ACTION_CANCEL,
-        target=f"게시 요청 {request_id}", detail={"request_id": request_id},
-    )
-    return {"id": request_id, "status": "CANCELLED"}
-
-
-# ──────────────────────────────── 가드레일 검증 ────────────────────────────────
+# ──────────────────────── 가드레일 검증 ────────────────────────
 
 @router.post("/guardrails/masking/validate")
 def validate_masking_rule(body: dict, me: CurrentAdmin):
-    """마스킹 정규식 서버 판정(M6) -> {passed, sample_count, message}.
+    """마스킹 정규식 서버 판정 -> {passed, sample_count, message}.
 
-    두 가지를 본다. ① 정규식 문법 오류 ② 과대 매칭 — 보존 표본(PROTECTED_SAMPLES:
-    금액·날짜·수량·기관 연락처·page_id·URL)에 걸리면 그 규칙은 답변의 핵심 정보를
-    가리므로 미통과다. api/masking.py 가 계좌번호 정규식을 만들지 않기로 한 것과 같은
-    원칙이다("5,000만원"·"1332" 를 잡아먹는 패턴 금지).
-    """
+    ① 문법 오류 ② 과대 매칭(보존 표본이 가려지면 미통과 — 이 서비스 답변의 핵심이 숫자라서
+    숫자를 통째로 잡는 패턴이 들어오면 정답이 가려진다)."""
     _require_editor(me, "마스킹 규칙 검증")
     pattern = str(body.get("pattern") or "")
     if not pattern.strip():
         raise BadRequestError("pattern이 필요합니다.")
-
     try:
         compiled = re.compile(pattern)
     except re.error as exc:
         return {"passed": False, "sample_count": len(PROTECTED_SAMPLES),
                 "message": f"정규식 문법 오류: {exc}"}
-
-    over_matched = [s for s in PROTECTED_SAMPLES if compiled.search(s)]
-    if over_matched:
+    over = [s for s in PROTECTED_SAMPLES if compiled.search(s)]
+    if over:
         return {"passed": False, "sample_count": len(PROTECTED_SAMPLES),
                 "message": ("과대 매칭 — 보존해야 할 값이 가려집니다: "
-                            + ", ".join(over_matched[:3])
-                            + (" 외" if len(over_matched) > 3 else ""))}
-
-    matches_target = bool(compiled.search(MASKING_MUST_MATCH_HINT))
+                            + ", ".join(over[:3]) + (" 외" if len(over) > 3 else ""))}
+    hint = "" if compiled.search(MASKING_MUST_MATCH_HINT) else \
+        " (참고: 예시 개인 연락처 010-1234-5678 에는 걸리지 않는 패턴입니다.)"
     return {"passed": True, "sample_count": len(PROTECTED_SAMPLES),
-            "message": ("검증 통과."
-                        + ("" if matches_target
-                           else " (참고: 예시 개인 연락처 010-1234-5678 에는 걸리지 않는 패턴입니다.)"))}
+            "message": "검증 통과." + hint}
