@@ -239,6 +239,19 @@ def to_chat_response(finalized: list[SubAnswer], used_flags: list[bool], full_an
     )
 
 
+def _plan_labels(sub_plans: list) -> tuple[Optional[str], Optional[str]]:
+    """하위 계획들 -> (intent, retrieval_route) 로그 문자열.
+
+    복합 질문은 하위마다 intent·검색경로가 다를 수 있어 쉼표로 잇는다(단일이면 값 하나).
+    실패 경로는 sub_plans 가 비었거나(플래너 실패) 도중까지만 채워져 있을 수 있어 빈 목록도
+    받는다 — 그때는 둘 다 None 이다.
+    """
+    intents = ",".join(dict.fromkeys(sp.intent for sp in sub_plans)) or None
+    routes = ",".join(dict.fromkeys(
+        getattr(sp, "route", None) or "" for sp in sub_plans)).strip(",") or None
+    return intents, routes
+
+
 def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int) -> None:
     """실사용 질의 1건을 Supabase rag_runs 에 남긴다.
 
@@ -246,13 +259,14 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int)
     재조립하므로(파일 상단 참고), 여기서 따로 불러야 한다. 이 호출이 없으면 웹 챗봇 대화가
     DB에 한 줄도 남지 않고, request_id 가 저장되지 않아 피드백을 붙일 답변도 사라진다.
 
-    복합 질문은 하위마다 intent·검색경로가 다를 수 있어 쉼표로 잇는다(단일이면 값 하나).
+    status 는 resp.out_of_scope 에서 그대로 끌어온다 — to_chat_response 가 이미 "모든 하위가
+    근거 미사용" 으로 판정해 둔 값이라 여기서 다시 계산하지 않는다. 이 값이 안 실리면
+    AD-005 요약의 '범위 외' 집계가 영원히 0 이다.
+
     log_rag_run 은 내부에서 모든 예외를 삼키므로 호출부가 실패를 신경 쓰지 않아도 된다.
     """
-    from rag_logger import log_rag_run
-    intents = ",".join(dict.fromkeys(sp.intent for sp in sub_plans)) or None
-    routes = ",".join(dict.fromkeys(
-        getattr(sp, "route", None) or "" for sp in sub_plans)).strip(",") or None
+    from rag_logger import STATUS_NORMAL, STATUS_OUT_OF_SCOPE, log_rag_run
+    intents, routes = _plan_labels(sub_plans)
     log_rag_run(
         question=question,
         answer=resp.answer,
@@ -262,6 +276,42 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int)
         total_latency_ms=latency_ms,
         request_id=resp.request_id,
         session_id=resp.session_id,
+        status=STATUS_OUT_OF_SCOPE if resp.out_of_scope else STATUS_NORMAL,
+    )
+
+
+def log_failed_run(question: str, exc: Exception, phase: str, request_id: str, session_id: str,
+                   sub_plans: list, latency_ms: int, partial_answer: str = "") -> None:
+    """에러로 끝난 질의 1건을 rag_runs 에 FAILED 로 남긴다.
+
+    log_run 을 못 쓰는 이유는 그 시점에 ChatResponse 가 없어서다 — 실패 경로는 응답을 완성하지
+    못하고 끝난다. 그래서 같은 테이블에 같은 방식으로 쓰되 진입점만 따로 둔다.
+
+    이걸 안 부르면 실패한 질의는 rag_runs 에 **행 자체가 없다.** 그러면 AD-005 요약의 실패
+    집계가 언제나 0 이라, 화면상으로는 한 번도 실패한 적 없는 서비스가 된다.
+
+    phase 는 error_from_exception 에 넘긴 값과 같은 것을 그대로 넘긴다("retrieval"/"llm").
+    사용자에게 나간 오류코드와 로그의 단계가 갈리면 대조가 안 된다.
+
+    partial_answer: 스트리밍이 끊기기 전까지 사용자에게 실제로 흘러간 본문. 어디까지 답하다
+    끊겼는지가 조사에 쓰이므로 남긴다. status 가 FAILED 라 완성된 답변으로 오독될 여지는 없다.
+    """
+    from rag_logger import STATUS_FAILED, log_rag_run
+    intents, routes = _plan_labels(sub_plans)
+    log_rag_run(
+        question=question,
+        answer=partial_answer or None,
+        intent=intents,
+        question_type=None,
+        retrieval_route=routes,
+        total_latency_ms=latency_ms,
+        request_id=request_id,
+        session_id=session_id,
+        status=STATUS_FAILED,
+        failure_stage=phase,
+        # 사용자 문구(ApiError.user_message)가 아니라 내부 원문이다. 사용자 문구는 5종뿐이라
+        # 원인 구분이 안 되고, 조사에 필요한 것은 어떤 예외가 어디서 났는지다.
+        root_cause=f"{type(exc).__name__}: {exc}",
     )
 
 
