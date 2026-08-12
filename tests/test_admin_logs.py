@@ -305,12 +305,6 @@ def test_a_failed_run_keeps_its_stage_and_cause_in_the_detail(db_session, test_p
     assert body["error"]["root_cause"].startswith("TimeoutError")
 
 
-@pytest.mark.xfail(
-    reason="api/schemas/logs.py 의 ConversationLogRow.intent 가 non-Optional 이라 "
-           "intent=NULL 행에서 ResponseValidationError(500) 가 난다. 같은 파일이 "
-           "question_type 을 Optional 로 연 것과 같은 처리가 intent 에도 필요하다 — "
-           "스키마는 2번 담당이라 여기서 고치지 않고 재현만 남긴다.",
-    strict=False, raises=Exception)
 def test_a_failed_run_without_an_intent_still_renders(db_session, test_prefix, db_cleanup):
     """플래너 자체가 죽은 실패(sse.py 의 첫 번째 에러 경로)는 intent 를 모른다.
 
