@@ -1,0 +1,449 @@
+"""관리자 대화 로그 조회(AD-005) — 실사용 질의 1건씩을 읽는 창구.
+
+`rag_runs` 에 질의 기록이, `feedback` 에 그 답변에 대한 좋아요·싫어요가 쌓여 있는데
+읽는 API 가 없어 화면이 목 데이터로만 돌고 있었다. 이 파일이 그 구멍을 메운다.
+
+## 읽기 전용이다
+
+수정·삭제 엔드포인트를 만들지 않는다. 재실행(`/rerun`)·분류(`PATCH {triage}`)·평가 후보
+등록(`/evaluations/candidates`)은 프론트 계약(G1)에 있는 7종 중 나머지 3종인데 이번 주
+범위에서 뺐다(팀 결정). 만들지 말 것 — 화면이 그 버튼을 그리고 있으면 프론트에 숨김을
+요청하는 쪽이 맞다.
+
+## 권한이 활동 로그와 반대다
+
+활동 로그(AD-011)는 VIEWER 도 볼 수 있지만, 대화 로그는 **VIEWER 에게 403** 이다.
+사용자가 실제로 입력한 문장이 그대로 담기기 때문이다. 요약(`/summary`)만 VIEWER 에게
+열어 둔다 — 집계 숫자에는 대화 내용이 없다(G2: 'VIEWER 는 집계만'은 화면 숨김이 아니라
+서버 계약이어야 한다).
+
+## KST 를 다루는 방식
+
+화면은 기간을 `from`·`to` **KST 날짜**(YYYY-MM-DD)로 보내고(logs/api.ts periodRange),
+받은 시각 문자열을 지역 시각처럼 그대로 읽는다. 그래서 양쪽 끝에서 KST 로 변환한다.
+
+    입력: from/to(KST 날짜) -> [from 00:00 KST, to+1일 00:00 KST)   (_kst_day_start)
+    출력: created_at        -> +09:00 ISO 문자열                     (_to_kst_iso)
+
+`to` 를 그 날 00:00 으로 비교하면 '오늘'을 골랐을 때 오늘 것이 한 건도 안 나온다.
+끝을 다음 날 00:00 **미만**으로 잡아 to 당일을 통째로 포함시킨다.
+
+## ⚠️ 응답 모델이 아직 dict 다
+
+프론트 계약을 옮긴 Pydantic 스키마(`api/schemas/logs.py`)는 별도 담당자가 만드는 중이라,
+지금은 계약과 같은 모양의 dict 를 돌려준다. 그 파일이 들어오면 각 엔드포인트에
+`response_model=` 만 달면 된다 — 필드 이름·구조는 이미 정본
+(`web/src/routes/admin/logs/api.ts`)에 맞춰 뒀다.
+
+## ⚠️ rag_runs 에 원천이 없는 필드가 있다
+
+`ConversationLogDetail` 이 요구하는 것 중 `source_count`·`triage`·`classification` 의
+`business_function`·`source_used`·`marker`·`normalized` 는 `rag_runs` 에 컬럼이 없다
+(src/schema.py:163-185). 지금은 None/기본값으로 내보내고, 처리 방침(컬럼 추가 · null 유지 ·
+프론트에 필드 제거 요청)은 별도 조사에서 정한다. **빈 값을 '사실'처럼 보이게 만들지 말 것** —
+logs/api.ts:39-49 에 같은 실수의 선례가 있다(원천 없는 구획을 목업대로 남겼더니 빈 상태
+문구가 운영자에게 거짓을 말했다).
+"""
+import logging
+import uuid
+from datetime import date, datetime, timedelta, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
+
+from api.deps import CurrentAdmin, DbSession, get_current_admin
+from api.errors import BadRequestError, ForbiddenError, NotFoundError
+# src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
+from schema import feedback as feedback_table
+from schema import rag_runs
+
+logger = logging.getLogger(__name__)
+
+
+def _mask(value: Optional[str]) -> Optional[str]:
+    """마스킹 자리(seam) — 지금은 원문을 그대로 통과시킨다.
+
+    공통 마스킹 함수(`api/masking.py`)는 다른 담당자가 만드는 중이라 아직 없다. 그때까지
+    호출 지점을 잃지 않으려고 여기에 통과 함수를 둔다. 그 파일이 들어오면
+
+        from api.masking import mask_text
+
+    를 추가하고 이 함수를 지우면 된다(호출부는 `_mask` -> `mask_text` 로 이름만 바뀐다).
+
+    🔴 이 함수가 있는 동안 `question_masked`·`answer_masked_*` 필드의 값은 **마스킹되지
+    않은 원문**이다. 필드 이름만 보고 안전하다고 판단하지 말 것.
+    """
+    return value
+
+router = APIRouter(
+    prefix="/api/admin/logs",
+    tags=["admin-logs"],
+    # 라우터 전체에 인증. 역할 구분은 엔드포인트마다 추가로 본다(요약만 VIEWER 허용이라
+    # 라우터 레벨에 한 번에 걸 수 없다).
+    dependencies=[Depends(get_current_admin)],
+)
+
+KST = timezone(timedelta(hours=9))
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 100
+
+# 직접 지정 기간 상한. 화면도 같은 값으로 막지만(logs/api.ts MAX_CUSTOM_DAYS) 프론트 판정은
+# 우회 가능하므로 서버가 최종 판정한다. from·to 양끝을 포함한 일수 기준이다.
+MAX_RANGE_DAYS = 90
+
+# 대화 내용을 볼 수 있는 역할. VIEWER 는 빠져 있다 — 목록·상세는 403 이고 요약만 허용된다(G2).
+READ_ROLES = frozenset({"ADMIN", "EDITOR", "OPERATOR"})
+# 내보내기는 데이터를 파일로 빼가는 행위라 ADMIN 만(activity/exports 와 같은 기준).
+EXPORT_ROLES = frozenset({"ADMIN"})
+
+# 어휘는 전부 프론트 타입이 정본이다. 여기서 새 값을 만들면 화면 필터가 조용히 안 걸린다.
+STATUSES = frozenset({"NORMAL", "OUT_OF_SCOPE", "FAILED"})   # logs/api.ts LogStatus
+INTENTS = frozenset({"informational", "civil_petition"})     # query_planner.PlanItem.intent
+FEEDBACKS = frozenset({"up", "down", "none"})                # logs/api.ts LogFilters.feedback
+
+SORT_COLUMNS = {"occurred_at": rag_runs.c.created_at}
+
+# 상세의 '답변 미리보기' 길이. 전체 펼치기는 추가 호출 없는 클라이언트 토글이라(G4)
+# preview 와 full 을 한 응답에 함께 담고, 자르는 기준만 여기서 정한다.
+PREVIEW_CHARS = 120
+
+
+# ---------------------------------------------------------------- KST · 파싱
+
+def _to_kst_iso(value: Optional[datetime]) -> Optional[str]:
+    """timestamptz -> +09:00 ISO 문자열. 모듈 주석의 '출력' 쪽이다."""
+    if value is None:
+        return None
+    # 드라이버·컬럼 설정에 따라 naive 로 돌아오는 경우는 UTC 로 본다(컬럼이 timestamptz 라
+    # 저장된 값 자체는 UTC 기준이다). admin_activity.py 와 같은 처리.
+    aware = value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return aware.astimezone(KST).isoformat()
+
+
+def _kst_day_start(day: date) -> datetime:
+    """KST 날짜의 00:00. 비교는 UTC 로 저장된 컬럼과 직접 한다."""
+    return datetime(day.year, day.month, day.day, tzinfo=KST)
+
+
+def _parse_kst_date(raw) -> date:
+    """'YYYY-MM-DD' -> date. 형식이 틀리면 400 이다.
+
+    str() 로 눕히는 이유는 내보내기 경로 때문이다 — POST /exports 의 본문은 JSON 이라
+    `{"from": 20260804}` 처럼 문자열이 아닌 값이 올 수 있고, 그대로 date.fromisoformat 에
+    넣으면 400 이 아니라 TypeError -> 500 이 난다(admin_activity._parse_kst_date 와 같은 사정).
+    """
+    try:
+        return date.fromisoformat(str(raw))
+    except (TypeError, ValueError) as exc:
+        raise BadRequestError("기간 형식이 올바르지 않습니다. YYYY-MM-DD 로 보내 주세요.") from exc
+
+
+def _resolve_range(from_raw, to_raw) -> tuple[Optional[date], Optional[date]]:
+    """from·to 를 검증해 돌려준다. 어긋난 기간은 400 으로 막는다 — 조용히 잘라내지 않는다.
+
+    90일을 넘겼을 때 90일치만 돌려주면 화면은 그 사실을 알 수 없어 '전체를 봤다'고
+    착각한다. 감사 성격의 화면에서는 이게 제일 나쁜 실패 방식이라 거절하는 쪽을 택했다.
+    """
+    start = _parse_kst_date(from_raw) if from_raw else None
+    end = _parse_kst_date(to_raw) if to_raw else None
+    if start and end:
+        if start > end:
+            raise BadRequestError("시작일이 종료일보다 늦습니다.")
+        # 화면의 daysBetween 과 같은 셈(양끝 포함).
+        if (end - start).days + 1 > MAX_RANGE_DAYS:
+            raise BadRequestError(f"조회 기간은 최대 {MAX_RANGE_DAYS}일까지 지정할 수 있습니다.")
+    return start, end
+
+
+def _order_by(sort: str):
+    """정렬 파싱. 화면은 항상 최신순만 쓰지만, 임의 컬럼을 허용하면 인덱스 없는 컬럼으로
+    풀스캔이 걸리므로 목록을 닫아 둔다(admin_activity._order_by 와 같은 이유)."""
+    field, separator, direction = sort.partition(":")
+    if separator != ":" or field not in SORT_COLUMNS or direction not in {"asc", "desc"}:
+        raise BadRequestError("지원하지 않는 정렬 조건입니다.")
+    column = SORT_COLUMNS[field]
+    return column.desc() if direction == "desc" else column.asc()
+
+
+def _escape_like(value: str) -> str:
+    """ILIKE 와일드카드를 검색어가 아니라 일반 문자로 취급한다."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _require(admin: CurrentAdmin, roles: frozenset, what: str) -> None:
+    """역할 게이트. 화면에서 버튼을 숨기는 건 UX 편의일 뿐이고 최종 판정은 여기서 한다."""
+    if admin.role not in roles:
+        raise ForbiddenError(
+            f"{what}에는 {' 또는 '.join(sorted(roles))} 권한이 필요합니다. "
+            f"현재 권한은 {admin.role}입니다.")
+
+
+# ---------------------------------------------------------------- 쿼리 빌더
+
+def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
+                      from_raw, to_raw, sort: str):
+    """목록·total·내보내기가 **같은 조건**을 쓰도록 한 곳에서 만든다.
+
+    한쪽에만 조건이 붙으면 '3건인데 5페이지'처럼 개수와 목록이 어긋나고, 내보내기에서는
+    화면에 보이는 건수와 접수증의 건수가 달라진다. 활동 로그·지식베이스 목록이 같은 이유로
+    빌더를 공유하고 있어서(admin_activity.build_activity_event_queries) 같은 모양을 따른다.
+
+    feedback 은 LEFT JOIN 이다 — 피드백이 없는 질의도 목록에 나와야 하고, `feedback=none`
+    필터는 그 '없음' 자체를 조건으로 쓴다.
+    """
+    joined = rag_runs.outerjoin(
+        feedback_table, rag_runs.c.request_id == feedback_table.c.request_id)
+
+    filters = []
+
+    start, end = _resolve_range(from_raw, to_raw)
+    if start:
+        filters.append(rag_runs.c.created_at >= _kst_day_start(start))
+    if end:
+        # to 당일을 통째로 포함시킨다(모듈 주석 참고).
+        filters.append(rag_runs.c.created_at < _kst_day_start(end) + timedelta(days=1))
+
+    if q:
+        # 검색 대상은 질문뿐이다. 답변까지 넓히면 근거 문서에 흔한 낱말(예: '예금보험금')로
+        # 사실상 전건이 걸려 필터 구실을 못 한다.
+        filters.append(rag_runs.c.question.ilike(f"%{_escape_like(q)}%", escape="\\"))
+    if status:
+        if status not in STATUSES:
+            raise BadRequestError("지원하지 않는 상태 값입니다.")
+        filters.append(rag_runs.c.status == status)
+    if intent:
+        if intent not in INTENTS:
+            raise BadRequestError("지원하지 않는 intent 값입니다.")
+        filters.append(rag_runs.c.intent == intent)
+    if feedback:
+        if feedback not in FEEDBACKS:
+            raise BadRequestError("지원하지 않는 피드백 값입니다.")
+        if feedback == "none":
+            filters.append(feedback_table.c.request_id.is_(None))
+        else:
+            filters.append(feedback_table.c.vote == feedback)
+
+    rows = (
+        select(
+            rag_runs.c.request_id,
+            rag_runs.c.created_at,
+            rag_runs.c.question,
+            rag_runs.c.intent,
+            rag_runs.c.status,
+            rag_runs.c.total_latency_ms,
+            feedback_table.c.vote,
+        )
+        .select_from(joined)
+        .where(*filters)
+        .order_by(_order_by(sort))
+    )
+    total = select(func.count()).select_from(joined).where(*filters)
+    return rows, total
+
+
+def _row_to_log(row) -> dict:
+    """한 행 -> 화면 계약(ConversationLogRow).
+
+    ⚠️ source_count·triage 는 rag_runs 에 원천이 없다(모듈 주석 참고). 지어내지 않고
+    None/기본값으로 둔다 — 0 을 넣으면 '출처가 하나도 없었다'는 사실처럼 읽힌다.
+    """
+    return {
+        "request_id": row.request_id or "",
+        # 🔴 KST(+09:00) ISO. UTC 로 주면 화면의 '오늘'이 9시간 어긋난다.
+        "occurred_at": _to_kst_iso(row.created_at) or "",
+        # 마스킹은 이번 주 미구현이다(팀 결정). 호출 지점만 남겨 둔다 — _mask 를
+        # api/masking.py 의 mask_text 로 갈아끼우면 전 경로가 함께 바뀐다.
+        "question_masked": _mask(row.question) or "",
+        "intent": row.intent,
+        "status": row.status,
+        "feedback": row.vote,
+        "source_count": None,
+        "latency_s": round(row.total_latency_ms / 1000, 2) if row.total_latency_ms else None,
+        "triage": "NONE",
+    }
+
+
+# ---------------------------------------------------------------- 엔드포인트
+#
+# ⚠️ /summary 는 /{request_id} 보다 **먼저** 선언해야 한다. 뒤에 두면 "summary" 가
+#    request_id 로 잡혀 상세 핸들러가 먼저 먹고 404 를 돌려준다.
+
+@router.get("")
+def list_logs(
+    admin: CurrentAdmin,
+    db: DbSession,
+    q: str = "",
+    status: str = "",
+    intent: str = "",
+    feedback: str = "",
+    # 화면은 기간 선택을 KST 날짜로 환산해 보낸다(logs/api.ts periodRange).
+    from_: Optional[str] = Query(default=None, alias="from"),
+    to: Optional[str] = None,
+    sort: str = "occurred_at:desc",
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+):
+    """대화 로그 목록 -> {items, total, page, size}. page 는 1-base."""
+    _require(admin, READ_ROLES, "대화 로그 조회")
+    rows_query, total_query = build_log_queries(
+        q=q.strip(), status=status.strip(), intent=intent.strip(),
+        feedback=feedback.strip(), from_raw=from_, to_raw=to, sort=sort,
+    )
+    total = db.execute(total_query).scalar_one()
+    rows = db.execute(rows_query.offset((page - 1) * size).limit(size)).all()
+    return {
+        "items": [_row_to_log(row) for row in rows],
+        "total": total,
+        "page": page,
+        "size": size,
+    }
+
+
+@router.get("/summary")
+def logs_summary(admin: CurrentAdmin, db: DbSession):
+    """오늘(KST) 집계. **목록 필터와 무관하게** 항상 오늘 기준이다(G1: '항상 오늘 기준').
+
+    VIEWER 도 볼 수 있는 유일한 대화 로그 엔드포인트다 — 숫자에는 대화 내용이 없다.
+    """
+    del admin  # 인증은 라우터 의존성이 했고, 집계에는 사용자별 데이터가 없다.
+
+    now = datetime.now(timezone.utc)
+    today_start = _kst_day_start(now.astimezone(KST).date())
+    today = rag_runs.c.created_at >= today_start
+
+    # 상태 3종을 한 번에 센다 — 질의 4번을 왕복하는 것보다 낫고, 합계가 부분합과
+    # 어긋날 여지도 없앤다.
+    counts = db.execute(
+        select(rag_runs.c.status, func.count())
+        .where(today).group_by(rag_runs.c.status)
+    ).all()
+    by_status = {status: count for status, count in counts}
+
+    votes = db.execute(
+        select(feedback_table.c.vote, func.count())
+        .select_from(rag_runs.join(
+            feedback_table, rag_runs.c.request_id == feedback_table.c.request_id))
+        .where(today).group_by(feedback_table.c.vote)
+    ).all()
+    by_vote = {vote: count for vote, count in votes}
+
+    return {
+        "total": sum(by_status.values()),
+        "normal": by_status.get("NORMAL", 0),
+        "out_of_scope": by_status.get("OUT_OF_SCOPE", 0),
+        "failed": by_status.get("FAILED", 0),
+        "feedback_up": by_vote.get("up", 0),
+        "feedback_down": by_vote.get("down", 0),
+    }
+
+
+@router.get("/{request_id}")
+def get_log(request_id: str, admin: CurrentAdmin, db: DbSession):
+    """질의 1건의 상세 = 목록 행 + 분류·피드백·오류.
+
+    request_id 는 UUID 가 아니라 문자열 컬럼이다(rag_runs.request_id). 형식 검사를 하지
+    않고 그대로 조회한다 — 활동 로그의 event_id 와 달리 UUID 캐스팅이 없어 500 위험이 없다.
+    """
+    _require(admin, READ_ROLES, "대화 로그 조회")
+
+    row = db.execute(
+        select(
+            rag_runs.c.request_id,
+            rag_runs.c.created_at,
+            rag_runs.c.question,
+            rag_runs.c.answer,
+            rag_runs.c.intent,
+            rag_runs.c.question_type,
+            rag_runs.c.status,
+            rag_runs.c.failure_stage,
+            rag_runs.c.root_cause,
+            rag_runs.c.total_latency_ms,
+            rag_runs.c.trace_id,
+            feedback_table.c.vote,
+            feedback_table.c.reason_codes,
+            feedback_table.c.comment,
+            feedback_table.c.created_at.label("feedback_at"),
+        )
+        .select_from(rag_runs.outerjoin(
+            feedback_table, rag_runs.c.request_id == feedback_table.c.request_id))
+        .where(rag_runs.c.request_id == request_id)
+    ).first()
+    if row is None:
+        raise NotFoundError("대화 기록을 찾을 수 없습니다.")
+
+    answer = mask_text(row.answer) or ""
+    preview = answer if len(answer) <= PREVIEW_CHARS else answer[:PREVIEW_CHARS] + "…"
+
+    return {
+        **_row_to_log(row),
+        "classification": {
+            "intent": row.intent,
+            "question_type": row.question_type,
+            # ⚠️ 아래 4개는 rag_runs 에 컬럼이 없다(모듈 주석 참고). 지어내지 않는다.
+            "business_function": None,
+            "source_used": None,
+            "marker": None,
+            "normalized": None,
+        },
+        # trace_id 는 있어도 완성 URL 을 만들 수 없다 — Langfuse 호스트가 아직 설정에 없다.
+        # 프론트는 url 이 null 이면 id 만 글로 보여준다(G5). 이번 주는 전체 null 고정.
+        "langfuse": None,
+        "total_latency_ms": row.total_latency_ms,
+        "answer_masked_preview": preview,
+        "answer_masked_full": answer,
+        "feedback_detail": None if row.vote is None else {
+            "vote": row.vote,
+            "at": _to_kst_iso(row.feedback_at) or "",
+            # 화면은 사람이 읽는 한 줄을 기대한다. 코드 배열을 그대로 이어 붙여 두고,
+            # 라벨 사전(codes.ts ReasonCode)은 프론트가 갖고 있다.
+            "reason_label": ", ".join(row.reason_codes or []),
+            "comment": row.comment or "",
+        },
+        # 실패 건에만 싣는다. code·meaning·user_message·auto_retry·fallback 은 rag_runs 에
+        # 원천이 없어 비워 둔다 — 처리 방침은 별도 조사에서 정한다(모듈 주석).
+        "error": None if row.status != "FAILED" else {
+            "code": "",
+            "meaning": "",
+            "user_message": "",
+            "auto_retry": "",
+            "fallback": "",
+            "failure_stage": row.failure_stage,
+            "root_cause": row.root_cause,
+        },
+    }
+
+
+@router.post("/exports")
+def export_logs(body: dict, admin: CurrentAdmin, db: DbSession):
+    """내보내기 접수. 데이터를 파일로 빼가는 행위라 ADMIN 만 할 수 있다.
+
+    지금은 대상 건수를 세어 접수증만 돌려준다 — 실제 파일 생성·다운로드는 별도 작업이다
+    (형식·파일명·건수 상한이 아직 정해지지 않았다, L6). 화면도 접수 후 토스트만 띄우고
+    파일을 기다리지 않는다. activity/exports 와 같은 방식이다.
+
+    ⚠️ activity/exports 와 달리 `reason` 을 요구하지 않는다 — 프론트의 exportLogs 가
+    reason 을 보내지 않기 때문이다(logs/api.ts). 요구하면 화면이 400 만 받는다.
+    request_id(멱등키)는 apiRequest 가 모든 쓰기 요청에 자동으로 넣어 준다(C2).
+    """
+    _require(admin, EXPORT_ROLES, "대화 로그 내보내기")
+    if not str(body.get("request_id") or "").strip():
+        raise BadRequestError("request_id가 필요합니다.")
+
+    # 화면에 보이는 현재 필터 결과가 대상이다(G6). 목록과 같은 빌더를 써서 두 건수가
+    # 어긋나지 않게 한다.
+    _, total_query = build_log_queries(
+        q=str(body.get("q") or "").strip(),
+        status=str(body.get("status") or "").strip(),
+        intent=str(body.get("intent") or "").strip(),
+        feedback=str(body.get("feedback") or "").strip(),
+        from_raw=body.get("from"),
+        to_raw=body.get("to"),
+        sort="occurred_at:desc",
+    )
+    estimated_rows = db.execute(total_query).scalar_one()
+
+    export_id = f"exp_{uuid.uuid4().hex[:12]}"
+    logger.info("대화 로그 내보내기 접수: %s (%s건, 요청자 %s)",
+                export_id, estimated_rows, admin.email)
+    return {"export_id": export_id, "status": "QUEUED", "estimated_rows": estimated_rows}
