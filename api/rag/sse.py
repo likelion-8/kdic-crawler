@@ -17,6 +17,10 @@ ApiError 다(프론트 ChatStreamEvent 타입이 그렇게 선언돼 있다).
 핵심 불변식: answer_delta.text 들을 이어붙인 것 == done.answer.
 흘려보낸 조각(full_parts)을 그대로 누적해 done.answer 로 쓰므로 구조적으로 보장된다.
 
+성공이든 실패든 질의 1건은 rag_runs 에 정확히 한 행을 남긴다. 성공은 끝에서 answer.log_run,
+실패 3경로는 각자 answer.log_failed_run 이 맡는다. 실패 경로가 그냥 return 하던 시절에는
+실패한 질의가 DB에 아예 없어서, 관리자 대화 로그(AD-005)의 실패 집계가 늘 0 이었다.
+
 동작 구조: chat_event_stream 은 '동기' 제너레이터다. StreamingResponse 가 이를 스레드풀에서
 돌리므로 이벤트 루프를 막지 않는다. LLM 토큰은 블로킹 제너레이터(stream_hyperclova)라, 별도
 producer 스레드가 queue 에 쌓고 여기서 queue.get(timeout=30) 으로 꺼낸다 — 30초 동안 토큰이
@@ -44,6 +48,11 @@ _MARKER_BUFFER_CAP = 32
 def _sse(event: str, data) -> str:
     """SSE 프레임 한 개. event 줄이 반드시 있어야 프론트 파서가 이벤트를 알아본다."""
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+def _elapsed_ms(started: float) -> int:
+    """시작 시점부터 지금까지(ms). 성공·실패 양쪽이 같은 기준으로 재도록 한 곳에 둔다."""
+    return int((time.perf_counter() - started) * 1000)
 
 
 class _MarkerStripper:
@@ -129,6 +138,11 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         plan_items = answer.plan(message)   # [(하위질문, intent|None), ...]
     except Exception as e:  # noqa: BLE001
         logger.exception("[%s] plan 실패", request_id)
+        # 기록을 yield 앞에 두는 이유는 아래 세 실패 경로 모두 같다 — yield 뒤에 두면 프론트가
+        # 오류 프레임을 받고 연결을 끊었을 때 제너레이터가 재개되지 않아 기록이 통째로 날아간다.
+        # log_rag_run 은 내부에서 예외를 삼키므로 이 호출이 오류 전달을 막지는 못한다.
+        answer.log_failed_run(message, e, "retrieval", request_id, session_id,
+                              sub_plans=[], latency_ms=_elapsed_ms(started))
         yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
         return
 
@@ -144,6 +158,11 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
             sp = answer.prepare_sub(q, intent)
         except Exception as e:  # noqa: BLE001
             logger.exception("[%s] prepare_sub 실패: %s", request_id, q)
+            # sub_plans 는 여기까지 성공한 하위질문들이다(이번 것은 아직 안 들어갔다).
+            # 복합 질문이 두 번째 하위에서 죽었을 때 어디까지 갔는지가 이 값으로 남는다.
+            answer.log_failed_run(message, e, "retrieval", request_id, session_id,
+                                  sub_plans=sub_plans, latency_ms=_elapsed_ms(started),
+                                  partial_answer="".join(full_parts))
             yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
             return
         sub_plans.append(sp)
@@ -184,6 +203,11 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
         if err is not None:
             logger.warning("[%s] 스트리밍 중단: %r", request_id, err)
+            # 여기까지 흘러간 본문을 함께 남긴다 — 토큰 타임아웃(30초)인지 LLM 이 초장에
+            # 터진 것인지가 '어디까지 답했나'로 갈린다.
+            answer.log_failed_run(message, err, "llm", request_id, session_id,
+                                  sub_plans=sub_plans, latency_ms=_elapsed_ms(started),
+                                  partial_answer="".join(full_parts))
             yield _sse("error", answer.error_from_exception(err, "llm", request_id).model_dump())
             return
 
@@ -193,7 +217,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         used_flags.append(used)
 
     # 5) 완성 결과
-    latency_ms = int((time.perf_counter() - started) * 1000)
+    latency_ms = _elapsed_ms(started)
     resp = answer.to_chat_response(
         finalized, used_flags, "".join(full_parts), composite, session_id, request_id, latency_ms)
 
