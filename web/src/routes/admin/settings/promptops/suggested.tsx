@@ -162,7 +162,8 @@ export function SuggestedQuestionsCard({ canEdit }: SuggestedQuestionsCardProps)
       header: '최근 7일 클릭',
       width: '110px',
       align: 'right',
-      render: (q) => (q.active ? q.click_count.toLocaleString() : '—'),
+      // 백엔드는 7일 집계 경로가 없어 click_count 를 null 로 내린다(admin_ops.py:401) — 목은 0을 주므로 실백엔드에서만 터졌다
+      render: (q) => (q.active ? (q.click_count?.toLocaleString() ?? '—') : '—'),
     },
     {
       key: 'state',
