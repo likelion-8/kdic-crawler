@@ -88,7 +88,9 @@ function TracePanel({ detail, canEdit, onAddCandidate, candidatePending }: LogDe
         <p className="mt-1.5 grid grid-cols-[120px_1fr] gap-2.5 text-[13px]">
           <span className="text-muted-foreground">출처 판정</span>
           <span>
-            {c.source_used ? '사용' : '미사용'} · 마커 [{c.marker}]
+            {/* 백엔드가 원천 부재로 null 을 내린다(admin_logs.py:419-422) — '미사용' 단정은 거짓이 된다 */}
+            {c.source_used === null ? '판정 원천 없음' : c.source_used ? '사용' : '미사용'}
+            {c.marker === null ? '' : ` · 마커 [${c.marker}]`}
           </span>
         </p>
         {/* 마커가 어긋나 정규화로 보정한 건은 '표기 보정'으로 기록된다(Desc 2) */}
@@ -145,6 +147,15 @@ function TracePanel({ detail, canEdit, onAddCandidate, candidatePending }: LogDe
               테스트셋 보강 후보로 등록
             </Button>
           )}
+        </div>
+      )}
+
+      {/* 후보 등록은 실패·피드백 건 전용이 아니다 — 좋은 답변도 평가셋 보강 대상(CM-DF-002 07절) */}
+      {canEdit && !detail.feedback_detail && (
+        <div className="mt-4">
+          <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
+            테스트셋 보강 후보로 등록
+          </Button>
         </div>
       )}
     </section>

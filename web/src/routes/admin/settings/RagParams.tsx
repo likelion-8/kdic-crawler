@@ -61,6 +61,10 @@ export function RagParams() {
   const history = useQuery({ queryKey: ragKeys.history, queryFn: fetchHistory })
 
   const [draft, setDraft] = useState<Values | null>(null)
+  /** 마지막 [초안 평가]에 실은 값 스냅샷. 서버 시그니처는 opaque 토큰(실서버는 sha256 해시,
+   *  admin_rag_params.py:156)이라 프론트가 포맷을 해석하면 안 된다 — JSON.stringify 와 비교하던
+   *  종전 코드는 실백엔드에서 영구 stale 이었다(2026-08-13 실측). 값 비교로 판정한다 */
+  const [evaluated, setEvaluated] = useState<Values | null>(null)
   const [applyOpen, setApplyOpen] = useState(false)
   const [resetOpen, setResetOpen] = useState(false)
   const [rollbackTarget, setRollbackTarget] = useState<RagHistoryEntry | null>(null)
@@ -68,12 +72,17 @@ export function RagParams() {
   const server = params.data
   // 서버가 준 초안(없으면 현행)을 편집 시작점으로 삼는다. 재조회로 초안을 덮어쓰지 않는다
   useEffect(() => {
-    if (server && draft === null) setDraft({ ...(server.draft ?? server.current) })
+    if (server && draft === null) {
+      setDraft({ ...(server.draft ?? server.current) })
+      // 서버가 초안+게이트를 갖고 있으면 그 초안이 곧 '평가된 초안'이다(_stored_gate) — 새로고침 복원
+      if (server.gate.draft_signature !== null && server.draft) setEvaluated({ ...server.draft })
+    }
   }, [server, draft])
 
   const evaluate = useMutation({
     mutationFn: (values: Values) => evaluateDraft(values),
-    onSuccess: (gate) => {
+    onSuccess: (gate, values) => {
+      setEvaluated({ ...values })
       queryClient.setQueryData<RagParamsResponse>(ragKeys.params, (prev) =>
         prev ? { ...prev, gate } : prev,
       )
@@ -86,6 +95,7 @@ export function RagParams() {
       queryClient.setQueryData(ragKeys.params, res)
       void queryClient.invalidateQueries({ queryKey: ragKeys.history })
       setDraft({ ...res.current })
+      setEvaluated(null)
       setApplyOpen(false)
       showToast('설정을 운영에 반영했습니다')
     },
@@ -112,12 +122,13 @@ export function RagParams() {
   const timings = changed.map((p) => p.apply_timing)
   const seamless = timings.filter((t) => t === '무중단').length
   const reindex = timings.filter((t) => t === '재적재 필요').length
-  /** 평가 이후 초안을 수정하면 평가가 무효화된다(Desc 0) */
-  const stale = gate.draft_signature !== null && gate.draft_signature !== JSON.stringify(draft)
+  /** 평가 이후 초안을 수정하면 평가가 무효화된다(Desc 0) — 평가 시점 스냅샷과 값 비교 */
+  const stale = gate.draft_signature !== null &&
+    (evaluated === null || changedParams(server.params, draft, evaluated).length > 0)
   const gateReady = gate.passed && !stale
   const gateReason = stale
     ? '초안이 바뀌어 평가가 무효화되었습니다. [초안 평가]를 다시 실행해 주세요'
-    : (gate.blocked_reason ?? '최신 평가가 게이트를 통과해야 반영할 수 있습니다')
+    : (gate.blocked_reason ?? '최신 평가가 게이트를 통과해야 반영할 수 있습니다. 먼저 [초안 평가]를 실행해 주세요')
   /** [운영 반영]을 막는 조건. AD-008 publishBlocked와 같은 형태로 둔다 —
    *  같은 상태 바를 쓰는 두 화면이 같은 상태에서 같게 행동해야 한다 */
   const applyBlocked = !canEdit
@@ -135,7 +146,7 @@ export function RagParams() {
     const baseline = current[p.key]
     const disabledReason = canEdit ? undefined : '수정하려면 EDITOR 권한이 필요합니다'
     // 최종 근거 수는 1차 후보 수를 넘을 수 없다(후보 컷 뒤에서 고르므로) — 기획서에 없는 상호 제약
-    const max = p.key === 'top_k_final' ? Number(draft!['top_k_candidate']) : p.max
+    const max = p.key === 'k_final' ? Number(draft!['k_candidates']) : p.max
 
     switch (p.control) {
       case 'stepper':
@@ -270,7 +281,7 @@ export function RagParams() {
           게시를 막는 조건이라 옅은 색면 인셋(block)으로 세운다 */}
       {canEdit && changed.length > 0 && !gateReady && (
         <Notice tone="warning" variant="block">
-          {gateReason} 먼저 [초안 평가]를 실행해 주세요
+          {gateReason}
         </Notice>
       )}
 

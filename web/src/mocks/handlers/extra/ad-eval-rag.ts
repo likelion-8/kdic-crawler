@@ -296,61 +296,74 @@ function gateOf(runId: string): GateDetail | null {
 
 // ---------------------------------------------------------------- AD-007 파라미터
 
-/** CM-DF-003 05절 표 그대로. min/max/step은 기획서에 없어(12-ad-007-008 G6) 목이 정한 값이다 */
+/** 실서버 admin_rag_params.py:_param_meta 와 키·라벨·범위를 1:1로 맞춘다(목이 곧 계약).
+ * 옛 목 전용 키(top_k_*·fusion_alpha·llm_model·temperature·max_tokens 등)는 실서버가
+ * 노출하지 않아 제거했다 — 2026-08-13 실백엔드 대조 정렬. min/max/step 도 서버 값이다 */
 const RAG_PARAMS: RagParam[] = [
   {
-    key: 'top_k_candidate', label: '1차 후보 수', group: 'retrieval', control: 'stepper',
-    apply_timing: '무중단', min: 5, max: 50, step: 1,
+    key: 'k_candidates', label: '1차 후보 수', group: 'retrieval', control: 'stepper',
+    apply_timing: '무중단', min: 5, max: 50, step: 5,
+    note: 'route_search_chunks 1차 후보 청크 수 (Recall@20 99%+ 실측)',
   },
   {
-    key: 'top_k_final', label: '최종 근거 수', group: 'retrieval', control: 'stepper',
-    apply_timing: '무중단', min: 1, max: 20, step: 1,
+    key: 'k_final', label: '최종 근거 수', group: 'retrieval', control: 'stepper',
+    apply_timing: '무중단', min: 1, max: 10, step: 1,
+    note: 'LLM 에 넘기는 근거 청크 수 (AnswerRecall@5 기준과 동일 k)',
   },
   {
-    key: 'link_guide_hybrid', label: '링크 안내 질의 키워드 병용', group: 'retrieval', control: 'toggle',
+    key: 'min_top1_score', label: '무관 질문 게이트 임계값', group: 'retrieval', control: 'slider',
+    apply_timing: '무중단', min: 0, max: 1, step: 0.05,
+    scale_start: '관대(통과 많음)', scale_end: '엄격(차단 많음)',
+    note: 'top-1 점수가 미만이면 근거를 비워 환각 차단 (0.35 = 인스코프 오차단 0 실측)',
+  },
+  {
+    key: 'use_reranker', label: '리랭커(cross-encoder)', group: 'retrieval', control: 'toggle',
     apply_timing: '무중단',
+    note: 'CPU 문항당 96초 실측으로 기본 Off — GPU 확보 시 재검증(README 2.4)',
   },
   {
-    // 라벨의 괄호 '(키워드 검색 쪽)'은 아래 눈금(scale_start/end)이 이미 말하는 중복이라 뺐다.
-    // 게다가 Field의 라벨 열(160px)을 넘겨 라벨 옆 ⓘ가 홀로 다음 줄로 밀렸다.
-    // ⚠ 백엔드도 같은 라벨을 보내야 한다 — 괄호를 다시 붙이면 같은 증상이 재발한다
-    key: 'fusion_alpha', label: '융합 비중', group: 'retrieval', control: 'slider',
-    apply_timing: '무중단', min: 0, max: 1, step: 0.1,
-    scale_start: '의미 검색', scale_end: '키워드 검색',
-    note: '값이 1에 가까울수록 키워드 검색 쪽에 무게를 둡니다. 링크 안내 질의에만 영향합니다.',
+    key: 'use_query_planner', label: '쿼리 플래너(분해+intent 한 콜)', group: 'retrieval', control: 'toggle',
+    apply_timing: '무중단',
+    note: 'gpt-5.6-luna structured output (100문항 joint 89% 실측)',
   },
   {
-    key: 'decompose', label: '복합 질문 분해', group: 'retrieval', control: 'toggle', apply_timing: '무중단',
+    key: 'use_query_decomposition', label: '복합 질문 분해(플래너 Off 폴백)', group: 'retrieval',
+    control: 'toggle', apply_timing: '무중단',
+    note: '플래너를 껐을 때만 쓰는 HCX 분해 경로',
   },
   {
-    key: 'llm_model', label: '모델', group: 'generation', control: 'select', apply_timing: '무중단',
-    options: ['HCX-DASH-002', 'HCX-005'],
-  },
-  {
-    key: 'temperature', label: '답변 다양성', group: 'generation', control: 'slider',
-    apply_timing: '무중단', min: 0, max: 1, step: 0.1, scale_start: '정확·일관', scale_end: '다양',
-  },
-  {
-    key: 'max_tokens', label: '최대 응답 길이', group: 'generation', control: 'stepper',
-    apply_timing: '무중단', min: 256, max: 4096, step: 256,
+    key: 'use_source_recheck', label: '출처 재확인(NO_SOURCE 사후 판정)', group: 'generation',
+    control: 'toggle', apply_timing: '무중단',
+    note: '마커 오표기(출처 소실 54% 실측)를 별도 LLM 판정으로 복구',
   },
 ]
 
 let currentValues: Record<string, ParamValue> = {
-  top_k_candidate: 20,
-  top_k_final: 5,
-  link_guide_hybrid: true,
-  fusion_alpha: 0.4,
-  decompose: true,
-  llm_model: 'HCX-DASH-002',
-  temperature: 0.2,
-  max_tokens: 2048,
+  k_candidates: 20,
+  k_final: 5,
+  min_top1_score: 0.35,
+  use_reranker: false,
+  use_query_planner: true,
+  use_query_decomposition: true,
+  use_source_recheck: true,
+}
+
+/** 실서버 시그니처는 sha256[:16] opaque 토큰(admin_rag_params.py:156)이다. 목도 불투명 해시를 줘
+ * 프론트가 포맷에 기대는 회귀(JSON.stringify 비교 → 실백엔드 영구 stale, 2026-08-13 실측)를 막는다 */
+function mockSignature(draft: Record<string, ParamValue>): string {
+  const canon = JSON.stringify(Object.fromEntries(Object.entries(draft).sort()))
+  let h = 2166136261 // FNV-1a
+  for (let i = 0; i < canon.length; i += 1) {
+    h ^= canon.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return (h >>> 0).toString(16).padStart(16, '0')
 }
 
 const EMPTY_GATE: RagGate = {
   passed: false, draft_signature: null, evaluated_at: null,
   blocked_reason: '초안 평가를 실행해야 [운영 반영]이 활성화됩니다',
-  warning: null, holdout_total: 89, holdout_passed: 0, smoke_total: 30, smoke_passed: 0,
+  warning: null, holdout_total: 89, holdout_passed: 0, smoke_total: 0, smoke_passed: 0,
   quantitative: null,
 }
 let gate: RagGate = { ...EMPTY_GATE }
@@ -376,14 +389,14 @@ const history: RagHistoryEntry[] = [
 
 /** 롤백 대상 시점의 값. 목이라 이력 id별 스냅샷만 들고 있는다 */
 const historyValues: Record<string, Record<string, ParamValue>> = {
-  rp_20260730_1420: { ...currentValues, decompose: false },
-  rp_20260728_1105: { ...currentValues, link_guide_hybrid: false, fusion_alpha: 0.5 },
-  rp_20260728_1040: { ...currentValues, fusion_alpha: 0.3 },
+  rp_20260730_1420: { ...currentValues, use_query_planner: false },
+  rp_20260728_1105: { ...currentValues, use_reranker: true, k_final: 7 },
+  rp_20260728_1040: { ...currentValues, min_top1_score: 0.3 },
 }
 
 function chipsOf(values: Record<string, ParamValue>): string[] {
-  const chips = [`융합 ${values.fusion_alpha}`, `근거 ${values.top_k_final}`]
-  if (values.link_guide_hybrid) chips.push('링크 안내 병용')
+  const chips = [`후보 ${values.k_candidates}`, `근거 ${values.k_final}`]
+  if (values.use_reranker) chips.push('리랭커 On')
   return chips
 }
 
@@ -516,16 +529,16 @@ export const adEvalRagHandlers = [
     const body = (await request.json()) as { draft: Record<string, ParamValue>; request_id?: string }
     if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
     await delay(1400) // 홀드아웃 89문항 실행 — 로딩 상태를 볼 수 있는 시간
-    const alpha = Number(body.draft.fusion_alpha ?? currentValues.fusion_alpha)
-    const worse = alpha > Number(currentValues.fusion_alpha)
+    const t = Number(body.draft.min_top1_score ?? currentValues.min_top1_score)
+    const worse = t > Number(currentValues.min_top1_score)
     gate = {
       passed: true,
-      draft_signature: JSON.stringify(body.draft),
+      draft_signature: mockSignature(body.draft),
       evaluated_at: new Date().toISOString(),
       blocked_reason: null,
       // 게이트는 통과했지만 현행보다 낮아진 지표가 있으면 경고(§1.6)
       warning: worse ? 'A/B 비교 결과가 현행보다 낮습니다. 그래도 반영하려면 사유에 근거를 남겨 주세요' : null,
-      holdout_total: 89, holdout_passed: 89, smoke_total: 30, smoke_passed: 30,
+      holdout_total: 89, holdout_passed: 89, smoke_total: 0, smoke_passed: 0,
       quantitative: {
         basis: '기준 : 링크 안내로 분류된 문항 59건 · 2026-07-28 측정. 융합 비중은 이 질의에만 영향하므로 분모가 전체 평가셋과 다릅니다',
         metrics: [
@@ -550,12 +563,12 @@ export const adEvalRagHandlers = [
       query: body.query,
       a: {
         label: 'A. 현행 운영값', chips: baseChips, changed_chips: [],
-        hits: hitsFor(Number(currentValues.fusion_alpha)),
+        hits: hitsFor(Number(currentValues.min_top1_score)),
       },
       b: {
         label: 'B. 초안 (편집 중)', chips: draftChips,
         changed_chips: draftChips.filter((c) => !baseChips.includes(c)),
-        hits: hitsFor(Number(body.draft.fusion_alpha ?? currentValues.fusion_alpha)),
+        hits: hitsFor(Number(body.draft.min_top1_score ?? currentValues.min_top1_score)),
       },
     }
     return HttpResponse.json(res)

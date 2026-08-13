@@ -71,7 +71,8 @@ export interface ConversationLogDetail extends ConversationLogRow {
     intent: Intent
     business_function: BusinessFunction | null
     question_type: QuestionType
-    source_used: boolean
+    /** rag_runs 에 원천 컬럼이 없어 서버가 null 을 내린다(admin_logs.py 모듈 주석) */
+    source_used: boolean | null
     marker: string
     /** 마커가 어긋나 정규화로 보정한 건 — 급증하면 프롬프트 점검(AD-008) 신호 */
     normalized: boolean
