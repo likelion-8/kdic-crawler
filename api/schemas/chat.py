@@ -51,7 +51,7 @@ class SubAnswer(BaseModel):
     근거면 각각에 보여야 한다(되살리면 이슈 4 재발).
 
     채우는 곳: api/rag/answer.py 의 finalize_sub() → to_chat_response(). src/pipeline.py 쪽
-    경로(Streamlit·CLI)는 여전히 하위 답변을 문자열로 합쳐 내보내므로 이 구조를 쓰지 않는다 —
+    경로(CLI)는 여전히 하위 답변을 문자열로 합쳐 내보내므로 이 구조를 쓰지 않는다 —
     그래서 answer.py 가 pipeline 을 부르지 않고 같은 빌딩블록으로 흐름을 다시 엮는다.
     """
     title: str = Field(description="분해된 하위 질문(프론트 표시용 제목).")

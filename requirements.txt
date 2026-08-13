@@ -56,9 +56,6 @@ requests==2.34.2
 urllib3==2.7.0
 python-dotenv==1.2.2
 
-# --- 데모 UI (src/app.py) ---
-## streamlit==1.60.0
-
 # --- 직접 import 하지 않지만 고정이 필요한 것 ---
 # sqlalchemy(>=4.6.0)·fastapi(>=4.8.0)·pydantic(>=4.14.1)이 각자 하한을 걸어두고 있어
 # pip은 알아서 올려준다. 여기 못박는 건 조합을 하나로 고정하기 위해서다.

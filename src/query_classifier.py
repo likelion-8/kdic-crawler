@@ -86,7 +86,7 @@ class QuestionTypeClassifier:
 # 2026-07-29 팀 결정: 업무(business_function) 분류는 검색에 쓰지 않기로 하여 비활성화.
 # (retrieval._build_engines가 bf_classifier를 넘기지 않아 이미 무필터였고, 이 클래스는
 #  아무도 인스턴스화하지 않던 죽은 코드였음.) 재도입 시 아래 주석을 되살리고, retrieval.py의
-#  import·RoutedRetriever 인자, app.py 워밍업도 함께 복원할 것.
+#  import·RoutedRetriever 인자도 함께 복원할 것.
 # class BusinessFunctionClassifier(QuestionTypeClassifier):
 #     """질의 → 6개 업무(business_function) 분류. QuestionTypeClassifier와 같은 1-NN·같은
 #     질문 임베딩 캐시를 쓰되 라벨만 business_function으로 바꾼다. 결과값을 RoutedRetriever

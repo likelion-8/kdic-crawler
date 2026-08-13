@@ -6,7 +6,7 @@
 형태로 다시 엮는다. src/ 는 읽기만 하고 수정하지 않는다.
 
 두 경로가 갈려 있으므로 파라미터(K_CANDIDATES/K_FINAL·리랭커 off·플래너 on)를 pipeline 과
-같게 유지하는 것은 수동 책임이다 — 한쪽만 바꾸면 CLI/Streamlit 과 웹 답변이 달라진다.
+같게 유지하는 것은 수동 책임이다 — 한쪽만 바꾸면 CLI(평가 경로)와 웹 답변이 달라진다.
 
 여기서 LLM 생성 자체는 하지 않는다 — prepare_sub()가 '프롬프트까지'만 준비하고, 실제 토큰
 스트리밍은 api/rag/sse.py 가 llm_client.stream_hyperclova(prompt)로 돌린다. 스트리밍이 끝난
