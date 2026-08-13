@@ -396,4 +396,12 @@ def route_search_chunks(query, k):
         ranked = dense_inner.search(query, k, business_function=bf)
 
     unit_texts = e["unit_texts"]
+    # Dense는 Supabase pgvector(사전 색인)에서 id를 받아오므로, 청킹(chunking.py)이 바뀌었는데
+    # index_document_chunks.py 재색인을 안 하면 DB id가 현재 unit_texts에 없을 수 있다.
+    # 그대로 두면 KeyError 한 글자(id)만 남아 원인을 못 찾으므로 여기서 원인을 말해주고 죽는다.
+    missing = [cid for cid, _ in ranked if cid not in unit_texts]
+    if missing:
+        raise RuntimeError(
+            f"pgvector 색인이 현재 청킹과 불일치(예: {missing[:3]}) — 청킹 변경 후 "
+            f"src/crawler/index_document_chunks.py 재색인이 필요하다.")
     return [(cid, score, unit_texts[cid]) for cid, score in ranked]
