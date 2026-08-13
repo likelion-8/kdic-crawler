@@ -83,7 +83,7 @@ function render(node: ReactNode): string {
 // 3. 모달 푸터 행 동작 — 권한이 있으면 둘 다, 없으면 숨긴다 (403은 목록 화면이 따로 처리)
 {
   const on = render(
-    <PageDetailActions page={PAGE} canRecrawl canDelete onRecrawl={() => {}} onDelete={() => {}} />,
+    <PageDetailActions page={PAGE} canRecrawl canDelete onRecrawl={() => {}} onDelete={() => {}} onCancelDelete={() => {}} />,
   )
   assert.ok(on.includes('재수집') && on.includes('삭제'))
 
@@ -94,6 +94,7 @@ function render(node: ReactNode): string {
       canDelete={false}
       onRecrawl={() => {}}
       onDelete={() => {}}
+      onCancelDelete={() => {}}
     />,
   )
   assert.ok(!off.includes('>재수집<'))
