@@ -1,0 +1,5 @@
+id,label,status,properties_json
+contact:concealed_assets_report_center,은닉재산 신고센터,domain_approved,{}
+contact:financial_misconduct_report_center,금융부실관련자 불법행위 신고센터,domain_approved,{}
+contact:mistaken_remittance_visit,착오송금 반환지원 방문접수,domain_approved,{}
+contact:unclaimed_funds_phone,미수령금 전화문의,domain_approved,{}

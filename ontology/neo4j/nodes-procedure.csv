@@ -1,0 +1,5 @@
+id,label,status,properties_json
+procedure:deposit_insurance_payment_application,예금보험금 신청 절차,domain_approved,{}
+procedure:insured_financial_company_survey_objection,부보금융회사조사 소명·이의제기,domain_approved,{}
+procedure:mistaken_remittance_application,착오송금 반환지원 신청방법,domain_approved,{}
+procedure:mistaken_remittance_return_support,착오송금 반환지원 절차,domain_approved,{}

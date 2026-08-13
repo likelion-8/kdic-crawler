@@ -1,0 +1,2135 @@
+{
+  "schema_version": "1.0.0",
+  "ontology_version": "0.1.0",
+  "status": "metadata_mapped_unreviewed",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "services": [
+    {
+      "id": "service:deposit_protection",
+      "label": "예금자보호제도",
+      "business_domain": "예금자보호제도",
+      "document_count": 17
+    },
+    {
+      "id": "service:deposit_insurance_payment",
+      "label": "예금보험금 안내",
+      "business_domain": "예금보험금 안내",
+      "document_count": 4
+    },
+    {
+      "id": "service:unclaimed_funds",
+      "label": "고객 미수령금 신청",
+      "business_domain": "고객 미수령금 신청",
+      "document_count": 10
+    },
+    {
+      "id": "service:mistaken_remittance_return",
+      "label": "착오송금 반환 신청",
+      "business_domain": "착오송금 반환 신청",
+      "document_count": 15
+    },
+    {
+      "id": "service:debt_adjustment",
+      "label": "채무조정 안내",
+      "business_domain": "채무조정 안내",
+      "document_count": 8
+    },
+    {
+      "id": "service:concealed_assets_report",
+      "label": "은닉재산 신고",
+      "business_domain": "은닉재산 신고",
+      "document_count": 4
+    }
+  ],
+  "concepts": [
+    {
+      "id": "concept:c_008151b80c2c9d5d",
+      "label": "수취인_유의사항",
+      "document_count": 1,
+      "page_ids": [
+        "receiver_attention"
+      ]
+    },
+    {
+      "id": "concept:c_01a5d76df6fbb2e7",
+      "label": "FAQ - 착오송금반환지원신청",
+      "document_count": 1,
+      "page_ids": [
+        "faq_msdr_apply"
+      ]
+    },
+    {
+      "id": "concept:c_02ee110020a6af4c",
+      "label": "고객센터 FAQ TOP 10",
+      "document_count": 1,
+      "page_ids": [
+        "faq_top10"
+      ]
+    },
+    {
+      "id": "concept:c_0335dc25a8783d69",
+      "label": "소명및이의제기신청",
+      "document_count": 1,
+      "page_ids": [
+        "dp_josa_objc"
+      ]
+    },
+    {
+      "id": "concept:c_035f09e117783272",
+      "label": "예금자보호제도",
+      "document_count": 1,
+      "page_ids": [
+        "dp_syst"
+      ]
+    },
+    {
+      "id": "concept:c_0b38f8efe27f5bc7",
+      "label": "신고센터 소개",
+      "document_count": 1,
+      "page_ids": [
+        "ha_ilgl_intro"
+      ]
+    },
+    {
+      "id": "concept:c_0b8eebe581a8a3d2",
+      "label": "반환지원절차",
+      "document_count": 1,
+      "page_ids": [
+        "mtrs_gvbk_proc"
+      ]
+    },
+    {
+      "id": "concept:c_0c5aafb82cf87be3",
+      "label": "미수령금 통합조회/신청",
+      "document_count": 8,
+      "page_ids": [
+        "uc_bkrp_fndt",
+        "uc_bkrp_mng",
+        "uc_bkrp_spcl_ast",
+        "uc_bkrp_spcl_mng",
+        "uc_bkrp_trst_mng",
+        "uc_bkrp_trst_psta",
+        "uc_gudn",
+        "uc_hrpe_hist"
+      ]
+    },
+    {
+      "id": "concept:c_132955c7d26f2ff6",
+      "label": "절차",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_proc"
+      ]
+    },
+    {
+      "id": "concept:c_14b7e7c9a0048de6",
+      "label": "방문접수안내",
+      "document_count": 1,
+      "page_ids": [
+        "mtrs_vst_rcpt"
+      ]
+    },
+    {
+      "id": "concept:c_15efa1acd3ac5c8a",
+      "label": "부실책임조사",
+      "document_count": 1,
+      "page_ids": [
+        "ha_status_agree"
+      ]
+    },
+    {
+      "id": "concept:c_19ff75362e1f3c6b",
+      "label": "조사업무 소개",
+      "document_count": 1,
+      "page_ids": [
+        "dp_josa_itrd"
+      ]
+    },
+    {
+      "id": "concept:c_1bdf6485a85e2b7a",
+      "label": "신용회복 지원",
+      "document_count": 1,
+      "page_ids": [
+        "dr_credit_sprt"
+      ]
+    },
+    {
+      "id": "concept:c_1bdf92f70ac093d9",
+      "label": "파산재단현황",
+      "document_count": 1,
+      "page_ids": [
+        "uc_bkrp_fndt"
+      ]
+    },
+    {
+      "id": "concept:c_1e0253f62c754140",
+      "label": "미수령금통합신청",
+      "document_count": 3,
+      "page_ids": [
+        "faq_nramt",
+        "uc_itgr_aply",
+        "uc_tel_qust"
+      ]
+    },
+    {
+      "id": "concept:c_1ea06745ce10da94",
+      "label": "상속인 금융거래조회",
+      "document_count": 1,
+      "page_ids": [
+        "uc_hrpe_hist"
+      ]
+    },
+    {
+      "id": "concept:c_21ec591f2025d4c5",
+      "label": "소개와 방법안내",
+      "document_count": 4,
+      "page_ids": [
+        "mtrs_gvbk_proc",
+        "mtrs_rel_law",
+        "mtrs_stut_chc",
+        "mtrs_vst_rcpt"
+      ]
+    },
+    {
+      "id": "concept:c_26fbcc7c3750d410",
+      "label": "부보금융회사조사 법적근거 및 관련규정",
+      "document_count": 1,
+      "page_ids": [
+        "dp_josa_law"
+      ]
+    },
+    {
+      "id": "concept:c_294453a954cac30f",
+      "label": "보호대상 금융회사 개요",
+      "document_count": 1,
+      "page_ids": [
+        "dp_fnst"
+      ]
+    },
+    {
+      "id": "concept:c_2d53b0db833d2898",
+      "label": "신청대상여부 확인",
+      "document_count": 1,
+      "page_ids": [
+        "sender_qlfc_check"
+      ]
+    },
+    {
+      "id": "concept:c_340a7686f10d88bd",
+      "label": "예금자보호제도 FAQ",
+      "document_count": 1,
+      "page_ids": [
+        "dp_faq_page"
+      ]
+    },
+    {
+      "id": "concept:c_35005b837bcd53ab",
+      "label": "예금자 대상 전화문의 안내",
+      "document_count": 1,
+      "page_ids": [
+        "uc_tel_qust"
+      ]
+    },
+    {
+      "id": "concept:c_35ac7643177bb2aa",
+      "label": "소명 및 이의제기",
+      "document_count": 1,
+      "page_ids": [
+        "dp_josa_objc"
+      ]
+    },
+    {
+      "id": "concept:c_36df84cf8d685a1e",
+      "label": "구비서류안내 - 착오송금수취인",
+      "document_count": 1,
+      "page_ids": [
+        "receiver_docs"
+      ]
+    },
+    {
+      "id": "concept:c_3c48ca055b59c51b",
+      "label": "보호대상",
+      "document_count": 5,
+      "page_ids": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_prdct",
+        "dp_prdct_srch",
+        "dp_svbk_hist"
+      ]
+    },
+    {
+      "id": "concept:c_3d101c3f14e24f9f",
+      "label": "FAQ_TOP10",
+      "document_count": 1,
+      "page_ids": [
+        "faq_top10"
+      ]
+    },
+    {
+      "id": "concept:c_3f293d28d1e34528",
+      "label": "표시·설명·확인 제도",
+      "document_count": 4,
+      "page_ids": [
+        "dp_gudn",
+        "dp_gudn_data",
+        "dp_gudn_faq",
+        "dp_logo"
+      ]
+    },
+    {
+      "id": "concept:c_420449bdcc3ca2b7",
+      "label": "보호대상금융회사검색",
+      "document_count": 1,
+      "page_ids": [
+        "dp_fnst_srch"
+      ]
+    },
+    {
+      "id": "concept:c_432bb4bc988fe3b0",
+      "label": "보호대상 금융상품 개요",
+      "document_count": 1,
+      "page_ids": [
+        "dp_prdct"
+      ]
+    },
+    {
+      "id": "concept:c_4b45f68eeb3692df",
+      "label": "보호대상금융상품검색",
+      "document_count": 1,
+      "page_ids": [
+        "dp_prdct_srch"
+      ]
+    },
+    {
+      "id": "concept:c_4ca7f75d2ec3bd7b",
+      "label": "신청시 구비서류",
+      "document_count": 1,
+      "page_ids": [
+        "ms_poss_dcmnt"
+      ]
+    },
+    {
+      "id": "concept:c_4d1e7b824eca0319",
+      "label": "착오송금반환지원 신청대상",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_aply_trgt"
+      ]
+    },
+    {
+      "id": "concept:c_4fba11fc0d99225c",
+      "label": "채무조정",
+      "document_count": 1,
+      "page_ids": [
+        "dr_kruc"
+      ]
+    },
+    {
+      "id": "concept:c_51f8fbdf3ff9e253",
+      "label": "소개와 신청방법 안내",
+      "document_count": 2,
+      "page_ids": [
+        "uc_itgr_aply",
+        "uc_tel_qust"
+      ]
+    },
+    {
+      "id": "concept:c_527a3c9463713818",
+      "label": "표시·설명·확인 제도 관련 FAQ",
+      "document_count": 1,
+      "page_ids": [
+        "dp_gudn_faq"
+      ]
+    },
+    {
+      "id": "concept:c_572776d78d64263b",
+      "label": "파산재단관리",
+      "document_count": 1,
+      "page_ids": [
+        "uc_bkrp_mng"
+      ]
+    },
+    {
+      "id": "concept:c_578fa9f57bc44cce",
+      "label": "금융부실관련자 은닉재산신고",
+      "document_count": 1,
+      "page_ids": [
+        "ha_center"
+      ]
+    },
+    {
+      "id": "concept:c_5b20f0b6b9ebb5f9",
+      "label": "착오송금인",
+      "document_count": 2,
+      "page_ids": [
+        "sender_attention",
+        "sender_qlfc_check"
+      ]
+    },
+    {
+      "id": "concept:c_5b4540e54140f019",
+      "label": "제도란",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_itrd"
+      ]
+    },
+    {
+      "id": "concept:c_604f66337c048cde",
+      "label": "구비서류안내 - 착오송금인",
+      "document_count": 1,
+      "page_ids": [
+        "sender_docs"
+      ]
+    },
+    {
+      "id": "concept:c_6054401109e7869f",
+      "label": "보호한도",
+      "document_count": 1,
+      "page_ids": [
+        "dp_protlmts"
+      ]
+    },
+    {
+      "id": "concept:c_6320ddef25ed6d7d",
+      "label": "고객미수령금",
+      "document_count": 1,
+      "page_ids": [
+        "uc_gudn"
+      ]
+    },
+    {
+      "id": "concept:c_637a0e93c8785287",
+      "label": "착오송금 반환지원제도",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_aply_trgt"
+      ]
+    },
+    {
+      "id": "concept:c_6a91436ac7264d5d",
+      "label": "부보금융회사조사",
+      "document_count": 3,
+      "page_ids": [
+        "dp_josa_itrd",
+        "dp_josa_law",
+        "dp_josa_objc"
+      ]
+    },
+    {
+      "id": "concept:c_6c704a1d32d87ba2",
+      "label": "신탁부동산현황",
+      "document_count": 1,
+      "page_ids": [
+        "uc_bkrp_trst_psta"
+      ]
+    },
+    {
+      "id": "concept:c_7173c92dada04b96",
+      "label": "금융상품",
+      "document_count": 2,
+      "page_ids": [
+        "dp_prdct",
+        "dp_prdct_srch"
+      ]
+    },
+    {
+      "id": "concept:c_74952948bd1147a6",
+      "label": "채무정보 조회 ＆ 상담신청",
+      "document_count": 1,
+      "page_ids": [
+        "dr_info_aply"
+      ]
+    },
+    {
+      "id": "concept:c_7caf02c67727c3b6",
+      "label": "예금보험금이란?",
+      "document_count": 1,
+      "page_ids": [
+        "ms_expln"
+      ]
+    },
+    {
+      "id": "concept:c_7f853071bbe38720",
+      "label": "보험금 지급대상 금융회사",
+      "document_count": 1,
+      "page_ids": [
+        "ms_trgt_fnst"
+      ]
+    },
+    {
+      "id": "concept:c_8306dbfed40e512f",
+      "label": "채무조정제도",
+      "document_count": 1,
+      "page_ids": [
+        "dr_system"
+      ]
+    },
+    {
+      "id": "concept:c_8497eb60b73b67fd",
+      "label": "고객센터",
+      "document_count": 2,
+      "page_ids": [
+        "faq_nramt",
+        "ha_faq_dclr"
+      ]
+    },
+    {
+      "id": "concept:c_8510af5f765e4bb0",
+      "label": "개인회생",
+      "document_count": 1,
+      "page_ids": [
+        "dr_psn_rg"
+      ]
+    },
+    {
+      "id": "concept:c_88b83dc8f903c686",
+      "label": "예금보호 로고 사용 안내",
+      "document_count": 1,
+      "page_ids": [
+        "dp_logo"
+      ]
+    },
+    {
+      "id": "concept:c_8e9f45db00366d53",
+      "label": "채무정보조회 FAQ",
+      "document_count": 1,
+      "page_ids": [
+        "dr_faq_inq"
+      ]
+    },
+    {
+      "id": "concept:c_9627bdfe5acfa166",
+      "label": "예금자보호한도(해외)",
+      "document_count": 1,
+      "page_ids": [
+        "dp_ovrs"
+      ]
+    },
+    {
+      "id": "concept:c_9b6712000f4d1300",
+      "label": "착오송금인 유의사항",
+      "document_count": 1,
+      "page_ids": [
+        "sender_attention"
+      ]
+    },
+    {
+      "id": "concept:c_9d49654cd2f061a4",
+      "label": "신청방법",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_apply_mthd"
+      ]
+    },
+    {
+      "id": "concept:c_a26428762ffd7da4",
+      "label": "안내자료 다운로드",
+      "document_count": 1,
+      "page_ids": [
+        "dp_gudn_data"
+      ]
+    },
+    {
+      "id": "concept:c_a27f421d12b3564b",
+      "label": "파산면책",
+      "document_count": 1,
+      "page_ids": [
+        "dr_psn_br"
+      ]
+    },
+    {
+      "id": "concept:c_a8f077467f3347be",
+      "label": "예금보험금 신청 절차",
+      "document_count": 1,
+      "page_ids": [
+        "ms_aply_proc"
+      ]
+    },
+    {
+      "id": "concept:c_a8f7d97fb324c42d",
+      "label": "착오송금반환지원 신청방법",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_apply_mthd"
+      ]
+    },
+    {
+      "id": "concept:c_ac01d1377dbeeb01",
+      "label": "부채증명원 및 금융거래정보신청",
+      "document_count": 1,
+      "page_ids": [
+        "dr_debt_cert"
+      ]
+    },
+    {
+      "id": "concept:c_adb79e3342c34c10",
+      "label": "부보금융회사조사 업무 소개",
+      "document_count": 1,
+      "page_ids": [
+        "dp_josa_itrd"
+      ]
+    },
+    {
+      "id": "concept:c_addfc0185edb571b",
+      "label": "신탁부동산관리체계",
+      "document_count": 1,
+      "page_ids": [
+        "uc_bkrp_trst_mng"
+      ]
+    },
+    {
+      "id": "concept:c_b2cfc8f3a944e190",
+      "label": "신고센터",
+      "document_count": 1,
+      "page_ids": [
+        "ha_center"
+      ]
+    },
+    {
+      "id": "concept:c_b2d903535dcbefff",
+      "label": "부실책임조사 진행현황 조회 (개인정보 동의)",
+      "document_count": 1,
+      "page_ids": [
+        "ha_status_agree"
+      ]
+    },
+    {
+      "id": "concept:c_b6a885b4154a1e9e",
+      "label": "특별자산현황",
+      "document_count": 1,
+      "page_ids": [
+        "uc_bkrp_spcl_ast"
+      ]
+    },
+    {
+      "id": "concept:c_bbcd9a329f749697",
+      "label": "KR&C 채무조정",
+      "document_count": 1,
+      "page_ids": [
+        "dr_kruc"
+      ]
+    },
+    {
+      "id": "concept:c_bcafbdc1d9dfd547",
+      "label": "특별자산관리체계",
+      "document_count": 1,
+      "page_ids": [
+        "uc_bkrp_spcl_mng"
+      ]
+    },
+    {
+      "id": "concept:c_bdf7bad37a1447c3",
+      "label": "예금보험금 신청절차",
+      "document_count": 1,
+      "page_ids": [
+        "ms_aply_proc"
+      ]
+    },
+    {
+      "id": "concept:c_c4f8b4a53b142a0a",
+      "label": "채무정보 조회 및 상담신청",
+      "document_count": 1,
+      "page_ids": [
+        "dr_info_aply"
+      ]
+    },
+    {
+      "id": "concept:c_c591b3969a3df809",
+      "label": "관련법령 및 규정",
+      "document_count": 1,
+      "page_ids": [
+        "mtrs_rel_law"
+      ]
+    },
+    {
+      "id": "concept:c_c5b5a0a24f3477f8",
+      "label": "파산금융회사 정보 검색",
+      "document_count": 6,
+      "page_ids": [
+        "uc_bkrp_fndt",
+        "uc_bkrp_mng",
+        "uc_bkrp_spcl_ast",
+        "uc_bkrp_spcl_mng",
+        "uc_bkrp_trst_mng",
+        "uc_bkrp_trst_psta"
+      ]
+    },
+    {
+      "id": "concept:c_c9a28ddb4109e2e2",
+      "label": "법적근거 및 관련규정",
+      "document_count": 1,
+      "page_ids": [
+        "dp_josa_law"
+      ]
+    },
+    {
+      "id": "concept:c_c9b4d3c4b528c3d1",
+      "label": "부보금융회사조사 소명 및 이의제기 신청",
+      "document_count": 1,
+      "page_ids": [
+        "dp_josa_objc"
+      ]
+    },
+    {
+      "id": "concept:c_ca1c1facfc0730df",
+      "label": "금융부실관련자 불법행위신고",
+      "document_count": 1,
+      "page_ids": [
+        "ha_ilgl_intro"
+      ]
+    },
+    {
+      "id": "concept:c_ca4e186d69fc3c0b",
+      "label": "유의사항",
+      "document_count": 1,
+      "page_ids": [
+        "sender_attention"
+      ]
+    },
+    {
+      "id": "concept:c_d4949d1cefa5e1fd",
+      "label": "미수령금통합신청 FAQ (실제 내용은 예금보호)",
+      "document_count": 1,
+      "page_ids": [
+        "faq_nramt"
+      ]
+    },
+    {
+      "id": "concept:c_da7426f8cd4b7af9",
+      "label": "상황선택",
+      "document_count": 1,
+      "page_ids": [
+        "mtrs_stut_chc"
+      ]
+    },
+    {
+      "id": "concept:c_dbc468a14b601d5d",
+      "label": "FAQ",
+      "document_count": 2,
+      "page_ids": [
+        "faq_nramt",
+        "ha_faq_dclr"
+      ]
+    },
+    {
+      "id": "concept:c_dc015df639b9ffb5",
+      "label": "개요",
+      "document_count": 2,
+      "page_ids": [
+        "dp_fnst",
+        "dp_prdct"
+      ]
+    },
+    {
+      "id": "concept:c_dff04cca052051af",
+      "label": "금융회사",
+      "document_count": 3,
+      "page_ids": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ]
+    },
+    {
+      "id": "concept:c_e1e0195c15458b84",
+      "label": "반환지원 신청하기",
+      "document_count": 1,
+      "page_ids": [
+        "sender_qlfc_check"
+      ]
+    },
+    {
+      "id": "concept:c_e72556a476852b72",
+      "label": "부채증명원/금융거래정보신청",
+      "document_count": 1,
+      "page_ids": [
+        "dr_debt_cert"
+      ]
+    },
+    {
+      "id": "concept:c_e7669145125672ed",
+      "label": "FAQ_반환지원신청",
+      "document_count": 1,
+      "page_ids": [
+        "faq_msdr_apply"
+      ]
+    },
+    {
+      "id": "concept:c_e9b60e5017283530",
+      "label": "구비서류_수취인",
+      "document_count": 1,
+      "page_ids": [
+        "receiver_docs"
+      ]
+    },
+    {
+      "id": "concept:c_ea5acfa92394ba44",
+      "label": "착오송금수취인 유의사항",
+      "document_count": 1,
+      "page_ids": [
+        "receiver_attention"
+      ]
+    },
+    {
+      "id": "concept:c_eb81d7d96ba4e901",
+      "label": "안내",
+      "document_count": 1,
+      "page_ids": [
+        "uc_itgr_aply"
+      ]
+    },
+    {
+      "id": "concept:c_ec9c3ff287ee767b",
+      "label": "저축은행변경이력",
+      "document_count": 1,
+      "page_ids": [
+        "dp_svbk_hist"
+      ]
+    },
+    {
+      "id": "concept:c_ef419af38d852f47",
+      "label": "착오송금반환지원 절차",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_proc"
+      ]
+    },
+    {
+      "id": "concept:c_f2b76b33d1b61a49",
+      "label": "구비서류_착오송금인",
+      "document_count": 1,
+      "page_ids": [
+        "sender_docs"
+      ]
+    },
+    {
+      "id": "concept:c_f9833a8d9f0af6bf",
+      "label": "신청대상여부 확인 (자가진단)",
+      "document_count": 1,
+      "page_ids": [
+        "sender_qlfc_check"
+      ]
+    },
+    {
+      "id": "concept:c_fb68b1ac497f5069",
+      "label": "은닉재산신고 FAQ",
+      "document_count": 1,
+      "page_ids": [
+        "ha_faq_dclr"
+      ]
+    },
+    {
+      "id": "concept:c_fd6bb44fcceba87e",
+      "label": "착오송금반환지원 제도란",
+      "document_count": 1,
+      "page_ids": [
+        "kmrs_itrd"
+      ]
+    },
+    {
+      "id": "concept:c_fef052cdef70a2cd",
+      "label": "표시·설명·확인 제도 안내",
+      "document_count": 1,
+      "page_ids": [
+        "dp_gudn"
+      ]
+    }
+  ],
+  "document_mappings": [
+    {
+      "page_id": "dp_faq_page",
+      "document_id": "document:dp_faq_page",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_340a7686f10d88bd"
+      ],
+      "content_sha256": "053957508cb2b05942fa36d7ef48414f9c69b9da76654e53d6f3163a8a80d186",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_fnst",
+      "document_id": "document:dp_fnst",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3c48ca055b59c51b",
+        "concept:c_dff04cca052051af",
+        "concept:c_dc015df639b9ffb5",
+        "concept:c_294453a954cac30f"
+      ],
+      "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_fnst_srch",
+      "document_id": "document:dp_fnst_srch",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3c48ca055b59c51b",
+        "concept:c_dff04cca052051af",
+        "concept:c_420449bdcc3ca2b7"
+      ],
+      "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_gudn",
+      "document_id": "document:dp_gudn",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3f293d28d1e34528",
+        "concept:c_fef052cdef70a2cd"
+      ],
+      "content_sha256": "dccd0b0bcc9c2becc411d6e87f3e70e1606885ba6d567986bf81e32ccb242e23",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_gudn_data",
+      "document_id": "document:dp_gudn_data",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3f293d28d1e34528",
+        "concept:c_a26428762ffd7da4"
+      ],
+      "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_gudn_faq",
+      "document_id": "document:dp_gudn_faq",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3f293d28d1e34528",
+        "concept:c_527a3c9463713818"
+      ],
+      "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_josa_itrd",
+      "document_id": "document:dp_josa_itrd",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_6a91436ac7264d5d",
+        "concept:c_19ff75362e1f3c6b",
+        "concept:c_adb79e3342c34c10"
+      ],
+      "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_josa_law",
+      "document_id": "document:dp_josa_law",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_6a91436ac7264d5d",
+        "concept:c_c9a28ddb4109e2e2",
+        "concept:c_26fbcc7c3750d410"
+      ],
+      "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_josa_objc",
+      "document_id": "document:dp_josa_objc",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_6a91436ac7264d5d",
+        "concept:c_35ac7643177bb2aa",
+        "concept:c_0335dc25a8783d69",
+        "concept:c_c9b4d3c4b528c3d1"
+      ],
+      "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_logo",
+      "document_id": "document:dp_logo",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3f293d28d1e34528",
+        "concept:c_88b83dc8f903c686"
+      ],
+      "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_ovrs",
+      "document_id": "document:dp_ovrs",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_9627bdfe5acfa166"
+      ],
+      "content_sha256": "1a4a8bbbe9da470007dbc09feca00130e109708b3b8c0a4dda02f3f65e1d9459",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_prdct",
+      "document_id": "document:dp_prdct",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3c48ca055b59c51b",
+        "concept:c_7173c92dada04b96",
+        "concept:c_dc015df639b9ffb5",
+        "concept:c_432bb4bc988fe3b0"
+      ],
+      "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_prdct_srch",
+      "document_id": "document:dp_prdct_srch",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3c48ca055b59c51b",
+        "concept:c_7173c92dada04b96",
+        "concept:c_4b45f68eeb3692df"
+      ],
+      "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_protlmts",
+      "document_id": "document:dp_protlmts",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_6054401109e7869f"
+      ],
+      "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_svbk_hist",
+      "document_id": "document:dp_svbk_hist",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_3c48ca055b59c51b",
+        "concept:c_dff04cca052051af",
+        "concept:c_ec9c3ff287ee767b"
+      ],
+      "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dp_syst",
+      "document_id": "document:dp_syst",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_035f09e117783272"
+      ],
+      "content_sha256": "349ad69487c4cffaaf259bb5e09ec272dddefd39fbe410c307982b48c70f4150",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_credit_sprt",
+      "document_id": "document:dr_credit_sprt",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_1bdf6485a85e2b7a"
+      ],
+      "content_sha256": "f431a549eade658ea9f1723718b7d86ba1cc5001d9be77af65c1c35c3550ed01",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_debt_cert",
+      "document_id": "document:dr_debt_cert",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_ac01d1377dbeeb01",
+        "concept:c_e72556a476852b72"
+      ],
+      "content_sha256": "b34de2685db8ddf35e4826afcbced17020682dafa0052f7752f6d7930ee3fb4a",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_faq_inq",
+      "document_id": "document:dr_faq_inq",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_8e9f45db00366d53"
+      ],
+      "content_sha256": "1c899cabed5073edfacd1f0b66768b9fc9f30442f4f073126e75f4d6411f4146",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_info_aply",
+      "document_id": "document:dr_info_aply",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_c4f8b4a53b142a0a",
+        "concept:c_74952948bd1147a6"
+      ],
+      "content_sha256": "7a5d97ec59ed45204a22616c03f2525a1a45837f427ee43a68ebc5b16f6b7e14",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_kruc",
+      "document_id": "document:dr_kruc",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_bbcd9a329f749697",
+        "concept:c_4fba11fc0d99225c"
+      ],
+      "content_sha256": "12dfb1ce59d6d3fab50a7e8e4628cdf253f6ab7d36844933fe69302c430d6143",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_psn_br",
+      "document_id": "document:dr_psn_br",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_a27f421d12b3564b"
+      ],
+      "content_sha256": "378fad2a221975f3ea53db06c46242f0cc3c871334bb3b5ec66a173292ec3e32",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_psn_rg",
+      "document_id": "document:dr_psn_rg",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_8510af5f765e4bb0"
+      ],
+      "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "dr_system",
+      "document_id": "document:dr_system",
+      "business_domain": "채무조정 안내",
+      "service_ids": [
+        "service:debt_adjustment"
+      ],
+      "concept_ids": [
+        "concept:c_8306dbfed40e512f"
+      ],
+      "content_sha256": "fab47dae07d654ef663346619ff27c9c5758ad6cfa97b2a6489be1ffbb9b1387",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "faq_msdr_apply",
+      "document_id": "document:faq_msdr_apply",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_e7669145125672ed",
+        "concept:c_01a5d76df6fbb2e7"
+      ],
+      "content_sha256": "a55ff31bdc14e60875eb95132ca9cb599e437b8120257c949f9abc1d16966456",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "faq_nramt",
+      "document_id": "document:faq_nramt",
+      "business_domain": "예금자보호제도",
+      "service_ids": [
+        "service:deposit_protection"
+      ],
+      "concept_ids": [
+        "concept:c_8497eb60b73b67fd",
+        "concept:c_dbc468a14b601d5d",
+        "concept:c_1e0253f62c754140",
+        "concept:c_d4949d1cefa5e1fd"
+      ],
+      "content_sha256": "dfc822c1156e098bd93ff5c4b2908fcc3145625550828faa9f1e2cedaa893060",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "faq_top10",
+      "document_id": "document:faq_top10",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_3d101c3f14e24f9f",
+        "concept:c_02ee110020a6af4c"
+      ],
+      "content_sha256": "34b2ec2438cd9e5f06301a9ecdaa56f6915339a8bdf7e8971bc7a9da28418db9",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ha_center",
+      "document_id": "document:ha_center",
+      "business_domain": "은닉재산 신고",
+      "service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "concept_ids": [
+        "concept:c_578fa9f57bc44cce",
+        "concept:c_b2cfc8f3a944e190"
+      ],
+      "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ha_faq_dclr",
+      "document_id": "document:ha_faq_dclr",
+      "business_domain": "은닉재산 신고",
+      "service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "concept_ids": [
+        "concept:c_8497eb60b73b67fd",
+        "concept:c_dbc468a14b601d5d",
+        "concept:c_fb68b1ac497f5069"
+      ],
+      "content_sha256": "9e72acbd7c27d0e6d80d0fc0c2e41a7b0a4d295c4d3d9790ef5eb6b9aaad5039",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ha_ilgl_intro",
+      "document_id": "document:ha_ilgl_intro",
+      "business_domain": "은닉재산 신고",
+      "service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "concept_ids": [
+        "concept:c_ca1c1facfc0730df",
+        "concept:c_0b38f8efe27f5bc7"
+      ],
+      "content_sha256": "06f9fa77314a9075fadc91c9f878487b8579376bf58edbf0f09f7fcfb95cad70",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ha_status_agree",
+      "document_id": "document:ha_status_agree",
+      "business_domain": "은닉재산 신고",
+      "service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "concept_ids": [
+        "concept:c_15efa1acd3ac5c8a",
+        "concept:c_b2d903535dcbefff"
+      ],
+      "content_sha256": "7a9070848f1a43399c08a0345c2e11d035efd82a3e85f6cc608181d86b7b865e",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "kmrs_aply_trgt",
+      "document_id": "document:kmrs_aply_trgt",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_637a0e93c8785287",
+        "concept:c_4d1e7b824eca0319"
+      ],
+      "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "kmrs_apply_mthd",
+      "document_id": "document:kmrs_apply_mthd",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_9d49654cd2f061a4",
+        "concept:c_a8f7d97fb324c42d"
+      ],
+      "content_sha256": "c8d0393d679d1cf9163cce167b75b6353e4d8297e7cc38e807a08dec4a06889a",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "kmrs_itrd",
+      "document_id": "document:kmrs_itrd",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_5b4540e54140f019",
+        "concept:c_fd6bb44fcceba87e"
+      ],
+      "content_sha256": "78b2c5fd989beb7c83e6e5564bacf232e3ab05fe011f609ff3cb76fe6591d212",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "kmrs_proc",
+      "document_id": "document:kmrs_proc",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_132955c7d26f2ff6",
+        "concept:c_ef419af38d852f47"
+      ],
+      "content_sha256": "0a8b549ed1fb9cde87c259751d0a5916db2b5edfc1811b7ad7413bb30deabce7",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ms_aply_proc",
+      "document_id": "document:ms_aply_proc",
+      "business_domain": "예금보험금 안내",
+      "service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "concept_ids": [
+        "concept:c_a8f077467f3347be",
+        "concept:c_bdf7bad37a1447c3"
+      ],
+      "content_sha256": "b398772e990453abd83695a258c409ec8a9dc4e6dbd19844a64aba34a498bba0",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ms_expln",
+      "document_id": "document:ms_expln",
+      "business_domain": "예금보험금 안내",
+      "service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "concept_ids": [
+        "concept:c_7caf02c67727c3b6"
+      ],
+      "content_sha256": "8a9ad3e4e641bff847e916ef4810d48562abc5fe0834288b074968f295c758a6",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ms_poss_dcmnt",
+      "document_id": "document:ms_poss_dcmnt",
+      "business_domain": "예금보험금 안내",
+      "service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "concept_ids": [
+        "concept:c_4ca7f75d2ec3bd7b"
+      ],
+      "content_sha256": "7f921cea8add94b1aa2e3b473a595420f648000c9dd90cedb73bd38d720f59fb",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "ms_trgt_fnst",
+      "document_id": "document:ms_trgt_fnst",
+      "business_domain": "예금보험금 안내",
+      "service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "concept_ids": [
+        "concept:c_7f853071bbe38720"
+      ],
+      "content_sha256": "72cf381ebd633bb4bb10fabdcd982445d1635aa8dab726c2201c31621f74778d",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "mtrs_gvbk_proc",
+      "document_id": "document:mtrs_gvbk_proc",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_21ec591f2025d4c5",
+        "concept:c_0b8eebe581a8a3d2"
+      ],
+      "content_sha256": "a4803ab34cf7189c914c53dc8dbb6637a33556b4e85b8d1f389906f121fe537f",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "mtrs_rel_law",
+      "document_id": "document:mtrs_rel_law",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_21ec591f2025d4c5",
+        "concept:c_c591b3969a3df809"
+      ],
+      "content_sha256": "46d7def4dfbe218f531ef6ce6e8484d763659eb50722e849f49f084d6ead9730",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "mtrs_stut_chc",
+      "document_id": "document:mtrs_stut_chc",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_21ec591f2025d4c5",
+        "concept:c_da7426f8cd4b7af9"
+      ],
+      "content_sha256": "2b85e52da3cf42af3b46e2856b203a7a84395366dd7ec29bc6137536491bbedb",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "mtrs_vst_rcpt",
+      "document_id": "document:mtrs_vst_rcpt",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_21ec591f2025d4c5",
+        "concept:c_14b7e7c9a0048de6"
+      ],
+      "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "receiver_attention",
+      "document_id": "document:receiver_attention",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_008151b80c2c9d5d",
+        "concept:c_ea5acfa92394ba44"
+      ],
+      "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "receiver_docs",
+      "document_id": "document:receiver_docs",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_e9b60e5017283530",
+        "concept:c_36df84cf8d685a1e"
+      ],
+      "content_sha256": "f9bed4bbb32986ec7a23a55ae61f3a48c11af5239510903822558a3df8968d37",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "sender_attention",
+      "document_id": "document:sender_attention",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_5b20f0b6b9ebb5f9",
+        "concept:c_ca4e186d69fc3c0b",
+        "concept:c_9b6712000f4d1300"
+      ],
+      "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "sender_docs",
+      "document_id": "document:sender_docs",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_f2b76b33d1b61a49",
+        "concept:c_604f66337c048cde"
+      ],
+      "content_sha256": "5a480687efac403e42a51f832ccf877f1c7864290486bb4e5123caccb3577814",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "sender_qlfc_check",
+      "document_id": "document:sender_qlfc_check",
+      "business_domain": "착오송금 반환 신청",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "concept_ids": [
+        "concept:c_5b20f0b6b9ebb5f9",
+        "concept:c_e1e0195c15458b84",
+        "concept:c_2d53b0db833d2898",
+        "concept:c_f9833a8d9f0af6bf"
+      ],
+      "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_fndt",
+      "document_id": "document:uc_bkrp_fndt",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_c5b5a0a24f3477f8",
+        "concept:c_1bdf92f70ac093d9"
+      ],
+      "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_mng",
+      "document_id": "document:uc_bkrp_mng",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_c5b5a0a24f3477f8",
+        "concept:c_572776d78d64263b"
+      ],
+      "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_spcl_ast",
+      "document_id": "document:uc_bkrp_spcl_ast",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_c5b5a0a24f3477f8",
+        "concept:c_b6a885b4154a1e9e"
+      ],
+      "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_spcl_mng",
+      "document_id": "document:uc_bkrp_spcl_mng",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_c5b5a0a24f3477f8",
+        "concept:c_bcafbdc1d9dfd547"
+      ],
+      "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_trst_mng",
+      "document_id": "document:uc_bkrp_trst_mng",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_c5b5a0a24f3477f8",
+        "concept:c_addfc0185edb571b"
+      ],
+      "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_trst_psta",
+      "document_id": "document:uc_bkrp_trst_psta",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_c5b5a0a24f3477f8",
+        "concept:c_6c704a1d32d87ba2"
+      ],
+      "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_gudn",
+      "document_id": "document:uc_gudn",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_6320ddef25ed6d7d"
+      ],
+      "content_sha256": "290a4f552b8ee76b8f9202f0de8dcb78d32a2b31ee94d02151b1e47124dcd8b2",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_hrpe_hist",
+      "document_id": "document:uc_hrpe_hist",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_0c5aafb82cf87be3",
+        "concept:c_1ea06745ce10da94"
+      ],
+      "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_itgr_aply",
+      "document_id": "document:uc_itgr_aply",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_1e0253f62c754140",
+        "concept:c_51f8fbdf3ff9e253",
+        "concept:c_eb81d7d96ba4e901"
+      ],
+      "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    },
+    {
+      "page_id": "uc_tel_qust",
+      "document_id": "document:uc_tel_qust",
+      "business_domain": "고객 미수령금 신청",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "concept_ids": [
+        "concept:c_1e0253f62c754140",
+        "concept:c_51f8fbdf3ff9e253",
+        "concept:c_35005b837bcd53ab"
+      ],
+      "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f",
+      "mapping": {
+        "method": "deterministic_metadata_v1",
+        "source_fields": [
+          "business_function",
+          "sub_category",
+          "page_title"
+        ],
+        "review_status": "unreviewed"
+      }
+    }
+  ]
+}

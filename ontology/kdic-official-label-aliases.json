@@ -1,0 +1,547 @@
+{
+  "schema_version": "1.0.0",
+  "status": "official_aliases_pending_domain_approval",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "policies": {
+    "source_fields": [
+      "page_title",
+      "sub_category"
+    ],
+    "heldout_testset_used": false,
+    "generated_user_phrases_allowed": false,
+    "contextual_labels_are_synonyms": false,
+    "runtime_use": "prohibited_until_domain_approval_and_evaluation"
+  },
+  "alias_count": 47,
+  "aliases": [
+    {
+      "id": "alias:47337a1dfc686ba2",
+      "entity_id": "actor:mistaken_remitter",
+      "canonical_label": "착오송금인",
+      "label": "착오송금인 유의사항",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "sender_attention"
+      ]
+    },
+    {
+      "id": "alias:505e1597b2cd0597",
+      "entity_id": "actor:protected_financial_institution",
+      "canonical_label": "보호대상 금융회사",
+      "label": "금융회사",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ]
+    },
+    {
+      "id": "alias:2b3a82d88799afba",
+      "entity_id": "actor:protected_financial_institution",
+      "canonical_label": "보호대상 금융회사",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ]
+    },
+    {
+      "id": "alias:fb02653d6ba4a113",
+      "entity_id": "actor:protected_financial_institution",
+      "canonical_label": "보호대상 금융회사",
+      "label": "보호대상 금융회사 개요",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_fnst"
+      ]
+    },
+    {
+      "id": "alias:c7800b9b4617a0bb",
+      "entity_id": "actor:protected_financial_institution",
+      "canonical_label": "보호대상 금융회사",
+      "label": "보호대상금융회사검색",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_fnst_srch"
+      ]
+    },
+    {
+      "id": "alias:63bd33a2b8efe753",
+      "entity_id": "concept:bankruptcy_discharge",
+      "canonical_label": "파산·면책",
+      "label": "파산면책",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dr_psn_br"
+      ]
+    },
+    {
+      "id": "alias:93950ff080d5ca25",
+      "entity_id": "concept:bankruptcy_estate_management",
+      "canonical_label": "파산재단 관리",
+      "label": "파산재단관리",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "uc_bkrp_mng"
+      ]
+    },
+    {
+      "id": "alias:8a1f108522bf657d",
+      "entity_id": "concept:bankruptcy_estate_status",
+      "canonical_label": "파산재단 현황",
+      "label": "파산재단현황",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "uc_bkrp_fndt"
+      ]
+    },
+    {
+      "id": "alias:994108c34b985f20",
+      "entity_id": "concept:deposit_insurance_payment",
+      "canonical_label": "예금보험금",
+      "label": "예금보험금 안내",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "ms_expln"
+      ]
+    },
+    {
+      "id": "alias:c5994da4bc098bea",
+      "entity_id": "concept:deposit_insurance_payment",
+      "canonical_label": "예금보험금",
+      "label": "예금보험금이란?",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "ms_expln"
+      ]
+    },
+    {
+      "id": "alias:46ac2a437e370e57",
+      "entity_id": "concept:display_explanation_confirmation_scheme",
+      "canonical_label": "표시·설명·확인 제도",
+      "label": "표시·설명·확인 제도 관련 FAQ",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_gudn_faq"
+      ]
+    },
+    {
+      "id": "alias:af1a13456dc5df57",
+      "entity_id": "concept:display_explanation_confirmation_scheme",
+      "canonical_label": "표시·설명·확인 제도",
+      "label": "표시·설명·확인 제도 안내",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_gudn"
+      ]
+    },
+    {
+      "id": "alias:952b02eff5633158",
+      "entity_id": "concept:insured_financial_company_survey",
+      "canonical_label": "부보금융회사조사",
+      "label": "부보금융회사조사 법적근거 및 관련규정",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_josa_law"
+      ]
+    },
+    {
+      "id": "alias:83f4a83aaff968aa",
+      "entity_id": "concept:insured_financial_company_survey",
+      "canonical_label": "부보금융회사조사",
+      "label": "부보금융회사조사 소명 및 이의제기 신청",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_josa_objc"
+      ]
+    },
+    {
+      "id": "alias:6e123182d8213155",
+      "entity_id": "concept:insured_financial_company_survey",
+      "canonical_label": "부보금융회사조사",
+      "label": "부보금융회사조사 업무 소개",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_josa_itrd"
+      ]
+    },
+    {
+      "id": "alias:d572ce2e7459e0b6",
+      "entity_id": "concept:insured_financial_company_survey_legal_basis",
+      "canonical_label": "부보금융회사조사 법적근거·관련규정",
+      "label": "부보금융회사조사",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_josa_law"
+      ]
+    },
+    {
+      "id": "alias:fe35e1fd031e0569",
+      "entity_id": "concept:mistaken_remittance_recipient_cautions",
+      "canonical_label": "착오송금 수취인 유의사항",
+      "label": "수취인_유의사항",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "receiver_attention"
+      ]
+    },
+    {
+      "id": "alias:6f4292c02f9281c4",
+      "entity_id": "concept:mistaken_remittance_recipient_cautions",
+      "canonical_label": "착오송금 수취인 유의사항",
+      "label": "착오송금수취인 유의사항",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "receiver_attention"
+      ]
+    },
+    {
+      "id": "alias:c5b67d143fad5bb0",
+      "entity_id": "concept:mistaken_remitter_cautions",
+      "canonical_label": "착오송금인 유의사항",
+      "label": "착오송금인",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "sender_attention"
+      ]
+    },
+    {
+      "id": "alias:684da4880efba1d1",
+      "entity_id": "concept:protected_financial_product",
+      "canonical_label": "보호대상 금융상품",
+      "label": "금융상품",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_prdct",
+        "dp_prdct_srch"
+      ]
+    },
+    {
+      "id": "alias:ff876cc184ce5a24",
+      "entity_id": "concept:protected_financial_product",
+      "canonical_label": "보호대상 금융상품",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_prdct",
+        "dp_prdct_srch"
+      ]
+    },
+    {
+      "id": "alias:0993c51df94aaa27",
+      "entity_id": "concept:protected_financial_product",
+      "canonical_label": "보호대상 금융상품",
+      "label": "보호대상 금융상품 개요",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_prdct"
+      ]
+    },
+    {
+      "id": "alias:8d01cd7742635cf5",
+      "entity_id": "concept:protected_financial_product",
+      "canonical_label": "보호대상 금융상품",
+      "label": "보호대상금융상품검색",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_prdct_srch"
+      ]
+    },
+    {
+      "id": "alias:545d1908cc0ad189",
+      "entity_id": "concept:special_asset_management_system",
+      "canonical_label": "특별자산 관리체계",
+      "label": "특별자산관리체계",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "uc_bkrp_spcl_mng"
+      ]
+    },
+    {
+      "id": "alias:4a803d34995445f7",
+      "entity_id": "concept:special_asset_status",
+      "canonical_label": "특별자산 현황",
+      "label": "특별자산현황",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "uc_bkrp_spcl_ast"
+      ]
+    },
+    {
+      "id": "alias:099cceab503b5cad",
+      "entity_id": "concept:trust_real_estate_management_system",
+      "canonical_label": "신탁부동산 관리체계",
+      "label": "신탁부동산관리체계",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "uc_bkrp_trst_mng"
+      ]
+    },
+    {
+      "id": "alias:c2c6695e98cfe941",
+      "entity_id": "concept:trust_real_estate_status",
+      "canonical_label": "신탁부동산 현황",
+      "label": "신탁부동산현황",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "uc_bkrp_trst_psta"
+      ]
+    },
+    {
+      "id": "alias:630a0dd6ba3067a6",
+      "entity_id": "concept:unclaimed_funds_integrated_application",
+      "canonical_label": "미수령금 통합신청",
+      "label": "미수령금통합신청",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "uc_itgr_aply",
+        "uc_tel_qust"
+      ]
+    },
+    {
+      "id": "alias:31188879c1e3506b",
+      "entity_id": "contact:concealed_assets_report_center",
+      "canonical_label": "은닉재산 신고센터",
+      "label": "신고센터",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "ha_center"
+      ]
+    },
+    {
+      "id": "alias:ba128a9cc5e907fb",
+      "entity_id": "contact:financial_misconduct_report_center",
+      "canonical_label": "금융부실관련자 불법행위 신고센터",
+      "label": "금융부실관련자 불법행위신고",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "ha_ilgl_intro"
+      ]
+    },
+    {
+      "id": "alias:f3a403671f367358",
+      "entity_id": "eligibility:mistaken_remittance_return_support",
+      "canonical_label": "착오송금 반환지원 신청대상",
+      "label": "착오송금반환지원 신청대상",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "kmrs_aply_trgt"
+      ]
+    },
+    {
+      "id": "alias:8ab3cd7a98ccc840",
+      "entity_id": "monetary_rule:deposit_protection_limit",
+      "canonical_label": "예금자 보호한도",
+      "label": "보호한도",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_protlmts"
+      ]
+    },
+    {
+      "id": "alias:f58a7612c0d6fcea",
+      "entity_id": "procedure:deposit_insurance_payment_application",
+      "canonical_label": "예금보험금 신청 절차",
+      "label": "예금보험금 신청절차",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "ms_aply_proc"
+      ]
+    },
+    {
+      "id": "alias:360015082e86d12a",
+      "entity_id": "procedure:insured_financial_company_survey_objection",
+      "canonical_label": "부보금융회사조사 소명·이의제기",
+      "label": "부보금융회사조사",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_josa_objc"
+      ]
+    },
+    {
+      "id": "alias:dd7c705e4421414d",
+      "entity_id": "procedure:mistaken_remittance_application",
+      "canonical_label": "착오송금 반환지원 신청방법",
+      "label": "착오송금반환지원 신청방법",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "kmrs_apply_mthd"
+      ]
+    },
+    {
+      "id": "alias:5d6ef4f0a8668ade",
+      "entity_id": "procedure:mistaken_remittance_return_support",
+      "canonical_label": "착오송금 반환지원 절차",
+      "label": "반환지원절차",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "mtrs_gvbk_proc"
+      ]
+    },
+    {
+      "id": "alias:252bca7acebc64d0",
+      "entity_id": "procedure:mistaken_remittance_return_support",
+      "canonical_label": "착오송금 반환지원 절차",
+      "label": "착오송금반환지원 절차",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "kmrs_proc"
+      ]
+    },
+    {
+      "id": "alias:56229f4a82d5c3d1",
+      "entity_id": "service:debt_certificate_financial_information_request",
+      "canonical_label": "부채증명원·금융거래정보 신청",
+      "label": "부채증명원/금융거래정보신청",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dr_debt_cert"
+      ]
+    },
+    {
+      "id": "alias:7c668a6b46df7778",
+      "entity_id": "service:debt_information_inquiry_consultation",
+      "canonical_label": "채무정보 조회·상담신청",
+      "label": "채무정보 조회 ＆ 상담신청",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dr_info_aply"
+      ]
+    },
+    {
+      "id": "alias:816aaeab4cbb3c41",
+      "entity_id": "service:failure_responsibility_investigation_status",
+      "canonical_label": "부실책임조사 진행현황 조회",
+      "label": "부실책임조사",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "ha_status_agree"
+      ]
+    },
+    {
+      "id": "alias:a5173c5c5a6bf86a",
+      "entity_id": "service:failure_responsibility_investigation_status",
+      "canonical_label": "부실책임조사 진행현황 조회",
+      "label": "부실책임조사 진행현황 조회 (개인정보 동의)",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "ha_status_agree"
+      ]
+    },
+    {
+      "id": "alias:b9ef443b7f31e7d6",
+      "entity_id": "service:protected_financial_institution_search",
+      "canonical_label": "보호대상 금융회사 검색",
+      "label": "금융회사",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_fnst_srch"
+      ]
+    },
+    {
+      "id": "alias:13deb7fa49852f6b",
+      "entity_id": "service:protected_financial_institution_search",
+      "canonical_label": "보호대상 금융회사 검색",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_fnst_srch"
+      ]
+    },
+    {
+      "id": "alias:23c0994ddd9fb591",
+      "entity_id": "service:protected_financial_institution_search",
+      "canonical_label": "보호대상 금융회사 검색",
+      "label": "보호대상금융회사검색",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_fnst_srch"
+      ]
+    },
+    {
+      "id": "alias:5dd3f2f61cd7c02a",
+      "entity_id": "service:protected_financial_product_search",
+      "canonical_label": "보호대상 금융상품 검색",
+      "label": "금융상품",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_prdct_srch"
+      ]
+    },
+    {
+      "id": "alias:31e05816ff6835dd",
+      "entity_id": "service:protected_financial_product_search",
+      "canonical_label": "보호대상 금융상품 검색",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_prdct_srch"
+      ]
+    },
+    {
+      "id": "alias:f20408108af8780f",
+      "entity_id": "service:protected_financial_product_search",
+      "canonical_label": "보호대상 금융상품 검색",
+      "label": "보호대상금융상품검색",
+      "alias_type": "official_label_variant",
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence_page_ids": [
+        "dp_prdct_srch"
+      ]
+    }
+  ]
+}

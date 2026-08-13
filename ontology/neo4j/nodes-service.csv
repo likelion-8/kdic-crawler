@@ -1,0 +1,14 @@
+id,label,status,properties_json
+service:concealed_assets_report,은닉재산 신고,base,{}
+service:credit_recovery_support,신용회복 지원,domain_approved,{}
+service:debt_adjustment,채무조정 안내,base,{}
+service:debt_certificate_financial_information_request,부채증명원·금융거래정보 신청,domain_approved,{}
+service:debt_information_inquiry_consultation,채무정보 조회·상담신청,domain_approved,{}
+service:deposit_insurance_payment,예금보험금 안내,base,{}
+service:deposit_protection,예금자보호제도,base,{}
+service:failure_responsibility_investigation_status,부실책임조사 진행현황 조회,domain_approved,{}
+service:heir_financial_transaction_inquiry,상속인 금융거래조회,domain_approved,{}
+service:mistaken_remittance_return,착오송금 반환 신청,base,{}
+service:protected_financial_institution_search,보호대상 금융회사 검색,domain_approved,{}
+service:protected_financial_product_search,보호대상 금융상품 검색,domain_approved,{}
+service:unclaimed_funds,고객 미수령금 신청,base,{}

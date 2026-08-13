@@ -1,0 +1,2 @@
+id,label,status,properties_json
+monetary_rule:deposit_protection_limit,예금자 보호한도,domain_approved,{}

@@ -1,0 +1,22 @@
+id,label,status,properties_json
+concept:bankrupt_financial_company_information_search,파산금융회사 정보 검색,domain_approved,{}
+concept:bankruptcy_discharge,파산·면책,domain_approved,{}
+concept:bankruptcy_estate_management,파산재단 관리,domain_approved,{}
+concept:bankruptcy_estate_status,파산재단 현황,domain_approved,{}
+concept:deposit_insurance_payment,예금보험금,domain_approved,{}
+concept:deposit_protection_logo_use_rules,예금보호 로고 사용 규정,domain_approved,{}
+concept:display_explanation_confirmation_scheme,표시·설명·확인 제도,domain_approved,{}
+concept:individual_rehabilitation,개인회생,domain_approved,{}
+concept:insured_financial_company_survey,부보금융회사조사,domain_approved,{}
+concept:insured_financial_company_survey_legal_basis,부보금융회사조사 법적근거·관련규정,domain_approved,{}
+concept:international_deposit_protection_limits,해외 예금자 보호한도,domain_approved,{}
+concept:mistaken_remittance_recipient_cautions,착오송금 수취인 유의사항,domain_approved,{}
+concept:mistaken_remittance_regulations,착오송금 반환지원 관련 법령·규정,domain_approved,{}
+concept:mistaken_remitter_cautions,착오송금인 유의사항,domain_approved,{}
+concept:protected_financial_product,보호대상 금융상품,domain_approved,{}
+concept:savings_bank_name_change_history,저축은행 상호 변경이력,domain_approved,{}
+concept:special_asset_management_system,특별자산 관리체계,domain_approved,{}
+concept:special_asset_status,특별자산 현황,domain_approved,{}
+concept:trust_real_estate_management_system,신탁부동산 관리체계,domain_approved,{}
+concept:trust_real_estate_status,신탁부동산 현황,domain_approved,{}
+concept:unclaimed_funds_integrated_application,미수령금 통합신청,domain_approved,{}

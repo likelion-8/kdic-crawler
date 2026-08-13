@@ -1,0 +1,100 @@
+{
+  "status": "offline_review_complete_runtime_blocked",
+  "artifact_integrity_passed": true,
+  "offline_ontology_ready": true,
+  "runtime_ready": false,
+  "domain_approval_complete": true,
+  "official_label_approval_complete": true,
+  "fact_gap_approval_complete": true,
+  "all_human_reviews_complete": true,
+  "all_graph_review_items_complete": true,
+  "retrieval_quality_gate_passed": false,
+  "production_changes_applied": false,
+  "llm_calls_for_validation": 0,
+  "database_calls_for_validation": 0,
+  "summary": {
+    "base_services": 6,
+    "canonical_entities_domain_approved": 45,
+    "core_facts_domain_approved": 15,
+    "official_labels_domain_approved": 47,
+    "graph_nodes": 177,
+    "graph_edges": 307,
+    "documents_with_semantic_evidence": 52,
+    "documents_retained_as_document_only": 6,
+    "documents_without_coverage_decision": 0,
+    "source_verified_fact_gap_candidates": 6,
+    "fact_gap_review_decisions": {
+      "approved": 6
+    },
+    "shadow_ranking_changes": 5,
+    "shadow_recall_at_1_regressions": 2,
+    "existing_fresh_heldout_candidates": 0,
+    "review_decisions": {
+      "approved": 60
+    },
+    "official_label_review_decisions": {
+      "approved": 47
+    },
+    "total_human_review_decisions": {
+      "approved": 113
+    },
+    "ontology_schema_alignment": {
+      "valid": true,
+      "declared_classes": 12,
+      "declared_relations": 6
+    }
+  },
+  "retrieval_shadow": {
+    "baseline": {
+      "Recall@1": 0.6055,
+      "Recall@3": 0.8544,
+      "Recall@5": 0.9219,
+      "MRR@5": 0.8046,
+      "n": 79
+    },
+    "assisted": {
+      "Recall@1": 0.5844,
+      "Recall@3": 0.8586,
+      "Recall@5": 0.9262,
+      "MRR@5": 0.8046,
+      "n": 79
+    },
+    "delta": {
+      "Recall@1": -0.0211,
+      "Recall@3": 0.0042,
+      "Recall@5": 0.0043,
+      "MRR@5": 0.0
+    }
+  },
+  "checks": {
+    "canonical_draft_reproducible": true,
+    "approval_checklist_reproducible": true,
+    "core_facts_reproducible": true,
+    "official_aliases_reproducible": true,
+    "canonical_graph_reproducible": true,
+    "ontology_schema_aligned": true,
+    "neo4j_export_reproducible": true,
+    "obsidian_vault_complete": true,
+    "document_semantic_coverage_reproducible": true,
+    "fact_gap_review_queue_reproducible": true,
+    "domain_review_packets_reproducible": true,
+    "llm_wiki_reproducible": true,
+    "llm_wiki_fact_grounding_complete": true,
+    "review_decision_file_valid": true,
+    "official_label_decision_file_valid": true,
+    "fact_gap_review_decision_file_valid": true,
+    "shadow_evaluation_reproducible": true,
+    "shadow_evaluation_diagnosis_reproducible": true,
+    "fresh_heldout_candidate_inventory_reproducible": true,
+    "blocked_runtime_snapshot_absent": true
+  },
+  "remaining_reviews": [],
+  "remaining_actions": [
+    "Promote the 6 approved fact-gap candidates through a separate core-fact change before answer use.",
+    "Build a fresh independently authored held-out set and recover the Recall@1 regression before runtime integration."
+  ],
+  "blockers": [
+    "Exact-label ontology assist regressed Recall@1; production integration is prohibited.",
+    "No existing testset qualifies as a fresh ontology-assist held-out set; independently authored questions are required."
+  ]
+}

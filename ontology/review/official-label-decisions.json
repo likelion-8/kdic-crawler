@@ -1,0 +1,489 @@
+{
+  "schema_version": "1.0.0",
+  "status": "all_official_labels_approved",
+  "production_impact": "none",
+  "policy": {
+    "automatic_approval": false,
+    "contextual_labels_are_synonyms": false,
+    "approved_labels_require_retrieval_quality_gate": true,
+    "reviewer_identity_required_for_non_pending_decisions": true
+  },
+  "source": {
+    "official_labels": {
+      "path": "ontology/kdic-official-label-aliases.json",
+      "sha256": "515385635bf20b6315bd2c56e203026973417deed75acc5feb78ecc5b8614d62"
+    }
+  },
+  "labels": [
+    {
+      "id": "alias:47337a1dfc686ba2",
+      "entity_id": "actor:mistaken_remitter",
+      "label": "착오송금인 유의사항",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:505e1597b2cd0597",
+      "entity_id": "actor:protected_financial_institution",
+      "label": "금융회사",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:2b3a82d88799afba",
+      "entity_id": "actor:protected_financial_institution",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:fb02653d6ba4a113",
+      "entity_id": "actor:protected_financial_institution",
+      "label": "보호대상 금융회사 개요",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:c7800b9b4617a0bb",
+      "entity_id": "actor:protected_financial_institution",
+      "label": "보호대상금융회사검색",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:63bd33a2b8efe753",
+      "entity_id": "concept:bankruptcy_discharge",
+      "label": "파산면책",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:93950ff080d5ca25",
+      "entity_id": "concept:bankruptcy_estate_management",
+      "label": "파산재단관리",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:8a1f108522bf657d",
+      "entity_id": "concept:bankruptcy_estate_status",
+      "label": "파산재단현황",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:994108c34b985f20",
+      "entity_id": "concept:deposit_insurance_payment",
+      "label": "예금보험금 안내",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:c5994da4bc098bea",
+      "entity_id": "concept:deposit_insurance_payment",
+      "label": "예금보험금이란?",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:46ac2a437e370e57",
+      "entity_id": "concept:display_explanation_confirmation_scheme",
+      "label": "표시·설명·확인 제도 관련 FAQ",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:af1a13456dc5df57",
+      "entity_id": "concept:display_explanation_confirmation_scheme",
+      "label": "표시·설명·확인 제도 안내",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:952b02eff5633158",
+      "entity_id": "concept:insured_financial_company_survey",
+      "label": "부보금융회사조사 법적근거 및 관련규정",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:83f4a83aaff968aa",
+      "entity_id": "concept:insured_financial_company_survey",
+      "label": "부보금융회사조사 소명 및 이의제기 신청",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:6e123182d8213155",
+      "entity_id": "concept:insured_financial_company_survey",
+      "label": "부보금융회사조사 업무 소개",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:d572ce2e7459e0b6",
+      "entity_id": "concept:insured_financial_company_survey_legal_basis",
+      "label": "부보금융회사조사",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:fe35e1fd031e0569",
+      "entity_id": "concept:mistaken_remittance_recipient_cautions",
+      "label": "수취인_유의사항",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:6f4292c02f9281c4",
+      "entity_id": "concept:mistaken_remittance_recipient_cautions",
+      "label": "착오송금수취인 유의사항",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:c5b67d143fad5bb0",
+      "entity_id": "concept:mistaken_remitter_cautions",
+      "label": "착오송금인",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:684da4880efba1d1",
+      "entity_id": "concept:protected_financial_product",
+      "label": "금융상품",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:ff876cc184ce5a24",
+      "entity_id": "concept:protected_financial_product",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:0993c51df94aaa27",
+      "entity_id": "concept:protected_financial_product",
+      "label": "보호대상 금융상품 개요",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:8d01cd7742635cf5",
+      "entity_id": "concept:protected_financial_product",
+      "label": "보호대상금융상품검색",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:545d1908cc0ad189",
+      "entity_id": "concept:special_asset_management_system",
+      "label": "특별자산관리체계",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:4a803d34995445f7",
+      "entity_id": "concept:special_asset_status",
+      "label": "특별자산현황",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:099cceab503b5cad",
+      "entity_id": "concept:trust_real_estate_management_system",
+      "label": "신탁부동산관리체계",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:c2c6695e98cfe941",
+      "entity_id": "concept:trust_real_estate_status",
+      "label": "신탁부동산현황",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:630a0dd6ba3067a6",
+      "entity_id": "concept:unclaimed_funds_integrated_application",
+      "label": "미수령금통합신청",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:31188879c1e3506b",
+      "entity_id": "contact:concealed_assets_report_center",
+      "label": "신고센터",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:ba128a9cc5e907fb",
+      "entity_id": "contact:financial_misconduct_report_center",
+      "label": "금융부실관련자 불법행위신고",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:f3a403671f367358",
+      "entity_id": "eligibility:mistaken_remittance_return_support",
+      "label": "착오송금반환지원 신청대상",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:8ab3cd7a98ccc840",
+      "entity_id": "monetary_rule:deposit_protection_limit",
+      "label": "보호한도",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:f58a7612c0d6fcea",
+      "entity_id": "procedure:deposit_insurance_payment_application",
+      "label": "예금보험금 신청절차",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:360015082e86d12a",
+      "entity_id": "procedure:insured_financial_company_survey_objection",
+      "label": "부보금융회사조사",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:dd7c705e4421414d",
+      "entity_id": "procedure:mistaken_remittance_application",
+      "label": "착오송금반환지원 신청방법",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:5d6ef4f0a8668ade",
+      "entity_id": "procedure:mistaken_remittance_return_support",
+      "label": "반환지원절차",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:252bca7acebc64d0",
+      "entity_id": "procedure:mistaken_remittance_return_support",
+      "label": "착오송금반환지원 절차",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:56229f4a82d5c3d1",
+      "entity_id": "service:debt_certificate_financial_information_request",
+      "label": "부채증명원/금융거래정보신청",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:7c668a6b46df7778",
+      "entity_id": "service:debt_information_inquiry_consultation",
+      "label": "채무정보 조회 ＆ 상담신청",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:816aaeab4cbb3c41",
+      "entity_id": "service:failure_responsibility_investigation_status",
+      "label": "부실책임조사",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:a5173c5c5a6bf86a",
+      "entity_id": "service:failure_responsibility_investigation_status",
+      "label": "부실책임조사 진행현황 조회 (개인정보 동의)",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:b9ef443b7f31e7d6",
+      "entity_id": "service:protected_financial_institution_search",
+      "label": "금융회사",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:13deb7fa49852f6b",
+      "entity_id": "service:protected_financial_institution_search",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:23c0994ddd9fb591",
+      "entity_id": "service:protected_financial_institution_search",
+      "label": "보호대상금융회사검색",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:5dd3f2f61cd7c02a",
+      "entity_id": "service:protected_financial_product_search",
+      "label": "금융상품",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:31e05816ff6835dd",
+      "entity_id": "service:protected_financial_product_search",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "alias:f20408108af8780f",
+      "entity_id": "service:protected_financial_product_search",
+      "label": "보호대상금융상품검색",
+      "alias_type": "official_label_variant",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    }
+  ]
+}

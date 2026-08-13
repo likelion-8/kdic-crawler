@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "status": "all_fact_gap_candidates_approved",
+  "production_impact": "none",
+  "policy": {
+    "automatic_approval": false,
+    "automatic_core_fact_promotion": false,
+    "approved_candidates_require_separate_core_fact_change": true,
+    "reviewer_identity_required_for_non_pending_decisions": true
+  },
+  "source": {
+    "fact_gap_queue": {
+      "path": "ontology/kdic-fact-gap-review-queue.json",
+      "sha256": "5901e9e0441bd6addce979d2dd5d33b58335a2446c7530bba408b911aca6d76d"
+    }
+  },
+  "candidates": [
+    {
+      "id": "candidate_fact:deposit_insurance_claim_right_expiry",
+      "label": "예금보험금 청구권 행사기한 · 지급개시일로부터 5년",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "candidate_fact:deposit_insurance_online_application_exclusion",
+      "label": "예금보험금 인터넷 신청 제외 대상 · 미성년자 및 법인",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "candidate_fact:deposit_insurance_typical_payment_timing",
+      "label": "예금보험금 신청 후 통상 입금 시점 · 다음 영업일 이내",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "candidate_fact:unclaimed_funds_definition",
+      "label": "고객 미수령금의 정의 · 부실화 금융회사 예금자 등이 찾아가지 않은 금액",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "candidate_fact:unclaimed_funds_unified_application_start",
+      "label": "미수령금 전국 지급대행점 통합 신청 시작 · 2016년 10월",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "candidate_fact:unclaimed_funds_categories",
+      "label": "고객 미수령금 주요 종류 · 예금보험금·파산배당금·개산지급금 정산금",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    }
+  ]
+}

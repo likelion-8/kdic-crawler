@@ -1,0 +1,230 @@
+{
+  "main": {
+    "id": "1893635231d4ce5e",
+    "type": "split",
+    "children": [
+      {
+        "id": "1a7798de632128e0",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d86a158712f61caa",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Review/Status.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Status"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "c1a3fa7b14cfc483",
+    "type": "split",
+    "children": [
+      {
+        "id": "0d6defcb332eb0a7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "919c174a31e8dc81",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "파일 탐색기"
+            }
+          },
+          {
+            "id": "8289f36ea9508b6c",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "검색"
+            }
+          },
+          {
+            "id": "3da0cda23b2bdd53",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "북마크"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "731e30410e3c00d4",
+    "type": "split",
+    "children": [
+      {
+        "id": "897ef7498a560ca3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "96c45d36240c7cdb",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "00 Index.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "백링크"
+            }
+          },
+          {
+            "id": "534824bb01bbd4bf",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "00 Index.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "나가는 링크"
+            }
+          },
+          {
+            "id": "55388e88693aa5fd",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "태그"
+            }
+          },
+          {
+            "id": "6be749595e6efc6e",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "모든 속성"
+            }
+          },
+          {
+            "id": "797cdc721a411c34",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "00 Index.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "개요"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:빠른 전환기 열기": false,
+      "graph:그래프 뷰 열기": false,
+      "canvas:새 캔버스 만들기": false,
+      "daily-notes:오늘의 일일 노트 열기": false,
+      "templates:템플릿 삽입": false,
+      "command-palette:명령어 팔레트 열기": false,
+      "bases:새 베이스 생성하기": false
+    }
+  },
+  "active": "d86a158712f61caa",
+  "lastOpenFiles": [
+    "00 Index.md",
+    "노드/서비스/착오송금 반환 신청 · 서비스.md",
+    "노드/개념/파산금융회사 정보 검색 · 개념.md",
+    "노드/개념/파산·면책 · 개념.md",
+    "노드/공식 문서/고객 미수령금 신청 · 신탁부동산관리체계 · 공식 문서.md",
+    "노드/서비스/고객 미수령금 신청 · 서비스.md",
+    "노드/개념/Y.md",
+    "노드/공식 문서/고객 미수령금 신청 · 파산재단현황 · 공식 문서.md",
+    "노드/개념/파산재단 현황 · 개념.md",
+    "노드/개념/예금보험금 · 개념.md",
+    "노드/개념/미수령금 통합신청 · 개념.md",
+    "노드/개념/부보금융회사조사 법적근거·관련규정 · 개념.md",
+    "노드/업무영역/고객 미수령금 신청 · 업무영역.md",
+    "노드/공식 문서/착오송금 반환 신청 · 관련법령 및 규정 · 공식 문서.md",
+    "노드/공식 문서/착오송금 반환 신청 · 고객센터 자주 묻는 질문 주요 10개 · 공식 문서.md",
+    "노드/공식 문서/은닉재산 신고 · 신고센터 소개 · 공식 문서.md",
+    "노드/공식 문서/은닉재산 신고 · 신고센터 · 공식 문서.md",
+    "노드/공식 문서/은닉재산 신고 · 부실책임조사 진행현황 조회 (개인정보 동의) · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 표시·설명·확인 제도 안내 · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 표시·설명·확인 제도 관련 자주 묻는 질문 · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 예금자보호제도 · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 저축은행변경이력 · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 보호한도 · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 보호대상금융상품검색 · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 보호대상 금융상품 개요 · 공식 문서.md",
+    "노드/공식 문서/예금자보호제도 · 예금자보호한도(해외) · 공식 문서.md",
+    "노드/절차",
+    "노드/핵심 사실",
+    "노드/업무영역",
+    "노드/신청 조건",
+    "노드/문의·접수처",
+    "노드/서비스",
+    "노드/대상자·기관",
+    "노드/구비서류",
+    "노드/금액 기준",
+    "노드/공식 표기"
+  ]
+}

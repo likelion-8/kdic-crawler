@@ -1,0 +1,1197 @@
+{
+  "schema_version": "1.0.0",
+  "ontology_version": "0.2.0-draft",
+  "status": "canonical_draft_pending_domain_approval",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "policies": {
+    "heldout_testset_used_for_curation": false,
+    "runtime_use": "prohibited_until_approval_and_evaluation",
+    "automatic_approval": false,
+    "unapproved_synonyms_allowed": false,
+    "unapproved_fact_values_allowed": false
+  },
+  "source_catalogs": [
+    "kdic-curated-concept-proposals.json",
+    "kdic-p3-typed-concept-proposals.json",
+    "kdic-p3-general-concept-proposals.json",
+    "kdic-p3-remaining-reviews.json"
+  ],
+  "base_services": [
+    {
+      "id": "service:concealed_assets_report",
+      "label": "은닉재산 신고",
+      "document_count": 4
+    },
+    {
+      "id": "service:debt_adjustment",
+      "label": "채무조정 안내",
+      "document_count": 8
+    },
+    {
+      "id": "service:deposit_insurance_payment",
+      "label": "예금보험금 안내",
+      "document_count": 4
+    },
+    {
+      "id": "service:deposit_protection",
+      "label": "예금자보호제도",
+      "document_count": 17
+    },
+    {
+      "id": "service:mistaken_remittance_return",
+      "label": "착오송금 반환 신청",
+      "document_count": 15
+    },
+    {
+      "id": "service:unclaimed_funds",
+      "label": "고객 미수령금 신청",
+      "document_count": 10
+    }
+  ],
+  "merged_base_service_proposals": [
+    {
+      "service_id": "service:unclaimed_funds",
+      "proposed_label": "미수령금 통합조회·신청",
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        },
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        },
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        },
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        },
+        {
+          "page_id": "uc_gudn",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do",
+          "content_sha256": "290a4f552b8ee76b8f9202f0de8dcb78d32a2b31ee94d02151b1e47124dcd8b2"
+        },
+        {
+          "page_id": "uc_hrpe_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do",
+          "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    }
+  ],
+  "summary": {
+    "entity_count": 45,
+    "class_counts": {
+      "Actor": 3,
+      "Concept": 21,
+      "ContactPoint": 4,
+      "EligibilityRule": 2,
+      "MonetaryRule": 1,
+      "Procedure": 4,
+      "RequiredDocument": 3,
+      "Service": 7
+    },
+    "evidence_page_count": 46,
+    "pending_approval_count": 45,
+    "base_service_count": 6,
+    "merged_base_service_proposal_count": 1
+  },
+  "entities": [
+    {
+      "id": "actor:deposit_insurance_payment_target_institution",
+      "label": "보험금 지급대상 금융회사",
+      "ontology_class": "Actor",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ms_trgt_fnst",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do",
+          "content_sha256": "72cf381ebd633bb4bb10fabdcd982445d1635aa8dab726c2201c31621f74778d"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "actor:protected_financial_institution",
+      "label": "보호대상 금융회사",
+      "ontology_class": "Actor",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_fnst",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
+          "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747"
+        },
+        {
+          "page_id": "dp_fnst_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+          "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1"
+        },
+        {
+          "page_id": "dp_svbk_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+          "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "actor:mistaken_remitter",
+      "label": "착오송금인",
+      "ontology_class": "Actor",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "sender_attention",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do",
+          "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7"
+        },
+        {
+          "page_id": "sender_qlfc_check",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+          "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:individual_rehabilitation",
+      "label": "개인회생",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_psn_rg",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+          "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:unclaimed_funds_integrated_application",
+      "label": "미수령금 통합신청",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_itgr_aply",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do",
+          "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898"
+        },
+        {
+          "page_id": "uc_tel_qust",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do",
+          "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:protected_financial_product",
+      "label": "보호대상 금융상품",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_prdct",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do",
+          "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174"
+        },
+        {
+          "page_id": "dp_prdct_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+          "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:insured_financial_company_survey",
+      "label": "부보금융회사조사",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_josa_itrd",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do",
+          "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a"
+        },
+        {
+          "page_id": "dp_josa_law",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do",
+          "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353"
+        },
+        {
+          "page_id": "dp_josa_objc",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do",
+          "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:insured_financial_company_survey_legal_basis",
+      "label": "부보금융회사조사 법적근거·관련규정",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_josa_law",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do",
+          "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-remaining-reviews.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:trust_real_estate_management_system",
+      "label": "신탁부동산 관리체계",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:trust_real_estate_status",
+      "label": "신탁부동산 현황",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:deposit_insurance_payment",
+      "label": "예금보험금",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ms_expln",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do",
+          "content_sha256": "8a9ad3e4e641bff847e916ef4810d48562abc5fe0834288b074968f295c758a6"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:deposit_protection_logo_use_rules",
+      "label": "예금보호 로고 사용 규정",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_logo",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do",
+          "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:savings_bank_name_change_history",
+      "label": "저축은행 상호 변경이력",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_svbk_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+          "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:mistaken_remittance_regulations",
+      "label": "착오송금 반환지원 관련 법령·규정",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "mtrs_rel_law",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do",
+          "content_sha256": "46d7def4dfbe218f531ef6ce6e8484d763659eb50722e849f49f084d6ead9730"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:mistaken_remittance_recipient_cautions",
+      "label": "착오송금 수취인 유의사항",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "receiver_attention",
+          "source_url": "https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do",
+          "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:mistaken_remitter_cautions",
+      "label": "착오송금인 유의사항",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "sender_attention",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do",
+          "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-remaining-reviews.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:special_asset_management_system",
+      "label": "특별자산 관리체계",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:special_asset_status",
+      "label": "특별자산 현황",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:bankruptcy_discharge",
+      "label": "파산·면책",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_psn_br",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do",
+          "content_sha256": "378fad2a221975f3ea53db06c46242f0cc3c871334bb3b5ec66a173292ec3e32"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:bankrupt_financial_company_information_search",
+      "label": "파산금융회사 정보 검색",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        },
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        },
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        },
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:bankruptcy_estate_management",
+      "label": "파산재단 관리",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:bankruptcy_estate_status",
+      "label": "파산재단 현황",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:display_explanation_confirmation_scheme",
+      "label": "표시·설명·확인 제도",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_gudn",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do",
+          "content_sha256": "dccd0b0bcc9c2becc411d6e87f3e70e1606885ba6d567986bf81e32ccb242e23"
+        },
+        {
+          "page_id": "dp_gudn_data",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+          "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d"
+        },
+        {
+          "page_id": "dp_gudn_faq",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do",
+          "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1"
+        },
+        {
+          "page_id": "dp_logo",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do",
+          "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-curated-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "concept:international_deposit_protection_limits",
+      "label": "해외 예금자 보호한도",
+      "ontology_class": "Concept",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_ovrs",
+          "source_url": "https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do",
+          "content_sha256": "1a4a8bbbe9da470007dbc09feca00130e109708b3b8c0a4dda02f3f65e1d9459"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "contact:financial_misconduct_report_center",
+      "label": "금융부실관련자 불법행위 신고센터",
+      "ontology_class": "ContactPoint",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ha_ilgl_intro",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
+          "content_sha256": "06f9fa77314a9075fadc91c9f878487b8579376bf58edbf0f09f7fcfb95cad70"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-remaining-reviews.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "contact:unclaimed_funds_phone",
+      "label": "미수령금 전화문의",
+      "ontology_class": "ContactPoint",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_tel_qust",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do",
+          "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "contact:concealed_assets_report_center",
+      "label": "은닉재산 신고센터",
+      "ontology_class": "ContactPoint",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ha_center",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+          "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "contact:mistaken_remittance_visit",
+      "label": "착오송금 반환지원 방문접수",
+      "ontology_class": "ContactPoint",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "mtrs_vst_rcpt",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+          "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "eligibility:mistaken_remittance_self_check",
+      "label": "착오송금 반환지원 대상 자가진단",
+      "ontology_class": "EligibilityRule",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "sender_qlfc_check",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+          "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "eligibility:mistaken_remittance_return_support",
+      "label": "착오송금 반환지원 신청대상",
+      "ontology_class": "EligibilityRule",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "kmrs_aply_trgt",
+          "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+          "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "monetary_rule:deposit_protection_limit",
+      "label": "예금자 보호한도",
+      "ontology_class": "MonetaryRule",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_protlmts",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do",
+          "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "procedure:insured_financial_company_survey_objection",
+      "label": "부보금융회사조사 소명·이의제기",
+      "ontology_class": "Procedure",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_josa_objc",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do",
+          "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-remaining-reviews.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "procedure:deposit_insurance_payment_application",
+      "label": "예금보험금 신청 절차",
+      "ontology_class": "Procedure",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ms_aply_proc",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do",
+          "content_sha256": "b398772e990453abd83695a258c409ec8a9dc4e6dbd19844a64aba34a498bba0"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "procedure:mistaken_remittance_application",
+      "label": "착오송금 반환지원 신청방법",
+      "ontology_class": "Procedure",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "kmrs_apply_mthd",
+          "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyMthd/selectScrn.do",
+          "content_sha256": "c8d0393d679d1cf9163cce167b75b6353e4d8297e7cc38e807a08dec4a06889a"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "procedure:mistaken_remittance_return_support",
+      "label": "착오송금 반환지원 절차",
+      "ontology_class": "Procedure",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "kmrs_proc",
+          "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdProc/selectScrn.do",
+          "content_sha256": "0a8b549ed1fb9cde87c259751d0a5916db2b5edfc1811b7ad7413bb30deabce7"
+        },
+        {
+          "page_id": "mtrs_gvbk_proc",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsGvbkSprtProc/selectScrn.do",
+          "content_sha256": "a4803ab34cf7189c914c53dc8dbb6637a33556b4e85b8d1f389906f121fe537f"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "required_document:deposit_insurance_application",
+      "label": "예금보험금 신청 구비서류",
+      "ontology_class": "RequiredDocument",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ms_poss_dcmnt",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+          "content_sha256": "7f921cea8add94b1aa2e3b473a595420f648000c9dd90cedb73bd38d720f59fb"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "required_document:mistaken_remittance_recipient_forms",
+      "label": "착오송금 수취인 구비서류",
+      "ontology_class": "RequiredDocument",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "receiver_docs",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+          "content_sha256": "f9bed4bbb32986ec7a23a55ae61f3a48c11af5239510903822558a3df8968d37"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-typed-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "required_document:mistaken_remitter_application",
+      "label": "착오송금인 신청 구비서류",
+      "ontology_class": "RequiredDocument",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "sender_docs",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+          "content_sha256": "5a480687efac403e42a51f832ccf877f1c7864290486bb4e5123caccb3577814"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-remaining-reviews.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "service:protected_financial_product_search",
+      "label": "보호대상 금융상품 검색",
+      "ontology_class": "Service",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_prdct_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+          "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-remaining-reviews.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "service:protected_financial_institution_search",
+      "label": "보호대상 금융회사 검색",
+      "ontology_class": "Service",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_fnst_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+          "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-remaining-reviews.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "service:failure_responsibility_investigation_status",
+      "label": "부실책임조사 진행현황 조회",
+      "ontology_class": "Service",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ha_status_agree",
+          "source_url": "https://www.kdic.or.kr/voc/userDataUsingAgree",
+          "content_sha256": "7a9070848f1a43399c08a0345c2e11d035efd82a3e85f6cc608181d86b7b865e"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "service:debt_certificate_financial_information_request",
+      "label": "부채증명원·금융거래정보 신청",
+      "ontology_class": "Service",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_debt_cert",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+          "content_sha256": "b34de2685db8ddf35e4826afcbced17020682dafa0052f7752f6d7930ee3fb4a"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "service:heir_financial_transaction_inquiry",
+      "label": "상속인 금융거래조회",
+      "ontology_class": "Service",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_hrpe_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do",
+          "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "service:credit_recovery_support",
+      "label": "신용회복 지원",
+      "ontology_class": "Service",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_credit_sprt",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do",
+          "content_sha256": "f431a549eade658ea9f1723718b7d86ba1cc5001d9be77af65c1c35c3550ed01"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    },
+    {
+      "id": "service:debt_information_inquiry_consultation",
+      "label": "채무정보 조회·상담신청",
+      "ontology_class": "Service",
+      "review_status": "pending_domain_approval",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_info_aply",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do",
+          "content_sha256": "7a5d97ec59ed45204a22616c03f2525a1a45837f427ee43a68ebc5b16f6b7e14"
+        }
+      ],
+      "provenance": {
+        "source_catalog": "kdic-p3-general-concept-proposals.json",
+        "source_status": "proposed"
+      }
+    }
+  ]
+}

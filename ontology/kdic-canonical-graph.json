@@ -1,0 +1,3154 @@
+{
+  "schema_version": "1.0.0",
+  "status": "canonical_graph_all_reviewed_items_approved",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "approval": {
+    "decision_file": "ontology/review/canonical-ontology-decisions.json",
+    "scope": "canonical_entities_core_facts_and_official_labels",
+    "core_approval_complete": true,
+    "official_label_decision_file": "ontology/review/official-label-decisions.json",
+    "official_label_review_complete": true,
+    "all_graph_review_items_complete": true,
+    "all_graph_review_items_approved": true,
+    "counts": {
+      "approved": 60
+    },
+    "entity_counts": {
+      "approved": 45
+    },
+    "fact_counts": {
+      "approved": 15
+    },
+    "official_label_counts": {
+      "source_verified_domain_approved": 47
+    },
+    "official_label_decision_counts": {
+      "approved": 47
+    },
+    "all_reviewed_item_decision_counts": {
+      "approved": 107
+    }
+  },
+  "summary": {
+    "node_count": 177,
+    "edge_count": 307,
+    "node_type_counts": {
+      "Actor": 3,
+      "BusinessDomain": 6,
+      "Concept": 21,
+      "ContactPoint": 4,
+      "Document": 58,
+      "EligibilityRule": 2,
+      "Fact": 15,
+      "MonetaryRule": 1,
+      "OfficialLabel": 47,
+      "Procedure": 4,
+      "RequiredDocument": 3,
+      "Service": 13
+    },
+    "relation_counts": {
+      "ASSERTS_ABOUT": 15,
+      "BELONGS_TO_DOMAIN": 6,
+      "BELONGS_TO_SERVICE": 45,
+      "DOCUMENTS_SERVICE": 58,
+      "EVIDENCE_FOR": 136,
+      "LABEL_FOR": 47
+    }
+  },
+  "nodes": [
+    {
+      "id": "actor:deposit_insurance_payment_target_institution",
+      "node_type": "Actor",
+      "label": "보험금 지급대상 금융회사",
+      "status": "domain_approved"
+    },
+    {
+      "id": "actor:mistaken_remitter",
+      "node_type": "Actor",
+      "label": "착오송금인",
+      "status": "domain_approved"
+    },
+    {
+      "id": "actor:protected_financial_institution",
+      "node_type": "Actor",
+      "label": "보호대상 금융회사",
+      "status": "domain_approved"
+    },
+    {
+      "id": "domain:concealed_assets_report",
+      "node_type": "BusinessDomain",
+      "label": "은닉재산 신고",
+      "status": "base"
+    },
+    {
+      "id": "domain:debt_adjustment",
+      "node_type": "BusinessDomain",
+      "label": "채무조정 안내",
+      "status": "base"
+    },
+    {
+      "id": "domain:deposit_insurance_payment",
+      "node_type": "BusinessDomain",
+      "label": "예금보험금 안내",
+      "status": "base"
+    },
+    {
+      "id": "domain:deposit_protection",
+      "node_type": "BusinessDomain",
+      "label": "예금자보호제도",
+      "status": "base"
+    },
+    {
+      "id": "domain:mistaken_remittance_return",
+      "node_type": "BusinessDomain",
+      "label": "착오송금 반환 신청",
+      "status": "base"
+    },
+    {
+      "id": "domain:unclaimed_funds",
+      "node_type": "BusinessDomain",
+      "label": "고객 미수령금 신청",
+      "status": "base"
+    },
+    {
+      "id": "concept:bankrupt_financial_company_information_search",
+      "node_type": "Concept",
+      "label": "파산금융회사 정보 검색",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:bankruptcy_discharge",
+      "node_type": "Concept",
+      "label": "파산·면책",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:bankruptcy_estate_management",
+      "node_type": "Concept",
+      "label": "파산재단 관리",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:bankruptcy_estate_status",
+      "node_type": "Concept",
+      "label": "파산재단 현황",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:deposit_insurance_payment",
+      "node_type": "Concept",
+      "label": "예금보험금",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:deposit_protection_logo_use_rules",
+      "node_type": "Concept",
+      "label": "예금보호 로고 사용 규정",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:display_explanation_confirmation_scheme",
+      "node_type": "Concept",
+      "label": "표시·설명·확인 제도",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:individual_rehabilitation",
+      "node_type": "Concept",
+      "label": "개인회생",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:insured_financial_company_survey",
+      "node_type": "Concept",
+      "label": "부보금융회사조사",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:insured_financial_company_survey_legal_basis",
+      "node_type": "Concept",
+      "label": "부보금융회사조사 법적근거·관련규정",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:international_deposit_protection_limits",
+      "node_type": "Concept",
+      "label": "해외 예금자 보호한도",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:mistaken_remittance_recipient_cautions",
+      "node_type": "Concept",
+      "label": "착오송금 수취인 유의사항",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:mistaken_remittance_regulations",
+      "node_type": "Concept",
+      "label": "착오송금 반환지원 관련 법령·규정",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:mistaken_remitter_cautions",
+      "node_type": "Concept",
+      "label": "착오송금인 유의사항",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:protected_financial_product",
+      "node_type": "Concept",
+      "label": "보호대상 금융상품",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:savings_bank_name_change_history",
+      "node_type": "Concept",
+      "label": "저축은행 상호 변경이력",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:special_asset_management_system",
+      "node_type": "Concept",
+      "label": "특별자산 관리체계",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:special_asset_status",
+      "node_type": "Concept",
+      "label": "특별자산 현황",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:trust_real_estate_management_system",
+      "node_type": "Concept",
+      "label": "신탁부동산 관리체계",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:trust_real_estate_status",
+      "node_type": "Concept",
+      "label": "신탁부동산 현황",
+      "status": "domain_approved"
+    },
+    {
+      "id": "concept:unclaimed_funds_integrated_application",
+      "node_type": "Concept",
+      "label": "미수령금 통합신청",
+      "status": "domain_approved"
+    },
+    {
+      "id": "contact:concealed_assets_report_center",
+      "node_type": "ContactPoint",
+      "label": "은닉재산 신고센터",
+      "status": "domain_approved"
+    },
+    {
+      "id": "contact:financial_misconduct_report_center",
+      "node_type": "ContactPoint",
+      "label": "금융부실관련자 불법행위 신고센터",
+      "status": "domain_approved"
+    },
+    {
+      "id": "contact:mistaken_remittance_visit",
+      "node_type": "ContactPoint",
+      "label": "착오송금 반환지원 방문접수",
+      "status": "domain_approved"
+    },
+    {
+      "id": "contact:unclaimed_funds_phone",
+      "node_type": "ContactPoint",
+      "label": "미수령금 전화문의",
+      "status": "domain_approved"
+    },
+    {
+      "id": "document:dp_faq_page",
+      "node_type": "Document",
+      "label": "dp_faq_page",
+      "page_id": "dp_faq_page",
+      "content_sha256": "053957508cb2b05942fa36d7ef48414f9c69b9da76654e53d6f3163a8a80d186",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_fnst",
+      "node_type": "Document",
+      "label": "dp_fnst",
+      "page_id": "dp_fnst",
+      "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_fnst_srch",
+      "node_type": "Document",
+      "label": "dp_fnst_srch",
+      "page_id": "dp_fnst_srch",
+      "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_gudn",
+      "node_type": "Document",
+      "label": "dp_gudn",
+      "page_id": "dp_gudn",
+      "content_sha256": "dccd0b0bcc9c2becc411d6e87f3e70e1606885ba6d567986bf81e32ccb242e23",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_gudn_data",
+      "node_type": "Document",
+      "label": "dp_gudn_data",
+      "page_id": "dp_gudn_data",
+      "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_gudn_faq",
+      "node_type": "Document",
+      "label": "dp_gudn_faq",
+      "page_id": "dp_gudn_faq",
+      "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_josa_itrd",
+      "node_type": "Document",
+      "label": "dp_josa_itrd",
+      "page_id": "dp_josa_itrd",
+      "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_josa_law",
+      "node_type": "Document",
+      "label": "dp_josa_law",
+      "page_id": "dp_josa_law",
+      "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_josa_objc",
+      "node_type": "Document",
+      "label": "dp_josa_objc",
+      "page_id": "dp_josa_objc",
+      "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_logo",
+      "node_type": "Document",
+      "label": "dp_logo",
+      "page_id": "dp_logo",
+      "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_ovrs",
+      "node_type": "Document",
+      "label": "dp_ovrs",
+      "page_id": "dp_ovrs",
+      "content_sha256": "1a4a8bbbe9da470007dbc09feca00130e109708b3b8c0a4dda02f3f65e1d9459",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_prdct",
+      "node_type": "Document",
+      "label": "dp_prdct",
+      "page_id": "dp_prdct",
+      "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_prdct_srch",
+      "node_type": "Document",
+      "label": "dp_prdct_srch",
+      "page_id": "dp_prdct_srch",
+      "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_protlmts",
+      "node_type": "Document",
+      "label": "dp_protlmts",
+      "page_id": "dp_protlmts",
+      "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_svbk_hist",
+      "node_type": "Document",
+      "label": "dp_svbk_hist",
+      "page_id": "dp_svbk_hist",
+      "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dp_syst",
+      "node_type": "Document",
+      "label": "dp_syst",
+      "page_id": "dp_syst",
+      "content_sha256": "349ad69487c4cffaaf259bb5e09ec272dddefd39fbe410c307982b48c70f4150",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_credit_sprt",
+      "node_type": "Document",
+      "label": "dr_credit_sprt",
+      "page_id": "dr_credit_sprt",
+      "content_sha256": "f431a549eade658ea9f1723718b7d86ba1cc5001d9be77af65c1c35c3550ed01",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_debt_cert",
+      "node_type": "Document",
+      "label": "dr_debt_cert",
+      "page_id": "dr_debt_cert",
+      "content_sha256": "b34de2685db8ddf35e4826afcbced17020682dafa0052f7752f6d7930ee3fb4a",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_faq_inq",
+      "node_type": "Document",
+      "label": "dr_faq_inq",
+      "page_id": "dr_faq_inq",
+      "content_sha256": "1c899cabed5073edfacd1f0b66768b9fc9f30442f4f073126e75f4d6411f4146",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_info_aply",
+      "node_type": "Document",
+      "label": "dr_info_aply",
+      "page_id": "dr_info_aply",
+      "content_sha256": "7a5d97ec59ed45204a22616c03f2525a1a45837f427ee43a68ebc5b16f6b7e14",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_kruc",
+      "node_type": "Document",
+      "label": "dr_kruc",
+      "page_id": "dr_kruc",
+      "content_sha256": "12dfb1ce59d6d3fab50a7e8e4628cdf253f6ab7d36844933fe69302c430d6143",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_psn_br",
+      "node_type": "Document",
+      "label": "dr_psn_br",
+      "page_id": "dr_psn_br",
+      "content_sha256": "378fad2a221975f3ea53db06c46242f0cc3c871334bb3b5ec66a173292ec3e32",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_psn_rg",
+      "node_type": "Document",
+      "label": "dr_psn_rg",
+      "page_id": "dr_psn_rg",
+      "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+      "status": "official_source"
+    },
+    {
+      "id": "document:dr_system",
+      "node_type": "Document",
+      "label": "dr_system",
+      "page_id": "dr_system",
+      "content_sha256": "fab47dae07d654ef663346619ff27c9c5758ad6cfa97b2a6489be1ffbb9b1387",
+      "status": "official_source"
+    },
+    {
+      "id": "document:faq_msdr_apply",
+      "node_type": "Document",
+      "label": "faq_msdr_apply",
+      "page_id": "faq_msdr_apply",
+      "content_sha256": "a55ff31bdc14e60875eb95132ca9cb599e437b8120257c949f9abc1d16966456",
+      "status": "official_source"
+    },
+    {
+      "id": "document:faq_nramt",
+      "node_type": "Document",
+      "label": "faq_nramt",
+      "page_id": "faq_nramt",
+      "content_sha256": "dfc822c1156e098bd93ff5c4b2908fcc3145625550828faa9f1e2cedaa893060",
+      "status": "official_source"
+    },
+    {
+      "id": "document:faq_top10",
+      "node_type": "Document",
+      "label": "faq_top10",
+      "page_id": "faq_top10",
+      "content_sha256": "34b2ec2438cd9e5f06301a9ecdaa56f6915339a8bdf7e8971bc7a9da28418db9",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ha_center",
+      "node_type": "Document",
+      "label": "ha_center",
+      "page_id": "ha_center",
+      "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ha_faq_dclr",
+      "node_type": "Document",
+      "label": "ha_faq_dclr",
+      "page_id": "ha_faq_dclr",
+      "content_sha256": "9e72acbd7c27d0e6d80d0fc0c2e41a7b0a4d295c4d3d9790ef5eb6b9aaad5039",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ha_ilgl_intro",
+      "node_type": "Document",
+      "label": "ha_ilgl_intro",
+      "page_id": "ha_ilgl_intro",
+      "content_sha256": "06f9fa77314a9075fadc91c9f878487b8579376bf58edbf0f09f7fcfb95cad70",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ha_status_agree",
+      "node_type": "Document",
+      "label": "ha_status_agree",
+      "page_id": "ha_status_agree",
+      "content_sha256": "7a9070848f1a43399c08a0345c2e11d035efd82a3e85f6cc608181d86b7b865e",
+      "status": "official_source"
+    },
+    {
+      "id": "document:kmrs_aply_trgt",
+      "node_type": "Document",
+      "label": "kmrs_aply_trgt",
+      "page_id": "kmrs_aply_trgt",
+      "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+      "status": "official_source"
+    },
+    {
+      "id": "document:kmrs_apply_mthd",
+      "node_type": "Document",
+      "label": "kmrs_apply_mthd",
+      "page_id": "kmrs_apply_mthd",
+      "content_sha256": "c8d0393d679d1cf9163cce167b75b6353e4d8297e7cc38e807a08dec4a06889a",
+      "status": "official_source"
+    },
+    {
+      "id": "document:kmrs_itrd",
+      "node_type": "Document",
+      "label": "kmrs_itrd",
+      "page_id": "kmrs_itrd",
+      "content_sha256": "78b2c5fd989beb7c83e6e5564bacf232e3ab05fe011f609ff3cb76fe6591d212",
+      "status": "official_source"
+    },
+    {
+      "id": "document:kmrs_proc",
+      "node_type": "Document",
+      "label": "kmrs_proc",
+      "page_id": "kmrs_proc",
+      "content_sha256": "0a8b549ed1fb9cde87c259751d0a5916db2b5edfc1811b7ad7413bb30deabce7",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ms_aply_proc",
+      "node_type": "Document",
+      "label": "ms_aply_proc",
+      "page_id": "ms_aply_proc",
+      "content_sha256": "b398772e990453abd83695a258c409ec8a9dc4e6dbd19844a64aba34a498bba0",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ms_expln",
+      "node_type": "Document",
+      "label": "ms_expln",
+      "page_id": "ms_expln",
+      "content_sha256": "8a9ad3e4e641bff847e916ef4810d48562abc5fe0834288b074968f295c758a6",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ms_poss_dcmnt",
+      "node_type": "Document",
+      "label": "ms_poss_dcmnt",
+      "page_id": "ms_poss_dcmnt",
+      "content_sha256": "7f921cea8add94b1aa2e3b473a595420f648000c9dd90cedb73bd38d720f59fb",
+      "status": "official_source"
+    },
+    {
+      "id": "document:ms_trgt_fnst",
+      "node_type": "Document",
+      "label": "ms_trgt_fnst",
+      "page_id": "ms_trgt_fnst",
+      "content_sha256": "72cf381ebd633bb4bb10fabdcd982445d1635aa8dab726c2201c31621f74778d",
+      "status": "official_source"
+    },
+    {
+      "id": "document:mtrs_gvbk_proc",
+      "node_type": "Document",
+      "label": "mtrs_gvbk_proc",
+      "page_id": "mtrs_gvbk_proc",
+      "content_sha256": "a4803ab34cf7189c914c53dc8dbb6637a33556b4e85b8d1f389906f121fe537f",
+      "status": "official_source"
+    },
+    {
+      "id": "document:mtrs_rel_law",
+      "node_type": "Document",
+      "label": "mtrs_rel_law",
+      "page_id": "mtrs_rel_law",
+      "content_sha256": "46d7def4dfbe218f531ef6ce6e8484d763659eb50722e849f49f084d6ead9730",
+      "status": "official_source"
+    },
+    {
+      "id": "document:mtrs_stut_chc",
+      "node_type": "Document",
+      "label": "mtrs_stut_chc",
+      "page_id": "mtrs_stut_chc",
+      "content_sha256": "2b85e52da3cf42af3b46e2856b203a7a84395366dd7ec29bc6137536491bbedb",
+      "status": "official_source"
+    },
+    {
+      "id": "document:mtrs_vst_rcpt",
+      "node_type": "Document",
+      "label": "mtrs_vst_rcpt",
+      "page_id": "mtrs_vst_rcpt",
+      "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
+      "status": "official_source"
+    },
+    {
+      "id": "document:receiver_attention",
+      "node_type": "Document",
+      "label": "receiver_attention",
+      "page_id": "receiver_attention",
+      "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4",
+      "status": "official_source"
+    },
+    {
+      "id": "document:receiver_docs",
+      "node_type": "Document",
+      "label": "receiver_docs",
+      "page_id": "receiver_docs",
+      "content_sha256": "f9bed4bbb32986ec7a23a55ae61f3a48c11af5239510903822558a3df8968d37",
+      "status": "official_source"
+    },
+    {
+      "id": "document:sender_attention",
+      "node_type": "Document",
+      "label": "sender_attention",
+      "page_id": "sender_attention",
+      "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7",
+      "status": "official_source"
+    },
+    {
+      "id": "document:sender_docs",
+      "node_type": "Document",
+      "label": "sender_docs",
+      "page_id": "sender_docs",
+      "content_sha256": "5a480687efac403e42a51f832ccf877f1c7864290486bb4e5123caccb3577814",
+      "status": "official_source"
+    },
+    {
+      "id": "document:sender_qlfc_check",
+      "node_type": "Document",
+      "label": "sender_qlfc_check",
+      "page_id": "sender_qlfc_check",
+      "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_bkrp_fndt",
+      "node_type": "Document",
+      "label": "uc_bkrp_fndt",
+      "page_id": "uc_bkrp_fndt",
+      "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_bkrp_mng",
+      "node_type": "Document",
+      "label": "uc_bkrp_mng",
+      "page_id": "uc_bkrp_mng",
+      "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_bkrp_spcl_ast",
+      "node_type": "Document",
+      "label": "uc_bkrp_spcl_ast",
+      "page_id": "uc_bkrp_spcl_ast",
+      "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_bkrp_spcl_mng",
+      "node_type": "Document",
+      "label": "uc_bkrp_spcl_mng",
+      "page_id": "uc_bkrp_spcl_mng",
+      "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_bkrp_trst_mng",
+      "node_type": "Document",
+      "label": "uc_bkrp_trst_mng",
+      "page_id": "uc_bkrp_trst_mng",
+      "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_bkrp_trst_psta",
+      "node_type": "Document",
+      "label": "uc_bkrp_trst_psta",
+      "page_id": "uc_bkrp_trst_psta",
+      "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_gudn",
+      "node_type": "Document",
+      "label": "uc_gudn",
+      "page_id": "uc_gudn",
+      "content_sha256": "290a4f552b8ee76b8f9202f0de8dcb78d32a2b31ee94d02151b1e47124dcd8b2",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_hrpe_hist",
+      "node_type": "Document",
+      "label": "uc_hrpe_hist",
+      "page_id": "uc_hrpe_hist",
+      "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_itgr_aply",
+      "node_type": "Document",
+      "label": "uc_itgr_aply",
+      "page_id": "uc_itgr_aply",
+      "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898",
+      "status": "official_source"
+    },
+    {
+      "id": "document:uc_tel_qust",
+      "node_type": "Document",
+      "label": "uc_tel_qust",
+      "page_id": "uc_tel_qust",
+      "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f",
+      "status": "official_source"
+    },
+    {
+      "id": "eligibility:mistaken_remittance_return_support",
+      "node_type": "EligibilityRule",
+      "label": "착오송금 반환지원 신청대상",
+      "status": "domain_approved"
+    },
+    {
+      "id": "eligibility:mistaken_remittance_self_check",
+      "node_type": "EligibilityRule",
+      "label": "착오송금 반환지원 대상 자가진단",
+      "status": "domain_approved"
+    },
+    {
+      "id": "fact:concealed_assets_reward_maximum",
+      "node_type": "Fact",
+      "label": "은닉재산 신고 포상금 최대 30억원",
+      "predicate": "has_monetary_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 3000000000,
+        "currency": "KRW",
+        "operator": "maximum"
+      },
+      "evidence": {
+        "page_id": "ha_center",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+        "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799",
+        "quote": "최대 30억원의 포상금을 지급하고 있음"
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:concealed_assets_reward_rate",
+      "node_type": "Fact",
+      "label": "은닉재산 신고 포상금 회수금액의 5~20%",
+      "predicate": "has_percentage_range",
+      "object": {
+        "type": "PercentageRange",
+        "minimum": 5,
+        "maximum": 20,
+        "basis": "recovered_amount_after_costs"
+      },
+      "evidence": {
+        "page_id": "ha_center",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+        "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799",
+        "quote": "회수금액(소요비용 공제)의 5~20% 수준에서 차등 산정"
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:deposit_protection_limit",
+      "node_type": "Fact",
+      "label": "예금자 보호한도 1인·금융회사별 1억원",
+      "predicate": "has_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 100000000,
+        "currency": "KRW",
+        "scope": "per_person_per_financial_institution"
+      },
+      "evidence": {
+        "page_id": "dp_protlmts",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do",
+        "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637",
+        "quote": "금융회사별로 1인당 1억원까지 보호됩니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:deposit_protection_limit_effective_date",
+      "node_type": "Fact",
+      "label": "예금자 보호한도 1억원 적용일 2025년 9월 1일",
+      "predicate": "effective_from",
+      "object": {
+        "type": "Date",
+        "value": "2025-09-01"
+      },
+      "evidence": {
+        "page_id": "dp_faq_page",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do",
+        "content_sha256": "053957508cb2b05942fa36d7ef48414f9c69b9da76654e53d6f3163a8a80d186",
+        "quote": "2025년 9월 1일부터 예금보호한도 1억원이 적용되고 있습니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:individual_rehabilitation_income_requirement",
+      "node_type": "Fact",
+      "label": "개인회생 신청 조건 · 계속적·반복적 수입 가능성",
+      "predicate": "has_eligibility",
+      "object": {
+        "type": "Requirement",
+        "requirement": "continuing_regular_reliable_income"
+      },
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "정기적이고, 확실한 수입을 계속하여 얻을 가능성이 있는 사람이어야 합니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:individual_rehabilitation_repayment_period",
+      "node_type": "Fact",
+      "label": "개인회생 변제기간 최대 5년",
+      "predicate": "has_time_rule",
+      "object": {
+        "type": "Duration",
+        "maximum": 5,
+        "unit": "year"
+      },
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "변제기간\n5년을 초과할 수 없습니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:individual_rehabilitation_secured_debt_limit",
+      "node_type": "Fact",
+      "label": "개인회생 담보부 채무 한도 15억원 이하",
+      "predicate": "has_monetary_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 1500000000,
+        "currency": "KRW",
+        "debt_type": "secured",
+        "operator": "not_exceed"
+      },
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "무담보 채무의 경우 10억 원, 담보부 채무의 경우 15억 원을 넘지 않아야 합니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:individual_rehabilitation_unsecured_debt_limit",
+      "node_type": "Fact",
+      "label": "개인회생 무담보 채무 한도 10억원 이하",
+      "predicate": "has_monetary_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 1000000000,
+        "currency": "KRW",
+        "debt_type": "unsecured",
+        "operator": "not_exceed"
+      },
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "무담보 채무의 경우 10억 원, 담보부 채무의 경우 15억 원을 넘지 않아야 합니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:mistaken_remittance_amount_range",
+      "node_type": "Fact",
+      "label": "착오송금 반환지원 신청금액 5만원 이상 1억원 이하",
+      "predicate": "has_monetary_range",
+      "object": {
+        "type": "MonetaryRange",
+        "minimum": 50000,
+        "maximum": 100000000,
+        "currency": "KRW",
+        "inclusive": true
+      },
+      "evidence": {
+        "page_id": "kmrs_aply_trgt",
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+        "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+        "quote": "신청 가능 한도는 착오송금 건당 5만원 이상 ~ 1억원 이하 입니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:mistaken_remittance_application_deadline",
+      "node_type": "Fact",
+      "label": "착오송금 반환지원 신청기한 · 송금일로부터 1년 이내",
+      "predicate": "has_time_rule",
+      "object": {
+        "type": "Duration",
+        "value": 1,
+        "unit": "year",
+        "anchor": "mistaken_remittance_date",
+        "inclusive_text": "이내"
+      },
+      "evidence": {
+        "page_id": "kmrs_aply_trgt",
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+        "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+        "quote": "잘못 이체한 날로부터 1년 이내까지 신청 가능합니다"
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:mistaken_remittance_prior_return_request",
+      "node_type": "Fact",
+      "label": "착오송금 반환지원 사전 조건 · 금융회사 등에 반환 요청",
+      "predicate": "requires_prior_action",
+      "object": {
+        "type": "Requirement",
+        "action": "request_return_via_transfer_provider",
+        "must_remain_unreturned": true
+      },
+      "evidence": {
+        "page_id": "kmrs_aply_trgt",
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+        "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+        "quote": "이체 시 이용한 금융회사, 간편송금업체 등을 통해 먼저 반환을 요청해야 합니다.\n금융회사, 간편송금업체 등을 통해서도 돌려받지 못한 경우 신청 가능합니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:mistaken_remittance_supported_date_threshold",
+      "node_type": "Fact",
+      "label": "착오송금 반환지원 대상 송금일 · 2021년 7월 6일 이후",
+      "predicate": "has_date_threshold",
+      "object": {
+        "type": "DateThreshold",
+        "value": "2021-07-06",
+        "source_operator": "이후"
+      },
+      "evidence": {
+        "page_id": "sender_qlfc_check",
+        "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+        "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05",
+        "quote": "착오송금일이 2021년 7월 6일 이후입니까?"
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:recipient_voluntary_return_deadline",
+      "node_type": "Fact",
+      "label": "착오송금 수취인 자진반환 기한 · 통지일로부터 2주",
+      "predicate": "has_time_rule",
+      "object": {
+        "type": "Duration",
+        "value": 2,
+        "unit": "week",
+        "anchor": "assignment_notice_delivery"
+      },
+      "evidence": {
+        "page_id": "receiver_attention",
+        "source_url": "https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do",
+        "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4",
+        "quote": "자진반환 기한(양도통지문 송달일로부터 2주) 내에 반환해주시기 바랍니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:visit_reception_hours",
+      "node_type": "Fact",
+      "label": "착오송금 방문접수 시간 · 평일 오전 9시~오후 5시",
+      "predicate": "has_operating_hours",
+      "object": {
+        "type": "TimeWindow",
+        "days": "weekday",
+        "start": "09:00",
+        "end": "17:00"
+      },
+      "evidence": {
+        "page_id": "mtrs_vst_rcpt",
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+        "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
+        "quote": "방문접수는 평일 09:00 ~ 17:00까지 운영됩니다."
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "fact:visit_reception_lunch_break",
+      "node_type": "Fact",
+      "label": "착오송금 방문접수 점심시간 · 낮 12시~오후 1시",
+      "predicate": "has_break_hours",
+      "object": {
+        "type": "TimeWindow",
+        "start": "12:00",
+        "end": "13:00"
+      },
+      "evidence": {
+        "page_id": "mtrs_vst_rcpt",
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+        "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
+        "quote": "점심시간 12:00 ~ 13:00"
+      },
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "monetary_rule:deposit_protection_limit",
+      "node_type": "MonetaryRule",
+      "label": "예금자 보호한도",
+      "status": "domain_approved"
+    },
+    {
+      "id": "alias:0993c51df94aaa27",
+      "node_type": "OfficialLabel",
+      "label": "보호대상 금융상품 개요",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:099cceab503b5cad",
+      "node_type": "OfficialLabel",
+      "label": "신탁부동산관리체계",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:13deb7fa49852f6b",
+      "node_type": "OfficialLabel",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:23c0994ddd9fb591",
+      "node_type": "OfficialLabel",
+      "label": "보호대상금융회사검색",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:252bca7acebc64d0",
+      "node_type": "OfficialLabel",
+      "label": "착오송금반환지원 절차",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:2b3a82d88799afba",
+      "node_type": "OfficialLabel",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:31188879c1e3506b",
+      "node_type": "OfficialLabel",
+      "label": "신고센터",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:31e05816ff6835dd",
+      "node_type": "OfficialLabel",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:360015082e86d12a",
+      "node_type": "OfficialLabel",
+      "label": "부보금융회사조사",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:46ac2a437e370e57",
+      "node_type": "OfficialLabel",
+      "label": "표시·설명·확인 제도 관련 FAQ",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:47337a1dfc686ba2",
+      "node_type": "OfficialLabel",
+      "label": "착오송금인 유의사항",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:4a803d34995445f7",
+      "node_type": "OfficialLabel",
+      "label": "특별자산현황",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:505e1597b2cd0597",
+      "node_type": "OfficialLabel",
+      "label": "금융회사",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:545d1908cc0ad189",
+      "node_type": "OfficialLabel",
+      "label": "특별자산관리체계",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:56229f4a82d5c3d1",
+      "node_type": "OfficialLabel",
+      "label": "부채증명원/금융거래정보신청",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:5d6ef4f0a8668ade",
+      "node_type": "OfficialLabel",
+      "label": "반환지원절차",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:5dd3f2f61cd7c02a",
+      "node_type": "OfficialLabel",
+      "label": "금융상품",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:630a0dd6ba3067a6",
+      "node_type": "OfficialLabel",
+      "label": "미수령금통합신청",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:63bd33a2b8efe753",
+      "node_type": "OfficialLabel",
+      "label": "파산면책",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:684da4880efba1d1",
+      "node_type": "OfficialLabel",
+      "label": "금융상품",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:6e123182d8213155",
+      "node_type": "OfficialLabel",
+      "label": "부보금융회사조사 업무 소개",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:6f4292c02f9281c4",
+      "node_type": "OfficialLabel",
+      "label": "착오송금수취인 유의사항",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:7c668a6b46df7778",
+      "node_type": "OfficialLabel",
+      "label": "채무정보 조회 ＆ 상담신청",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:816aaeab4cbb3c41",
+      "node_type": "OfficialLabel",
+      "label": "부실책임조사",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:83f4a83aaff968aa",
+      "node_type": "OfficialLabel",
+      "label": "부보금융회사조사 소명 및 이의제기 신청",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:8a1f108522bf657d",
+      "node_type": "OfficialLabel",
+      "label": "파산재단현황",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:8ab3cd7a98ccc840",
+      "node_type": "OfficialLabel",
+      "label": "보호한도",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:8d01cd7742635cf5",
+      "node_type": "OfficialLabel",
+      "label": "보호대상금융상품검색",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:93950ff080d5ca25",
+      "node_type": "OfficialLabel",
+      "label": "파산재단관리",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:952b02eff5633158",
+      "node_type": "OfficialLabel",
+      "label": "부보금융회사조사 법적근거 및 관련규정",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:994108c34b985f20",
+      "node_type": "OfficialLabel",
+      "label": "예금보험금 안내",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:a5173c5c5a6bf86a",
+      "node_type": "OfficialLabel",
+      "label": "부실책임조사 진행현황 조회 (개인정보 동의)",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:af1a13456dc5df57",
+      "node_type": "OfficialLabel",
+      "label": "표시·설명·확인 제도 안내",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:b9ef443b7f31e7d6",
+      "node_type": "OfficialLabel",
+      "label": "금융회사",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:ba128a9cc5e907fb",
+      "node_type": "OfficialLabel",
+      "label": "금융부실관련자 불법행위신고",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:c2c6695e98cfe941",
+      "node_type": "OfficialLabel",
+      "label": "신탁부동산현황",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:c5994da4bc098bea",
+      "node_type": "OfficialLabel",
+      "label": "예금보험금이란?",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:c5b67d143fad5bb0",
+      "node_type": "OfficialLabel",
+      "label": "착오송금인",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:c7800b9b4617a0bb",
+      "node_type": "OfficialLabel",
+      "label": "보호대상금융회사검색",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:d572ce2e7459e0b6",
+      "node_type": "OfficialLabel",
+      "label": "부보금융회사조사",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:dd7c705e4421414d",
+      "node_type": "OfficialLabel",
+      "label": "착오송금반환지원 신청방법",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:f20408108af8780f",
+      "node_type": "OfficialLabel",
+      "label": "보호대상금융상품검색",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:f3a403671f367358",
+      "node_type": "OfficialLabel",
+      "label": "착오송금반환지원 신청대상",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:f58a7612c0d6fcea",
+      "node_type": "OfficialLabel",
+      "label": "예금보험금 신청절차",
+      "alias_type": "official_label_variant",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:fb02653d6ba4a113",
+      "node_type": "OfficialLabel",
+      "label": "보호대상 금융회사 개요",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:fe35e1fd031e0569",
+      "node_type": "OfficialLabel",
+      "label": "수취인_유의사항",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "alias:ff876cc184ce5a24",
+      "node_type": "OfficialLabel",
+      "label": "보호대상",
+      "alias_type": "contextual_label",
+      "status": "source_verified_domain_approved"
+    },
+    {
+      "id": "procedure:deposit_insurance_payment_application",
+      "node_type": "Procedure",
+      "label": "예금보험금 신청 절차",
+      "status": "domain_approved"
+    },
+    {
+      "id": "procedure:insured_financial_company_survey_objection",
+      "node_type": "Procedure",
+      "label": "부보금융회사조사 소명·이의제기",
+      "status": "domain_approved"
+    },
+    {
+      "id": "procedure:mistaken_remittance_application",
+      "node_type": "Procedure",
+      "label": "착오송금 반환지원 신청방법",
+      "status": "domain_approved"
+    },
+    {
+      "id": "procedure:mistaken_remittance_return_support",
+      "node_type": "Procedure",
+      "label": "착오송금 반환지원 절차",
+      "status": "domain_approved"
+    },
+    {
+      "id": "required_document:deposit_insurance_application",
+      "node_type": "RequiredDocument",
+      "label": "예금보험금 신청 구비서류",
+      "status": "domain_approved"
+    },
+    {
+      "id": "required_document:mistaken_remittance_recipient_forms",
+      "node_type": "RequiredDocument",
+      "label": "착오송금 수취인 구비서류",
+      "status": "domain_approved"
+    },
+    {
+      "id": "required_document:mistaken_remitter_application",
+      "node_type": "RequiredDocument",
+      "label": "착오송금인 신청 구비서류",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:concealed_assets_report",
+      "node_type": "Service",
+      "label": "은닉재산 신고",
+      "status": "base"
+    },
+    {
+      "id": "service:credit_recovery_support",
+      "node_type": "Service",
+      "label": "신용회복 지원",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:debt_adjustment",
+      "node_type": "Service",
+      "label": "채무조정 안내",
+      "status": "base"
+    },
+    {
+      "id": "service:debt_certificate_financial_information_request",
+      "node_type": "Service",
+      "label": "부채증명원·금융거래정보 신청",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:debt_information_inquiry_consultation",
+      "node_type": "Service",
+      "label": "채무정보 조회·상담신청",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:deposit_insurance_payment",
+      "node_type": "Service",
+      "label": "예금보험금 안내",
+      "status": "base"
+    },
+    {
+      "id": "service:deposit_protection",
+      "node_type": "Service",
+      "label": "예금자보호제도",
+      "status": "base"
+    },
+    {
+      "id": "service:failure_responsibility_investigation_status",
+      "node_type": "Service",
+      "label": "부실책임조사 진행현황 조회",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:heir_financial_transaction_inquiry",
+      "node_type": "Service",
+      "label": "상속인 금융거래조회",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:mistaken_remittance_return",
+      "node_type": "Service",
+      "label": "착오송금 반환 신청",
+      "status": "base"
+    },
+    {
+      "id": "service:protected_financial_institution_search",
+      "node_type": "Service",
+      "label": "보호대상 금융회사 검색",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:protected_financial_product_search",
+      "node_type": "Service",
+      "label": "보호대상 금융상품 검색",
+      "status": "domain_approved"
+    },
+    {
+      "id": "service:unclaimed_funds",
+      "node_type": "Service",
+      "label": "고객 미수령금 신청",
+      "status": "base"
+    }
+  ],
+  "edges": [
+    {
+      "source": "fact:concealed_assets_reward_maximum",
+      "relation": "ASSERTS_ABOUT",
+      "target": "contact:concealed_assets_report_center"
+    },
+    {
+      "source": "fact:concealed_assets_reward_rate",
+      "relation": "ASSERTS_ABOUT",
+      "target": "contact:concealed_assets_report_center"
+    },
+    {
+      "source": "fact:deposit_protection_limit",
+      "relation": "ASSERTS_ABOUT",
+      "target": "monetary_rule:deposit_protection_limit"
+    },
+    {
+      "source": "fact:deposit_protection_limit_effective_date",
+      "relation": "ASSERTS_ABOUT",
+      "target": "monetary_rule:deposit_protection_limit"
+    },
+    {
+      "source": "fact:individual_rehabilitation_income_requirement",
+      "relation": "ASSERTS_ABOUT",
+      "target": "concept:individual_rehabilitation"
+    },
+    {
+      "source": "fact:individual_rehabilitation_repayment_period",
+      "relation": "ASSERTS_ABOUT",
+      "target": "concept:individual_rehabilitation"
+    },
+    {
+      "source": "fact:individual_rehabilitation_secured_debt_limit",
+      "relation": "ASSERTS_ABOUT",
+      "target": "concept:individual_rehabilitation"
+    },
+    {
+      "source": "fact:individual_rehabilitation_unsecured_debt_limit",
+      "relation": "ASSERTS_ABOUT",
+      "target": "concept:individual_rehabilitation"
+    },
+    {
+      "source": "fact:mistaken_remittance_amount_range",
+      "relation": "ASSERTS_ABOUT",
+      "target": "eligibility:mistaken_remittance_return_support"
+    },
+    {
+      "source": "fact:mistaken_remittance_application_deadline",
+      "relation": "ASSERTS_ABOUT",
+      "target": "eligibility:mistaken_remittance_return_support"
+    },
+    {
+      "source": "fact:mistaken_remittance_prior_return_request",
+      "relation": "ASSERTS_ABOUT",
+      "target": "eligibility:mistaken_remittance_return_support"
+    },
+    {
+      "source": "fact:mistaken_remittance_supported_date_threshold",
+      "relation": "ASSERTS_ABOUT",
+      "target": "eligibility:mistaken_remittance_self_check"
+    },
+    {
+      "source": "fact:recipient_voluntary_return_deadline",
+      "relation": "ASSERTS_ABOUT",
+      "target": "concept:mistaken_remittance_recipient_cautions"
+    },
+    {
+      "source": "fact:visit_reception_hours",
+      "relation": "ASSERTS_ABOUT",
+      "target": "contact:mistaken_remittance_visit"
+    },
+    {
+      "source": "fact:visit_reception_lunch_break",
+      "relation": "ASSERTS_ABOUT",
+      "target": "contact:mistaken_remittance_visit"
+    },
+    {
+      "source": "service:concealed_assets_report",
+      "relation": "BELONGS_TO_DOMAIN",
+      "target": "domain:concealed_assets_report"
+    },
+    {
+      "source": "service:debt_adjustment",
+      "relation": "BELONGS_TO_DOMAIN",
+      "target": "domain:debt_adjustment"
+    },
+    {
+      "source": "service:deposit_insurance_payment",
+      "relation": "BELONGS_TO_DOMAIN",
+      "target": "domain:deposit_insurance_payment"
+    },
+    {
+      "source": "service:deposit_protection",
+      "relation": "BELONGS_TO_DOMAIN",
+      "target": "domain:deposit_protection"
+    },
+    {
+      "source": "service:mistaken_remittance_return",
+      "relation": "BELONGS_TO_DOMAIN",
+      "target": "domain:mistaken_remittance_return"
+    },
+    {
+      "source": "service:unclaimed_funds",
+      "relation": "BELONGS_TO_DOMAIN",
+      "target": "domain:unclaimed_funds"
+    },
+    {
+      "source": "actor:deposit_insurance_payment_target_institution",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "actor:mistaken_remitter",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "actor:protected_financial_institution",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:bankrupt_financial_company_information_search",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "concept:bankruptcy_discharge",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "concept:bankruptcy_estate_management",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "concept:bankruptcy_estate_status",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "concept:deposit_insurance_payment",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "concept:deposit_protection_logo_use_rules",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:display_explanation_confirmation_scheme",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:individual_rehabilitation",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "concept:insured_financial_company_survey",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:insured_financial_company_survey_legal_basis",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:international_deposit_protection_limits",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:mistaken_remittance_recipient_cautions",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "concept:mistaken_remittance_regulations",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "concept:mistaken_remitter_cautions",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "concept:protected_financial_product",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:savings_bank_name_change_history",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "concept:special_asset_management_system",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "concept:special_asset_status",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "concept:trust_real_estate_management_system",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "concept:trust_real_estate_status",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "concept:unclaimed_funds_integrated_application",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "contact:concealed_assets_report_center",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:concealed_assets_report"
+    },
+    {
+      "source": "contact:financial_misconduct_report_center",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:concealed_assets_report"
+    },
+    {
+      "source": "contact:mistaken_remittance_visit",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "contact:unclaimed_funds_phone",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "eligibility:mistaken_remittance_return_support",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "eligibility:mistaken_remittance_self_check",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "monetary_rule:deposit_protection_limit",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "procedure:deposit_insurance_payment_application",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "procedure:insured_financial_company_survey_objection",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "procedure:mistaken_remittance_application",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "procedure:mistaken_remittance_return_support",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "required_document:deposit_insurance_application",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "required_document:mistaken_remittance_recipient_forms",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "required_document:mistaken_remitter_application",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "service:credit_recovery_support",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "service:debt_certificate_financial_information_request",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "service:debt_information_inquiry_consultation",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "service:failure_responsibility_investigation_status",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:concealed_assets_report"
+    },
+    {
+      "source": "service:heir_financial_transaction_inquiry",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "service:protected_financial_institution_search",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "service:protected_financial_product_search",
+      "relation": "BELONGS_TO_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_faq_page",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_fnst",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_gudn",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_gudn_data",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_gudn_faq",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_josa_itrd",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_josa_law",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_josa_objc",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_logo",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_ovrs",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_prdct",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_protlmts",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_svbk_hist",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dp_syst",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:dr_credit_sprt",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:dr_debt_cert",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:dr_faq_inq",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:dr_info_aply",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:dr_kruc",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:dr_psn_br",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:dr_psn_rg",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:dr_system",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:debt_adjustment"
+    },
+    {
+      "source": "document:faq_msdr_apply",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:faq_nramt",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_protection"
+    },
+    {
+      "source": "document:faq_top10",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:ha_center",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:concealed_assets_report"
+    },
+    {
+      "source": "document:ha_faq_dclr",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:concealed_assets_report"
+    },
+    {
+      "source": "document:ha_ilgl_intro",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:concealed_assets_report"
+    },
+    {
+      "source": "document:ha_status_agree",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:concealed_assets_report"
+    },
+    {
+      "source": "document:kmrs_aply_trgt",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:kmrs_apply_mthd",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:kmrs_itrd",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:kmrs_proc",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:ms_aply_proc",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "document:ms_expln",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "document:ms_poss_dcmnt",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "document:ms_trgt_fnst",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:deposit_insurance_payment"
+    },
+    {
+      "source": "document:mtrs_gvbk_proc",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:mtrs_rel_law",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:mtrs_stut_chc",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:mtrs_vst_rcpt",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:receiver_attention",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:receiver_docs",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:sender_attention",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:sender_docs",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:sender_qlfc_check",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:mistaken_remittance_return"
+    },
+    {
+      "source": "document:uc_bkrp_fndt",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_bkrp_mng",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_ast",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_mng",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_bkrp_trst_mng",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_bkrp_trst_psta",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_gudn",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_hrpe_hist",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_itgr_aply",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:uc_tel_qust",
+      "relation": "DOCUMENTS_SERVICE",
+      "target": "service:unclaimed_funds"
+    },
+    {
+      "source": "document:dp_faq_page",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:deposit_protection_limit_effective_date",
+      "evidence_page_id": "dp_faq_page"
+    },
+    {
+      "source": "document:dp_fnst",
+      "relation": "EVIDENCE_FOR",
+      "target": "actor:protected_financial_institution",
+      "evidence_page_id": "dp_fnst"
+    },
+    {
+      "source": "document:dp_fnst",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:2b3a82d88799afba",
+      "evidence_page_id": "dp_fnst"
+    },
+    {
+      "source": "document:dp_fnst",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:505e1597b2cd0597",
+      "evidence_page_id": "dp_fnst"
+    },
+    {
+      "source": "document:dp_fnst",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:fb02653d6ba4a113",
+      "evidence_page_id": "dp_fnst"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "actor:protected_financial_institution",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:13deb7fa49852f6b",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:23c0994ddd9fb591",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:2b3a82d88799afba",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:505e1597b2cd0597",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:b9ef443b7f31e7d6",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:c7800b9b4617a0bb",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_fnst_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:protected_financial_institution_search",
+      "evidence_page_id": "dp_fnst_srch"
+    },
+    {
+      "source": "document:dp_gudn",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:af1a13456dc5df57",
+      "evidence_page_id": "dp_gudn"
+    },
+    {
+      "source": "document:dp_gudn",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:display_explanation_confirmation_scheme",
+      "evidence_page_id": "dp_gudn"
+    },
+    {
+      "source": "document:dp_gudn_data",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:display_explanation_confirmation_scheme",
+      "evidence_page_id": "dp_gudn_data"
+    },
+    {
+      "source": "document:dp_gudn_faq",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:46ac2a437e370e57",
+      "evidence_page_id": "dp_gudn_faq"
+    },
+    {
+      "source": "document:dp_gudn_faq",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:display_explanation_confirmation_scheme",
+      "evidence_page_id": "dp_gudn_faq"
+    },
+    {
+      "source": "document:dp_josa_itrd",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:6e123182d8213155",
+      "evidence_page_id": "dp_josa_itrd"
+    },
+    {
+      "source": "document:dp_josa_itrd",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:insured_financial_company_survey",
+      "evidence_page_id": "dp_josa_itrd"
+    },
+    {
+      "source": "document:dp_josa_law",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:952b02eff5633158",
+      "evidence_page_id": "dp_josa_law"
+    },
+    {
+      "source": "document:dp_josa_law",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:d572ce2e7459e0b6",
+      "evidence_page_id": "dp_josa_law"
+    },
+    {
+      "source": "document:dp_josa_law",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:insured_financial_company_survey",
+      "evidence_page_id": "dp_josa_law"
+    },
+    {
+      "source": "document:dp_josa_law",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:insured_financial_company_survey_legal_basis",
+      "evidence_page_id": "dp_josa_law"
+    },
+    {
+      "source": "document:dp_josa_objc",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:360015082e86d12a",
+      "evidence_page_id": "dp_josa_objc"
+    },
+    {
+      "source": "document:dp_josa_objc",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:83f4a83aaff968aa",
+      "evidence_page_id": "dp_josa_objc"
+    },
+    {
+      "source": "document:dp_josa_objc",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:insured_financial_company_survey",
+      "evidence_page_id": "dp_josa_objc"
+    },
+    {
+      "source": "document:dp_josa_objc",
+      "relation": "EVIDENCE_FOR",
+      "target": "procedure:insured_financial_company_survey_objection",
+      "evidence_page_id": "dp_josa_objc"
+    },
+    {
+      "source": "document:dp_logo",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:deposit_protection_logo_use_rules",
+      "evidence_page_id": "dp_logo"
+    },
+    {
+      "source": "document:dp_logo",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:display_explanation_confirmation_scheme",
+      "evidence_page_id": "dp_logo"
+    },
+    {
+      "source": "document:dp_ovrs",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:international_deposit_protection_limits",
+      "evidence_page_id": "dp_ovrs"
+    },
+    {
+      "source": "document:dp_prdct",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:0993c51df94aaa27",
+      "evidence_page_id": "dp_prdct"
+    },
+    {
+      "source": "document:dp_prdct",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:684da4880efba1d1",
+      "evidence_page_id": "dp_prdct"
+    },
+    {
+      "source": "document:dp_prdct",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:ff876cc184ce5a24",
+      "evidence_page_id": "dp_prdct"
+    },
+    {
+      "source": "document:dp_prdct",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:protected_financial_product",
+      "evidence_page_id": "dp_prdct"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:31e05816ff6835dd",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:5dd3f2f61cd7c02a",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:684da4880efba1d1",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:8d01cd7742635cf5",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:f20408108af8780f",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:ff876cc184ce5a24",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:protected_financial_product",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_prdct_srch",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:protected_financial_product_search",
+      "evidence_page_id": "dp_prdct_srch"
+    },
+    {
+      "source": "document:dp_protlmts",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:8ab3cd7a98ccc840",
+      "evidence_page_id": "dp_protlmts"
+    },
+    {
+      "source": "document:dp_protlmts",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:deposit_protection_limit",
+      "evidence_page_id": "dp_protlmts"
+    },
+    {
+      "source": "document:dp_protlmts",
+      "relation": "EVIDENCE_FOR",
+      "target": "monetary_rule:deposit_protection_limit",
+      "evidence_page_id": "dp_protlmts"
+    },
+    {
+      "source": "document:dp_svbk_hist",
+      "relation": "EVIDENCE_FOR",
+      "target": "actor:protected_financial_institution",
+      "evidence_page_id": "dp_svbk_hist"
+    },
+    {
+      "source": "document:dp_svbk_hist",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:2b3a82d88799afba",
+      "evidence_page_id": "dp_svbk_hist"
+    },
+    {
+      "source": "document:dp_svbk_hist",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:505e1597b2cd0597",
+      "evidence_page_id": "dp_svbk_hist"
+    },
+    {
+      "source": "document:dp_svbk_hist",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:savings_bank_name_change_history",
+      "evidence_page_id": "dp_svbk_hist"
+    },
+    {
+      "source": "document:dp_syst",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:deposit_protection",
+      "evidence_page_id": "dp_syst"
+    },
+    {
+      "source": "document:dr_credit_sprt",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:credit_recovery_support",
+      "evidence_page_id": "dr_credit_sprt"
+    },
+    {
+      "source": "document:dr_debt_cert",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:56229f4a82d5c3d1",
+      "evidence_page_id": "dr_debt_cert"
+    },
+    {
+      "source": "document:dr_debt_cert",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:debt_certificate_financial_information_request",
+      "evidence_page_id": "dr_debt_cert"
+    },
+    {
+      "source": "document:dr_info_aply",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:7c668a6b46df7778",
+      "evidence_page_id": "dr_info_aply"
+    },
+    {
+      "source": "document:dr_info_aply",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:debt_information_inquiry_consultation",
+      "evidence_page_id": "dr_info_aply"
+    },
+    {
+      "source": "document:dr_kruc",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:debt_adjustment",
+      "evidence_page_id": "dr_kruc"
+    },
+    {
+      "source": "document:dr_psn_br",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:63bd33a2b8efe753",
+      "evidence_page_id": "dr_psn_br"
+    },
+    {
+      "source": "document:dr_psn_br",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankruptcy_discharge",
+      "evidence_page_id": "dr_psn_br"
+    },
+    {
+      "source": "document:dr_psn_rg",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:individual_rehabilitation",
+      "evidence_page_id": "dr_psn_rg"
+    },
+    {
+      "source": "document:dr_psn_rg",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:individual_rehabilitation_income_requirement",
+      "evidence_page_id": "dr_psn_rg"
+    },
+    {
+      "source": "document:dr_psn_rg",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:individual_rehabilitation_repayment_period",
+      "evidence_page_id": "dr_psn_rg"
+    },
+    {
+      "source": "document:dr_psn_rg",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:individual_rehabilitation_secured_debt_limit",
+      "evidence_page_id": "dr_psn_rg"
+    },
+    {
+      "source": "document:dr_psn_rg",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:individual_rehabilitation_unsecured_debt_limit",
+      "evidence_page_id": "dr_psn_rg"
+    },
+    {
+      "source": "document:dr_system",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:debt_adjustment",
+      "evidence_page_id": "dr_system"
+    },
+    {
+      "source": "document:ha_center",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:31188879c1e3506b",
+      "evidence_page_id": "ha_center"
+    },
+    {
+      "source": "document:ha_center",
+      "relation": "EVIDENCE_FOR",
+      "target": "contact:concealed_assets_report_center",
+      "evidence_page_id": "ha_center"
+    },
+    {
+      "source": "document:ha_center",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:concealed_assets_reward_maximum",
+      "evidence_page_id": "ha_center"
+    },
+    {
+      "source": "document:ha_center",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:concealed_assets_reward_rate",
+      "evidence_page_id": "ha_center"
+    },
+    {
+      "source": "document:ha_ilgl_intro",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:ba128a9cc5e907fb",
+      "evidence_page_id": "ha_ilgl_intro"
+    },
+    {
+      "source": "document:ha_ilgl_intro",
+      "relation": "EVIDENCE_FOR",
+      "target": "contact:financial_misconduct_report_center",
+      "evidence_page_id": "ha_ilgl_intro"
+    },
+    {
+      "source": "document:ha_status_agree",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:816aaeab4cbb3c41",
+      "evidence_page_id": "ha_status_agree"
+    },
+    {
+      "source": "document:ha_status_agree",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:a5173c5c5a6bf86a",
+      "evidence_page_id": "ha_status_agree"
+    },
+    {
+      "source": "document:ha_status_agree",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:failure_responsibility_investigation_status",
+      "evidence_page_id": "ha_status_agree"
+    },
+    {
+      "source": "document:kmrs_aply_trgt",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:f3a403671f367358",
+      "evidence_page_id": "kmrs_aply_trgt"
+    },
+    {
+      "source": "document:kmrs_aply_trgt",
+      "relation": "EVIDENCE_FOR",
+      "target": "eligibility:mistaken_remittance_return_support",
+      "evidence_page_id": "kmrs_aply_trgt"
+    },
+    {
+      "source": "document:kmrs_aply_trgt",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:mistaken_remittance_amount_range",
+      "evidence_page_id": "kmrs_aply_trgt"
+    },
+    {
+      "source": "document:kmrs_aply_trgt",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:mistaken_remittance_application_deadline",
+      "evidence_page_id": "kmrs_aply_trgt"
+    },
+    {
+      "source": "document:kmrs_aply_trgt",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:mistaken_remittance_prior_return_request",
+      "evidence_page_id": "kmrs_aply_trgt"
+    },
+    {
+      "source": "document:kmrs_apply_mthd",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:dd7c705e4421414d",
+      "evidence_page_id": "kmrs_apply_mthd"
+    },
+    {
+      "source": "document:kmrs_apply_mthd",
+      "relation": "EVIDENCE_FOR",
+      "target": "procedure:mistaken_remittance_application",
+      "evidence_page_id": "kmrs_apply_mthd"
+    },
+    {
+      "source": "document:kmrs_itrd",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:mistaken_remittance_return",
+      "evidence_page_id": "kmrs_itrd"
+    },
+    {
+      "source": "document:kmrs_proc",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:252bca7acebc64d0",
+      "evidence_page_id": "kmrs_proc"
+    },
+    {
+      "source": "document:kmrs_proc",
+      "relation": "EVIDENCE_FOR",
+      "target": "procedure:mistaken_remittance_return_support",
+      "evidence_page_id": "kmrs_proc"
+    },
+    {
+      "source": "document:ms_aply_proc",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:f58a7612c0d6fcea",
+      "evidence_page_id": "ms_aply_proc"
+    },
+    {
+      "source": "document:ms_aply_proc",
+      "relation": "EVIDENCE_FOR",
+      "target": "procedure:deposit_insurance_payment_application",
+      "evidence_page_id": "ms_aply_proc"
+    },
+    {
+      "source": "document:ms_expln",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:994108c34b985f20",
+      "evidence_page_id": "ms_expln"
+    },
+    {
+      "source": "document:ms_expln",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:c5994da4bc098bea",
+      "evidence_page_id": "ms_expln"
+    },
+    {
+      "source": "document:ms_expln",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:deposit_insurance_payment",
+      "evidence_page_id": "ms_expln"
+    },
+    {
+      "source": "document:ms_poss_dcmnt",
+      "relation": "EVIDENCE_FOR",
+      "target": "required_document:deposit_insurance_application",
+      "evidence_page_id": "ms_poss_dcmnt"
+    },
+    {
+      "source": "document:ms_trgt_fnst",
+      "relation": "EVIDENCE_FOR",
+      "target": "actor:deposit_insurance_payment_target_institution",
+      "evidence_page_id": "ms_trgt_fnst"
+    },
+    {
+      "source": "document:mtrs_gvbk_proc",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:5d6ef4f0a8668ade",
+      "evidence_page_id": "mtrs_gvbk_proc"
+    },
+    {
+      "source": "document:mtrs_gvbk_proc",
+      "relation": "EVIDENCE_FOR",
+      "target": "procedure:mistaken_remittance_return_support",
+      "evidence_page_id": "mtrs_gvbk_proc"
+    },
+    {
+      "source": "document:mtrs_rel_law",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:mistaken_remittance_regulations",
+      "evidence_page_id": "mtrs_rel_law"
+    },
+    {
+      "source": "document:mtrs_vst_rcpt",
+      "relation": "EVIDENCE_FOR",
+      "target": "contact:mistaken_remittance_visit",
+      "evidence_page_id": "mtrs_vst_rcpt"
+    },
+    {
+      "source": "document:mtrs_vst_rcpt",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:visit_reception_hours",
+      "evidence_page_id": "mtrs_vst_rcpt"
+    },
+    {
+      "source": "document:mtrs_vst_rcpt",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:visit_reception_lunch_break",
+      "evidence_page_id": "mtrs_vst_rcpt"
+    },
+    {
+      "source": "document:receiver_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:6f4292c02f9281c4",
+      "evidence_page_id": "receiver_attention"
+    },
+    {
+      "source": "document:receiver_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:fe35e1fd031e0569",
+      "evidence_page_id": "receiver_attention"
+    },
+    {
+      "source": "document:receiver_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:mistaken_remittance_recipient_cautions",
+      "evidence_page_id": "receiver_attention"
+    },
+    {
+      "source": "document:receiver_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:recipient_voluntary_return_deadline",
+      "evidence_page_id": "receiver_attention"
+    },
+    {
+      "source": "document:receiver_docs",
+      "relation": "EVIDENCE_FOR",
+      "target": "required_document:mistaken_remittance_recipient_forms",
+      "evidence_page_id": "receiver_docs"
+    },
+    {
+      "source": "document:sender_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "actor:mistaken_remitter",
+      "evidence_page_id": "sender_attention"
+    },
+    {
+      "source": "document:sender_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:47337a1dfc686ba2",
+      "evidence_page_id": "sender_attention"
+    },
+    {
+      "source": "document:sender_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:c5b67d143fad5bb0",
+      "evidence_page_id": "sender_attention"
+    },
+    {
+      "source": "document:sender_attention",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:mistaken_remitter_cautions",
+      "evidence_page_id": "sender_attention"
+    },
+    {
+      "source": "document:sender_docs",
+      "relation": "EVIDENCE_FOR",
+      "target": "required_document:mistaken_remitter_application",
+      "evidence_page_id": "sender_docs"
+    },
+    {
+      "source": "document:sender_qlfc_check",
+      "relation": "EVIDENCE_FOR",
+      "target": "actor:mistaken_remitter",
+      "evidence_page_id": "sender_qlfc_check"
+    },
+    {
+      "source": "document:sender_qlfc_check",
+      "relation": "EVIDENCE_FOR",
+      "target": "eligibility:mistaken_remittance_self_check",
+      "evidence_page_id": "sender_qlfc_check"
+    },
+    {
+      "source": "document:sender_qlfc_check",
+      "relation": "EVIDENCE_FOR",
+      "target": "fact:mistaken_remittance_supported_date_threshold",
+      "evidence_page_id": "sender_qlfc_check"
+    },
+    {
+      "source": "document:uc_bkrp_fndt",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:8a1f108522bf657d",
+      "evidence_page_id": "uc_bkrp_fndt"
+    },
+    {
+      "source": "document:uc_bkrp_fndt",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankrupt_financial_company_information_search",
+      "evidence_page_id": "uc_bkrp_fndt"
+    },
+    {
+      "source": "document:uc_bkrp_fndt",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankruptcy_estate_status",
+      "evidence_page_id": "uc_bkrp_fndt"
+    },
+    {
+      "source": "document:uc_bkrp_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:93950ff080d5ca25",
+      "evidence_page_id": "uc_bkrp_mng"
+    },
+    {
+      "source": "document:uc_bkrp_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankrupt_financial_company_information_search",
+      "evidence_page_id": "uc_bkrp_mng"
+    },
+    {
+      "source": "document:uc_bkrp_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankruptcy_estate_management",
+      "evidence_page_id": "uc_bkrp_mng"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_ast",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:4a803d34995445f7",
+      "evidence_page_id": "uc_bkrp_spcl_ast"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_ast",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankrupt_financial_company_information_search",
+      "evidence_page_id": "uc_bkrp_spcl_ast"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_ast",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:special_asset_status",
+      "evidence_page_id": "uc_bkrp_spcl_ast"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:545d1908cc0ad189",
+      "evidence_page_id": "uc_bkrp_spcl_mng"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankrupt_financial_company_information_search",
+      "evidence_page_id": "uc_bkrp_spcl_mng"
+    },
+    {
+      "source": "document:uc_bkrp_spcl_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:special_asset_management_system",
+      "evidence_page_id": "uc_bkrp_spcl_mng"
+    },
+    {
+      "source": "document:uc_bkrp_trst_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:099cceab503b5cad",
+      "evidence_page_id": "uc_bkrp_trst_mng"
+    },
+    {
+      "source": "document:uc_bkrp_trst_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankrupt_financial_company_information_search",
+      "evidence_page_id": "uc_bkrp_trst_mng"
+    },
+    {
+      "source": "document:uc_bkrp_trst_mng",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:trust_real_estate_management_system",
+      "evidence_page_id": "uc_bkrp_trst_mng"
+    },
+    {
+      "source": "document:uc_bkrp_trst_psta",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:c2c6695e98cfe941",
+      "evidence_page_id": "uc_bkrp_trst_psta"
+    },
+    {
+      "source": "document:uc_bkrp_trst_psta",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:bankrupt_financial_company_information_search",
+      "evidence_page_id": "uc_bkrp_trst_psta"
+    },
+    {
+      "source": "document:uc_bkrp_trst_psta",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:trust_real_estate_status",
+      "evidence_page_id": "uc_bkrp_trst_psta"
+    },
+    {
+      "source": "document:uc_gudn",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:unclaimed_funds",
+      "evidence_page_id": "uc_gudn"
+    },
+    {
+      "source": "document:uc_hrpe_hist",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:heir_financial_transaction_inquiry",
+      "evidence_page_id": "uc_hrpe_hist"
+    },
+    {
+      "source": "document:uc_itgr_aply",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:630a0dd6ba3067a6",
+      "evidence_page_id": "uc_itgr_aply"
+    },
+    {
+      "source": "document:uc_itgr_aply",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:unclaimed_funds_integrated_application",
+      "evidence_page_id": "uc_itgr_aply"
+    },
+    {
+      "source": "document:uc_itgr_aply",
+      "relation": "EVIDENCE_FOR",
+      "target": "service:unclaimed_funds",
+      "evidence_page_id": "uc_itgr_aply"
+    },
+    {
+      "source": "document:uc_tel_qust",
+      "relation": "EVIDENCE_FOR",
+      "target": "alias:630a0dd6ba3067a6",
+      "evidence_page_id": "uc_tel_qust"
+    },
+    {
+      "source": "document:uc_tel_qust",
+      "relation": "EVIDENCE_FOR",
+      "target": "concept:unclaimed_funds_integrated_application",
+      "evidence_page_id": "uc_tel_qust"
+    },
+    {
+      "source": "document:uc_tel_qust",
+      "relation": "EVIDENCE_FOR",
+      "target": "contact:unclaimed_funds_phone",
+      "evidence_page_id": "uc_tel_qust"
+    },
+    {
+      "source": "alias:0993c51df94aaa27",
+      "relation": "LABEL_FOR",
+      "target": "concept:protected_financial_product"
+    },
+    {
+      "source": "alias:099cceab503b5cad",
+      "relation": "LABEL_FOR",
+      "target": "concept:trust_real_estate_management_system"
+    },
+    {
+      "source": "alias:13deb7fa49852f6b",
+      "relation": "LABEL_FOR",
+      "target": "service:protected_financial_institution_search"
+    },
+    {
+      "source": "alias:23c0994ddd9fb591",
+      "relation": "LABEL_FOR",
+      "target": "service:protected_financial_institution_search"
+    },
+    {
+      "source": "alias:252bca7acebc64d0",
+      "relation": "LABEL_FOR",
+      "target": "procedure:mistaken_remittance_return_support"
+    },
+    {
+      "source": "alias:2b3a82d88799afba",
+      "relation": "LABEL_FOR",
+      "target": "actor:protected_financial_institution"
+    },
+    {
+      "source": "alias:31188879c1e3506b",
+      "relation": "LABEL_FOR",
+      "target": "contact:concealed_assets_report_center"
+    },
+    {
+      "source": "alias:31e05816ff6835dd",
+      "relation": "LABEL_FOR",
+      "target": "service:protected_financial_product_search"
+    },
+    {
+      "source": "alias:360015082e86d12a",
+      "relation": "LABEL_FOR",
+      "target": "procedure:insured_financial_company_survey_objection"
+    },
+    {
+      "source": "alias:46ac2a437e370e57",
+      "relation": "LABEL_FOR",
+      "target": "concept:display_explanation_confirmation_scheme"
+    },
+    {
+      "source": "alias:47337a1dfc686ba2",
+      "relation": "LABEL_FOR",
+      "target": "actor:mistaken_remitter"
+    },
+    {
+      "source": "alias:4a803d34995445f7",
+      "relation": "LABEL_FOR",
+      "target": "concept:special_asset_status"
+    },
+    {
+      "source": "alias:505e1597b2cd0597",
+      "relation": "LABEL_FOR",
+      "target": "actor:protected_financial_institution"
+    },
+    {
+      "source": "alias:545d1908cc0ad189",
+      "relation": "LABEL_FOR",
+      "target": "concept:special_asset_management_system"
+    },
+    {
+      "source": "alias:56229f4a82d5c3d1",
+      "relation": "LABEL_FOR",
+      "target": "service:debt_certificate_financial_information_request"
+    },
+    {
+      "source": "alias:5d6ef4f0a8668ade",
+      "relation": "LABEL_FOR",
+      "target": "procedure:mistaken_remittance_return_support"
+    },
+    {
+      "source": "alias:5dd3f2f61cd7c02a",
+      "relation": "LABEL_FOR",
+      "target": "service:protected_financial_product_search"
+    },
+    {
+      "source": "alias:630a0dd6ba3067a6",
+      "relation": "LABEL_FOR",
+      "target": "concept:unclaimed_funds_integrated_application"
+    },
+    {
+      "source": "alias:63bd33a2b8efe753",
+      "relation": "LABEL_FOR",
+      "target": "concept:bankruptcy_discharge"
+    },
+    {
+      "source": "alias:684da4880efba1d1",
+      "relation": "LABEL_FOR",
+      "target": "concept:protected_financial_product"
+    },
+    {
+      "source": "alias:6e123182d8213155",
+      "relation": "LABEL_FOR",
+      "target": "concept:insured_financial_company_survey"
+    },
+    {
+      "source": "alias:6f4292c02f9281c4",
+      "relation": "LABEL_FOR",
+      "target": "concept:mistaken_remittance_recipient_cautions"
+    },
+    {
+      "source": "alias:7c668a6b46df7778",
+      "relation": "LABEL_FOR",
+      "target": "service:debt_information_inquiry_consultation"
+    },
+    {
+      "source": "alias:816aaeab4cbb3c41",
+      "relation": "LABEL_FOR",
+      "target": "service:failure_responsibility_investigation_status"
+    },
+    {
+      "source": "alias:83f4a83aaff968aa",
+      "relation": "LABEL_FOR",
+      "target": "concept:insured_financial_company_survey"
+    },
+    {
+      "source": "alias:8a1f108522bf657d",
+      "relation": "LABEL_FOR",
+      "target": "concept:bankruptcy_estate_status"
+    },
+    {
+      "source": "alias:8ab3cd7a98ccc840",
+      "relation": "LABEL_FOR",
+      "target": "monetary_rule:deposit_protection_limit"
+    },
+    {
+      "source": "alias:8d01cd7742635cf5",
+      "relation": "LABEL_FOR",
+      "target": "concept:protected_financial_product"
+    },
+    {
+      "source": "alias:93950ff080d5ca25",
+      "relation": "LABEL_FOR",
+      "target": "concept:bankruptcy_estate_management"
+    },
+    {
+      "source": "alias:952b02eff5633158",
+      "relation": "LABEL_FOR",
+      "target": "concept:insured_financial_company_survey"
+    },
+    {
+      "source": "alias:994108c34b985f20",
+      "relation": "LABEL_FOR",
+      "target": "concept:deposit_insurance_payment"
+    },
+    {
+      "source": "alias:a5173c5c5a6bf86a",
+      "relation": "LABEL_FOR",
+      "target": "service:failure_responsibility_investigation_status"
+    },
+    {
+      "source": "alias:af1a13456dc5df57",
+      "relation": "LABEL_FOR",
+      "target": "concept:display_explanation_confirmation_scheme"
+    },
+    {
+      "source": "alias:b9ef443b7f31e7d6",
+      "relation": "LABEL_FOR",
+      "target": "service:protected_financial_institution_search"
+    },
+    {
+      "source": "alias:ba128a9cc5e907fb",
+      "relation": "LABEL_FOR",
+      "target": "contact:financial_misconduct_report_center"
+    },
+    {
+      "source": "alias:c2c6695e98cfe941",
+      "relation": "LABEL_FOR",
+      "target": "concept:trust_real_estate_status"
+    },
+    {
+      "source": "alias:c5994da4bc098bea",
+      "relation": "LABEL_FOR",
+      "target": "concept:deposit_insurance_payment"
+    },
+    {
+      "source": "alias:c5b67d143fad5bb0",
+      "relation": "LABEL_FOR",
+      "target": "concept:mistaken_remitter_cautions"
+    },
+    {
+      "source": "alias:c7800b9b4617a0bb",
+      "relation": "LABEL_FOR",
+      "target": "actor:protected_financial_institution"
+    },
+    {
+      "source": "alias:d572ce2e7459e0b6",
+      "relation": "LABEL_FOR",
+      "target": "concept:insured_financial_company_survey_legal_basis"
+    },
+    {
+      "source": "alias:dd7c705e4421414d",
+      "relation": "LABEL_FOR",
+      "target": "procedure:mistaken_remittance_application"
+    },
+    {
+      "source": "alias:f20408108af8780f",
+      "relation": "LABEL_FOR",
+      "target": "service:protected_financial_product_search"
+    },
+    {
+      "source": "alias:f3a403671f367358",
+      "relation": "LABEL_FOR",
+      "target": "eligibility:mistaken_remittance_return_support"
+    },
+    {
+      "source": "alias:f58a7612c0d6fcea",
+      "relation": "LABEL_FOR",
+      "target": "procedure:deposit_insurance_payment_application"
+    },
+    {
+      "source": "alias:fb02653d6ba4a113",
+      "relation": "LABEL_FOR",
+      "target": "actor:protected_financial_institution"
+    },
+    {
+      "source": "alias:fe35e1fd031e0569",
+      "relation": "LABEL_FOR",
+      "target": "concept:mistaken_remittance_recipient_cautions"
+    },
+    {
+      "source": "alias:ff876cc184ce5a24",
+      "relation": "LABEL_FOR",
+      "target": "concept:protected_financial_product"
+    }
+  ]
+}

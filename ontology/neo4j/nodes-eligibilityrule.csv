@@ -1,0 +1,3 @@
+id,label,status,properties_json
+eligibility:mistaken_remittance_return_support,착오송금 반환지원 신청대상,domain_approved,{}
+eligibility:mistaken_remittance_self_check,착오송금 반환지원 대상 자가진단,domain_approved,{}

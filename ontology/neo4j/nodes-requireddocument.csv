@@ -1,0 +1,4 @@
+id,label,status,properties_json
+required_document:deposit_insurance_application,예금보험금 신청 구비서류,domain_approved,{}
+required_document:mistaken_remittance_recipient_forms,착오송금 수취인 구비서류,domain_approved,{}
+required_document:mistaken_remitter_application,착오송금인 신청 구비서류,domain_approved,{}

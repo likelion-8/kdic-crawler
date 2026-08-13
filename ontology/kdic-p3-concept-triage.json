@@ -1,0 +1,1420 @@
+{
+  "schema_version": "1.0.0",
+  "status": "triage_only_pending_domain_review",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "review_policy": {
+    "heldout_testset_used": false,
+    "automatic_candidate_approval": false,
+    "runtime_use": "prohibited",
+    "source_label_retention": "every P3 metadata concept remains visible in its page candidate",
+    "parent_match_semantics": "string overlap only; it is a reviewer hint, not a merge decision"
+  },
+  "summary": {
+    "source_metadata_concept_count": 81,
+    "page_candidate_count": 58,
+    "review_priority_counts": {
+      "P3-high": 38,
+      "P3-low": 10,
+      "P3-medium": 10
+    }
+  },
+  "page_candidates": [
+    {
+      "page_id": "dr_psn_rg",
+      "candidate_label": "개인회생",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_8510af5f765e4bb0",
+          "label": "개인회생"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "page_title": "개인회생",
+        "summary": "법원을 통한 개인회생 제도 안내. 신청자격(정기 수입이 있는 급여·영업소득자), 채무총액 한도(무담보 10억원·담보부 15억원), 변제기간(최장 5년), 지급불능 요건, 종전 면책결정 후 5년 경과 요건과 개인파산과의 비교표를 담는다."
+      }
+    },
+    {
+      "page_id": "uc_gudn",
+      "candidate_label": "고객미수령금",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_6320ddef25ed6d7d",
+          "label": "고객미수령금"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do",
+        "content_sha256": "290a4f552b8ee76b8f9202f0de8dcb78d32a2b31ee94d02151b1e47124dcd8b2",
+        "page_title": "고객미수령금",
+        "summary": "미수령금의 정의와 인터넷·방문 신청 방법 안내"
+      }
+    },
+    {
+      "page_id": "mtrs_rel_law",
+      "candidate_label": "관련법령 및 규정",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_c591b3969a3df809",
+          "label": "관련법령 및 규정"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do",
+        "content_sha256": "46d7def4dfbe218f531ef6ce6e8484d763659eb50722e849f49f084d6ead9730",
+        "page_title": "관련법령 및 규정",
+        "summary": "착오송금 반환지원 관련 법령·규정 모음. 예금자보호법(법률 제20431호, 2024-09-10 시행)·동 시행령(대통령령 제35228호)·착오송금반환지원 규정·시행세칙으로의 바로가기 링크를 제공한다(전문은 외부 링크·내장 문서)."
+      }
+    },
+    {
+      "page_id": "receiver_docs",
+      "candidate_label": "구비서류안내 - 착오송금수취인",
+      "suggested_ontology_class": "RequiredDocument",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_e9b60e5017283530",
+          "label": "구비서류_수취인"
+        },
+        {
+          "id": "concept:c_36df84cf8d685a1e",
+          "label": "구비서류안내 - 착오송금수취인"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+        "content_sha256": "f9bed4bbb32986ec7a23a55ae61f3a48c11af5239510903822558a3df8968d37",
+        "page_title": "구비서류안내 - 착오송금수취인",
+        "summary": "착오송금 수취인용 서식 안내. 반환요구 이의제기서와 이체수수료 환급신청서의 온라인·방문 신청 방법, HWP·PDF 서식 다운로드, 신청 기한(자진반환 기한인 양도통지서 송달 후 2주 내)을 표로 정리한다."
+      }
+    },
+    {
+      "page_id": "mtrs_gvbk_proc",
+      "candidate_label": "반환지원절차",
+      "suggested_ontology_class": "Procedure",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_0b8eebe581a8a3d2",
+          "label": "반환지원절차"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsGvbkSprtProc/selectScrn.do",
+        "content_sha256": "a4803ab34cf7189c914c53dc8dbb6637a33556b4e85b8d1f389906f121fe537f",
+        "page_title": "반환지원절차",
+        "summary": "금융안심포털의 반환지원 5단계 절차 안내(채권매입 → 수취인 연락처·주소 확보 → 자진반환 권유 → 지급명령 → 비용 공제 후 잔액 반환). 캐릭터(예툰이·예솜이) 스토리텔링 설명이 포함된다."
+      }
+    },
+    {
+      "page_id": "mtrs_vst_rcpt",
+      "candidate_label": "방문접수안내",
+      "suggested_ontology_class": "ContactPoint",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_14b7e7c9a0048de6",
+          "label": "방문접수안내"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+        "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
+        "page_title": "방문접수안내",
+        "summary": "방문접수 안내. 운영시간(평일 09:00~17:00, 점심 12~13시), 5단계 절차(센터방문 → 신청서 제출 → 접수 → 반환지원대상 심사·채권매입 → 반환지원 진행), 본사 고객센터(서울 중구 청계천로 30 지하1층) 위치와 지하철·버스 교통편을 담는다."
+      }
+    },
+    {
+      "page_id": "ms_trgt_fnst",
+      "candidate_label": "보험금 지급대상 금융회사",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_7f853071bbe38720",
+          "label": "보험금 지급대상 금융회사"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do",
+        "content_sha256": "72cf381ebd633bb4bb10fabdcd982445d1635aa8dab726c2201c31621f74778d",
+        "page_title": "보험금 지급대상 금융회사",
+        "summary": "파산금융회사별 예금보험금 지급대상 여부 검색 가능"
+      }
+    },
+    {
+      "page_id": "dp_protlmts",
+      "candidate_label": "보호한도",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_6054401109e7869f",
+          "label": "보호한도"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do",
+        "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637",
+        "page_title": "보호한도",
+        "summary": "예금자 1인당 보호한도(원금+소정이자 1억원)와 초과금액 비보호 원칙, 대출 상계 규정, 별도한도(DC·IRP·연금저축·사고보험금 각 1억원)를 설명한다."
+      }
+    },
+    {
+      "page_id": "ha_status_agree",
+      "candidate_label": "부실책임조사 진행현황 조회 (개인정보 동의)",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_15efa1acd3ac5c8a",
+          "label": "부실책임조사"
+        },
+        {
+          "id": "concept:c_b2d903535dcbefff",
+          "label": "부실책임조사 진행현황 조회 (개인정보 동의)"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/voc/userDataUsingAgree",
+        "content_sha256": "7a9070848f1a43399c08a0345c2e11d035efd82a3e85f6cc608181d86b7b865e",
+        "page_title": "부실책임조사 진행현황 조회 (개인정보 동의)",
+        "summary": "부실책임조사 진행현황 조회를 위한 개인정보 수집·이용 동의 화면. 수집 목적(민원처리·정보공개·개인정보 보호업무), 수집 항목(필수: 성명·휴대전화·이메일·생년월일 / 선택: 주소·전화·팩스), 보유기간(10년), 동의 거부 권리와 불이익을 고지한다."
+      }
+    },
+    {
+      "page_id": "dr_debt_cert",
+      "candidate_label": "부채증명원/금융거래정보신청",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_ac01d1377dbeeb01",
+          "label": "부채증명원 및 금융거래정보신청"
+        },
+        {
+          "id": "concept:c_e72556a476852b72",
+          "label": "부채증명원/금융거래정보신청"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+        "content_sha256": "b34de2685db8ddf35e4826afcbced17020682dafa0052f7752f6d7930ee3fb4a",
+        "page_title": "부채증명원/금융거래정보신청",
+        "summary": "파산금융회사 채무자의 부채증명원·금융거래정보 발급 서비스 안내. 인터넷 신청 원칙(공인인증서·휴대폰 인증), 방문 신청 시 본인·대리인 구비서류와 신청서 양식 다운로드, 법적 종결된 파산재단은 부채증명원만 신청 가능함을 안내한다."
+      }
+    },
+    {
+      "page_id": "uc_hrpe_hist",
+      "candidate_label": "상속인 금융거래조회",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_1ea06745ce10da94",
+          "label": "상속인 금융거래조회"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do",
+        "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61",
+        "page_title": "상속인 금융거래조회",
+        "summary": "사망자(피상속인) 명의 미수령금을 상속인이 조회하는 서비스"
+      }
+    },
+    {
+      "page_id": "ha_center",
+      "candidate_label": "신고센터",
+      "suggested_ontology_class": "ContactPoint",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_578fa9f57bc44cce",
+          "label": "금융부실관련자 은닉재산신고"
+        },
+        {
+          "id": "concept:c_b2cfc8f3a944e190",
+          "label": "신고센터"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+        "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799",
+        "page_title": "신고센터",
+        "summary": "은닉재산 신고센터 안내. 금융부실관련자 은닉재산 신고 시 회수기여도에 따라 회수금액의 5~20%를 구간별 차등 지급(최고한도 30억원)하는 포상금 기준표와 자동계산기, 신고 실적(제보 511건·발견재산 회수 918억원·포상금 67.6억원, 2025-12 기준)을 담는다."
+      }
+    },
+    {
+      "page_id": "dr_credit_sprt",
+      "candidate_label": "신용회복 지원",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_1bdf6485a85e2b7a",
+          "label": "신용회복 지원"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do",
+        "content_sha256": "f431a549eade658ea9f1723718b7d86ba1cc5001d9be77af65c1c35c3550ed01",
+        "page_title": "신용회복 지원",
+        "summary": "개인신용회복지원제도 안내. 파산재단이 2005년 8월 신용회복지원 협약에 가입해 채무자의 상환기간 연장·분할상환·이자율 조정·변제기 유예·채무감면을 지원하며, 신청은 개별 금융회사가 아닌 신용회복위원회(ccrs.or.kr)에 한다는 점을 강조한다."
+      }
+    },
+    {
+      "page_id": "sender_qlfc_check",
+      "candidate_label": "신청대상여부 확인 (자가진단)",
+      "suggested_ontology_class": "EligibilityRule",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_e1e0195c15458b84",
+          "label": "반환지원 신청하기"
+        },
+        {
+          "id": "concept:c_2d53b0db833d2898",
+          "label": "신청대상여부 확인"
+        },
+        {
+          "id": "concept:c_f9833a8d9f0af6bf",
+          "label": "신청대상여부 확인 (자가진단)"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+        "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05",
+        "page_title": "신청대상여부 확인 (자가진단)",
+        "summary": "반환지원 신청대상 여부 자가진단 화면. 착오송금액(건당 5만원~1억원), 착오송금일(2021-07-06 이후), 신청기한(1년 이내), 금융회사 반환신청 선행·미반환 통보 여부 등 7개 항목을 체크해 대상/비대상을 확인한다."
+      }
+    },
+    {
+      "page_id": "ms_poss_dcmnt",
+      "candidate_label": "신청시 구비서류",
+      "suggested_ontology_class": "RequiredDocument",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_4ca7f75d2ec3bd7b",
+          "label": "신청시 구비서류"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+        "content_sha256": "7f921cea8add94b1aa2e3b473a595420f648000c9dd90cedb73bd38d720f59fb",
+        "page_title": "신청시 구비서류",
+        "summary": "본인·대리인·미성년자 등 신청인 유형별 구비서류 안내"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_trst_mng",
+      "candidate_label": "신탁부동산관리체계",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_addfc0185edb571b",
+          "label": "신탁부동산관리체계"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+        "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3",
+        "page_title": "신탁부동산관리체계",
+        "summary": "신탁부동산 책임회수관리시스템과 단계별 관리절차 안내"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_trst_psta",
+      "candidate_label": "신탁부동산현황",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_6c704a1d32d87ba2",
+          "label": "신탁부동산현황"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+        "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a",
+        "page_title": "신탁부동산현황",
+        "summary": "신탁부동산의 정의 및 유형 안내"
+      }
+    },
+    {
+      "page_id": "dp_gudn_data",
+      "candidate_label": "안내자료 다운로드",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_a26428762ffd7da4",
+          "label": "안내자료 다운로드"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+        "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d",
+        "page_title": "안내자료 다운로드",
+        "summary": "예금자보호제도 안내책자·가이드라인 등 자료 31건을 제목·소관부서·내용으로 검색해 내려받는 게시판이다. 예금자보호제도 안내자료(PDF, 2025.9), 예금보험관계 표시·설명·확인제도 가이드라인(2024.2), 예금자보호안내문(제1종·제2종) 영문 번역본, 표시·설명·확인 의무 관련 규정 일체 등이 등록돼 있고 개인·부보금융회사가 다운로드해 영업점에 비치할 수 있다."
+      }
+    },
+    {
+      "page_id": "ms_aply_proc",
+      "candidate_label": "예금보험금 신청 절차",
+      "suggested_ontology_class": "Procedure",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_a8f077467f3347be",
+          "label": "예금보험금 신청 절차"
+        },
+        {
+          "id": "concept:c_bdf7bad37a1447c3",
+          "label": "예금보험금 신청절차"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do",
+        "content_sha256": "b398772e990453abd83695a258c409ec8a9dc4e6dbd19844a64aba34a498bba0",
+        "page_title": "예금보험금 신청절차",
+        "summary": "보험사고 발생부터 지급공고·신청·지급까지의 절차 설명"
+      }
+    },
+    {
+      "page_id": "ms_expln",
+      "candidate_label": "예금보험금이란?",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_7caf02c67727c3b6",
+          "label": "예금보험금이란?"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do",
+        "content_sha256": "8a9ad3e4e641bff847e916ef4810d48562abc5fe0834288b074968f295c758a6",
+        "page_title": "예금보험금이란?",
+        "summary": "예금보험금(가지급금·개산지급금)의 정의 설명"
+      }
+    },
+    {
+      "page_id": "dp_logo",
+      "candidate_label": "예금보호 로고 사용 안내",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_88b83dc8f903c686",
+          "label": "예금보호 로고 사용 안내"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do",
+        "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609",
+        "page_title": "예금보호 로고 사용 안내",
+        "summary": "예금보호 로고(보호금융상품 1인당 최고 1억원 / 비보호)의 사용 규정을 설명한다. 정비례 확대·축소는 가능하나 색상변경은 불가하며 전용색상은 KDIC RED(PANTONE 186C)·KDIC BLUE(PANTONE 294C)의 4원색(CMYK) 사용을 원칙으로 한다. 문구 비율 변형·기울기·자간 확대·그림자·테두리 등 12가지 사용금지 규정과 사용 대상(『예금보험관계 표시 및 설명·확인에 관한 규정』 제2조에 따른 통장등·홍보물·계좌조회화면등), 로고 다운로드를 제공한다."
+      }
+    },
+    {
+      "page_id": "uc_tel_qust",
+      "candidate_label": "예금자 대상 전화문의 안내",
+      "suggested_ontology_class": "ContactPoint",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_35005b837bcd53ab",
+          "label": "예금자 대상 전화문의 안내"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do",
+        "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f",
+        "page_title": "예금자 대상 전화문의 안내",
+        "summary": "명의 변경 시 문의 방법과 미수령금 관련 전화상담 안내"
+      }
+    },
+    {
+      "page_id": "dp_syst",
+      "candidate_label": "예금자보호제도",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_035f09e117783272",
+          "label": "예금자보호제도"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do",
+        "content_sha256": "349ad69487c4cffaaf259bb5e09ec272dddefd39fbe410c307982b48c70f4150",
+        "page_title": "예금자보호제도",
+        "summary": "예금보험공사가 보험료를 적립해 두었다가 금융회사 대신 예금을 지급하는 공적보험의 원리와 구조를 설명한다."
+      }
+    },
+    {
+      "page_id": "dp_ovrs",
+      "candidate_label": "예금자보호한도(해외)",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_9627bdfe5acfa166",
+          "label": "예금자보호한도(해외)"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do",
+        "content_sha256": "1a4a8bbbe9da470007dbc09feca00130e109708b3b8c0a4dda02f3f65e1d9459",
+        "page_title": "예금자보호한도(해외)",
+        "summary": "한국·미국·캐나다·일본·영국·독일의 예금보호한도와 1인당 GDP 대비 배율을 비교한 표. 기준시점과 출처(IMF)가 명시돼 있다."
+      }
+    },
+    {
+      "page_id": "dp_svbk_hist",
+      "candidate_label": "저축은행변경이력",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_ec9c3ff287ee767b",
+          "label": "저축은행변경이력"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+        "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c",
+        "page_title": "저축은행변경이력",
+        "summary": "저축은행의 상호 변경이력을 현 회사명·변경일자·구명칭(또는 저축은행명) 표로 제공한다(2022/4/20 기준, 엑셀 다운로드 가능). 상상인←공평(2018-06-04), 애큐온←HK(2017-12-18), 다올←유진(2022-03-21) 등 옛 이름으로 거래하던 저축은행의 현재 상호를 확인할 수 있다."
+      }
+    },
+    {
+      "page_id": "kmrs_aply_trgt",
+      "candidate_label": "착오송금반환지원 신청대상",
+      "suggested_ontology_class": "EligibilityRule",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_637a0e93c8785287",
+          "label": "착오송금 반환지원제도"
+        },
+        {
+          "id": "concept:c_4d1e7b824eca0319",
+          "label": "착오송금반환지원 신청대상"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+        "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+        "page_title": "착오송금반환지원 신청대상",
+        "summary": "착오송금 반환지원 신청대상 기준을 문답형으로 안내한다. 신청 가능 금액 한도(건당 5만원 이상 1억원 이하)와 신청기한(잘못 이체한 날로부터 1년 이내) 등을 담는다."
+      }
+    },
+    {
+      "page_id": "kmrs_apply_mthd",
+      "candidate_label": "착오송금반환지원 신청방법",
+      "suggested_ontology_class": "Procedure",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_9d49654cd2f061a4",
+          "label": "신청방법"
+        },
+        {
+          "id": "concept:c_a8f7d97fb324c42d",
+          "label": "착오송금반환지원 신청방법"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyMthd/selectScrn.do",
+        "content_sha256": "c8d0393d679d1cf9163cce167b75b6353e4d8297e7cc38e807a08dec4a06889a",
+        "page_title": "착오송금반환지원 신청방법",
+        "summary": "온라인 신청(fins.kdic.or.kr, PC만 지원, 공동인증서·이체확인증 필요)과 방문 신청(서울 중구 청계천로 30 1층, 1588-0037, 신분증·이체확인증 지참) 방법을 안내한다."
+      }
+    },
+    {
+      "page_id": "kmrs_proc",
+      "candidate_label": "착오송금반환지원 절차",
+      "suggested_ontology_class": "Procedure",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_132955c7d26f2ff6",
+          "label": "절차"
+        },
+        {
+          "id": "concept:c_ef419af38d852f47",
+          "label": "착오송금반환지원 절차"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdProc/selectScrn.do",
+        "content_sha256": "0a8b549ed1fb9cde87c259751d0a5916db2b5edfc1811b7ad7413bb30deabce7",
+        "page_title": "착오송금반환지원 절차",
+        "summary": "착오송금 반환지원 5단계 절차를 설명한다: 반환지원 신청(채권매입) → 중앙행정기관·금융회사 통한 수취인 정보 확인 → 자진반환 권유 → 미반환 시 법원 지급명령 → 회수액에서 비용 차감 후 잔액 반환."
+      }
+    },
+    {
+      "page_id": "kmrs_itrd",
+      "candidate_label": "착오송금반환지원 제도란",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_5b4540e54140f019",
+          "label": "제도란"
+        },
+        {
+          "id": "concept:c_fd6bb44fcceba87e",
+          "label": "착오송금반환지원 제도란"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrd/selectScrn.do",
+        "content_sha256": "78b2c5fd989beb7c83e6e5564bacf232e3ab05fe011f609ff3cb76fe6591d212",
+        "page_title": "착오송금반환지원 제도란",
+        "summary": "착오송금 반환지원 제도 소개 안내영상 페이지. '잘못 보낸 돈 되찾기 서비스'가 착오송금인이 실수로 잘못 보낸 돈을 최소 비용으로 빠르게 되찾도록 돕는 제도임을 영상으로 설명한다."
+      }
+    },
+    {
+      "page_id": "receiver_attention",
+      "candidate_label": "착오송금수취인 유의사항",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_008151b80c2c9d5d",
+          "label": "수취인_유의사항"
+        },
+        {
+          "id": "concept:c_ea5acfa92394ba44",
+          "label": "착오송금수취인 유의사항"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do",
+        "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4",
+        "page_title": "착오송금수취인 유의사항",
+        "summary": "착오송금 수취인 유의사항. 자진반환 기한(양도통지문 송달일로부터 2주), 기한 내 미반환 시 법원 지급명령 절차, 이의제기 방법(온라인 메뉴 또는 방문), 이체수수료 환급 신청(팩스 02-758-0270·이메일 kmrs@kdic.or.kr·방문), 지급명령 확정 후 강제집행·가압류 가능성을 안내한다."
+      }
+    },
+    {
+      "page_id": "dr_info_aply",
+      "candidate_label": "채무정보 조회 ＆ 상담신청",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_c4f8b4a53b142a0a",
+          "label": "채무정보 조회 및 상담신청"
+        },
+        {
+          "id": "concept:c_74952948bd1147a6",
+          "label": "채무정보 조회 ＆ 상담신청"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do",
+        "content_sha256": "7a5d97ec59ed45204a22616c03f2525a1a45837f427ee43a68ebc5b16f6b7e14",
+        "page_title": "채무정보 조회 ＆ 상담신청",
+        "summary": "간편인증 등 본인인증으로 파산금융회사·㈜케이알앤씨(KR&C) 채무 보유 여부를 온라인 조회하고, 채무가 있으면 채무조정 상담을 신청하는 절차(조회 → 본인확인 → 상담신청 → 담당자 유선 상담)를 안내한다."
+      }
+    },
+    {
+      "page_id": "dr_kruc",
+      "candidate_label": "채무조정",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_bbcd9a329f749697",
+          "label": "KR&C 채무조정"
+        },
+        {
+          "id": "concept:c_4fba11fc0d99225c",
+          "label": "채무조정"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/di/relsite/PbcrKrncLblarb/selectScrn.do",
+        "content_sha256": "12dfb1ce59d6d3fab50a7e8e4628cdf253f6ab7d36844933fe69302c430d6143",
+        "page_title": "채무조정",
+        "summary": "케이알앤씨(KR&C)가 파산재단·부실금융회사에서 인수한 대출채권 채무자 대상 채무조정 안내. 신청자격(변제를 기대할 수 없는 주채무자·보증채무자), 신청 불가 사유 4가지, 본인·대리인 구비서류(채무조정신청서, 해제조건부 채무면제 각서 등)를 담는다."
+      }
+    },
+    {
+      "page_id": "dr_system",
+      "candidate_label": "채무조정제도",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_8306dbfed40e512f",
+          "label": "채무조정제도"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do",
+        "content_sha256": "fab47dae07d654ef663346619ff27c9c5758ad6cfa97b2a6489be1ffbb9b1387",
+        "page_title": "채무조정제도",
+        "summary": "예금보험공사의 채무조정 제도(2001년부터 운영) 개요. 파산 금융회사 채무자 중 변제를 기대할 수 없는 주채무자·보증채무자의 신청자격, 본인·대리인 신청 시 구비서류, 신청 불가 사유(총 회수가능액이 총 채무액 이상, 재산 도피·은닉 등)를 안내한다."
+      }
+    },
+    {
+      "page_id": "uc_bkrp_spcl_mng",
+      "candidate_label": "특별자산관리체계",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_bcafbdc1d9dfd547",
+          "label": "특별자산관리체계"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+        "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753",
+        "page_title": "특별자산관리체계",
+        "summary": "특별자산에 대한 채권보전조치 및 관리강화 체계 안내"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_spcl_ast",
+      "candidate_label": "특별자산현황",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_b6a885b4154a1e9e",
+          "label": "특별자산현황"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+        "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc",
+        "page_title": "특별자산현황",
+        "summary": "특별자산(파산재단 보유 비정형 자산)의 정의 및 유형 안내"
+      }
+    },
+    {
+      "page_id": "dr_psn_br",
+      "candidate_label": "파산면책",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_a27f421d12b3564b",
+          "label": "파산면책"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do",
+        "content_sha256": "378fad2a221975f3ea53db06c46242f0cc3c871334bb3b5ec66a173292ec3e32",
+        "page_title": "파산면책",
+        "summary": "법원을 통한 개인파산·면책 제도 안내. 파산절차(채무자 재산으로 파산재단을 형성해 채권자 배당)와 면책절차(잔여 채무의 변제책임을 재판으로 면제해 경제적 재출발 도모)의 개념, 파산·면책 동시 신청, 파산선고의 불이익(공무원·부동산중개업자 등 자격 제한)과 소멸을 설명한다."
+      }
+    },
+    {
+      "page_id": "uc_bkrp_mng",
+      "candidate_label": "파산재단관리",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_572776d78d64263b",
+          "label": "파산재단관리"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+        "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188",
+        "page_title": "파산재단관리",
+        "summary": "파산금융회사 목록(금융권역·회사명·관재인·파산선고일·주소·연락처·진행상태) 검색"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_fndt",
+      "candidate_label": "파산재단현황",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-high",
+      "review_action": "verify_as_canonical_candidate",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_1bdf92f70ac093d9",
+          "label": "파산재단현황"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+        "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946",
+        "page_title": "파산재단현황",
+        "summary": "금융권별·연도별·관할 지법별 파산재단 현황 통계표"
+      }
+    },
+    {
+      "page_id": "faq_msdr_apply",
+      "candidate_label": "FAQ - 착오송금반환지원신청",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_01a5d76df6fbb2e7",
+          "label": "FAQ - 착오송금반환지원신청"
+        },
+        {
+          "id": "concept:c_e7669145125672ed",
+          "label": "FAQ_반환지원신청"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do",
+        "content_sha256": "a55ff31bdc14e60875eb95132ca9cb599e437b8120257c949f9abc1d16966456",
+        "page_title": "FAQ - 착오송금반환지원신청",
+        "summary": "착오송금 반환지원 신청 FAQ. 지원대상 금액(건당 5만원~1억원, 송금일로부터 1년 이내 신청), 지원 제외 사유(관련 소송 진행·완료, 수취인 휴·폐업 법인 또는 회생·파산, 계좌 압류 등), 공동인증서 문제 해결, 매입계약 해제 사유 등을 문답으로 다룬다."
+      }
+    },
+    {
+      "page_id": "faq_top10",
+      "candidate_label": "고객센터 FAQ TOP 10",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_3d101c3f14e24f9f",
+          "label": "FAQ_TOP10"
+        },
+        {
+          "id": "concept:c_02ee110020a6af4c",
+          "label": "고객센터 FAQ TOP 10"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do",
+        "content_sha256": "34b2ec2438cd9e5f06301a9ecdaa56f6915339a8bdf7e8971bc7a9da28418db9",
+        "page_title": "고객센터 FAQ TOP 10",
+        "summary": "착오송금 반환지원 최다조회 질문 10건. 반환 소요기간(접수일로부터 약 2개월), 지원대상 금액(5만원~1억원), 지원 제외 사유, 적용대상 송금·수취기관(은행·금융투자회사·종금사·저축은행·신협·새마을금고·간편송금업자 등)을 다룬다."
+      }
+    },
+    {
+      "page_id": "faq_nramt",
+      "candidate_label": "미수령금통합신청 FAQ (실제 내용은 예금보호)",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:unclaimed_funds_integrated_application"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_d4949d1cefa5e1fd",
+          "label": "미수령금통합신청 FAQ (실제 내용은 예금보호)"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do",
+        "content_sha256": "dfc822c1156e098bd93ff5c4b2908fcc3145625550828faa9f1e2cedaa893060",
+        "page_title": "미수령금통합신청 FAQ (실제 내용은 예금보호)",
+        "summary": "예금보호한도, 계열 저축은행 분산예금 보호, 영업정지 후 예금인출 절차를 다룬 FAQ."
+      }
+    },
+    {
+      "page_id": "mtrs_stut_chc",
+      "candidate_label": "상황선택",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_da7426f8cd4b7af9",
+          "label": "상황선택"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do",
+        "content_sha256": "2b85e52da3cf42af3b46e2856b203a7a84395366dd7ec29bc6137536491bbedb",
+        "page_title": "상황선택",
+        "summary": "착오송금인('돈을 잘못 보냈어요' — 신청자격 확인·바로 신청)과 착오송금수취인('모르는 돈을 받았어요' — 이의제기·채무잔액 확인·이체수수료 환급신청·반환 확인)으로 메뉴를 분기하는 진입화면."
+      }
+    },
+    {
+      "page_id": "ha_ilgl_intro",
+      "candidate_label": "신고센터 소개",
+      "suggested_ontology_class": "ContactPoint",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_ca1c1facfc0730df",
+          "label": "금융부실관련자 불법행위신고"
+        },
+        {
+          "id": "concept:c_0b38f8efe27f5bc7",
+          "label": "신고센터 소개"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
+        "content_sha256": "06f9fa77314a9075fadc91c9f878487b8579376bf58edbf0f09f7fcfb95cad70",
+        "page_title": "신고센터 소개",
+        "summary": "금융부실관련자의 횡령·배임 등 불법행위 신고센터 소개. 신고 방식(상담전화 02-758-0797, 우편·방문(중구 청계천로 30 조사국), 팩스 02-758-0798, 이메일 invest@kdic.or.kr)과 신고서 양식 다운로드를 제공하며, 접수 시 부실책임조사·검찰 수사의뢰로 이어진다."
+      }
+    },
+    {
+      "page_id": "uc_itgr_aply",
+      "candidate_label": "안내",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_eb81d7d96ba4e901",
+          "label": "안내"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do",
+        "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898",
+        "page_title": "안내",
+        "summary": "미수령금 종류와 온라인·오프라인 신청 방법 설명"
+      }
+    },
+    {
+      "page_id": "dp_faq_page",
+      "candidate_label": "예금자보호제도 FAQ",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_340a7686f10d88bd",
+          "label": "예금자보호제도 FAQ"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do",
+        "content_sha256": "053957508cb2b05942fa36d7ef48414f9c69b9da76654e53d6f3163a8a80d186",
+        "page_title": "예금자보호제도 FAQ",
+        "summary": "예금보호한도 1억원 상향 시행일, 별도 신청 불필요, 예금-대출 상계 계산 사례, 퇴직연금·연금저축 별도한도 등 17개 문답을 담은 아코디언 FAQ."
+      }
+    },
+    {
+      "page_id": "ha_faq_dclr",
+      "candidate_label": "은닉재산신고 FAQ",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_fb68b1ac497f5069",
+          "label": "은닉재산신고 FAQ"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do",
+        "content_sha256": "9e72acbd7c27d0e6d80d0fc0c2e41a7b0a4d295c4d3d9790ef5eb6b9aaad5039",
+        "page_title": "은닉재산신고 FAQ",
+        "summary": "은닉재산신고 FAQ. 포상금 지급 기준표(회수기여금액 구간별 5~20%), 지급 절차(조사·회수 → 회수비용 공제 → 기여도 평가 → 법원 지급결정 → 지급), 포상 제외 사유, 상담전화(1588-0037, 02-758-0102~4)를 문답으로 안내한다."
+      }
+    },
+    {
+      "page_id": "dr_faq_inq",
+      "candidate_label": "채무정보조회 FAQ",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_8e9f45db00366d53",
+          "label": "채무정보조회 FAQ"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqLbltInfoInq.do",
+        "content_sha256": "1c899cabed5073edfacd1f0b66768b9fc9f30442f4f073126e75f4d6411f4146",
+        "page_title": "채무정보조회 FAQ",
+        "summary": "온라인 채무정보 조회 FAQ. 모바일 조회 방법(휴대폰인증), 서비스 운영시간 오류 시 조치(브라우저 재접속·임시파일 삭제), 공동인증서 폐기 오류 해결 등 이용 중 문제 해결법을 문답으로 안내한다."
+      }
+    },
+    {
+      "page_id": "dp_gudn_faq",
+      "candidate_label": "표시·설명·확인 제도 관련 FAQ",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-low",
+      "review_action": "verify_or_reject_navigation_label",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:display_explanation_confirmation_scheme"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_527a3c9463713818",
+          "label": "표시·설명·확인 제도 관련 FAQ"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do",
+        "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1",
+        "page_title": "표시·설명·확인 제도 관련 FAQ",
+        "summary": "표시·설명·확인 제도에 관한 문답을 표시제도와 설명·확인제도로 나눠 담는다. 표시 대상(홍보물·통장등·계좌조회화면등), 방카슈랑스 등 위탁판매 상품의 표시 주체, 전자금융거래 시 제1종 안내문 표시, 예금자보호대상 퇴직연금 범위(확정급여형 비보호, 확정기여형·개인퇴직계좌의 금리연동형·이율보증형 보호, 실적배당형 비보호), 신상품 보호여부 사전확인 대상 3가지, 대리인·법인 고객의 설명·확인 이행, TM·전자금융거래에서의 일괄 동의, 상속·양도·명의변경 시 이행 의무 등을 다룬다."
+      }
+    },
+    {
+      "page_id": "sender_docs",
+      "candidate_label": "구비서류안내 - 착오송금인",
+      "suggested_ontology_class": "RequiredDocument",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "actor:mistaken_remitter"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_f2b76b33d1b61a49",
+          "label": "구비서류_착오송금인"
+        },
+        {
+          "id": "concept:c_604f66337c048cde",
+          "label": "구비서류안내 - 착오송금인"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+        "content_sha256": "5a480687efac403e42a51f832ccf877f1c7864290486bb4e5123caccb3577814",
+        "page_title": "구비서류안내 - 착오송금인",
+        "summary": "착오송금인 신청인 유형별(본인·대리인·법인 등) 구비서류를 표로 정리한다. 반환지원 신청서, 금융거래정보 제공 요구(동의)서, 채권양도통지 위임장 등 서식의 HWP·PDF 다운로드와 유형별 신청서 샘플을 제공한다."
+      }
+    },
+    {
+      "page_id": "dp_prdct",
+      "candidate_label": "보호대상 금융상품 개요",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:protected_financial_product"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_432bb4bc988fe3b0",
+          "label": "보호대상 금융상품 개요"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do",
+        "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174",
+        "page_title": "보호대상 금융상품 개요",
+        "summary": "업권별 보호·비보호 금융상품을 표로 구분한다. CD·RP·펀드·ELS·증권사 CMA 등 비보호 상품과 종금사 CMA 등 보호 상품이 갈린다."
+      }
+    },
+    {
+      "page_id": "dp_fnst",
+      "candidate_label": "보호대상 금융회사 개요",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "actor:protected_financial_institution"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_294453a954cac30f",
+          "label": "보호대상 금융회사 개요"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
+        "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747",
+        "page_title": "보호대상 금융회사 개요",
+        "summary": "보호대상 금융회사 종류(은행·보험·투자매매중개업자·종금사·상호저축은행)와 부보금융회사 수를 기준일과 함께 표로 제공한다. 농수협 지역조합·신협·새마을금고는 비대상임을 명시한다."
+      }
+    },
+    {
+      "page_id": "dp_prdct_srch",
+      "candidate_label": "보호대상금융상품검색",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:protected_financial_product"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_4b45f68eeb3692df",
+          "label": "보호대상금융상품검색"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+        "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5",
+        "page_title": "보호대상금융상품검색",
+        "summary": "부보금융회사별 보호금융상품 목록을 금융권역(은행·종금·보험·저축은행·신협)·회사명·상품명으로 검색하는 화면이다. 목록은 금융회사가 제출한 보호금융상품등록부를 바탕으로 작성돼 착오·오류가 있을 수 있고 기준일 이후 신규 판매 상품은 검색되지 않을 수 있다. 정부·지자체·한국은행·금융감독원·예금보험공사·부보금융회사가 가입한 상품과 법인 보험계약은 비보호이며, 변액보험은 최저보증 보험금·특약만 보호(사고보험금 별도), 확정급여형(DB) 퇴직연금 편입 상품은 비보호라고 명시한다."
+      }
+    },
+    {
+      "page_id": "dp_fnst_srch",
+      "candidate_label": "보호대상금융회사검색",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "actor:protected_financial_institution"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_420449bdcc3ca2b7",
+          "label": "보호대상금융회사검색"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+        "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1",
+        "page_title": "보호대상금융회사검색",
+        "summary": "보호대상 금융회사를 금융권역(은행·종합금융회사·생명보험회사·손해보험회사·투자매매업자ㆍ투자중개업자·상호저축은행·신용협동조합)과 회사명으로 검색하는 화면이다. 25.12월 기준 회사명·주소·연락처·FAX·대표자명을 표로 제공하며, 상단에 은행·증권 투자매매중개업자·보험회사·종합금융회사·상호저축은행이 예금보험 대상이라는 안내를 싣는다."
+      }
+    },
+    {
+      "page_id": "dp_josa_law",
+      "candidate_label": "부보금융회사조사 법적근거 및 관련규정",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:insured_financial_company_survey"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_c9a28ddb4109e2e2",
+          "label": "법적근거 및 관련규정"
+        },
+        {
+          "id": "concept:c_26fbcc7c3750d410",
+          "label": "부보금융회사조사 법적근거 및 관련규정"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do",
+        "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353",
+        "page_title": "부보금융회사조사 법적근거 및 관련규정",
+        "summary": "부보금융회사 조사의 법적근거인 예금자보호법 제21조제2항과 시행령 제12조의2 조문을 싣는다. 제21조는 자료제출 요구, 부실우려 시 조사, 금융감독원장에 대한 검사·시정조치 요청, 보험사고 위험 시 금융위원회 통보를 규정하고, 시행령 제12조의2는 상호저축은행의 부실우려 인정기준 4가지(금융위 기준 해당, 자기자본비율이 그 기준+2%포인트 미만, 최근 3개 회계연도 연속 당기순손실, 공사가 금감원과 협의해 조사 필요성을 인정)를 정한다. 내규인 '부보금융기관등의 조사 및 공동검사에 관한 규정' 및 시행세칙 링크도 제공한다."
+      }
+    },
+    {
+      "page_id": "dp_josa_objc",
+      "candidate_label": "부보금융회사조사 소명 및 이의제기 신청",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:insured_financial_company_survey"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_c9b4d3c4b528c3d1",
+          "label": "부보금융회사조사 소명 및 이의제기 신청"
+        },
+        {
+          "id": "concept:c_35ac7643177bb2aa",
+          "label": "소명 및 이의제기"
+        },
+        {
+          "id": "concept:c_0335dc25a8783d69",
+          "label": "소명및이의제기신청"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do",
+        "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187",
+        "page_title": "부보금융회사조사 소명 및 이의제기 신청",
+        "summary": "조사대상 부보금융회사(임직원)가 조사내용에 이견이 있을 때 증빙자료를 첨부해 조사실시 부서장에게 소명·이의제기하는 절차를 안내한다. 처리절차는 신청→접수→수용여부 검토(실무회의 등)→결과통보이며 '진행상황조회'로 단계를 확인할 수 있다. 신청 채널은 인터넷(VOC 고객의 소리), 우편·방문(서울특별시 중구 청계천로 30 예금보험공사 리스크총괄부, 우편번호 04521), 팩스 02-758-0250이다."
+      }
+    },
+    {
+      "page_id": "dp_josa_itrd",
+      "candidate_label": "부보금융회사조사 업무 소개",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:insured_financial_company_survey"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_adb79e3342c34c10",
+          "label": "부보금융회사조사 업무 소개"
+        },
+        {
+          "id": "concept:c_19ff75362e1f3c6b",
+          "label": "조사업무 소개"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do",
+        "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a",
+        "page_title": "부보금융회사조사 업무 소개",
+        "summary": "예금자보호법 제21조 제2항에 근거해 공사가 부보금융회사 등의 업무·재산상황을 조사하는 업무를 소개한다. 기본가치(절차의 투명성·조사의 전문성·조사원의 청렴성), 시행령 제12조의2에 따라 부실우려가 인정되거나 자료 확인이 이뤄지지 않은 경우 조사할 수 있다는 기본방향, 주요절차 4단계(조사대상 선정→현장조사→조사내용 심의→조사결과 처리), 권익보호담당역·소명 및 이의제기 제도, 조사결과의 예금보험위원회 보고와 금융감독원·금융위원회 통보·조치 요청을 담는다."
+      }
+    },
+    {
+      "page_id": "sender_attention",
+      "candidate_label": "착오송금인 유의사항",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "actor:mistaken_remitter"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_ca4e186d69fc3c0b",
+          "label": "유의사항"
+        },
+        {
+          "id": "concept:c_9b6712000f4d1300",
+          "label": "착오송금인 유의사항"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do",
+        "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7",
+        "page_title": "착오송금인 유의사항",
+        "summary": "착오송금인 유의사항. 신청대상(건당 5만원~1억원, 착오송금일로부터 1년 이내, 금융회사 반환신청 선행 필요), 회수 관련 비용률 예시(10만원 8~18%·100만원 4~13%·1,000만원 3.5~8%), 반환지원 제외 대상(정부·지자체·한국은행 등 기관, 소송 진행·완료자, 송금 후 사망자 등)을 안내한다."
+      }
+    },
+    {
+      "page_id": "dp_gudn",
+      "candidate_label": "표시·설명·확인 제도 안내",
+      "suggested_ontology_class": "Concept",
+      "title_relation": "exact",
+      "review_priority": "P3-medium",
+      "review_action": "verify_scope_and_parent_relation",
+      "status": "triage_only_pending_domain_review",
+      "potential_parent_candidate_ids": [
+        "concept:display_explanation_confirmation_scheme"
+      ],
+      "source_metadata_concepts": [
+        {
+          "id": "concept:c_fef052cdef70a2cd",
+          "label": "표시·설명·확인 제도 안내"
+        }
+      ],
+      "evidence": {
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do",
+        "content_sha256": "dccd0b0bcc9c2becc411d6e87f3e70e1606885ba6d567986bf81e32ccb242e23",
+        "page_title": "표시·설명·확인 제도 안내",
+        "summary": "부보금융회사가 금융상품의 예금보험 여부와 보호한도(원금+소정이자 1인당 최고 1억원)를 홍보물 등에 표시하고, 계약 체결 시 직접 설명한 뒤 서명 등으로 확인받아 불완전판매를 방지하는 제도를 설명한다. 표시제도(예금자보호안내문 표시, 보호금융상품등록부 작성·비치, 안내자료 비치, 예금보호 로고, 신상품 보호여부 사전·사후 확인), 설명제도(문서·구두 설명, 만 65세 이상·은퇴자·주부 등 금융정보취약계층 우선설명), 확인제도(서명·기명날인·녹취·전자서명 등)의 주요 업무와, 공사의 현장조사 및 미이행 시 과태료 부과를 담는다."
+      }
+    }
+  ]
+}

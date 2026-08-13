@@ -1,0 +1,637 @@
+{
+  "schema_version": "1.0.0",
+  "status": "agent_reviewed_p1_p2_pending_domain_approval",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "review_policy": {
+    "heldout_testset_used": false,
+    "automatic_runtime_promotion": false,
+    "approval_required_before_evaluation": true
+  },
+  "candidates": [
+    {
+      "id": "service:unclaimed_funds",
+      "label": "미수령금 통합조회·신청",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        },
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        },
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        },
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        },
+        {
+          "page_id": "uc_gudn",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do",
+          "content_sha256": "290a4f552b8ee76b8f9202f0de8dcb78d32a2b31ee94d02151b1e47124dcd8b2"
+        },
+        {
+          "page_id": "uc_hrpe_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do",
+          "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61"
+        }
+      ]
+    },
+    {
+      "id": "concept:bankrupt_financial_company_information_search",
+      "label": "파산금융회사 정보 검색",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        },
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        },
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        },
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        }
+      ]
+    },
+    {
+      "id": "actor:protected_financial_institution",
+      "label": "보호대상 금융회사",
+      "ontology_class": "Actor",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "dp_fnst",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
+          "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747"
+        },
+        {
+          "page_id": "dp_fnst_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+          "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1"
+        },
+        {
+          "page_id": "dp_svbk_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+          "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c"
+        }
+      ]
+    },
+    {
+      "id": "concept:protected_financial_product",
+      "label": "보호대상 금융상품",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "dp_prdct",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do",
+          "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174"
+        },
+        {
+          "page_id": "dp_prdct_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+          "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5"
+        }
+      ]
+    },
+    {
+      "id": "concept:display_explanation_confirmation_scheme",
+      "label": "표시·설명·확인 제도",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "dp_gudn",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do",
+          "content_sha256": "dccd0b0bcc9c2becc411d6e87f3e70e1606885ba6d567986bf81e32ccb242e23"
+        },
+        {
+          "page_id": "dp_gudn_data",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+          "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d"
+        },
+        {
+          "page_id": "dp_gudn_faq",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do",
+          "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1"
+        },
+        {
+          "page_id": "dp_logo",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do",
+          "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609"
+        }
+      ]
+    },
+    {
+      "id": "concept:unclaimed_funds_integrated_application",
+      "label": "미수령금 통합신청",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "uc_itgr_aply",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do",
+          "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898"
+        },
+        {
+          "page_id": "uc_tel_qust",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do",
+          "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f"
+        }
+      ]
+    },
+    {
+      "id": "concept:insured_financial_company_survey",
+      "label": "부보금융회사조사",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "dp_josa_itrd",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do",
+          "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a"
+        },
+        {
+          "page_id": "dp_josa_law",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do",
+          "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353"
+        },
+        {
+          "page_id": "dp_josa_objc",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do",
+          "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187"
+        }
+      ]
+    },
+    {
+      "id": "actor:mistaken_remitter",
+      "label": "착오송금인",
+      "ontology_class": "Actor",
+      "status": "proposed",
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "sender_attention",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do",
+          "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7"
+        },
+        {
+          "page_id": "sender_qlfc_check",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+          "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05"
+        }
+      ]
+    }
+  ],
+  "metadata_concept_reviews": [
+    {
+      "source_concept_id": "concept:c_0c5aafb82cf87be3",
+      "source_label": "미수령금 통합조회/신청",
+      "decision": "proposed",
+      "candidate_ids": [
+        "service:unclaimed_funds"
+      ],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        },
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        },
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        },
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        },
+        {
+          "page_id": "uc_gudn",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do",
+          "content_sha256": "290a4f552b8ee76b8f9202f0de8dcb78d32a2b31ee94d02151b1e47124dcd8b2"
+        },
+        {
+          "page_id": "uc_hrpe_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do",
+          "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "The repeated breadcrumb is a KDIC service-level concept."
+    },
+    {
+      "source_concept_id": "concept:c_c5b5a0a24f3477f8",
+      "source_label": "파산금융회사 정보 검색",
+      "decision": "proposed",
+      "candidate_ids": [
+        "concept:bankrupt_financial_company_information_search"
+      ],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        },
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        },
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        },
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        },
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "A stable information-search concept spanning six official pages."
+    },
+    {
+      "source_concept_id": "concept:c_3c48ca055b59c51b",
+      "source_label": "보호대상",
+      "decision": "needs_split",
+      "candidate_ids": [
+        "actor:protected_financial_institution",
+        "concept:protected_financial_product"
+      ],
+      "evidence": [
+        {
+          "page_id": "dp_fnst",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
+          "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747"
+        },
+        {
+          "page_id": "dp_fnst_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+          "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1"
+        },
+        {
+          "page_id": "dp_prdct",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do",
+          "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174"
+        },
+        {
+          "page_id": "dp_prdct_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+          "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5"
+        },
+        {
+          "page_id": "dp_svbk_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+          "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "The broad label covers both institutions and products, which are distinct ontology entities."
+    },
+    {
+      "source_concept_id": "concept:c_21ec591f2025d4c5",
+      "source_label": "소개와 방법안내",
+      "decision": "rejected",
+      "candidate_ids": [],
+      "evidence": [
+        {
+          "page_id": "mtrs_gvbk_proc",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsGvbkSprtProc/selectScrn.do",
+          "content_sha256": "a4803ab34cf7189c914c53dc8dbb6637a33556b4e85b8d1f389906f121fe537f"
+        },
+        {
+          "page_id": "mtrs_rel_law",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do",
+          "content_sha256": "46d7def4dfbe218f531ef6ce6e8484d763659eb50722e849f49f084d6ead9730"
+        },
+        {
+          "page_id": "mtrs_stut_chc",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do",
+          "content_sha256": "2b85e52da3cf42af3b46e2856b203a7a84395366dd7ec29bc6137536491bbedb"
+        },
+        {
+          "page_id": "mtrs_vst_rcpt",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+          "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Navigation breadcrumb, not a stable domain concept."
+    },
+    {
+      "source_concept_id": "concept:c_3f293d28d1e34528",
+      "source_label": "표시·설명·확인 제도",
+      "decision": "proposed",
+      "candidate_ids": [
+        "concept:display_explanation_confirmation_scheme"
+      ],
+      "evidence": [
+        {
+          "page_id": "dp_gudn",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do",
+          "content_sha256": "dccd0b0bcc9c2becc411d6e87f3e70e1606885ba6d567986bf81e32ccb242e23"
+        },
+        {
+          "page_id": "dp_gudn_data",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+          "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d"
+        },
+        {
+          "page_id": "dp_gudn_faq",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do",
+          "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1"
+        },
+        {
+          "page_id": "dp_logo",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do",
+          "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Named KDIC scheme with its own guidance, FAQ, material, and logo pages."
+    },
+    {
+      "source_concept_id": "concept:c_dff04cca052051af",
+      "source_label": "금융회사",
+      "decision": "proposed",
+      "candidate_ids": [
+        "actor:protected_financial_institution"
+      ],
+      "evidence": [
+        {
+          "page_id": "dp_fnst",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
+          "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747"
+        },
+        {
+          "page_id": "dp_fnst_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+          "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1"
+        },
+        {
+          "page_id": "dp_svbk_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+          "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Normalizes the generic label to the more specific protected-financial-institution entity."
+    },
+    {
+      "source_concept_id": "concept:c_1e0253f62c754140",
+      "source_label": "미수령금통합신청",
+      "decision": "proposed",
+      "candidate_ids": [
+        "concept:unclaimed_funds_integrated_application"
+      ],
+      "evidence": [
+        {
+          "page_id": "uc_itgr_aply",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do",
+          "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898"
+        },
+        {
+          "page_id": "uc_tel_qust",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do",
+          "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f"
+        }
+      ],
+      "excluded_page_ids": [
+        "faq_nramt"
+      ],
+      "note": "The excluded FAQ title states that its actual content is deposit protection, so it is not evidence for this concept."
+    },
+    {
+      "source_concept_id": "concept:c_6a91436ac7264d5d",
+      "source_label": "부보금융회사조사",
+      "decision": "proposed",
+      "candidate_ids": [
+        "concept:insured_financial_company_survey"
+      ],
+      "evidence": [
+        {
+          "page_id": "dp_josa_itrd",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do",
+          "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a"
+        },
+        {
+          "page_id": "dp_josa_law",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do",
+          "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353"
+        },
+        {
+          "page_id": "dp_josa_objc",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do",
+          "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Named KDIC survey activity with introduction, regulations, and objection process pages."
+    },
+    {
+      "source_concept_id": "concept:c_dbc468a14b601d5d",
+      "source_label": "FAQ",
+      "decision": "rejected",
+      "candidate_ids": [],
+      "evidence": [
+        {
+          "page_id": "faq_nramt",
+          "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do",
+          "content_sha256": "dfc822c1156e098bd93ff5c4b2908fcc3145625550828faa9f1e2cedaa893060"
+        },
+        {
+          "page_id": "ha_faq_dclr",
+          "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do",
+          "content_sha256": "9e72acbd7c27d0e6d80d0fc0c2e41a7b0a4d295c4d3d9790ef5eb6b9aaad5039"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "A content format, not a KDIC domain concept."
+    },
+    {
+      "source_concept_id": "concept:c_dc015df639b9ffb5",
+      "source_label": "개요",
+      "decision": "rejected",
+      "candidate_ids": [],
+      "evidence": [
+        {
+          "page_id": "dp_fnst",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
+          "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747"
+        },
+        {
+          "page_id": "dp_prdct",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do",
+          "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Navigation label, not a stable domain concept."
+    },
+    {
+      "source_concept_id": "concept:c_8497eb60b73b67fd",
+      "source_label": "고객센터",
+      "decision": "rejected",
+      "candidate_ids": [],
+      "evidence": [
+        {
+          "page_id": "faq_nramt",
+          "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do",
+          "content_sha256": "dfc822c1156e098bd93ff5c4b2908fcc3145625550828faa9f1e2cedaa893060"
+        },
+        {
+          "page_id": "ha_faq_dclr",
+          "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do",
+          "content_sha256": "9e72acbd7c27d0e6d80d0fc0c2e41a7b0a4d295c4d3d9790ef5eb6b9aaad5039"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Navigation section, not a stable domain concept."
+    },
+    {
+      "source_concept_id": "concept:c_7173c92dada04b96",
+      "source_label": "금융상품",
+      "decision": "proposed",
+      "candidate_ids": [
+        "concept:protected_financial_product"
+      ],
+      "evidence": [
+        {
+          "page_id": "dp_prdct",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do",
+          "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174"
+        },
+        {
+          "page_id": "dp_prdct_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+          "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Normalizes the generic label to the protected-financial-product entity."
+    },
+    {
+      "source_concept_id": "concept:c_51f8fbdf3ff9e253",
+      "source_label": "소개와 신청방법 안내",
+      "decision": "rejected",
+      "candidate_ids": [],
+      "evidence": [
+        {
+          "page_id": "uc_itgr_aply",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do",
+          "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898"
+        },
+        {
+          "page_id": "uc_tel_qust",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do",
+          "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "Navigation breadcrumb, not a stable domain concept."
+    },
+    {
+      "source_concept_id": "concept:c_5b20f0b6b9ebb5f9",
+      "source_label": "착오송금인",
+      "decision": "proposed",
+      "candidate_ids": [
+        "actor:mistaken_remitter"
+      ],
+      "evidence": [
+        {
+          "page_id": "sender_attention",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do",
+          "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7"
+        },
+        {
+          "page_id": "sender_qlfc_check",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+          "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05"
+        }
+      ],
+      "excluded_page_ids": [],
+      "note": "A stable actor role in the mistaken-remittance return service."
+    }
+  ]
+}

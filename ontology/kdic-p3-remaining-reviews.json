@@ -1,0 +1,392 @@
+{
+  "schema_version": "1.0.0",
+  "status": "agent_reviewed_p3_remaining_pending_domain_approval",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "review_policy": {
+    "heldout_testset_used": false,
+    "faq_pages_remain_documents": true,
+    "faq_facts_may_be_reviewed_separately": true,
+    "automatic_runtime_promotion": false
+  },
+  "summary": {
+    "review_count": 20,
+    "proposal_count": 7,
+    "merge_existing_count": 6,
+    "rejected_count": 7
+  },
+  "proposals": [
+    {
+      "id": "contact:financial_misconduct_report_center",
+      "label": "금융부실관련자 불법행위 신고센터",
+      "ontology_class": "ContactPoint",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ha_ilgl_intro",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
+          "content_sha256": "06f9fa77314a9075fadc91c9f878487b8579376bf58edbf0f09f7fcfb95cad70"
+        }
+      ]
+    },
+    {
+      "id": "required_document:mistaken_remitter_application",
+      "label": "착오송금인 신청 구비서류",
+      "ontology_class": "RequiredDocument",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "sender_docs",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+          "content_sha256": "5a480687efac403e42a51f832ccf877f1c7864290486bb4e5123caccb3577814"
+        }
+      ]
+    },
+    {
+      "id": "service:protected_financial_product_search",
+      "label": "보호대상 금융상품 검색",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_prdct_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+          "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5"
+        }
+      ]
+    },
+    {
+      "id": "service:protected_financial_institution_search",
+      "label": "보호대상 금융회사 검색",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_fnst_srch",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+          "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1"
+        }
+      ]
+    },
+    {
+      "id": "concept:insured_financial_company_survey_legal_basis",
+      "label": "부보금융회사조사 법적근거·관련규정",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_josa_law",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do",
+          "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353"
+        }
+      ]
+    },
+    {
+      "id": "procedure:insured_financial_company_survey_objection",
+      "label": "부보금융회사조사 소명·이의제기",
+      "ontology_class": "Procedure",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_josa_objc",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do",
+          "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187"
+        }
+      ]
+    },
+    {
+      "id": "concept:mistaken_remitter_cautions",
+      "label": "착오송금인 유의사항",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "sender_attention",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do",
+          "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7"
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "page_id": "faq_msdr_apply",
+      "triage_priority": "P3-low",
+      "source_label": "FAQ - 착오송금반환지원신청",
+      "decision": "rejected",
+      "candidate_id": null,
+      "evidence": {
+        "page_id": "faq_msdr_apply",
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do",
+        "content_sha256": "a55ff31bdc14e60875eb95132ca9cb599e437b8120257c949f9abc1d16966456"
+      }
+    },
+    {
+      "page_id": "faq_top10",
+      "triage_priority": "P3-low",
+      "source_label": "고객센터 FAQ TOP 10",
+      "decision": "rejected",
+      "candidate_id": null,
+      "evidence": {
+        "page_id": "faq_top10",
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do",
+        "content_sha256": "34b2ec2438cd9e5f06301a9ecdaa56f6915339a8bdf7e8971bc7a9da28418db9"
+      }
+    },
+    {
+      "page_id": "faq_nramt",
+      "triage_priority": "P3-low",
+      "source_label": "미수령금통합신청 FAQ (실제 내용은 예금보호)",
+      "decision": "rejected",
+      "candidate_id": null,
+      "evidence": {
+        "page_id": "faq_nramt",
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do",
+        "content_sha256": "dfc822c1156e098bd93ff5c4b2908fcc3145625550828faa9f1e2cedaa893060"
+      }
+    },
+    {
+      "page_id": "mtrs_stut_chc",
+      "triage_priority": "P3-low",
+      "source_label": "상황선택",
+      "decision": "rejected",
+      "candidate_id": null,
+      "evidence": {
+        "page_id": "mtrs_stut_chc",
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do",
+        "content_sha256": "2b85e52da3cf42af3b46e2856b203a7a84395366dd7ec29bc6137536491bbedb"
+      }
+    },
+    {
+      "page_id": "ha_ilgl_intro",
+      "triage_priority": "P3-low",
+      "source_label": "신고센터 소개",
+      "decision": "proposed",
+      "candidate_id": "contact:financial_misconduct_report_center",
+      "evidence": {
+        "page_id": "ha_ilgl_intro",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do",
+        "content_sha256": "06f9fa77314a9075fadc91c9f878487b8579376bf58edbf0f09f7fcfb95cad70"
+      }
+    },
+    {
+      "page_id": "uc_itgr_aply",
+      "triage_priority": "P3-low",
+      "source_label": "안내",
+      "decision": "merge_existing",
+      "candidate_id": "service:unclaimed_funds",
+      "evidence": {
+        "page_id": "uc_itgr_aply",
+        "source_url": "https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do",
+        "content_sha256": "c7fee2ab2ce3bd2ec489f51236ea07f0cb6d931496e75cbed1299466ba4f1898"
+      }
+    },
+    {
+      "page_id": "dp_faq_page",
+      "triage_priority": "P3-low",
+      "source_label": "예금자보호제도 FAQ",
+      "decision": "rejected",
+      "candidate_id": null,
+      "evidence": {
+        "page_id": "dp_faq_page",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do",
+        "content_sha256": "053957508cb2b05942fa36d7ef48414f9c69b9da76654e53d6f3163a8a80d186"
+      }
+    },
+    {
+      "page_id": "ha_faq_dclr",
+      "triage_priority": "P3-low",
+      "source_label": "은닉재산신고 FAQ",
+      "decision": "rejected",
+      "candidate_id": null,
+      "evidence": {
+        "page_id": "ha_faq_dclr",
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do",
+        "content_sha256": "9e72acbd7c27d0e6d80d0fc0c2e41a7b0a4d295c4d3d9790ef5eb6b9aaad5039"
+      }
+    },
+    {
+      "page_id": "dr_faq_inq",
+      "triage_priority": "P3-low",
+      "source_label": "채무정보조회 FAQ",
+      "decision": "rejected",
+      "candidate_id": null,
+      "evidence": {
+        "page_id": "dr_faq_inq",
+        "source_url": "https://fins.kdic.or.kr/cm/bbs/selectFaqLbltInfoInq.do",
+        "content_sha256": "1c899cabed5073edfacd1f0b66768b9fc9f30442f4f073126e75f4d6411f4146"
+      }
+    },
+    {
+      "page_id": "dp_gudn_faq",
+      "triage_priority": "P3-low",
+      "source_label": "표시·설명·확인 제도 관련 FAQ",
+      "decision": "merge_existing",
+      "candidate_id": "concept:display_explanation_confirmation_scheme",
+      "evidence": {
+        "page_id": "dp_gudn_faq",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do",
+        "content_sha256": "c05522f4f7b5b14e720c8059445f3fc6e75b62698f71fdb50aa028837d3b07c1"
+      }
+    },
+    {
+      "page_id": "sender_docs",
+      "triage_priority": "P3-medium",
+      "source_label": "구비서류안내 - 착오송금인",
+      "decision": "proposed",
+      "candidate_id": "required_document:mistaken_remitter_application",
+      "evidence": {
+        "page_id": "sender_docs",
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do",
+        "content_sha256": "5a480687efac403e42a51f832ccf877f1c7864290486bb4e5123caccb3577814"
+      }
+    },
+    {
+      "page_id": "dp_prdct",
+      "triage_priority": "P3-medium",
+      "source_label": "보호대상 금융상품 개요",
+      "decision": "merge_existing",
+      "candidate_id": "concept:protected_financial_product",
+      "evidence": {
+        "page_id": "dp_prdct",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do",
+        "content_sha256": "8808cd72cd02c7be17125ad6b48a882635b8e77b846654dd914913374516d174"
+      }
+    },
+    {
+      "page_id": "dp_fnst",
+      "triage_priority": "P3-medium",
+      "source_label": "보호대상 금융회사 개요",
+      "decision": "merge_existing",
+      "candidate_id": "actor:protected_financial_institution",
+      "evidence": {
+        "page_id": "dp_fnst",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do",
+        "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747"
+      }
+    },
+    {
+      "page_id": "dp_prdct_srch",
+      "triage_priority": "P3-medium",
+      "source_label": "보호대상금융상품검색",
+      "decision": "proposed",
+      "candidate_id": "service:protected_financial_product_search",
+      "evidence": {
+        "page_id": "dp_prdct_srch",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do",
+        "content_sha256": "6571b6a932881acf42aa23bf2693284ae48d7ba3721a2459261e89b52f2184f5"
+      }
+    },
+    {
+      "page_id": "dp_fnst_srch",
+      "triage_priority": "P3-medium",
+      "source_label": "보호대상금융회사검색",
+      "decision": "proposed",
+      "candidate_id": "service:protected_financial_institution_search",
+      "evidence": {
+        "page_id": "dp_fnst_srch",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do",
+        "content_sha256": "7bea25e25d0465ee97127aca6a748909a9abd48f86a3ab997414053d028f65f1"
+      }
+    },
+    {
+      "page_id": "dp_josa_law",
+      "triage_priority": "P3-medium",
+      "source_label": "부보금융회사조사 법적근거 및 관련규정",
+      "decision": "proposed",
+      "candidate_id": "concept:insured_financial_company_survey_legal_basis",
+      "evidence": {
+        "page_id": "dp_josa_law",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do",
+        "content_sha256": "0be73d35eb6e82335cf79e906a5b38a14ab0eaf5d2778e248f019881b6930353"
+      }
+    },
+    {
+      "page_id": "dp_josa_objc",
+      "triage_priority": "P3-medium",
+      "source_label": "부보금융회사조사 소명 및 이의제기 신청",
+      "decision": "proposed",
+      "candidate_id": "procedure:insured_financial_company_survey_objection",
+      "evidence": {
+        "page_id": "dp_josa_objc",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do",
+        "content_sha256": "55199305c163c5f4fbd7c9e307ab0f28c897828356d40640b938501adbbb0187"
+      }
+    },
+    {
+      "page_id": "dp_josa_itrd",
+      "triage_priority": "P3-medium",
+      "source_label": "부보금융회사조사 업무 소개",
+      "decision": "merge_existing",
+      "candidate_id": "concept:insured_financial_company_survey",
+      "evidence": {
+        "page_id": "dp_josa_itrd",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do",
+        "content_sha256": "9edde39f7b3f5537ecdae0df628602c25ea1691f536c82fc3a8b2d8ee0fd868a"
+      }
+    },
+    {
+      "page_id": "sender_attention",
+      "triage_priority": "P3-medium",
+      "source_label": "착오송금인 유의사항",
+      "decision": "proposed",
+      "candidate_id": "concept:mistaken_remitter_cautions",
+      "evidence": {
+        "page_id": "sender_attention",
+        "source_url": "https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do",
+        "content_sha256": "963ad6c3ea313510e69065cb12dfc64f66102c94bf0c45cea0f27ac18f3f60c7"
+      }
+    },
+    {
+      "page_id": "dp_gudn",
+      "triage_priority": "P3-medium",
+      "source_label": "표시·설명·확인 제도 안내",
+      "decision": "merge_existing",
+      "candidate_id": "concept:display_explanation_confirmation_scheme",
+      "evidence": {
+        "page_id": "dp_gudn",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do",
+        "content_sha256": "dccd0b0bcc9c2becc411d6e87f3e70e1606885ba6d567986bf81e32ccb242e23"
+      }
+    }
+  ]
+}

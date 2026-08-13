@@ -1,0 +1,7 @@
+id,label,status,properties_json
+domain:concealed_assets_report,은닉재산 신고,base,{}
+domain:debt_adjustment,채무조정 안내,base,{}
+domain:deposit_insurance_payment,예금보험금 안내,base,{}
+domain:deposit_protection,예금자보호제도,base,{}
+domain:mistaken_remittance_return,착오송금 반환 신청,base,{}
+domain:unclaimed_funds,고객 미수령금 신청,base,{}

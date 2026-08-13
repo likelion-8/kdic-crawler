@@ -1,0 +1,1839 @@
+{
+  "mode": "offline_shadow_exact_official_label_prepend",
+  "production_impact": "none",
+  "llm_calls": 0,
+  "database_calls": 0,
+  "heldout_tuning": false,
+  "baseline_source": "results/pipeline_holdout/retrieval_rerank_off.json",
+  "n_answerable": 79,
+  "ontology_match_coverage": 0.1519,
+  "ranking_changed_count": 5,
+  "baseline": {
+    "Recall@1": 0.6055,
+    "Recall@3": 0.8544,
+    "Recall@5": 0.9219,
+    "MRR@5": 0.8046,
+    "n": 79
+  },
+  "assisted": {
+    "Recall@1": 0.5844,
+    "Recall@3": 0.8586,
+    "Recall@5": 0.9262,
+    "MRR@5": 0.8046,
+    "n": 79
+  },
+  "delta": {
+    "Recall@1": -0.0211,
+    "Recall@3": 0.0042,
+    "Recall@5": 0.0043,
+    "MRR@5": 0.0
+  },
+  "quality_gate": {
+    "passed": false,
+    "meaning": "eligible for further review only; never automatic production deployment"
+  },
+  "per_question": [
+    {
+      "test_id": "dp_protlmts_pl1",
+      "gold": [
+        "dp_protlmts"
+      ],
+      "baseline_pages": [
+        "dp_faq_page",
+        "dp_protlmts",
+        "dp_ovrs",
+        "faq_nramt",
+        "dp_prdct"
+      ],
+      "assisted_pages": [
+        "dp_faq_page",
+        "dp_protlmts",
+        "dp_ovrs",
+        "faq_nramt",
+        "dp_prdct"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_protlmts_pl1t",
+      "gold": [
+        "dp_protlmts"
+      ],
+      "baseline_pages": [
+        "dp_protlmts",
+        "dp_faq_page",
+        "faq_nramt",
+        "dp_ovrs",
+        "dp_prdct"
+      ],
+      "assisted_pages": [
+        "dp_protlmts",
+        "dp_faq_page",
+        "faq_nramt",
+        "dp_ovrs",
+        "dp_prdct"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_syst_pl1",
+      "gold": [
+        "dp_syst"
+      ],
+      "baseline_pages": [
+        "dp_syst",
+        "dp_protlmts",
+        "dp_prdct",
+        "dp_josa_itrd",
+        "dp_gudn_data"
+      ],
+      "assisted_pages": [
+        "dp_syst",
+        "dp_protlmts",
+        "dp_prdct",
+        "dp_josa_itrd",
+        "dp_gudn_data"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_syst_pl1t",
+      "gold": [
+        "dp_syst"
+      ],
+      "baseline_pages": [
+        "dp_syst",
+        "dp_protlmts",
+        "dp_prdct",
+        "dp_josa_itrd",
+        "dp_gudn_data"
+      ],
+      "assisted_pages": [
+        "dp_syst",
+        "dp_protlmts",
+        "dp_prdct",
+        "dp_josa_itrd",
+        "dp_gudn_data"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_fnst_pl1",
+      "gold": [
+        "dp_fnst"
+      ],
+      "baseline_pages": [
+        "dp_faq_page",
+        "dp_prdct",
+        "dp_syst",
+        "dp_protlmts",
+        "dp_prdct_srch"
+      ],
+      "assisted_pages": [
+        "dp_faq_page",
+        "dp_prdct",
+        "dp_syst",
+        "dp_protlmts",
+        "dp_prdct_srch"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_fnst_pl1t",
+      "gold": [
+        "dp_fnst"
+      ],
+      "baseline_pages": [
+        "dp_faq_page",
+        "dp_prdct",
+        "dp_syst",
+        "dp_prdct_srch",
+        "ms_expln"
+      ],
+      "assisted_pages": [
+        "dp_faq_page",
+        "dp_prdct",
+        "dp_syst",
+        "dp_prdct_srch",
+        "ms_expln"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_prdct_pl1",
+      "gold": [
+        "dp_prdct"
+      ],
+      "baseline_pages": [
+        "dp_prdct",
+        "dp_faq_page",
+        "dp_gudn_faq",
+        "dp_protlmts",
+        "faq_nramt"
+      ],
+      "assisted_pages": [
+        "dp_prdct",
+        "dp_faq_page",
+        "dp_gudn_faq",
+        "dp_protlmts",
+        "faq_nramt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_prdct_pl1t",
+      "gold": [
+        "dp_prdct"
+      ],
+      "baseline_pages": [
+        "dp_prdct",
+        "dp_faq_page",
+        "dp_gudn_faq",
+        "dp_protlmts",
+        "faq_nramt"
+      ],
+      "assisted_pages": [
+        "dp_prdct",
+        "dp_faq_page",
+        "dp_gudn_faq",
+        "dp_protlmts",
+        "faq_nramt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dp_gudn_pl1",
+      "gold": [
+        "dp_gudn"
+      ],
+      "baseline_pages": [
+        "dp_gudn",
+        "dp_gudn_faq",
+        "dp_josa_law",
+        "dp_josa_itrd",
+        "dp_gudn_data"
+      ],
+      "assisted_pages": [
+        "dp_gudn",
+        "dp_gudn_data",
+        "dp_gudn_faq",
+        "dp_logo",
+        "dp_josa_law"
+      ],
+      "matched_labels": [
+        "표시·설명·확인 제도"
+      ],
+      "ontology_pages": [
+        "dp_gudn",
+        "dp_gudn_data",
+        "dp_gudn_faq",
+        "dp_logo"
+      ]
+    },
+    {
+      "test_id": "dp_gudn_pl1t",
+      "gold": [
+        "dp_gudn"
+      ],
+      "baseline_pages": [
+        "dp_gudn",
+        "dp_gudn_faq",
+        "dp_josa_law",
+        "dp_josa_itrd",
+        "dp_gudn_data"
+      ],
+      "assisted_pages": [
+        "dp_gudn",
+        "dp_gudn_faq",
+        "dp_josa_law",
+        "dp_josa_itrd",
+        "dp_gudn_data"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ms_aply_proc_pl1",
+      "gold": [
+        "ms_aply_proc"
+      ],
+      "baseline_pages": [
+        "ms_aply_proc",
+        "faq_nramt",
+        "ms_expln",
+        "ms_trgt_fnst",
+        "dp_syst"
+      ],
+      "assisted_pages": [
+        "ms_expln",
+        "ms_aply_proc",
+        "faq_nramt",
+        "ms_trgt_fnst",
+        "dp_syst"
+      ],
+      "matched_labels": [
+        "예금보험금"
+      ],
+      "ontology_pages": [
+        "ms_expln"
+      ]
+    },
+    {
+      "test_id": "ms_aply_proc_pl1t",
+      "gold": [
+        "ms_aply_proc"
+      ],
+      "baseline_pages": [
+        "ms_aply_proc",
+        "faq_nramt",
+        "ms_expln",
+        "ms_trgt_fnst",
+        "dp_faq_page"
+      ],
+      "assisted_pages": [
+        "ms_expln",
+        "ms_aply_proc",
+        "faq_nramt",
+        "ms_trgt_fnst",
+        "dp_faq_page"
+      ],
+      "matched_labels": [
+        "예금보험금"
+      ],
+      "ontology_pages": [
+        "ms_expln"
+      ]
+    },
+    {
+      "test_id": "ms_expln_pl1",
+      "gold": [
+        "ms_expln"
+      ],
+      "baseline_pages": [
+        "ms_expln",
+        "faq_nramt",
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_hrpe_hist"
+      ],
+      "assisted_pages": [
+        "ms_expln",
+        "faq_nramt",
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_hrpe_hist"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ms_expln_pl1t",
+      "gold": [
+        "ms_expln"
+      ],
+      "baseline_pages": [
+        "faq_nramt",
+        "ms_expln",
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_hrpe_hist"
+      ],
+      "assisted_pages": [
+        "faq_nramt",
+        "ms_expln",
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_hrpe_hist"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1",
+      "gold": [
+        "ms_trgt_fnst"
+      ],
+      "baseline_pages": [
+        "ms_trgt_fnst",
+        "dp_prdct_srch",
+        "ms_aply_proc",
+        "dp_fnst_srch",
+        "uc_bkrp_mng"
+      ],
+      "assisted_pages": [
+        "ms_trgt_fnst",
+        "dp_prdct_srch",
+        "ms_aply_proc",
+        "dp_fnst_srch",
+        "uc_bkrp_mng"
+      ],
+      "matched_labels": [
+        "보험금 지급대상 금융회사"
+      ],
+      "ontology_pages": [
+        "ms_trgt_fnst"
+      ]
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1t",
+      "gold": [
+        "ms_trgt_fnst"
+      ],
+      "baseline_pages": [
+        "ms_trgt_fnst",
+        "dp_prdct_srch",
+        "dp_fnst_srch",
+        "ms_aply_proc",
+        "ms_expln"
+      ],
+      "assisted_pages": [
+        "ms_trgt_fnst",
+        "dp_prdct_srch",
+        "dp_fnst_srch",
+        "ms_aply_proc",
+        "ms_expln"
+      ],
+      "matched_labels": [
+        "보험금 지급대상 금융회사"
+      ],
+      "ontology_pages": [
+        "ms_trgt_fnst"
+      ]
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "baseline_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "sender_docs",
+        "dp_gudn_data",
+        "mtrs_rel_law"
+      ],
+      "assisted_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "sender_docs",
+        "dp_gudn_data",
+        "mtrs_rel_law"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1t",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "baseline_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "sender_docs",
+        "dp_gudn_data",
+        "mtrs_rel_law"
+      ],
+      "assisted_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "sender_docs",
+        "dp_gudn_data",
+        "mtrs_rel_law"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "baseline_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "dp_protlmts",
+        "ms_expln",
+        "sender_docs"
+      ],
+      "assisted_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "dp_protlmts",
+        "ms_expln",
+        "sender_docs"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2t",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "baseline_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "dp_protlmts",
+        "sender_docs",
+        "ms_expln"
+      ],
+      "assisted_pages": [
+        "ms_poss_dcmnt",
+        "faq_nramt",
+        "dp_protlmts",
+        "sender_docs",
+        "ms_expln"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "uc_gudn_pl1",
+      "gold": [
+        "uc_gudn"
+      ],
+      "baseline_pages": [
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_tel_qust",
+        "faq_nramt",
+        "sender_docs"
+      ],
+      "assisted_pages": [
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_tel_qust",
+        "faq_nramt",
+        "sender_docs"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "uc_gudn_pl1t",
+      "gold": [
+        "uc_gudn"
+      ],
+      "baseline_pages": [
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_tel_qust",
+        "faq_nramt",
+        "uc_hrpe_hist"
+      ],
+      "assisted_pages": [
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_tel_qust",
+        "faq_nramt",
+        "uc_hrpe_hist"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "uc_tel_qust_pl1",
+      "gold": [
+        "uc_tel_qust"
+      ],
+      "baseline_pages": [
+        "uc_tel_qust",
+        "mtrs_vst_rcpt",
+        "ha_faq_dclr",
+        "ms_aply_proc",
+        "kmrs_apply_mthd"
+      ],
+      "assisted_pages": [
+        "uc_tel_qust",
+        "mtrs_vst_rcpt",
+        "ha_faq_dclr",
+        "ms_aply_proc",
+        "kmrs_apply_mthd"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "uc_tel_qust_pl1t",
+      "gold": [
+        "uc_tel_qust"
+      ],
+      "baseline_pages": [
+        "uc_tel_qust",
+        "mtrs_vst_rcpt",
+        "ha_faq_dclr",
+        "ms_aply_proc",
+        "kmrs_apply_mthd"
+      ],
+      "assisted_pages": [
+        "uc_tel_qust",
+        "mtrs_vst_rcpt",
+        "ha_faq_dclr",
+        "ms_aply_proc",
+        "kmrs_apply_mthd"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "uc_hrpe_hist_pl1",
+      "gold": [
+        "uc_hrpe_hist"
+      ],
+      "baseline_pages": [
+        "uc_hrpe_hist",
+        "faq_top10",
+        "uc_bkrp_mng",
+        "dr_debt_cert",
+        "dp_fnst_srch"
+      ],
+      "assisted_pages": [
+        "uc_hrpe_hist",
+        "faq_top10",
+        "uc_bkrp_mng",
+        "dr_debt_cert",
+        "dp_fnst_srch"
+      ],
+      "matched_labels": [
+        "상속인 금융거래조회"
+      ],
+      "ontology_pages": [
+        "uc_hrpe_hist"
+      ]
+    },
+    {
+      "test_id": "uc_hrpe_hist_pl1t",
+      "gold": [
+        "uc_hrpe_hist"
+      ],
+      "baseline_pages": [
+        "uc_hrpe_hist",
+        "faq_top10",
+        "uc_bkrp_mng",
+        "faq_nramt",
+        "dp_fnst_srch"
+      ],
+      "assisted_pages": [
+        "uc_hrpe_hist",
+        "faq_top10",
+        "uc_bkrp_mng",
+        "faq_nramt",
+        "dp_fnst_srch"
+      ],
+      "matched_labels": [
+        "상속인 금융거래조회"
+      ],
+      "ontology_pages": [
+        "uc_hrpe_hist"
+      ]
+    },
+    {
+      "test_id": "uc_bkrp_fndt_pl1",
+      "gold": [
+        "uc_bkrp_fndt"
+      ],
+      "baseline_pages": [
+        "uc_bkrp_fndt",
+        "uc_bkrp_mng",
+        "ms_trgt_fnst"
+      ],
+      "assisted_pages": [
+        "uc_bkrp_fndt",
+        "uc_bkrp_mng",
+        "ms_trgt_fnst"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "uc_bkrp_fndt_pl1t",
+      "gold": [
+        "uc_bkrp_fndt"
+      ],
+      "baseline_pages": [
+        "uc_bkrp_mng",
+        "uc_bkrp_fndt"
+      ],
+      "assisted_pages": [
+        "uc_bkrp_mng",
+        "uc_bkrp_fndt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1",
+      "gold": [
+        "uc_bkrp_mng"
+      ],
+      "baseline_pages": [
+        "uc_bkrp_mng",
+        "ms_trgt_fnst",
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "dr_debt_cert"
+      ],
+      "assisted_pages": [
+        "uc_bkrp_mng",
+        "ms_trgt_fnst",
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "dr_debt_cert"
+      ],
+      "matched_labels": [
+        "파산재단 관리",
+        "파산재단관리"
+      ],
+      "ontology_pages": [
+        "uc_bkrp_mng"
+      ]
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1t",
+      "gold": [
+        "uc_bkrp_mng"
+      ],
+      "baseline_pages": [
+        "uc_bkrp_mng",
+        "uc_gudn",
+        "ms_trgt_fnst",
+        "uc_hrpe_hist",
+        "dr_info_aply"
+      ],
+      "assisted_pages": [
+        "uc_bkrp_mng",
+        "uc_gudn",
+        "ms_trgt_fnst",
+        "uc_hrpe_hist",
+        "dr_info_aply"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "mtrs_vst_rcpt_pl1",
+      "gold": [
+        "mtrs_vst_rcpt"
+      ],
+      "baseline_pages": [
+        "faq_top10",
+        "faq_msdr_apply",
+        "sender_attention",
+        "mtrs_vst_rcpt",
+        "receiver_attention"
+      ],
+      "assisted_pages": [
+        "faq_top10",
+        "faq_msdr_apply",
+        "sender_attention",
+        "mtrs_vst_rcpt",
+        "receiver_attention"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "mtrs_vst_rcpt_pl1t",
+      "gold": [
+        "mtrs_vst_rcpt"
+      ],
+      "baseline_pages": [
+        "faq_top10",
+        "sender_attention",
+        "mtrs_vst_rcpt",
+        "faq_msdr_apply",
+        "receiver_attention"
+      ],
+      "assisted_pages": [
+        "faq_top10",
+        "sender_attention",
+        "mtrs_vst_rcpt",
+        "faq_msdr_apply",
+        "receiver_attention"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "kmrs_proc_pl1",
+      "gold": [
+        "kmrs_proc",
+        "mtrs_gvbk_proc"
+      ],
+      "baseline_pages": [
+        "faq_top10",
+        "sender_attention",
+        "kmrs_proc",
+        "faq_msdr_apply",
+        "mtrs_gvbk_proc"
+      ],
+      "assisted_pages": [
+        "faq_top10",
+        "sender_attention",
+        "kmrs_proc",
+        "faq_msdr_apply",
+        "mtrs_gvbk_proc"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "kmrs_proc_pl1t",
+      "gold": [
+        "kmrs_proc",
+        "mtrs_gvbk_proc"
+      ],
+      "baseline_pages": [
+        "sender_attention",
+        "faq_top10",
+        "kmrs_proc",
+        "mtrs_gvbk_proc",
+        "faq_msdr_apply"
+      ],
+      "assisted_pages": [
+        "sender_attention",
+        "faq_top10",
+        "kmrs_proc",
+        "mtrs_gvbk_proc",
+        "faq_msdr_apply"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "receiver_docs_pl1",
+      "gold": [
+        "receiver_docs"
+      ],
+      "baseline_pages": [
+        "faq_top10",
+        "receiver_attention",
+        "receiver_docs",
+        "faq_msdr_apply",
+        "kmrs_aply_trgt"
+      ],
+      "assisted_pages": [
+        "faq_top10",
+        "receiver_attention",
+        "receiver_docs",
+        "faq_msdr_apply",
+        "kmrs_aply_trgt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "receiver_docs_pl1t",
+      "gold": [
+        "receiver_docs"
+      ],
+      "baseline_pages": [
+        "receiver_docs",
+        "receiver_attention",
+        "faq_msdr_apply",
+        "faq_top10",
+        "mtrs_gvbk_proc"
+      ],
+      "assisted_pages": [
+        "receiver_docs",
+        "receiver_attention",
+        "faq_msdr_apply",
+        "faq_top10",
+        "mtrs_gvbk_proc"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "sender_qlfc_check_pl1",
+      "gold": [
+        "sender_qlfc_check"
+      ],
+      "baseline_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "sender_attention",
+        "sender_qlfc_check"
+      ],
+      "assisted_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "sender_attention",
+        "sender_qlfc_check"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "sender_qlfc_check_pl1t",
+      "gold": [
+        "sender_qlfc_check"
+      ],
+      "baseline_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "sender_attention",
+        "sender_qlfc_check"
+      ],
+      "assisted_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "sender_attention",
+        "sender_qlfc_check"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "mtrs_rel_law_pl1",
+      "gold": [
+        "mtrs_rel_law"
+      ],
+      "baseline_pages": [
+        "sender_attention",
+        "mtrs_rel_law",
+        "faq_top10",
+        "faq_msdr_apply",
+        "sender_qlfc_check"
+      ],
+      "assisted_pages": [
+        "sender_attention",
+        "mtrs_rel_law",
+        "faq_top10",
+        "faq_msdr_apply",
+        "sender_qlfc_check"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "mtrs_rel_law_pl1t",
+      "gold": [
+        "mtrs_rel_law"
+      ],
+      "baseline_pages": [
+        "mtrs_rel_law",
+        "sender_attention",
+        "faq_msdr_apply",
+        "faq_top10",
+        "sender_qlfc_check"
+      ],
+      "assisted_pages": [
+        "mtrs_rel_law",
+        "sender_attention",
+        "faq_msdr_apply",
+        "faq_top10",
+        "sender_qlfc_check"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_center_pl1",
+      "gold": [
+        "ha_center"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "sender_attention",
+        "kmrs_proc",
+        "dp_faq_page"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "sender_attention",
+        "kmrs_proc",
+        "dp_faq_page"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_center_pl1t",
+      "gold": [
+        "ha_center"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "sender_attention",
+        "dp_faq_page",
+        "kmrs_proc"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "sender_attention",
+        "dp_faq_page",
+        "kmrs_proc"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_center_pl2",
+      "gold": [
+        "ha_center"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "ha_ilgl_intro",
+        "faq_nramt",
+        "dr_system"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "ha_ilgl_intro",
+        "faq_nramt",
+        "dr_system"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_center_pl2t",
+      "gold": [
+        "ha_center"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "faq_nramt",
+        "ha_ilgl_intro",
+        "mtrs_gvbk_proc"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "faq_nramt",
+        "ha_ilgl_intro",
+        "mtrs_gvbk_proc"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_faq_dclr_pl1",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "faq_nramt",
+        "dp_faq_page",
+        "dr_psn_br"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "faq_nramt",
+        "dp_faq_page",
+        "dr_psn_br"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_faq_dclr_pl1t",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "ms_expln",
+        "faq_nramt",
+        "dp_faq_page"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "ms_expln",
+        "faq_nramt",
+        "dp_faq_page"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_faq_dclr_pl2",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "faq_nramt",
+        "dp_gudn_faq",
+        "ms_poss_dcmnt"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "faq_nramt",
+        "dp_gudn_faq",
+        "ms_poss_dcmnt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_faq_dclr_pl2t",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "baseline_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "dp_gudn_faq",
+        "faq_nramt",
+        "uc_bkrp_mng"
+      ],
+      "assisted_pages": [
+        "ha_faq_dclr",
+        "ha_center",
+        "dp_gudn_faq",
+        "faq_nramt",
+        "uc_bkrp_mng"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_status_agree_pl1",
+      "gold": [
+        "ha_status_agree"
+      ],
+      "baseline_pages": [
+        "ha_status_agree",
+        "dp_josa_law",
+        "ha_faq_dclr",
+        "ha_ilgl_intro",
+        "faq_top10"
+      ],
+      "assisted_pages": [
+        "ha_status_agree",
+        "dp_josa_law",
+        "ha_faq_dclr",
+        "ha_ilgl_intro",
+        "faq_top10"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "ha_status_agree_pl1t",
+      "gold": [
+        "ha_status_agree"
+      ],
+      "baseline_pages": [
+        "dp_josa_law",
+        "ha_center",
+        "ha_status_agree",
+        "ha_faq_dclr",
+        "uc_bkrp_spcl_mng"
+      ],
+      "assisted_pages": [
+        "dp_josa_law",
+        "ha_center",
+        "ha_status_agree",
+        "ha_faq_dclr",
+        "uc_bkrp_spcl_mng"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_system_pl1",
+      "gold": [
+        "dr_kruc",
+        "dr_system"
+      ],
+      "baseline_pages": [
+        "dr_system",
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_psn_br"
+      ],
+      "assisted_pages": [
+        "dr_system",
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_psn_br"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_system_pl1t",
+      "gold": [
+        "dr_kruc",
+        "dr_system"
+      ],
+      "baseline_pages": [
+        "dr_system",
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_psn_br"
+      ],
+      "assisted_pages": [
+        "dr_system",
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_psn_br"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_kruc_pl1",
+      "gold": [
+        "dr_kruc"
+      ],
+      "baseline_pages": [
+        "dr_kruc",
+        "dr_info_aply",
+        "dr_system",
+        "sender_docs",
+        "dr_credit_sprt"
+      ],
+      "assisted_pages": [
+        "dr_kruc",
+        "dr_info_aply",
+        "dr_system",
+        "sender_docs",
+        "dr_credit_sprt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_kruc_pl1t",
+      "gold": [
+        "dr_kruc"
+      ],
+      "baseline_pages": [
+        "dr_kruc",
+        "dr_info_aply",
+        "sender_docs",
+        "dr_system",
+        "dr_credit_sprt"
+      ],
+      "assisted_pages": [
+        "dr_kruc",
+        "dr_info_aply",
+        "sender_docs",
+        "dr_system",
+        "dr_credit_sprt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_credit_sprt_pl1",
+      "gold": [
+        "dr_credit_sprt"
+      ],
+      "baseline_pages": [
+        "dr_credit_sprt",
+        "dr_psn_rg",
+        "dr_system",
+        "dr_kruc",
+        "uc_bkrp_fndt"
+      ],
+      "assisted_pages": [
+        "dr_credit_sprt",
+        "dr_psn_rg",
+        "dr_system",
+        "dr_kruc",
+        "uc_bkrp_fndt"
+      ],
+      "matched_labels": [
+        "신용회복 지원"
+      ],
+      "ontology_pages": [
+        "dr_credit_sprt"
+      ]
+    },
+    {
+      "test_id": "dr_credit_sprt_pl1t",
+      "gold": [
+        "dr_credit_sprt"
+      ],
+      "baseline_pages": [
+        "dr_credit_sprt",
+        "dr_psn_rg",
+        "dr_system",
+        "dr_kruc",
+        "dr_psn_br"
+      ],
+      "assisted_pages": [
+        "dr_credit_sprt",
+        "dr_psn_rg",
+        "dr_system",
+        "dr_kruc",
+        "dr_psn_br"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_psn_br_pl1",
+      "gold": [
+        "dr_psn_br"
+      ],
+      "baseline_pages": [
+        "dr_psn_br",
+        "dr_psn_rg",
+        "dr_system",
+        "uc_bkrp_mng",
+        "dr_credit_sprt"
+      ],
+      "assisted_pages": [
+        "dr_psn_br",
+        "dr_psn_rg",
+        "dr_system",
+        "uc_bkrp_mng",
+        "dr_credit_sprt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_psn_br_pl1t",
+      "gold": [
+        "dr_psn_br"
+      ],
+      "baseline_pages": [
+        "dr_psn_br",
+        "dr_psn_rg",
+        "uc_bkrp_mng",
+        "uc_bkrp_fndt",
+        "uc_hrpe_hist"
+      ],
+      "assisted_pages": [
+        "dr_psn_br",
+        "dr_psn_rg",
+        "uc_bkrp_mng",
+        "uc_bkrp_fndt",
+        "uc_hrpe_hist"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "dr_psn_rg_pl1",
+      "gold": [
+        "dr_psn_rg"
+      ],
+      "baseline_pages": [
+        "dr_psn_rg",
+        "dr_credit_sprt",
+        "dr_psn_br",
+        "dr_kruc",
+        "dr_system"
+      ],
+      "assisted_pages": [
+        "dr_psn_rg",
+        "dr_credit_sprt",
+        "dr_psn_br",
+        "dr_kruc",
+        "dr_system"
+      ],
+      "matched_labels": [
+        "개인회생"
+      ],
+      "ontology_pages": [
+        "dr_psn_rg"
+      ]
+    },
+    {
+      "test_id": "dr_psn_rg_pl1t",
+      "gold": [
+        "dr_psn_rg"
+      ],
+      "baseline_pages": [
+        "dr_psn_rg",
+        "dr_credit_sprt",
+        "dr_kruc",
+        "dr_psn_br",
+        "dr_system"
+      ],
+      "assisted_pages": [
+        "dr_psn_rg",
+        "dr_credit_sprt",
+        "dr_kruc",
+        "dr_psn_br",
+        "dr_system"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx01",
+      "gold": [
+        "dp_faq_page",
+        "dp_ovrs"
+      ],
+      "baseline_pages": [
+        "dp_faq_page",
+        "dp_ovrs",
+        "dp_protlmts",
+        "faq_nramt"
+      ],
+      "assisted_pages": [
+        "dp_faq_page",
+        "dp_ovrs",
+        "dp_protlmts",
+        "faq_nramt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx02",
+      "gold": [
+        "dp_gudn_data",
+        "dp_logo"
+      ],
+      "baseline_pages": [
+        "dp_logo",
+        "dp_gudn_data",
+        "dp_gudn",
+        "mtrs_rel_law",
+        "dp_gudn_faq"
+      ],
+      "assisted_pages": [
+        "dp_logo",
+        "dp_gudn_data",
+        "dp_gudn",
+        "mtrs_rel_law",
+        "dp_gudn_faq"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx03",
+      "gold": [
+        "dp_josa_itrd",
+        "dp_josa_law",
+        "dp_josa_objc"
+      ],
+      "baseline_pages": [
+        "dp_josa_objc",
+        "dp_josa_law",
+        "dp_josa_itrd",
+        "dp_gudn",
+        "dp_fnst"
+      ],
+      "assisted_pages": [
+        "dp_josa_itrd",
+        "dp_josa_law",
+        "dp_josa_objc",
+        "dp_gudn",
+        "dp_fnst"
+      ],
+      "matched_labels": [
+        "부보금융회사조사"
+      ],
+      "ontology_pages": [
+        "dp_josa_itrd",
+        "dp_josa_law",
+        "dp_josa_objc"
+      ]
+    },
+    {
+      "test_id": "cx04",
+      "gold": [
+        "dp_fnst_srch",
+        "dp_prdct_srch"
+      ],
+      "baseline_pages": [
+        "dp_prdct_srch",
+        "dp_prdct",
+        "dp_gudn",
+        "dp_faq_page",
+        "ms_trgt_fnst"
+      ],
+      "assisted_pages": [
+        "dp_prdct_srch",
+        "dp_prdct",
+        "dp_gudn",
+        "dp_faq_page",
+        "ms_trgt_fnst"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx05",
+      "gold": [
+        "dr_debt_cert",
+        "dr_faq_inq",
+        "dr_info_aply"
+      ],
+      "baseline_pages": [
+        "dr_debt_cert",
+        "dr_info_aply",
+        "dr_faq_inq",
+        "dr_psn_br",
+        "uc_hrpe_hist"
+      ],
+      "assisted_pages": [
+        "dr_debt_cert",
+        "dr_info_aply",
+        "dr_faq_inq",
+        "dr_psn_br",
+        "uc_hrpe_hist"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx06",
+      "gold": [
+        "kmrs_aply_trgt",
+        "kmrs_apply_mthd",
+        "kmrs_itrd"
+      ],
+      "baseline_pages": [
+        "sender_attention",
+        "faq_top10",
+        "faq_msdr_apply",
+        "kmrs_aply_trgt",
+        "sender_qlfc_check"
+      ],
+      "assisted_pages": [
+        "sender_attention",
+        "faq_top10",
+        "faq_msdr_apply",
+        "kmrs_aply_trgt",
+        "sender_qlfc_check"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx07",
+      "gold": [
+        "mtrs_stut_chc",
+        "sender_attention",
+        "sender_docs"
+      ],
+      "baseline_pages": [
+        "sender_docs",
+        "kmrs_aply_trgt",
+        "mtrs_stut_chc",
+        "receiver_docs",
+        "faq_top10"
+      ],
+      "assisted_pages": [
+        "sender_docs",
+        "kmrs_aply_trgt",
+        "mtrs_stut_chc",
+        "receiver_docs",
+        "faq_top10"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx08",
+      "gold": [
+        "mtrs_stut_chc",
+        "receiver_attention"
+      ],
+      "baseline_pages": [
+        "receiver_attention",
+        "mtrs_stut_chc",
+        "kmrs_aply_trgt",
+        "sender_attention",
+        "mtrs_gvbk_proc"
+      ],
+      "assisted_pages": [
+        "receiver_attention",
+        "mtrs_stut_chc",
+        "kmrs_aply_trgt",
+        "sender_attention",
+        "mtrs_gvbk_proc"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx09",
+      "gold": [
+        "uc_bkrp_spcl_ast",
+        "uc_bkrp_spcl_mng"
+      ],
+      "baseline_pages": [
+        "uc_bkrp_spcl_mng",
+        "uc_bkrp_spcl_ast",
+        "dp_faq_page",
+        "dp_prdct",
+        "uc_bkrp_trst_mng"
+      ],
+      "assisted_pages": [
+        "uc_bkrp_spcl_mng",
+        "uc_bkrp_spcl_ast",
+        "dp_faq_page",
+        "dp_prdct",
+        "uc_bkrp_trst_mng"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx10",
+      "gold": [
+        "uc_bkrp_trst_mng",
+        "uc_bkrp_trst_psta"
+      ],
+      "baseline_pages": [
+        "uc_bkrp_trst_mng",
+        "uc_bkrp_trst_psta",
+        "uc_bkrp_spcl_mng",
+        "dp_prdct",
+        "dp_gudn_faq"
+      ],
+      "assisted_pages": [
+        "uc_bkrp_trst_mng",
+        "uc_bkrp_trst_psta",
+        "uc_bkrp_spcl_mng",
+        "dp_prdct",
+        "dp_gudn_faq"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "cx11",
+      "gold": [
+        "dp_protlmts",
+        "ha_ilgl_intro",
+        "kmrs_apply_mthd"
+      ],
+      "baseline_pages": [
+        "kmrs_aply_trgt",
+        "ha_faq_dclr",
+        "mtrs_rel_law",
+        "sender_attention",
+        "mtrs_gvbk_proc"
+      ],
+      "assisted_pages": [
+        "dp_protlmts",
+        "kmrs_aply_trgt",
+        "ha_faq_dclr",
+        "mtrs_rel_law",
+        "sender_attention"
+      ],
+      "matched_labels": [
+        "예금자 보호한도"
+      ],
+      "ontology_pages": [
+        "dp_protlmts"
+      ]
+    },
+    {
+      "test_id": "pl_dp_svbk_hist_1",
+      "gold": [
+        "dp_svbk_hist"
+      ],
+      "baseline_pages": [
+        "dp_svbk_hist",
+        "dp_fnst_srch",
+        "uc_bkrp_mng"
+      ],
+      "assisted_pages": [
+        "dp_svbk_hist",
+        "dp_fnst_srch",
+        "uc_bkrp_mng"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "pl_uc_itgr_aply_1",
+      "gold": [
+        "uc_itgr_aply"
+      ],
+      "baseline_pages": [
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "uc_tel_qust",
+        "sender_qlfc_check"
+      ],
+      "assisted_pages": [
+        "uc_itgr_aply",
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "uc_tel_qust",
+        "sender_qlfc_check"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "amb_pl_faq_top10_1",
+      "gold": [
+        "faq_msdr_apply",
+        "faq_top10"
+      ],
+      "baseline_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "sender_attention",
+        "sender_qlfc_check",
+        "kmrs_aply_trgt"
+      ],
+      "assisted_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "sender_attention",
+        "sender_qlfc_check",
+        "kmrs_aply_trgt"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "amb_pl_dp_gudn_faq_1",
+      "gold": [
+        "dp_faq_page",
+        "dp_gudn_faq"
+      ],
+      "baseline_pages": [
+        "dp_gudn_data",
+        "dp_protlmts",
+        "dp_gudn",
+        "dp_prdct",
+        "dp_syst"
+      ],
+      "assisted_pages": [
+        "dp_gudn_data",
+        "dp_protlmts",
+        "dp_gudn",
+        "dp_prdct",
+        "dp_syst"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "pl_faq_nramt_1",
+      "gold": [
+        "faq_nramt"
+      ],
+      "baseline_pages": [
+        "faq_nramt",
+        "ms_expln",
+        "mtrs_stut_chc",
+        "uc_tel_qust",
+        "mtrs_gvbk_proc"
+      ],
+      "assisted_pages": [
+        "faq_nramt",
+        "ms_expln",
+        "mtrs_stut_chc",
+        "uc_tel_qust",
+        "mtrs_gvbk_proc"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "amb_pl_dr_kruc_system_1",
+      "gold": [
+        "dr_kruc",
+        "dr_system"
+      ],
+      "baseline_pages": [
+        "dr_kruc",
+        "dp_svbk_hist",
+        "dr_system",
+        "faq_nramt",
+        "dp_faq_page"
+      ],
+      "assisted_pages": [
+        "dr_kruc",
+        "dp_svbk_hist",
+        "dr_system",
+        "faq_nramt",
+        "dp_faq_page"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "amb_pl_uc_gudn_group_1",
+      "gold": [
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "uc_itgr_aply"
+      ],
+      "baseline_pages": [
+        "uc_gudn",
+        "dr_system",
+        "dr_psn_br",
+        "uc_bkrp_mng",
+        "dp_faq_page"
+      ],
+      "assisted_pages": [
+        "uc_gudn",
+        "dr_system",
+        "dr_psn_br",
+        "uc_bkrp_mng",
+        "dp_faq_page"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    },
+    {
+      "test_id": "amb_pl_faq_msdr_top10_2",
+      "gold": [
+        "faq_msdr_apply",
+        "faq_top10"
+      ],
+      "baseline_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "receiver_attention",
+        "sender_attention"
+      ],
+      "assisted_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "receiver_attention",
+        "sender_attention"
+      ],
+      "matched_labels": [],
+      "ontology_pages": []
+    }
+  ]
+}

@@ -10,6 +10,8 @@
 | 하려는 일 | 순서 |
 |---|---|
 | **처음 왔다 / 프로젝트가 뭔지 알고 싶다** | 루트 [`README.md`](../README.md)(P3 계획서) → [`CODEBASE.md`](CODEBASE.md)(실행 방법) → [`retrieval_eval.md`](retrieval_eval.md)(왜 이 검색 구조인지) |
+| **LLM/코드 에이전트가 저장소를 파악한다** | 루트 [`AGENTS.md`](../AGENTS.md) → [`LLM_WIKI.md`](LLM_WIKI.md) → 작업 영역별 정본 |
+| **KDIC 업무 지식 ontology를 다룬다** | [`../ontology/README.md`](../ontology/README.md) → [`../ontology/kdic-domain-ontology.yaml`](../ontology/kdic-domain-ontology.yaml) → `metadata_schema.md` |
 | **파이프라인 코드를 고치러 왔다** | [`pipeline_issue_history.md`](pipeline_issue_history.md) **상단 "현재 상태 요약"** → 해당 이슈 절 |
 | **API를 붙이거나 계약을 확인한다** | [`web/src/mocks/README.md`](../web/src/mocks/README.md)(계약 정본) → [`frontend-handoff.md`](frontend-handoff.md) → [`backend-structure.md`](backend-structure.md) |
 | **데이터·코퍼스를 만진다** | [`metadata_schema.md`](metadata_schema.md) → [`CODEBASE.md`](CODEBASE.md) → [`search_scope_definition.md`](search_scope_definition.md) |
@@ -38,6 +40,8 @@
 
 | 문서 | 무엇이 있나 | 언제 기준 |
 |---|---|---|
+| [`LLM_WIKI.md`](LLM_WIKI.md) | 전체 시스템의 현재 구조, RAG·데이터·API 흐름, 변경 영향 지도, 경량 ontology. LLM과 신규 작업자의 통합 진입점 | 2026-08-11 · `main` `ecb9fd6` |
+| [`../ontology/kdic-domain-ontology.yaml`](../ontology/kdic-domain-ontology.yaml) | 실제 canonical graph와 정렬된 12개 클래스·6개 관계·상태·근거 규칙. 미래 RAG 모델은 planned extension으로 분리 | 2026-08-12 · v0.2.0 · 런타임 미적용 |
 | [`CODEBASE.md`](CODEBASE.md) | P1 데이터 파이프라인(`src/crawler/`) 온보딩. 단계별 파일 표, 데이터 산출물, **파이프라인 실행 커맨드 정본**(운영 절차는 `admin_account_setup.md`) | 2026-08-05 · Supabase 전환 반영됨. ⚠️ P2 RAG 코어·`api/`·`web/`은 다루지 않는다 |
 | [`metadata_schema.md`](metadata_schema.md) | `corpus.jsonl`(58) · `chunks_all.jsonl`(494) · `testset_all.jsonl`(851) 필드 정의. **필드 정본** | 2026-08-05 |
 | [`search_scope_definition.md`](search_scope_definition.md) | 6개 업무 × 58페이지 카탈로그(브레드크럼·URL·요약) | 2026-08-05 · ⚠️ 업무 필터는 2026-07-22에 껐다(문서 상단 참고) |
@@ -67,6 +71,34 @@
 
 | 문서 | 생성 주체 | 언제 기준 |
 |---|---|---|
+| [`../ontology/kdic-document-concept-map.json`](../ontology/kdic-document-concept-map.json) | `src/crawler/build_ontology_map.py` — 58개 Document를 6개 Service·95개 metadata Concept에 연결. **직접 편집 금지** | 2026-08-11 · ontology v1 · 전부 `unreviewed` · 런타임 미적용 |
+| [`../ontology/kdic-fact-candidates.json`](../ontology/kdic-fact-candidates.json) | `src/crawler/build_ontology_fact_candidates.py` — 원문 수치·기간·날짜 fact 후보. **직접 편집 금지** | 2026-08-11 · v2 준비 · 전부 `proposed` · 런타임 미적용 |
+| [`../ontology/neo4j/`](../ontology/neo4j/) | `src/crawler/build_neo4j_ontology_export.py` — canonical graph 177 nodes·307 relations의 Neo4j CSV·Cypher export. **직접 편집 금지** | 2026-08-12 · 승인 상태 포함 · 런타임 미적용 |
+| [`../results/ontology/metadata_concept_match_heldout.json`](../results/ontology/metadata_concept_match_heldout.json) | `src/eval/eval_ontology_concept_match.py` — held-out 89문항에서 metadata Concept 단독 매칭의 coverage/Recall 측정. **운영 성능이 아님** | 2026-08-11 · ontology v3 사전평가 · LLM/DB 미호출 |
+| [`../ontology/review/CONCEPT_REVIEW_QUEUE.md`](../ontology/review/CONCEPT_REVIEW_QUEUE.md) | `src/crawler/build_ontology_review_queue.py` — 95개 metadata Concept을 공식 페이지·해시 근거와 함께 사람이 검토하는 큐. **전부 proposed, 런타임 미적용** | 2026-08-11 · ontology v2 정제 준비 · held-out 미사용 |
+| [`../ontology/kdic-curated-concept-proposals.json`](../ontology/kdic-curated-concept-proposals.json) | `src/crawler/build_curated_concept_proposals.py` — P1/P2 metadata Concept 14개를 8개 정규 개념 후보로 정제. 분리·제외 판단과 페이지 근거 포함. **domain 승인 전, 런타임 미적용** | 2026-08-12 · agent 검토 초안 · held-out 미사용 |
+| [`../ontology/kdic-p3-concept-triage.json`](../ontology/kdic-p3-concept-triage.json) | `src/crawler/build_ontology_p3_triage.py` — 81개 단일 문서 metadata Concept을 페이지 단위로 묶고 원문 요약·근거·P1/P2 잠재 중복을 표시. **triage 전용, 런타임 미적용** | 2026-08-12 · ontology P3 검토 준비 · held-out 미사용 |
+| [`../ontology/kdic-p3-typed-concept-proposals.json`](../ontology/kdic-p3-typed-concept-proposals.json) | `src/crawler/build_p3_typed_concept_proposals.py` — P3-high 11개 페이지를 Procedure·EligibilityRule·RequiredDocument·ContactPoint 10개 후보로 정제. **domain 승인 전, fact 값 미포함** | 2026-08-12 · ontology P3 typed 초안 · 런타임 미적용 |
+| [`../ontology/kdic-p3-general-concept-proposals.json`](../ontology/kdic-p3-general-concept-proposals.json) | `src/crawler/build_p3_general_concept_proposals.py` — P3-high 일반 페이지 27개를 새 후보 21·기존 Service 병합 5·제외 1로 정제. **domain 승인 전, fact 값 미포함** | 2026-08-12 · ontology P3 general 초안 · 런타임 미적용 |
+| [`../ontology/kdic-canonical-ontology-draft.json`](../ontology/kdic-canonical-ontology-draft.json) | `src/crawler/build_canonical_ontology_draft.py` — P1/P2/P3 후보를 45개 canonical entity로 통합. ID·class·Service 참조·hash 검증. 승인 상태는 별도 결정 파일이 권위 | 2026-08-12 · ontology v0.2.0-draft · 런타임 미적용 |
+| [`../ontology/review/CANONICAL_ONTOLOGY_APPROVAL_CHECKLIST.md`](../ontology/review/CANONICAL_ONTOLOGY_APPROVAL_CHECKLIST.md) | canonical entity 45개에 대한 사람 검토 템플릿. **체크 표시만으로 machine-readable 승인되지 않음** | 2026-08-12 · generated checklist |
+| [`../ontology/kdic-core-fact-proposals.json`](../ontology/kdic-core-fact-proposals.json) | 보호한도·착오송금 조건·기한 등 핵심 fact 15개. 공식 원문 인용과 hash 검증, 도메인 승인 완료 | 2026-08-12 · source verified · 런타임 미적용 |
+| [`../ontology/kdic-official-label-aliases.json`](../ontology/kdic-official-label-aliases.json) | 공식 page title/breadcrumb에서 얻은 label 47개. 전부 승인됐지만 contextual label은 동의어가 아님 | 2026-08-12 · 승인 완료 · 런타임 미적용 |
+| [`../ontology/kdic-canonical-graph.json`](../ontology/kdic-canonical-graph.json) | Document·Service·Entity·Fact·OfficialLabel을 연결한 177-node/307-edge canonical graph. fact에 직접 원문 근거 포함 | 2026-08-12 · graph 검토 107개 승인 · 런타임 미적용 |
+| [`../ontology/kdic-document-semantic-coverage.json`](../ontology/kdic-document-semantic-coverage.json) | `src/crawler/build_ontology_document_coverage.py` — 공식 문서 58개 전부를 의미 근거(52) 또는 FAQ·분기 문서 전용(6)으로 결정 | 2026-08-12 · generated · 런타임 미적용 |
+| [`../ontology/kdic-fact-gap-review-queue.json`](../ontology/kdic-fact-gap-review-queue.json) | `src/crawler/build_fact_gap_review_queue.py` — 예금보험금 안내·고객 미수령금 신청의 source-verified fact 후보 6개. core fact 자동 승격 없음 | 2026-08-12 · generated · 런타임 미적용 |
+| [`../ontology/review/FACT_GAP_REVIEW_QUEUE.md`](../ontology/review/FACT_GAP_REVIEW_QUEUE.md) | 위 6개 후보의 원문 인용·hash·검토 항목. 담당자 승인 전에는 검색·답변에 사용 금지 | 2026-08-12 · generated · 런타임 미적용 |
+| [`../ontology/review/fact-gap-review-decisions.json`](../ontology/review/fact-gap-review-decisions.json) | 6개 source-verified 사실 보강 후보의 사람 결정 파일. 전부 승인, core fact 자동 승격 없음 | 2026-08-12 · human-owned · 런타임 미적용 |
+| [`../ontology/review/official-label-decisions.json`](../ontology/review/official-label-decisions.json) | 공식 표기 47개의 사람 결정 파일. 전부 승인, contextual label은 동의어로 간주하지 않음 | 2026-08-12 · human-owned · 런타임 미적용 |
+| [`../ontology/review/by-domain/INDEX.md`](../ontology/review/by-domain/INDEX.md) | `src/crawler/build_ontology_domain_review_packets.py` — 6대 업무영역별 엔터티·핵심 fact·보강 후보 검토 패킷 인덱스 | 2026-08-12 · generated · 런타임 미적용 |
+| [`../results/ontology/canonical_assist_error_analysis.json`](../results/ontology/canonical_assist_error_analysis.json) | `src/eval/analyze_canonical_ontology_assist.py` — 고정 held-out에서 바뀐 5개 순위의 근거·개선·하락 진단. **현재 testset 튜닝 금지** | 2026-08-12 · generated · 런타임 미적용 |
+| [`../ontology/review/FRESH_HELDOUT_EVALUATION_PROTOCOL.md`](../ontology/review/FRESH_HELDOUT_EVALUATION_PROTOCOL.md) | 독립 새 held-out 수집 규약과 `validate_fresh_ontology_assist_heldout.py` 반입 검증 계약 | 2026-08-12 · 검토용 · 런타임 미적용 |
+| [`../ontology/review/FRESH_HELDOUT_CANDIDATE_INVENTORY.md`](../ontology/review/FRESH_HELDOUT_CANDIDATE_INVENTORY.md) | `src/eval/audit_fresh_heldout_candidates.py` — 기존 10개 testset의 메타데이터·중복 점검. 독립 fresh held-out 후보 0개 | 2026-08-12 · generated · 런타임 미적용 |
+| [`../ontology/review/canonical-ontology-decisions.json`](../ontology/review/canonical-ontology-decisions.json) | 45개 정규 항목·15개 핵심 사실의 사람 승인 결정 파일. 현재 60개 모두 `approved`, 생성기가 덮어쓰지 않음 | 2026-08-12 · human-owned · 런타임 미적용 |
+| `../src/crawler/record_ontology_review_decision.py` | 한 건의 사람 승인·반려·수정 요청을 검증 후 기록하는 CLI. 기본값은 미리 보기, `--apply`가 있어야 쓰기 수행 | 2026-08-12 · reviewer tool · 런타임 미적용 |
+| [`../ontology/llm-wiki/`](../ontology/llm-wiki/) | `src/crawler/build_llm_wiki.py` — 승인 fact별 구조화 값·인용·page_id·URL·수집일·hash와 6대 업무영역 원문 색인을 제공 | 2026-08-12 · local-grounded generated Wiki · 런타임 미적용 |
+| [`../ontology/RELEASE_READINESS.md`](../ontology/RELEASE_READINESS.md) | 최종 범위, 검색 기준선 비교, 운영 적용 차단 사유 | 2026-08-12 · offline ready / runtime blocked |
+| [`../results/ontology/release_readiness.json`](../results/ontology/release_readiness.json) | 모든 생성물 재현성·시각화·shadow 검색을 검증한 machine-readable 최종 판정 | 2026-08-12 · artifact checks pass · runtime false |
 | [`pipeline_latency_profile.md`](pipeline_latency_profile.md) | `src/crawler/measure_baseline.py` (`write_text`로 통째 덮어씀) | 측정 2026-07-23 · **리랭커 ON 시절 값**이라 현재 동작이 아니다 |
 
 ⚠️ 이 파일을 다시 생성하면 수치가 그때 환경 기준으로 바뀐다. 여러 문서가 지금 값을 인용하고

@@ -1,0 +1,306 @@
+{
+  "schema_version": "1.0.0",
+  "status": "metadata_inventory_only_no_fresh_heldout_selected",
+  "production_impact": "none",
+  "llm_calls": 0,
+  "database_calls": 0,
+  "policy": {
+    "question_text_emitted": false,
+    "automatic_fresh_heldout_selection": false,
+    "fresh_heldout_requires_protocol_validation": true
+  },
+  "summary": {
+    "testset_files_inspected": 10,
+    "fresh_heldout_eligible_files": 0
+  },
+  "testsets": [
+    {
+      "path": "data/testset/testset_all.jsonl",
+      "row_count": 851,
+      "answerable_count": 819,
+      "question_type_counts": {
+        "fact": 442,
+        "faq": 175,
+        "file_download": 29,
+        "link_guide": 59,
+        "out_of_scope": 32,
+        "table_lookup": 114
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 851,
+        "expected_sources": 819,
+        "intent": 851,
+        "query_form": 0,
+        "question": 851,
+        "question_type": 851,
+        "test_id": 851
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_ambiguous.jsonl",
+      "row_count": 277,
+      "answerable_count": 267,
+      "question_type_counts": {
+        "fact": 87,
+        "faq": 111,
+        "file_download": 12,
+        "link_guide": 23,
+        "out_of_scope": 10,
+        "table_lookup": 34
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 277,
+        "expected_sources": 267,
+        "intent": 0,
+        "query_form": 0,
+        "question": 277,
+        "question_type": 277,
+        "test_id": 277
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_dy.jsonl",
+      "row_count": 140,
+      "answerable_count": 140,
+      "question_type_counts": {
+        "fact": 96,
+        "file_download": 2,
+        "link_guide": 14,
+        "table_lookup": 28
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 140,
+        "expected_sources": 140,
+        "intent": 0,
+        "query_form": 0,
+        "question": 140,
+        "question_type": 140,
+        "test_id": 140
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_hw.jsonl",
+      "row_count": 120,
+      "answerable_count": 117,
+      "question_type_counts": {
+        "fact": 77,
+        "faq": 19,
+        "file_download": 3,
+        "link_guide": 3,
+        "out_of_scope": 3,
+        "table_lookup": 15
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 120,
+        "expected_sources": 117,
+        "intent": 0,
+        "query_form": 0,
+        "question": 120,
+        "question_type": 120,
+        "test_id": 120
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_jh.jsonl",
+      "row_count": 69,
+      "answerable_count": 66,
+      "question_type_counts": {
+        "fact": 33,
+        "faq": 18,
+        "file_download": 2,
+        "link_guide": 10,
+        "out_of_scope": 3,
+        "table_lookup": 3
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 69,
+        "expected_sources": 66,
+        "intent": 0,
+        "query_form": 0,
+        "question": 69,
+        "question_type": 69,
+        "test_id": 69
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_jy.jsonl",
+      "row_count": 80,
+      "answerable_count": 80,
+      "question_type_counts": {
+        "fact": 75,
+        "file_download": 1,
+        "link_guide": 4
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 80,
+        "expected_sources": 80,
+        "intent": 0,
+        "query_form": 0,
+        "question": 80,
+        "question_type": 80,
+        "test_id": 80
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_pipeline.jsonl",
+      "row_count": 89,
+      "answerable_count": 79,
+      "question_type_counts": {
+        "fact": 61,
+        "faq": 4,
+        "link_guide": 6,
+        "out_of_scope": 10,
+        "table_lookup": 8
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 79,
+        "expected_sources": 79,
+        "intent": 89,
+        "query_form": 0,
+        "question": 89,
+        "question_type": 89,
+        "test_id": 89
+      },
+      "frozen_test_id_overlap_count": 89,
+      "frozen_normalized_question_overlap_count": 88,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "currently_used_as_frozen_ontology_assist_heldout",
+        "test_id_overlaps_frozen_heldout",
+        "normalized_question_overlaps_frozen_heldout",
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_query_decomposition.jsonl",
+      "row_count": 100,
+      "answerable_count": 0,
+      "question_type_counts": {
+        "": 100
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 0,
+        "expected_sources": 0,
+        "intent": 0,
+        "query_form": 0,
+        "question": 100,
+        "question_type": 0,
+        "test_id": 100
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 1,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "normalized_question_overlaps_frozen_heldout",
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_tail_probe.jsonl",
+      "row_count": 4,
+      "answerable_count": 4,
+      "question_type_counts": {
+        "table_lookup": 4
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 4,
+        "expected_sources": 4,
+        "intent": 0,
+        "query_form": 0,
+        "question": 4,
+        "question_type": 4,
+        "test_id": 4
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    },
+    {
+      "path": "data/testset/testset_yj.jsonl",
+      "row_count": 170,
+      "answerable_count": 153,
+      "question_type_counts": {
+        "fact": 77,
+        "faq": 27,
+        "file_download": 9,
+        "link_guide": 6,
+        "out_of_scope": 17,
+        "table_lookup": 34
+      },
+      "required_field_presence": {
+        "authored_at": 0,
+        "authored_by": 0,
+        "business_function": 170,
+        "expected_sources": 153,
+        "intent": 0,
+        "query_form": 0,
+        "question": 170,
+        "question_type": 170,
+        "test_id": 170
+      },
+      "frozen_test_id_overlap_count": 0,
+      "frozen_normalized_question_overlap_count": 0,
+      "fresh_heldout_eligible": false,
+      "ineligible_reasons": [
+        "missing_required_fresh_holdout_provenance"
+      ]
+    }
+  ]
+}

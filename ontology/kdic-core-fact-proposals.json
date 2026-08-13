@@ -1,0 +1,285 @@
+{
+  "schema_version": "1.0.0",
+  "status": "core_facts_source_verified_pending_domain_approval",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "policies": {
+    "literal_source_quote_required": true,
+    "heldout_testset_used": false,
+    "runtime_use": "prohibited_until_domain_approval_and_evaluation",
+    "review_on_content_hash_change": true
+  },
+  "fact_count": 15,
+  "facts": [
+    {
+      "id": "fact:deposit_protection_limit",
+      "subject_id": "monetary_rule:deposit_protection_limit",
+      "predicate": "has_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 100000000,
+        "currency": "KRW",
+        "scope": "per_person_per_financial_institution"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "dp_protlmts",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do",
+        "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637",
+        "quote": "금융회사별로 1인당 1억원까지 보호됩니다."
+      }
+    },
+    {
+      "id": "fact:deposit_protection_limit_effective_date",
+      "subject_id": "monetary_rule:deposit_protection_limit",
+      "predicate": "effective_from",
+      "object": {
+        "type": "Date",
+        "value": "2025-09-01"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "dp_faq_page",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do",
+        "content_sha256": "053957508cb2b05942fa36d7ef48414f9c69b9da76654e53d6f3163a8a80d186",
+        "quote": "2025년 9월 1일부터 예금보호한도 1억원이 적용되고 있습니다."
+      }
+    },
+    {
+      "id": "fact:mistaken_remittance_amount_range",
+      "subject_id": "eligibility:mistaken_remittance_return_support",
+      "predicate": "has_monetary_range",
+      "object": {
+        "type": "MonetaryRange",
+        "minimum": 50000,
+        "maximum": 100000000,
+        "currency": "KRW",
+        "inclusive": true
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "kmrs_aply_trgt",
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+        "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+        "quote": "신청 가능 한도는 착오송금 건당 5만원 이상 ~ 1억원 이하 입니다."
+      }
+    },
+    {
+      "id": "fact:mistaken_remittance_application_deadline",
+      "subject_id": "eligibility:mistaken_remittance_return_support",
+      "predicate": "has_time_rule",
+      "object": {
+        "type": "Duration",
+        "value": 1,
+        "unit": "year",
+        "anchor": "mistaken_remittance_date",
+        "inclusive_text": "이내"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "kmrs_aply_trgt",
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+        "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+        "quote": "잘못 이체한 날로부터 1년 이내까지 신청 가능합니다"
+      }
+    },
+    {
+      "id": "fact:mistaken_remittance_prior_return_request",
+      "subject_id": "eligibility:mistaken_remittance_return_support",
+      "predicate": "requires_prior_action",
+      "object": {
+        "type": "Requirement",
+        "action": "request_return_via_transfer_provider",
+        "must_remain_unreturned": true
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "kmrs_aply_trgt",
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+        "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740",
+        "quote": "이체 시 이용한 금융회사, 간편송금업체 등을 통해 먼저 반환을 요청해야 합니다.\n금융회사, 간편송금업체 등을 통해서도 돌려받지 못한 경우 신청 가능합니다."
+      }
+    },
+    {
+      "id": "fact:mistaken_remittance_supported_date_threshold",
+      "subject_id": "eligibility:mistaken_remittance_self_check",
+      "predicate": "has_date_threshold",
+      "object": {
+        "type": "DateThreshold",
+        "value": "2021-07-06",
+        "source_operator": "이후"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "sender_qlfc_check",
+        "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+        "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05",
+        "quote": "착오송금일이 2021년 7월 6일 이후입니까?"
+      }
+    },
+    {
+      "id": "fact:recipient_voluntary_return_deadline",
+      "subject_id": "concept:mistaken_remittance_recipient_cautions",
+      "predicate": "has_time_rule",
+      "object": {
+        "type": "Duration",
+        "value": 2,
+        "unit": "week",
+        "anchor": "assignment_notice_delivery"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "receiver_attention",
+        "source_url": "https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do",
+        "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4",
+        "quote": "자진반환 기한(양도통지문 송달일로부터 2주) 내에 반환해주시기 바랍니다."
+      }
+    },
+    {
+      "id": "fact:visit_reception_hours",
+      "subject_id": "contact:mistaken_remittance_visit",
+      "predicate": "has_operating_hours",
+      "object": {
+        "type": "TimeWindow",
+        "days": "weekday",
+        "start": "09:00",
+        "end": "17:00"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "mtrs_vst_rcpt",
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+        "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
+        "quote": "방문접수는 평일 09:00 ~ 17:00까지 운영됩니다."
+      }
+    },
+    {
+      "id": "fact:visit_reception_lunch_break",
+      "subject_id": "contact:mistaken_remittance_visit",
+      "predicate": "has_break_hours",
+      "object": {
+        "type": "TimeWindow",
+        "start": "12:00",
+        "end": "13:00"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "mtrs_vst_rcpt",
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+        "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807",
+        "quote": "점심시간 12:00 ~ 13:00"
+      }
+    },
+    {
+      "id": "fact:individual_rehabilitation_unsecured_debt_limit",
+      "subject_id": "concept:individual_rehabilitation",
+      "predicate": "has_monetary_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 1000000000,
+        "currency": "KRW",
+        "debt_type": "unsecured",
+        "operator": "not_exceed"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "무담보 채무의 경우 10억 원, 담보부 채무의 경우 15억 원을 넘지 않아야 합니다."
+      }
+    },
+    {
+      "id": "fact:individual_rehabilitation_secured_debt_limit",
+      "subject_id": "concept:individual_rehabilitation",
+      "predicate": "has_monetary_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 1500000000,
+        "currency": "KRW",
+        "debt_type": "secured",
+        "operator": "not_exceed"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "무담보 채무의 경우 10억 원, 담보부 채무의 경우 15억 원을 넘지 않아야 합니다."
+      }
+    },
+    {
+      "id": "fact:individual_rehabilitation_repayment_period",
+      "subject_id": "concept:individual_rehabilitation",
+      "predicate": "has_time_rule",
+      "object": {
+        "type": "Duration",
+        "maximum": 5,
+        "unit": "year"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "변제기간\n5년을 초과할 수 없습니다."
+      }
+    },
+    {
+      "id": "fact:individual_rehabilitation_income_requirement",
+      "subject_id": "concept:individual_rehabilitation",
+      "predicate": "has_eligibility",
+      "object": {
+        "type": "Requirement",
+        "requirement": "continuing_regular_reliable_income"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252",
+        "quote": "정기적이고, 확실한 수입을 계속하여 얻을 가능성이 있는 사람이어야 합니다."
+      }
+    },
+    {
+      "id": "fact:concealed_assets_reward_maximum",
+      "subject_id": "contact:concealed_assets_report_center",
+      "predicate": "has_monetary_limit",
+      "object": {
+        "type": "MonetaryValue",
+        "value": 3000000000,
+        "currency": "KRW",
+        "operator": "maximum"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "ha_center",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+        "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799",
+        "quote": "최대 30억원의 포상금을 지급하고 있음"
+      }
+    },
+    {
+      "id": "fact:concealed_assets_reward_rate",
+      "subject_id": "contact:concealed_assets_report_center",
+      "predicate": "has_percentage_range",
+      "object": {
+        "type": "PercentageRange",
+        "minimum": 5,
+        "maximum": 20,
+        "basis": "recovered_amount_after_costs"
+      },
+      "review_status": "source_verified_pending_domain_approval",
+      "evidence": {
+        "page_id": "ha_center",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+        "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799",
+        "quote": "회수금액(소요비용 공제)의 5~20% 수준에서 차등 산정"
+      }
+    }
+  ]
+}

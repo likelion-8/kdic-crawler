@@ -1,0 +1,520 @@
+{
+  "schema_version": "1.0.0",
+  "status": "all_canonical_entities_and_core_facts_approved",
+  "production_impact": "none",
+  "policy": {
+    "automatic_approval": false,
+    "approved_items_only_for_future_runtime_promotion": true,
+    "reviewer_identity_required_for_non_pending_decisions": true
+  },
+  "source": {
+    "canonical_draft": {
+      "path": "ontology/kdic-canonical-ontology-draft.json",
+      "sha256": "1e706bdfc9e7cfe603a483d1f80e037e32e96503403d53527d37be7f1751c436"
+    },
+    "core_facts": {
+      "path": "ontology/kdic-core-fact-proposals.json",
+      "sha256": "8807ce3d5d788835bd76a13def28593aad3b37c18cb794c4a4ed7c88a1e57c81"
+    }
+  },
+  "source_migrations": [
+    {
+      "artifact": "ontology/kdic-core-fact-proposals.json",
+      "previous_sha256": "790d581a9070c39f6b08825635f8c80968390da58357d443c9636be1d02528b7",
+      "current_sha256": "8807ce3d5d788835bd76a13def28593aad3b37c18cb794c4a4ed7c88a1e57c81",
+      "changed_fact_ids": [
+        "fact:deposit_protection_limit",
+        "fact:mistaken_remittance_prior_return_request"
+      ],
+      "change": "동일한 공식 페이지에서 기존 주장을 더 직접적으로 뒷받침하는 literal 인용 범위로 강화",
+      "semantic_claim_changed": false,
+      "preserved_approved_decisions": 15,
+      "authorized_by": "hjy10",
+      "applied_at": "2026-08-12"
+    }
+  ],
+  "entities": [
+    {
+      "id": "actor:deposit_insurance_payment_target_institution",
+      "label": "보험금 지급대상 금융회사",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "actor:protected_financial_institution",
+      "label": "보호대상 금융회사",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "actor:mistaken_remitter",
+      "label": "착오송금인",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:individual_rehabilitation",
+      "label": "개인회생",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:unclaimed_funds_integrated_application",
+      "label": "미수령금 통합신청",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:protected_financial_product",
+      "label": "보호대상 금융상품",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:insured_financial_company_survey",
+      "label": "부보금융회사조사",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:insured_financial_company_survey_legal_basis",
+      "label": "부보금융회사조사 법적근거·관련규정",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:trust_real_estate_management_system",
+      "label": "신탁부동산 관리체계",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:trust_real_estate_status",
+      "label": "신탁부동산 현황",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:deposit_insurance_payment",
+      "label": "예금보험금",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:deposit_protection_logo_use_rules",
+      "label": "예금보호 로고 사용 규정",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:savings_bank_name_change_history",
+      "label": "저축은행 상호 변경이력",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:mistaken_remittance_regulations",
+      "label": "착오송금 반환지원 관련 법령·규정",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:mistaken_remittance_recipient_cautions",
+      "label": "착오송금 수취인 유의사항",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:mistaken_remitter_cautions",
+      "label": "착오송금인 유의사항",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:special_asset_management_system",
+      "label": "특별자산 관리체계",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:special_asset_status",
+      "label": "특별자산 현황",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:bankruptcy_discharge",
+      "label": "파산·면책",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:bankrupt_financial_company_information_search",
+      "label": "파산금융회사 정보 검색",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:bankruptcy_estate_management",
+      "label": "파산재단 관리",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:bankruptcy_estate_status",
+      "label": "파산재단 현황",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:display_explanation_confirmation_scheme",
+      "label": "표시·설명·확인 제도",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "concept:international_deposit_protection_limits",
+      "label": "해외 예금자 보호한도",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "contact:financial_misconduct_report_center",
+      "label": "금융부실관련자 불법행위 신고센터",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "contact:unclaimed_funds_phone",
+      "label": "미수령금 전화문의",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "contact:concealed_assets_report_center",
+      "label": "은닉재산 신고센터",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "contact:mistaken_remittance_visit",
+      "label": "착오송금 반환지원 방문접수",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "eligibility:mistaken_remittance_self_check",
+      "label": "착오송금 반환지원 대상 자가진단",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "eligibility:mistaken_remittance_return_support",
+      "label": "착오송금 반환지원 신청대상",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "monetary_rule:deposit_protection_limit",
+      "label": "예금자 보호한도",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "procedure:insured_financial_company_survey_objection",
+      "label": "부보금융회사조사 소명·이의제기",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "procedure:deposit_insurance_payment_application",
+      "label": "예금보험금 신청 절차",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "procedure:mistaken_remittance_application",
+      "label": "착오송금 반환지원 신청방법",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "procedure:mistaken_remittance_return_support",
+      "label": "착오송금 반환지원 절차",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "required_document:deposit_insurance_application",
+      "label": "예금보험금 신청 구비서류",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "required_document:mistaken_remittance_recipient_forms",
+      "label": "착오송금 수취인 구비서류",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "required_document:mistaken_remitter_application",
+      "label": "착오송금인 신청 구비서류",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "service:protected_financial_product_search",
+      "label": "보호대상 금융상품 검색",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "service:protected_financial_institution_search",
+      "label": "보호대상 금융회사 검색",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "service:failure_responsibility_investigation_status",
+      "label": "부실책임조사 진행현황 조회",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "service:debt_certificate_financial_information_request",
+      "label": "부채증명원·금융거래정보 신청",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "service:heir_financial_transaction_inquiry",
+      "label": "상속인 금융거래조회",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "service:credit_recovery_support",
+      "label": "신용회복 지원",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "service:debt_information_inquiry_consultation",
+      "label": "채무정보 조회·상담신청",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    }
+  ],
+  "facts": [
+    {
+      "id": "fact:deposit_protection_limit",
+      "label": "예금자 보호한도 1인·금융회사별 1억원",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:deposit_protection_limit_effective_date",
+      "label": "예금자 보호한도 1억원 적용일 2025년 9월 1일",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:mistaken_remittance_amount_range",
+      "label": "착오송금 반환지원 신청금액 5만원 이상 1억원 이하",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:mistaken_remittance_application_deadline",
+      "label": "착오송금 반환지원 신청기한 · 송금일로부터 1년 이내",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:mistaken_remittance_prior_return_request",
+      "label": "착오송금 반환지원 사전 조건 · 금융회사 등에 반환 요청",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:mistaken_remittance_supported_date_threshold",
+      "label": "착오송금 반환지원 대상 송금일 · 2021년 7월 6일 이후",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:recipient_voluntary_return_deadline",
+      "label": "착오송금 수취인 자진반환 기한 · 통지일로부터 2주",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:visit_reception_hours",
+      "label": "착오송금 방문접수 시간 · 평일 오전 9시~오후 5시",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:visit_reception_lunch_break",
+      "label": "착오송금 방문접수 점심시간 · 낮 12시~오후 1시",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:individual_rehabilitation_unsecured_debt_limit",
+      "label": "개인회생 무담보 채무 한도 10억원 이하",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:individual_rehabilitation_secured_debt_limit",
+      "label": "개인회생 담보부 채무 한도 15억원 이하",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:individual_rehabilitation_repayment_period",
+      "label": "개인회생 변제기간 최대 5년",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:individual_rehabilitation_income_requirement",
+      "label": "개인회생 신청 조건 · 계속적·반복적 수입 가능성",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:concealed_assets_reward_maximum",
+      "label": "은닉재산 신고 포상금 최대 30억원",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    },
+    {
+      "id": "fact:concealed_assets_reward_rate",
+      "label": "은닉재산 신고 포상금 회수금액의 5~20%",
+      "decision": "approved",
+      "reviewed_by": "hjy10",
+      "reviewed_at": "2026-08-12",
+      "note": null
+    }
+  ]
+}

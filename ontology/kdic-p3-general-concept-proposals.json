@@ -1,0 +1,726 @@
+{
+  "schema_version": "1.0.0",
+  "status": "agent_reviewed_p3_general_pending_domain_approval",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "review_policy": {
+    "heldout_testset_used": false,
+    "automatic_runtime_promotion": false,
+    "approval_required_before_evaluation": true,
+    "fact_values_included": false
+  },
+  "review_count": 27,
+  "proposal_count": 21,
+  "merge_existing_count": 5,
+  "rejected_count": 1,
+  "proposals": [
+    {
+      "id": "concept:individual_rehabilitation",
+      "label": "개인회생",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_psn_rg",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+          "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252"
+        }
+      ]
+    },
+    {
+      "id": "concept:mistaken_remittance_regulations",
+      "label": "착오송금 반환지원 관련 법령·규정",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "mtrs_rel_law",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do",
+          "content_sha256": "46d7def4dfbe218f531ef6ce6e8484d763659eb50722e849f49f084d6ead9730"
+        }
+      ]
+    },
+    {
+      "id": "actor:deposit_insurance_payment_target_institution",
+      "label": "보험금 지급대상 금융회사",
+      "ontology_class": "Actor",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ms_trgt_fnst",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do",
+          "content_sha256": "72cf381ebd633bb4bb10fabdcd982445d1635aa8dab726c2201c31621f74778d"
+        }
+      ]
+    },
+    {
+      "id": "monetary_rule:deposit_protection_limit",
+      "label": "예금자 보호한도",
+      "ontology_class": "MonetaryRule",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_protlmts",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do",
+          "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637"
+        }
+      ]
+    },
+    {
+      "id": "service:failure_responsibility_investigation_status",
+      "label": "부실책임조사 진행현황 조회",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ha_status_agree",
+          "source_url": "https://www.kdic.or.kr/voc/userDataUsingAgree",
+          "content_sha256": "7a9070848f1a43399c08a0345c2e11d035efd82a3e85f6cc608181d86b7b865e"
+        }
+      ]
+    },
+    {
+      "id": "service:debt_certificate_financial_information_request",
+      "label": "부채증명원·금융거래정보 신청",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_debt_cert",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+          "content_sha256": "b34de2685db8ddf35e4826afcbced17020682dafa0052f7752f6d7930ee3fb4a"
+        }
+      ]
+    },
+    {
+      "id": "service:heir_financial_transaction_inquiry",
+      "label": "상속인 금융거래조회",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_hrpe_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do",
+          "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61"
+        }
+      ]
+    },
+    {
+      "id": "service:credit_recovery_support",
+      "label": "신용회복 지원",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_credit_sprt",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do",
+          "content_sha256": "f431a549eade658ea9f1723718b7d86ba1cc5001d9be77af65c1c35c3550ed01"
+        }
+      ]
+    },
+    {
+      "id": "concept:trust_real_estate_management_system",
+      "label": "신탁부동산 관리체계",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_trst_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+          "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+        }
+      ]
+    },
+    {
+      "id": "concept:trust_real_estate_status",
+      "label": "신탁부동산 현황",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_trst_psta",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+          "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+        }
+      ]
+    },
+    {
+      "id": "concept:deposit_insurance_payment",
+      "label": "예금보험금",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "ms_expln",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do",
+          "content_sha256": "8a9ad3e4e641bff847e916ef4810d48562abc5fe0834288b074968f295c758a6"
+        }
+      ]
+    },
+    {
+      "id": "concept:deposit_protection_logo_use_rules",
+      "label": "예금보호 로고 사용 규정",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_logo",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do",
+          "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609"
+        }
+      ]
+    },
+    {
+      "id": "concept:international_deposit_protection_limits",
+      "label": "해외 예금자 보호한도",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_ovrs",
+          "source_url": "https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do",
+          "content_sha256": "1a4a8bbbe9da470007dbc09feca00130e109708b3b8c0a4dda02f3f65e1d9459"
+        }
+      ]
+    },
+    {
+      "id": "concept:savings_bank_name_change_history",
+      "label": "저축은행 상호 변경이력",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:deposit_protection"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dp_svbk_hist",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+          "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c"
+        }
+      ]
+    },
+    {
+      "id": "concept:mistaken_remittance_recipient_cautions",
+      "label": "착오송금 수취인 유의사항",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "receiver_attention",
+          "source_url": "https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do",
+          "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4"
+        }
+      ]
+    },
+    {
+      "id": "service:debt_information_inquiry_consultation",
+      "label": "채무정보 조회·상담신청",
+      "ontology_class": "Service",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_info_aply",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do",
+          "content_sha256": "7a5d97ec59ed45204a22616c03f2525a1a45837f427ee43a68ebc5b16f6b7e14"
+        }
+      ]
+    },
+    {
+      "id": "concept:special_asset_management_system",
+      "label": "특별자산 관리체계",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_spcl_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+          "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+        }
+      ]
+    },
+    {
+      "id": "concept:special_asset_status",
+      "label": "특별자산 현황",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_spcl_ast",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+          "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+        }
+      ]
+    },
+    {
+      "id": "concept:bankruptcy_discharge",
+      "label": "파산·면책",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:debt_adjustment"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "dr_psn_br",
+          "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do",
+          "content_sha256": "378fad2a221975f3ea53db06c46242f0cc3c871334bb3b5ec66a173292ec3e32"
+        }
+      ]
+    },
+    {
+      "id": "concept:bankruptcy_estate_management",
+      "label": "파산재단 관리",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_mng",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+          "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+        }
+      ]
+    },
+    {
+      "id": "concept:bankruptcy_estate_status",
+      "label": "파산재단 현황",
+      "ontology_class": "Concept",
+      "status": "proposed",
+      "parent_service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "fact_values": [],
+      "evidence": [
+        {
+          "page_id": "uc_bkrp_fndt",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+          "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+        }
+      ]
+    }
+  ],
+  "reviews": [
+    {
+      "page_id": "dr_psn_rg",
+      "source_label": "개인회생",
+      "decision": "proposed",
+      "candidate_id": "concept:individual_rehabilitation",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dr_psn_rg",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do",
+        "content_sha256": "9901d6f02393e4636842e0a032491c81b5740c3b4822176ea1da7ebba2fe4252"
+      }
+    },
+    {
+      "page_id": "uc_gudn",
+      "source_label": "고객미수령금",
+      "decision": "merge_existing",
+      "candidate_id": "service:unclaimed_funds",
+      "note": "Page documents an existing top-level Service; do not create a duplicate entity.",
+      "evidence": {
+        "page_id": "uc_gudn",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do",
+        "content_sha256": "290a4f552b8ee76b8f9202f0de8dcb78d32a2b31ee94d02151b1e47124dcd8b2"
+      }
+    },
+    {
+      "page_id": "mtrs_rel_law",
+      "source_label": "관련법령 및 규정",
+      "decision": "proposed",
+      "candidate_id": "concept:mistaken_remittance_regulations",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "mtrs_rel_law",
+        "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do",
+        "content_sha256": "46d7def4dfbe218f531ef6ce6e8484d763659eb50722e849f49f084d6ead9730"
+      }
+    },
+    {
+      "page_id": "ms_trgt_fnst",
+      "source_label": "보험금 지급대상 금융회사",
+      "decision": "proposed",
+      "candidate_id": "actor:deposit_insurance_payment_target_institution",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "ms_trgt_fnst",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do",
+        "content_sha256": "72cf381ebd633bb4bb10fabdcd982445d1635aa8dab726c2201c31621f74778d"
+      }
+    },
+    {
+      "page_id": "dp_protlmts",
+      "source_label": "보호한도",
+      "decision": "proposed",
+      "candidate_id": "monetary_rule:deposit_protection_limit",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dp_protlmts",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do",
+        "content_sha256": "80ae7ac40cf6e94b0114f69461c164906920ea5fa0a1265c372a5a2ff7070637"
+      }
+    },
+    {
+      "page_id": "ha_status_agree",
+      "source_label": "부실책임조사 진행현황 조회 (개인정보 동의)",
+      "decision": "proposed",
+      "candidate_id": "service:failure_responsibility_investigation_status",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "ha_status_agree",
+        "source_url": "https://www.kdic.or.kr/voc/userDataUsingAgree",
+        "content_sha256": "7a9070848f1a43399c08a0345c2e11d035efd82a3e85f6cc608181d86b7b865e"
+      }
+    },
+    {
+      "page_id": "dr_debt_cert",
+      "source_label": "부채증명원/금융거래정보신청",
+      "decision": "proposed",
+      "candidate_id": "service:debt_certificate_financial_information_request",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dr_debt_cert",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do",
+        "content_sha256": "b34de2685db8ddf35e4826afcbced17020682dafa0052f7752f6d7930ee3fb4a"
+      }
+    },
+    {
+      "page_id": "uc_hrpe_hist",
+      "source_label": "상속인 금융거래조회",
+      "decision": "proposed",
+      "candidate_id": "service:heir_financial_transaction_inquiry",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "uc_hrpe_hist",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do",
+        "content_sha256": "50285fcc51505cc304aaec963e33d93981983b989497ca989d8eb9f22b027e61"
+      }
+    },
+    {
+      "page_id": "dr_credit_sprt",
+      "source_label": "신용회복 지원",
+      "decision": "proposed",
+      "candidate_id": "service:credit_recovery_support",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dr_credit_sprt",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do",
+        "content_sha256": "f431a549eade658ea9f1723718b7d86ba1cc5001d9be77af65c1c35c3550ed01"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_trst_mng",
+      "source_label": "신탁부동산관리체계",
+      "decision": "proposed",
+      "candidate_id": "concept:trust_real_estate_management_system",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "uc_bkrp_trst_mng",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do",
+        "content_sha256": "131d34d20ced7ed553141591e715e3c65fe5572f11a75fe70afff7abf17aa6d3"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_trst_psta",
+      "source_label": "신탁부동산현황",
+      "decision": "proposed",
+      "candidate_id": "concept:trust_real_estate_status",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "uc_bkrp_trst_psta",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do",
+        "content_sha256": "bf33dc193dfe488d6685a904bd1bc8b49c8f99be3822a77fddbcfcfb28ee6a8a"
+      }
+    },
+    {
+      "page_id": "dp_gudn_data",
+      "source_label": "안내자료 다운로드",
+      "decision": "rejected",
+      "candidate_id": null,
+      "note": "Content download/search board; retain as Document, not a domain entity.",
+      "evidence": {
+        "page_id": "dp_gudn_data",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do",
+        "content_sha256": "277bc8673d7e26f7c773524f321fdd3ceea6903ab7019980e37b7c3dcd36244d"
+      }
+    },
+    {
+      "page_id": "ms_expln",
+      "source_label": "예금보험금이란?",
+      "decision": "proposed",
+      "candidate_id": "concept:deposit_insurance_payment",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "ms_expln",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do",
+        "content_sha256": "8a9ad3e4e641bff847e916ef4810d48562abc5fe0834288b074968f295c758a6"
+      }
+    },
+    {
+      "page_id": "dp_logo",
+      "source_label": "예금보호 로고 사용 안내",
+      "decision": "proposed",
+      "candidate_id": "concept:deposit_protection_logo_use_rules",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dp_logo",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do",
+        "content_sha256": "b13558ea8d7751e0ce05b5495297e8e0052178c445171ce682a47c3552951609"
+      }
+    },
+    {
+      "page_id": "dp_syst",
+      "source_label": "예금자보호제도",
+      "decision": "merge_existing",
+      "candidate_id": "service:deposit_protection",
+      "note": "Page documents an existing top-level Service; do not create a duplicate entity.",
+      "evidence": {
+        "page_id": "dp_syst",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do",
+        "content_sha256": "349ad69487c4cffaaf259bb5e09ec272dddefd39fbe410c307982b48c70f4150"
+      }
+    },
+    {
+      "page_id": "dp_ovrs",
+      "source_label": "예금자보호한도(해외)",
+      "decision": "proposed",
+      "candidate_id": "concept:international_deposit_protection_limits",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dp_ovrs",
+        "source_url": "https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do",
+        "content_sha256": "1a4a8bbbe9da470007dbc09feca00130e109708b3b8c0a4dda02f3f65e1d9459"
+      }
+    },
+    {
+      "page_id": "dp_svbk_hist",
+      "source_label": "저축은행변경이력",
+      "decision": "proposed",
+      "candidate_id": "concept:savings_bank_name_change_history",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dp_svbk_hist",
+        "source_url": "https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do",
+        "content_sha256": "f7883d0f99f2f432c3ffd4c4e93895df9ae78050f71b6a646f6b3a8d0afabf5c"
+      }
+    },
+    {
+      "page_id": "kmrs_itrd",
+      "source_label": "착오송금반환지원 제도란",
+      "decision": "merge_existing",
+      "candidate_id": "service:mistaken_remittance_return",
+      "note": "Page documents an existing top-level Service; do not create a duplicate entity.",
+      "evidence": {
+        "page_id": "kmrs_itrd",
+        "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrd/selectScrn.do",
+        "content_sha256": "78b2c5fd989beb7c83e6e5564bacf232e3ab05fe011f609ff3cb76fe6591d212"
+      }
+    },
+    {
+      "page_id": "receiver_attention",
+      "source_label": "착오송금수취인 유의사항",
+      "decision": "proposed",
+      "candidate_id": "concept:mistaken_remittance_recipient_cautions",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "receiver_attention",
+        "source_url": "https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do",
+        "content_sha256": "eef6c873be4dc583038bf1a4e3e394150b2933918a89740e8f92c9580cc7a4e4"
+      }
+    },
+    {
+      "page_id": "dr_info_aply",
+      "source_label": "채무정보 조회 ＆ 상담신청",
+      "decision": "proposed",
+      "candidate_id": "service:debt_information_inquiry_consultation",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dr_info_aply",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do",
+        "content_sha256": "7a5d97ec59ed45204a22616c03f2525a1a45837f427ee43a68ebc5b16f6b7e14"
+      }
+    },
+    {
+      "page_id": "dr_kruc",
+      "source_label": "채무조정",
+      "decision": "merge_existing",
+      "candidate_id": "service:debt_adjustment",
+      "note": "Page documents an existing top-level Service; do not create a duplicate entity.",
+      "evidence": {
+        "page_id": "dr_kruc",
+        "source_url": "https://www.kdic.or.kr/di/relsite/PbcrKrncLblarb/selectScrn.do",
+        "content_sha256": "12dfb1ce59d6d3fab50a7e8e4628cdf253f6ab7d36844933fe69302c430d6143"
+      }
+    },
+    {
+      "page_id": "dr_system",
+      "source_label": "채무조정제도",
+      "decision": "merge_existing",
+      "candidate_id": "service:debt_adjustment",
+      "note": "Page documents an existing top-level Service; do not create a duplicate entity.",
+      "evidence": {
+        "page_id": "dr_system",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do",
+        "content_sha256": "fab47dae07d654ef663346619ff27c9c5758ad6cfa97b2a6489be1ffbb9b1387"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_spcl_mng",
+      "source_label": "특별자산관리체계",
+      "decision": "proposed",
+      "candidate_id": "concept:special_asset_management_system",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "uc_bkrp_spcl_mng",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do",
+        "content_sha256": "3a0860d1b3bf0214ea9a36dfec58a05c1005a3aa083c8caf0d0bebb3a204d753"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_spcl_ast",
+      "source_label": "특별자산현황",
+      "decision": "proposed",
+      "candidate_id": "concept:special_asset_status",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "uc_bkrp_spcl_ast",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do",
+        "content_sha256": "3f959b62d5de6190d49af788f352f16f0b8ae76684dbf59d2fe266e8b7416dbc"
+      }
+    },
+    {
+      "page_id": "dr_psn_br",
+      "source_label": "파산면책",
+      "decision": "proposed",
+      "candidate_id": "concept:bankruptcy_discharge",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "dr_psn_br",
+        "source_url": "https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do",
+        "content_sha256": "378fad2a221975f3ea53db06c46242f0cc3c871334bb3b5ec66a173292ec3e32"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_mng",
+      "source_label": "파산재단관리",
+      "decision": "proposed",
+      "candidate_id": "concept:bankruptcy_estate_management",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "uc_bkrp_mng",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do",
+        "content_sha256": "ffb3d70566ced75adac265f8a23d0f9c9ea47178ba2c4bd3e413e8bd86eb5188"
+      }
+    },
+    {
+      "page_id": "uc_bkrp_fndt",
+      "source_label": "파산재단현황",
+      "decision": "proposed",
+      "candidate_id": "concept:bankruptcy_estate_status",
+      "note": "Source-backed P3 proposal pending domain approval.",
+      "evidence": {
+        "page_id": "uc_bkrp_fndt",
+        "source_url": "https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do",
+        "content_sha256": "4ac0da576f6f00b5f460568f03a99ed4ce6a421060f33dca66adfaddd1d15946"
+      }
+    }
+  ]
+}

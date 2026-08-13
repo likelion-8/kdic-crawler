@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.0.0",
+  "status": "agent_reviewed_p3_typed_pending_domain_approval",
+  "production_impact": "none",
+  "source": {
+    "path": "data/corpus.jsonl",
+    "document_count": 58,
+    "content_set_sha256": "afeb18fc9b8977fd3c7ac5af11083061e53b3df65ac133b3f144104fe4a13a56"
+  },
+  "review_policy": {
+    "heldout_testset_used": false,
+    "automatic_runtime_promotion": false,
+    "approval_required_before_evaluation": true,
+    "fact_values_included": false
+  },
+  "source_page_count": 11,
+  "proposal_count": 10,
+  "proposals": [
+    {
+      "id": "required_document:mistaken_remittance_recipient_forms",
+      "label": "착오송금 수취인 구비서류",
+      "ontology_class": "RequiredDocument",
+      "status": "proposed",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "receiver_docs",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do",
+          "content_sha256": "f9bed4bbb32986ec7a23a55ae61f3a48c11af5239510903822558a3df8968d37"
+        }
+      ],
+      "note": "Forms and supporting documents for a mistaken-remittance recipient."
+    },
+    {
+      "id": "procedure:mistaken_remittance_return_support",
+      "label": "착오송금 반환지원 절차",
+      "ontology_class": "Procedure",
+      "status": "proposed",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "mtrs_gvbk_proc",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsGvbkSprtProc/selectScrn.do",
+          "content_sha256": "a4803ab34cf7189c914c53dc8dbb6637a33556b4e85b8d1f389906f121fe537f"
+        },
+        {
+          "page_id": "kmrs_proc",
+          "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdProc/selectScrn.do",
+          "content_sha256": "0a8b549ed1fb9cde87c259751d0a5916db2b5edfc1811b7ad7413bb30deabce7"
+        }
+      ],
+      "note": "Two official pages describe the same five-stage return-support procedure."
+    },
+    {
+      "id": "contact:mistaken_remittance_visit",
+      "label": "착오송금 반환지원 방문접수",
+      "ontology_class": "ContactPoint",
+      "status": "proposed",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "mtrs_vst_rcpt",
+          "source_url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do",
+          "content_sha256": "81cc3ded70380a222d38b27fe3823e22cab56f56f94de34fc5a2fec01f653807"
+        }
+      ],
+      "note": "Official in-person application channel and office information."
+    },
+    {
+      "id": "contact:concealed_assets_report_center",
+      "label": "은닉재산 신고센터",
+      "ontology_class": "ContactPoint",
+      "status": "proposed",
+      "service_ids": [
+        "service:concealed_assets_report"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "ha_center",
+          "source_url": "https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do",
+          "content_sha256": "dba66fb0b1581bf925c8cc2eff706e7efe2468c6ad22d9b6fd438d70e51cd799"
+        }
+      ],
+      "note": "Official reporting center for concealed assets and related rewards."
+    },
+    {
+      "id": "eligibility:mistaken_remittance_self_check",
+      "label": "착오송금 반환지원 대상 자가진단",
+      "ontology_class": "EligibilityRule",
+      "status": "proposed",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "sender_qlfc_check",
+          "source_url": "https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do",
+          "content_sha256": "c6364958af05b92718e2fdc11be7a6d69921aaf04eed20a3f7bb869499b11e05"
+        }
+      ],
+      "note": "Interactive eligibility check; distinct from the authoritative eligibility guidance."
+    },
+    {
+      "id": "required_document:deposit_insurance_application",
+      "label": "예금보험금 신청 구비서류",
+      "ontology_class": "RequiredDocument",
+      "status": "proposed",
+      "service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "ms_poss_dcmnt",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do",
+          "content_sha256": "7f921cea8add94b1aa2e3b473a595420f648000c9dd90cedb73bd38d720f59fb"
+        }
+      ],
+      "note": "Required documents vary by applicant type."
+    },
+    {
+      "id": "procedure:deposit_insurance_payment_application",
+      "label": "예금보험금 신청 절차",
+      "ontology_class": "Procedure",
+      "status": "proposed",
+      "service_ids": [
+        "service:deposit_insurance_payment"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "ms_aply_proc",
+          "source_url": "https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do",
+          "content_sha256": "b398772e990453abd83695a258c409ec8a9dc4e6dbd19844a64aba34a498bba0"
+        }
+      ],
+      "note": "Procedure from insurance event and notice through application and payment."
+    },
+    {
+      "id": "contact:unclaimed_funds_phone",
+      "label": "미수령금 전화문의",
+      "ontology_class": "ContactPoint",
+      "status": "proposed",
+      "service_ids": [
+        "service:unclaimed_funds"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "uc_tel_qust",
+          "source_url": "https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do",
+          "content_sha256": "39d6f5311215c364f8533142690c38f74f315b04338d057b1a401abeb43e900f"
+        }
+      ],
+      "note": "Official telephone inquiry channel for depositors and unclaimed funds."
+    },
+    {
+      "id": "eligibility:mistaken_remittance_return_support",
+      "label": "착오송금 반환지원 신청대상",
+      "ontology_class": "EligibilityRule",
+      "status": "proposed",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "kmrs_aply_trgt",
+          "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do",
+          "content_sha256": "59dc690d463cc8be1cc8bb64b0d94ffddd53dbe50698493be796c8c21e05f740"
+        }
+      ],
+      "note": "Authoritative eligibility guidance; values remain separate reviewed facts."
+    },
+    {
+      "id": "procedure:mistaken_remittance_application",
+      "label": "착오송금 반환지원 신청방법",
+      "ontology_class": "Procedure",
+      "status": "proposed",
+      "service_ids": [
+        "service:mistaken_remittance_return"
+      ],
+      "synonyms": [],
+      "evidence": [
+        {
+          "page_id": "kmrs_apply_mthd",
+          "source_url": "https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyMthd/selectScrn.do",
+          "content_sha256": "c8d0393d679d1cf9163cce167b75b6353e4d8297e7cc38e807a08dec4a06889a"
+        }
+      ],
+      "note": "Online and in-person application methods."
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+ontology:
+  id: kdic-domain-ontology
+  title: KDIC Offline Canonical Ontology
+  version: 0.2.0
+  status: offline_reviewed
+  language: ko
+  scope: "KDIC 공개 안내문 58페이지와 6개 업무영역의 오프라인 canonical graph"
+  canonical_graph:
+    artifact: ontology/kdic-canonical-graph.json
+    schema_version: 1.0.0
+    node_type_field: node_type
+    relation_field: relation
+    runtime_use: prohibited_until_retrieval_quality_gate_passes
+    approval_scope: canonical_entities_core_facts_and_official_labels
+  source_of_truth:
+    documents: data/corpus.jsonl
+    metadata: data/meta/
+    metadata_schema: docs/metadata_schema.md
+    graph_schema: ontology/kdic-domain-ontology.yaml
+    graph_data: ontology/kdic-canonical-graph.json
+    human_decisions:
+      - ontology/review/canonical-ontology-decisions.json
+      - ontology/review/official-label-decisions.json
+      - ontology/review/fact-gap-review-decisions.json
+    source_pages: corpus.source_url
+  evidence_policy:
+    required_for_canonical_entity: true
+    required_for_fact: true
+    evidence_key: page_id
+    review_on_content_hash_change: true
+    citation_source: corpus metadata
+    prohibited_citation_source: generated LLM URL
+
+classes:
+  - id: BusinessDomain
+    label: 업무영역
+    canonical_graph: true
+    description: "현재 코퍼스의 6대 최상위 업무 분류."
+  - id: Service
+    label: 서비스
+    canonical_graph: true
+    description: "사용자가 이용하거나 이해하는 KDIC 제도·지원·신청·조회 단위."
+  - id: Concept
+    label: 개념
+    canonical_graph: true
+    description: "제도, 용어, 사건, 금융상품, 법률상 상태 등 식별 가능한 의미 단위."
+  - id: Actor
+    label: 대상자·기관
+    canonical_graph: true
+  - id: EligibilityRule
+    label: 신청 조건
+    canonical_graph: true
+  - id: Procedure
+    label: 절차
+    canonical_graph: true
+  - id: RequiredDocument
+    label: 구비서류
+    canonical_graph: true
+  - id: MonetaryRule
+    label: 금액 기준
+    canonical_graph: true
+  - id: ContactPoint
+    label: 문의·접수처
+    canonical_graph: true
+  - id: Document
+    label: 공식 문서
+    canonical_graph: true
+    key: corpus.page_id
+  - id: Fact
+    label: 핵심 사실
+    canonical_graph: true
+    description: "승인 상태와 구조화 값, 공식 원문 인용·URL·content hash를 함께 보존하는 주장."
+  - id: OfficialLabel
+    label: 공식 표기
+    canonical_graph: true
+    description: "공식 페이지에서 확인된 명칭 변형. 별도 승인 전에는 검색 동의어로 사용하지 않는다."
+
+relations:
+  - id: BELONGS_TO_DOMAIN
+    label: 업무영역에 속함
+    domain: [Service]
+    range: [BusinessDomain]
+    current_edge_count: 6
+  - id: DOCUMENTS_SERVICE
+    label: 서비스를 안내함
+    domain: [Document]
+    range: [Service]
+    current_edge_count: 58
+  - id: BELONGS_TO_SERVICE
+    label: 서비스에 속함
+    domain: [Actor, Concept, ContactPoint, EligibilityRule, MonetaryRule, Procedure, RequiredDocument, Service]
+    range: [Service]
+    current_edge_count: 45
+  - id: EVIDENCE_FOR
+    label: 근거가 됨
+    domain: [Document]
+    range: [Actor, Concept, ContactPoint, EligibilityRule, Fact, MonetaryRule, OfficialLabel, Procedure, RequiredDocument, Service]
+    current_edge_count: 136
+  - id: ASSERTS_ABOUT
+    label: 관련 사실
+    domain: [Fact]
+    range: [Concept, ContactPoint, EligibilityRule, MonetaryRule]
+    current_edge_count: 15
+  - id: LABEL_FOR
+    label: 이 항목의 표기임
+    domain: [OfficialLabel]
+    range: [Actor, Concept, ContactPoint, EligibilityRule, MonetaryRule, Procedure, Service]
+    current_edge_count: 47
+
+controlled_vocabularies:
+  business_domains:
+    - {id: deposit_protection, label: 예금자보호제도, corpus_value: 예금자보호제도, page_count: 17}
+    - {id: deposit_insurance_payment, label: 예금보험금 안내, corpus_value: 예금보험금 안내, page_count: 4}
+    - {id: unclaimed_funds, label: 고객 미수령금 신청, corpus_value: 고객 미수령금 신청, page_count: 10}
+    - {id: mistaken_remittance_return, label: 착오송금 반환 신청, corpus_value: 착오송금 반환 신청, page_count: 15}
+    - {id: debt_adjustment, label: 채무조정 안내, corpus_value: 채무조정 안내, page_count: 8}
+    - {id: concealed_assets_report, label: 은닉재산 신고, corpus_value: 은닉재산 신고, page_count: 4}
+  question_types: [fact, faq, table_lookup, link_guide, file_download, out_of_scope]
+  node_statuses:
+    - base
+    - official_source
+    - pending_domain_approval
+    - domain_approved
+    - domain_rejected
+    - domain_needs_changes
+    - source_verified_pending_domain_approval
+    - source_verified_domain_approved
+    - source_verified_domain_rejected
+    - source_verified_domain_needs_changes
+  alias_types: [official_label_variant, contextual_label]
+  review_decisions: [pending, approved, rejected, needs_changes]
+
+properties:
+  Document:
+    - {name: page_id, type: string, required: true, foreign_key: corpus.page_id}
+    - {name: content_sha256, type: sha256, required: true, source: corpus.content_sha256}
+  Fact:
+    - {name: label, type: string, required: true}
+    - {name: predicate, type: string, required: true}
+    - {name: object, type: object, required: true}
+    - {name: evidence.page_id, type: string, required: true, foreign_key: corpus.page_id}
+    - {name: evidence.source_url, type: uri, required: true, source: corpus.source_url}
+    - {name: evidence.content_sha256, type: sha256, required: true, source: corpus.content_sha256}
+    - {name: evidence.quote, type: string, required: true, constraint: literal_substring_of_corpus_text}
+  OfficialLabel:
+    - {name: label, type: string, required: true}
+    - {name: alias_type, type: alias_types, required: true}
+
+mapping_rules:
+  corpus_to_document:
+    entity_id: "document:{page_id}"
+    class: Document
+    fields: {page_id: page_id, page_title: label, content_sha256: content_sha256}
+  service_to_domain:
+    relation: "Service --BELONGS_TO_DOMAIN--> BusinessDomain"
+  document_to_service:
+    relation: "Document --DOCUMENTS_SERVICE--> Service"
+  canonical_entity_to_service:
+    relation: "CanonicalEntity --BELONGS_TO_SERVICE--> Service"
+  fact_to_subject:
+    relation: "Fact --ASSERTS_ABOUT--> CanonicalEntity"
+  official_label_to_entity:
+    relation: "OfficialLabel --LABEL_FOR--> CanonicalEntity"
+  evidence_to_item:
+    relation: "Document --EVIDENCE_FOR--> CanonicalEntity|Fact|OfficialLabel"
+
+validation_rules:
+  - "Every canonical graph node_type must be declared in classes where canonical_graph=true."
+  - "Every declared canonical graph class must occur in the current graph."
+  - "Every graph relation and its endpoint node types must match relations."
+  - "Every graph node status must occur in controlled_vocabularies.node_statuses."
+  - "Every Document has exactly one DOCUMENTS_SERVICE edge."
+  - "Every base Service has exactly one BELONGS_TO_DOMAIN edge."
+  - "Every canonical entity and Fact has at least one incoming EVIDENCE_FOR edge."
+  - "Every Fact has exactly one ASSERTS_ABOUT edge and a literal corpus quote with a current content hash."
+  - "Every OfficialLabel has exactly one LABEL_FOR edge and remains unavailable for query expansion until separately approved."
+  - "Ontology mapping must not become a retrieval hard filter without a fresh held-out evaluation."
+
+approval_model:
+  canonical_entities_and_core_facts:
+    decision_file: ontology/review/canonical-ontology-decisions.json
+    approved: 60
+  official_labels:
+    decision_file: ontology/review/official-label-decisions.json
+    approved: 47
+    contextual_labels_are_synonyms: false
+    runtime_use: prohibited_until_retrieval_quality_gate_passes
+  fact_gap_candidates:
+    decision_file: ontology/review/fact-gap-review-decisions.json
+    approved: 6
+    promotion: explicit_core_fact_change_required
+
+planned_extensions:
+  status: not_part_of_canonical_graph_v0_2
+  classes: [ExclusionRule, ProcedureStep, TimeRule, DocumentChunk, Evidence, UserQuestion, Intent, Answer, Citation]
+  relations: [HAS_CHUNK, ABOUT, SERVES_ACTOR, HAS_ELIGIBILITY, HAS_EXCLUSION, HAS_PROCEDURE, HAS_STEP, REQUIRES_DOCUMENT, HAS_TIME_RULE, HAS_MONETARY_RULE, AVAILABLE_AT, CITES, DERIVED_FROM, HAS_INTENT]
+  note: "이 항목은 향후 RAG 질의·답변 모델 후보이며 현재 canonical graph 정본 어휘가 아니다."
+
+integration_roadmap:
+  - {version: v0, status: complete, goal: "Vocabulary, evidence policy, corpus mapping", runtime_change: none}
+  - {version: v1, status: complete, goal: "Deterministic Document-to-Service/Concept mappings", artifact: ontology/kdic-document-concept-map.json, runtime_change: none}
+  - {version: v2, status: current, goal: "Reviewed canonical entities and facts, pending official labels, grounded LLM Wiki", runtime_change: offline evaluation only}
+  - {version: v3, status: blocked, goal: "Optional ontology-assisted query expansion or reranking", runtime_change: "requires fresh held-out quality, citation, latency, cost gate"}

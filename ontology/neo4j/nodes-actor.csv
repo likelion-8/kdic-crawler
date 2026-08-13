@@ -1,0 +1,4 @@
+id,label,status,properties_json
+actor:deposit_insurance_payment_target_institution,보험금 지급대상 금융회사,domain_approved,{}
+actor:mistaken_remitter,착오송금인,domain_approved,{}
+actor:protected_financial_institution,보호대상 금융회사,domain_approved,{}

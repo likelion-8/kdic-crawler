@@ -1,0 +1,949 @@
+{
+  "testset": "data/testset/testset_pipeline.jsonl",
+  "mode": "standalone_exact_metadata_concept_match",
+  "production_impact": "none",
+  "n_answerable": 79,
+  "concept_match_coverage": 0.3165,
+  "recall_all_questions": {
+    "Recall@1": 0.1646,
+    "Recall@3": 0.2046,
+    "Recall@5": 0.2046
+  },
+  "recall_when_concept_matched": {
+    "Recall@1": 0.52,
+    "Recall@3": 0.6467,
+    "Recall@5": 0.6467
+  },
+  "matched_question_count": 25,
+  "top_matched_concepts": [
+    [
+      "금융회사",
+      8
+    ],
+    [
+      "채무조정",
+      3
+    ],
+    [
+      "보호대상",
+      2
+    ],
+    [
+      "보험금 지급대상 금융회사",
+      2
+    ],
+    [
+      "상속인 금융거래조회",
+      2
+    ],
+    [
+      "부실책임조사",
+      2
+    ],
+    [
+      "보호한도",
+      2
+    ],
+    [
+      "예금자보호제도",
+      2
+    ],
+    [
+      "표시·설명·확인 제도",
+      1
+    ],
+    [
+      "파산재단관리",
+      1
+    ],
+    [
+      "신용회복 지원",
+      1
+    ],
+    [
+      "개인회생",
+      1
+    ],
+    [
+      "부보금융회사조사",
+      1
+    ],
+    [
+      "착오송금 반환지원제도",
+      1
+    ]
+  ],
+  "per_question": [
+    {
+      "test_id": "dp_protlmts_pl1",
+      "gold": [
+        "dp_protlmts"
+      ],
+      "matched_concepts": [
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dp_protlmts_pl1t",
+      "gold": [
+        "dp_protlmts"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dp_syst_pl1",
+      "gold": [
+        "dp_syst"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dp_syst_pl1t",
+      "gold": [
+        "dp_syst"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dp_fnst_pl1",
+      "gold": [
+        "dp_fnst"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dp_fnst_pl1t",
+      "gold": [
+        "dp_fnst"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dp_prdct_pl1",
+      "gold": [
+        "dp_prdct"
+      ],
+      "matched_concepts": [
+        "보호대상"
+      ],
+      "ranked_pages": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_prdct",
+        "dp_prdct_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dp_prdct_pl1t",
+      "gold": [
+        "dp_prdct"
+      ],
+      "matched_concepts": [
+        "보호대상"
+      ],
+      "ranked_pages": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_prdct",
+        "dp_prdct_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dp_gudn_pl1",
+      "gold": [
+        "dp_gudn"
+      ],
+      "matched_concepts": [
+        "표시·설명·확인 제도",
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "dp_gudn",
+        "dp_gudn_data",
+        "dp_gudn_faq",
+        "dp_logo",
+        "dp_fnst"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dp_gudn_pl1t",
+      "gold": [
+        "dp_gudn"
+      ],
+      "matched_concepts": [
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_aply_proc_pl1",
+      "gold": [
+        "ms_aply_proc"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_aply_proc_pl1t",
+      "gold": [
+        "ms_aply_proc"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_expln_pl1",
+      "gold": [
+        "ms_expln"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_expln_pl1t",
+      "gold": [
+        "ms_expln"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1",
+      "gold": [
+        "ms_trgt_fnst"
+      ],
+      "matched_concepts": [
+        "보험금 지급대상 금융회사",
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "ms_trgt_fnst",
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1t",
+      "gold": [
+        "ms_trgt_fnst"
+      ],
+      "matched_concepts": [
+        "보험금 지급대상 금융회사",
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "ms_trgt_fnst",
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1t",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2t",
+      "gold": [
+        "ms_poss_dcmnt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "uc_gudn_pl1",
+      "gold": [
+        "uc_gudn"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "uc_gudn_pl1t",
+      "gold": [
+        "uc_gudn"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "uc_tel_qust_pl1",
+      "gold": [
+        "uc_tel_qust"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "uc_tel_qust_pl1t",
+      "gold": [
+        "uc_tel_qust"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "uc_hrpe_hist_pl1",
+      "gold": [
+        "uc_hrpe_hist"
+      ],
+      "matched_concepts": [
+        "상속인 금융거래조회"
+      ],
+      "ranked_pages": [
+        "uc_hrpe_hist"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "uc_hrpe_hist_pl1t",
+      "gold": [
+        "uc_hrpe_hist"
+      ],
+      "matched_concepts": [
+        "상속인 금융거래조회"
+      ],
+      "ranked_pages": [
+        "uc_hrpe_hist"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "uc_bkrp_fndt_pl1",
+      "gold": [
+        "uc_bkrp_fndt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "uc_bkrp_fndt_pl1t",
+      "gold": [
+        "uc_bkrp_fndt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1",
+      "gold": [
+        "uc_bkrp_mng"
+      ],
+      "matched_concepts": [
+        "파산재단관리"
+      ],
+      "ranked_pages": [
+        "uc_bkrp_mng"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1t",
+      "gold": [
+        "uc_bkrp_mng"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "mtrs_vst_rcpt_pl1",
+      "gold": [
+        "mtrs_vst_rcpt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "mtrs_vst_rcpt_pl1t",
+      "gold": [
+        "mtrs_vst_rcpt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "kmrs_proc_pl1",
+      "gold": [
+        "kmrs_proc",
+        "mtrs_gvbk_proc"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "kmrs_proc_pl1t",
+      "gold": [
+        "kmrs_proc",
+        "mtrs_gvbk_proc"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "receiver_docs_pl1",
+      "gold": [
+        "receiver_docs"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "receiver_docs_pl1t",
+      "gold": [
+        "receiver_docs"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "sender_qlfc_check_pl1",
+      "gold": [
+        "sender_qlfc_check"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "sender_qlfc_check_pl1t",
+      "gold": [
+        "sender_qlfc_check"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "mtrs_rel_law_pl1",
+      "gold": [
+        "mtrs_rel_law"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "mtrs_rel_law_pl1t",
+      "gold": [
+        "mtrs_rel_law"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_center_pl1",
+      "gold": [
+        "ha_center"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_center_pl1t",
+      "gold": [
+        "ha_center"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_center_pl2",
+      "gold": [
+        "ha_center"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_center_pl2t",
+      "gold": [
+        "ha_center"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_faq_dclr_pl1",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_faq_dclr_pl1t",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_faq_dclr_pl2",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_faq_dclr_pl2t",
+      "gold": [
+        "ha_faq_dclr"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "ha_status_agree_pl1",
+      "gold": [
+        "ha_status_agree"
+      ],
+      "matched_concepts": [
+        "부실책임조사"
+      ],
+      "ranked_pages": [
+        "ha_status_agree"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "ha_status_agree_pl1t",
+      "gold": [
+        "ha_status_agree"
+      ],
+      "matched_concepts": [
+        "부실책임조사"
+      ],
+      "ranked_pages": [
+        "ha_status_agree"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dr_system_pl1",
+      "gold": [
+        "dr_kruc",
+        "dr_system"
+      ],
+      "matched_concepts": [
+        "채무조정"
+      ],
+      "ranked_pages": [
+        "dr_kruc"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dr_system_pl1t",
+      "gold": [
+        "dr_kruc",
+        "dr_system"
+      ],
+      "matched_concepts": [
+        "채무조정"
+      ],
+      "ranked_pages": [
+        "dr_kruc"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dr_kruc_pl1",
+      "gold": [
+        "dr_kruc"
+      ],
+      "matched_concepts": [
+        "채무조정"
+      ],
+      "ranked_pages": [
+        "dr_kruc"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dr_kruc_pl1t",
+      "gold": [
+        "dr_kruc"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dr_credit_sprt_pl1",
+      "gold": [
+        "dr_credit_sprt"
+      ],
+      "matched_concepts": [
+        "신용회복 지원"
+      ],
+      "ranked_pages": [
+        "dr_credit_sprt"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dr_credit_sprt_pl1t",
+      "gold": [
+        "dr_credit_sprt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dr_psn_br_pl1",
+      "gold": [
+        "dr_psn_br"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dr_psn_br_pl1t",
+      "gold": [
+        "dr_psn_br"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "dr_psn_rg_pl1",
+      "gold": [
+        "dr_psn_rg"
+      ],
+      "matched_concepts": [
+        "개인회생"
+      ],
+      "ranked_pages": [
+        "dr_psn_rg"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "dr_psn_rg_pl1t",
+      "gold": [
+        "dr_psn_rg"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx01",
+      "gold": [
+        "dp_faq_page",
+        "dp_ovrs"
+      ],
+      "matched_concepts": [
+        "보호한도"
+      ],
+      "ranked_pages": [
+        "dp_protlmts"
+      ],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx02",
+      "gold": [
+        "dp_gudn_data",
+        "dp_logo"
+      ],
+      "matched_concepts": [
+        "예금자보호제도"
+      ],
+      "ranked_pages": [
+        "dp_syst"
+      ],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx03",
+      "gold": [
+        "dp_josa_itrd",
+        "dp_josa_law",
+        "dp_josa_objc"
+      ],
+      "matched_concepts": [
+        "부보금융회사조사",
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "dp_josa_itrd",
+        "dp_josa_law",
+        "dp_josa_objc",
+        "dp_fnst",
+        "dp_fnst_srch"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "cx04",
+      "gold": [
+        "dp_fnst_srch",
+        "dp_prdct_srch"
+      ],
+      "matched_concepts": [
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "cx05",
+      "gold": [
+        "dr_debt_cert",
+        "dr_faq_inq",
+        "dr_info_aply"
+      ],
+      "matched_concepts": [
+        "금융회사"
+      ],
+      "ranked_pages": [
+        "dp_fnst",
+        "dp_fnst_srch",
+        "dp_svbk_hist"
+      ],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx06",
+      "gold": [
+        "kmrs_aply_trgt",
+        "kmrs_apply_mthd",
+        "kmrs_itrd"
+      ],
+      "matched_concepts": [
+        "착오송금 반환지원제도"
+      ],
+      "ranked_pages": [
+        "kmrs_aply_trgt"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "cx07",
+      "gold": [
+        "mtrs_stut_chc",
+        "sender_attention",
+        "sender_docs"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx08",
+      "gold": [
+        "mtrs_stut_chc",
+        "receiver_attention"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx09",
+      "gold": [
+        "uc_bkrp_spcl_ast",
+        "uc_bkrp_spcl_mng"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx10",
+      "gold": [
+        "uc_bkrp_trst_mng",
+        "uc_bkrp_trst_psta"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "cx11",
+      "gold": [
+        "dp_protlmts",
+        "ha_ilgl_intro",
+        "kmrs_apply_mthd"
+      ],
+      "matched_concepts": [
+        "보호한도"
+      ],
+      "ranked_pages": [
+        "dp_protlmts"
+      ],
+      "hit_at_5": true
+    },
+    {
+      "test_id": "pl_dp_svbk_hist_1",
+      "gold": [
+        "dp_svbk_hist"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "pl_uc_itgr_aply_1",
+      "gold": [
+        "uc_itgr_aply"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "amb_pl_faq_top10_1",
+      "gold": [
+        "faq_msdr_apply",
+        "faq_top10"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "amb_pl_dp_gudn_faq_1",
+      "gold": [
+        "dp_faq_page",
+        "dp_gudn_faq"
+      ],
+      "matched_concepts": [
+        "예금자보호제도"
+      ],
+      "ranked_pages": [
+        "dp_syst"
+      ],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "pl_faq_nramt_1",
+      "gold": [
+        "faq_nramt"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "amb_pl_dr_kruc_system_1",
+      "gold": [
+        "dr_kruc",
+        "dr_system"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "amb_pl_uc_gudn_group_1",
+      "gold": [
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "uc_itgr_aply"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    },
+    {
+      "test_id": "amb_pl_faq_msdr_top10_2",
+      "gold": [
+        "faq_msdr_apply",
+        "faq_top10"
+      ],
+      "matched_concepts": [],
+      "ranked_pages": [],
+      "hit_at_5": false
+    }
+  ]
+}
