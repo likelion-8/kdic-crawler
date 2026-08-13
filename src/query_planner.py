@@ -26,6 +26,7 @@ from typing import List, Literal
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+from observability import observe
 from retrieval import ROOT  # .env 위치 재사용(다른 모듈과 동일 경로)
 
 load_dotenv(ROOT / ".env")
@@ -115,6 +116,7 @@ def _fallback(query):
     return {"should_split": False, "items": [{"question": query, "intent": "informational"}]}
 
 
+@observe()
 def plan_query(query):
     """질문 하나 -> {"should_split": bool, "items": [{"question", "intent"}]}.
 

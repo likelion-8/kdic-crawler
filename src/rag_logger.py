@@ -45,7 +45,7 @@ STAGE_LLM = "llm"
 def log_rag_run(question, answer, intent, question_type, retrieval_route,
                  total_latency_ms, llm_model=None, embedding_model=None,
                  request_id=None, session_id=None, status=STATUS_NORMAL,
-                 failure_stage=None, root_cause=None):
+                 failure_stage=None, root_cause=None, trace_id=None):
     """질의 1건을 rag_runs 에 남긴다.
 
     status/failure_stage/root_cause 는 전부 기본값이 있다. src/pipeline.py(CLI·Streamlit)가
@@ -54,6 +54,9 @@ def log_rag_run(question, answer, intent, question_type, retrieval_route,
 
     failure_stage/root_cause 는 status=FAILED 일 때만 의미가 있다. root_cause 는 예외 타입과
     메시지 원문이다 — 사용자에게 보여준 문구가 아니라 조사에 쓸 내부 원문을 넣는다.
+
+    trace_id 는 Langfuse trace 식별자(observability.current_trace_id())다. 관리자 대화 로그
+    상세(AD-005)가 API_LANGFUSE_HOST 로 링크를 완성한다. 관측이 꺼져 있으면 None(무해).
     """
     try:
         with get_session() as session:
@@ -66,6 +69,7 @@ def log_rag_run(question, answer, intent, question_type, retrieval_route,
                     "total_latency_ms": round(total_latency_ms),
                     "llm_model": llm_model, "embedding_model": embedding_model,
                     "request_id": request_id, "session_id": session_id,
+                    "trace_id": trace_id,
                 },
             )
     except Exception as e:
