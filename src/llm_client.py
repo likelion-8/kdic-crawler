@@ -9,6 +9,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from observability import observe, update_current_generation
+
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
@@ -44,9 +46,11 @@ def _get_client():
     return _client["model"]
 
 
+@observe(as_type="generation")
 def call_hyperclova(messages):
     """messages: prompt_builder.build_informational_prompt()/build_civil_petition_prompt()가
     반환한 [(role, content), ...] 튜플 리스트. 응답 텍스트(str)만 반환한다."""
+    update_current_generation(model=os.environ.get("CLOVA_MODEL"))
     response = _get_client().invoke(messages)
     return response.content
 

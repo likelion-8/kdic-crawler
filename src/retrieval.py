@@ -9,6 +9,8 @@ BM25는 kiwi 형태소 토큰, Dense는 bge-m3 임베딩(코사인), Hybrid는 �
 """
 from pathlib import Path
 
+from observability import observe
+
 ROOT = Path(__file__).resolve().parent.parent
 
 # 프로덕션 Dense 임베딩 모델. 2026-07-21 팀 비교 결과 bge-m3-ko 채택(project_context.md 9.1).
@@ -372,6 +374,7 @@ def route_search(query, k):
     return _build_engines()["routed"].search(query, k)
 
 
+@observe()
 def route_search_chunks(query, k):
     """route_search()와 같은 라우팅 판단(Dense 전용 vs Hybrid)을 쓰되, 페이지 단위가 아니라
     청크 단위로 (chunk_id, score, text)를 반환한다. candidate_ranking.rerank()는 실제 본문

@@ -46,6 +46,10 @@ qdrant_client==1.18.0
 langchain-naver==0.1.1
 openai==2.46.0
 
+# --- 관측 (Langfuse trace) ---
+# 키가 없으면 no-op으로 동작하므로 설치만으로 동작이 바뀌지 않는다. src/observability.py 참고.
+langfuse==4.14.4
+
 # --- 크롤링·유틸 ---
 beautifulsoup4==4.15.0
 requests==2.34.2
@@ -53,7 +57,7 @@ urllib3==2.7.0
 python-dotenv==1.2.2
 
 # --- 데모 UI (src/app.py) ---
-streamlit==1.60.0
+## streamlit==1.60.0
 
 # --- 직접 import 하지 않지만 고정이 필요한 것 ---
 # sqlalchemy(>=4.6.0)·fastapi(>=4.8.0)·pydantic(>=4.14.1)이 각자 하한을 걸어두고 있어
