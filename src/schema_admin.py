@@ -303,6 +303,10 @@ testset_items = Table(
     # schema.py 의 evaluation_dataset 도 같은 이유로 들고 있다.
     Column("expected_links", JSONB),
     Column("business_function", String),
+    # CM-DF-002 평가셋 라벨 2종 — AD-006 편집 폼·목록 칼럼이 이 값을 쓴다(2026-08-13 추가.
+    # 종전에는 컬럼이 없어 편집 폼의 유형·성격 값이 apply 에서 조용히 버려졌다).
+    Column("question_type", String),
+    Column("intent", String),
     Column("reference_answer", Text),
     # 제외는 행을 지우지 않고 표시만 한다 — 왜 뺐는지가 다음 버전에서 다시 필요하다.
     # 제외에는 reason 이 필수다(E6 apply 의 excludes[{item_id, reason}]).
@@ -533,6 +537,8 @@ def main():
             conn.execute(text(f"ALTER TABLE documents ADD COLUMN IF NOT EXISTS {name} {coltype}"))
         # prompt_versions.reason — 테이블 생성(2026-08-12 오전) 이후 추가된 컬럼이라 같은 방식.
         conn.execute(text("ALTER TABLE prompt_versions ADD COLUMN IF NOT EXISTS reason text"))
+        conn.execute(text("ALTER TABLE testset_items ADD COLUMN IF NOT EXISTS question_type varchar"))
+        conn.execute(text("ALTER TABLE testset_items ADD COLUMN IF NOT EXISTS intent varchar"))
         for name, table_name, cols in _NEW_INDEXES:
             conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON {table_name} ({cols})"))
         missing_indexes = _missing_indexes(conn)

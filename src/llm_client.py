@@ -14,6 +14,27 @@ load_dotenv(ROOT / ".env")
 
 _client = {}
 
+# 평가·Smoke(관리자 게이트) 전용 시드. CLOVA Studio Chat Completions v3 는 seed
+# 1~4,294,967,295 를 지원한다("일관된 결과 생성") — temperature 0 + seed 고정으로
+# 게이트가 프롬프트 품질이 아니라 LLM 난수를 재던 문제를 줄인다(2026-08-13).
+# 운영 응답 경로(_get_client, 0.2)는 그대로다 — 기존 실측치 전부 0.2 기준(아래 주석).
+EVAL_SEED = 20260813
+
+
+def _get_eval_client(seed):
+    key = f"eval:{seed}"
+    if key not in _client:
+        from langchain_naver import ChatClovaX
+        # ChatClovaX 는 BaseChatOpenAI 상속이라 seed 필드가 요청 페이로드로 그대로 실린다
+        _client[key] = ChatClovaX(
+            model_name=os.environ["CLOVA_MODEL"],
+            api_key=os.environ["CLOVA_STUDIO_API_KEY"],
+            temperature=0.0,
+            seed=seed,
+            max_tokens=2048,
+        )
+    return _client[key]
+
 
 def _get_client():
     if "model" not in _client:
@@ -44,10 +65,14 @@ def _get_client():
     return _client["model"]
 
 
-def call_hyperclova(messages):
+def call_hyperclova(messages, *, deterministic=False, seed=None):
     """messages: prompt_builder.build_informational_prompt()/build_civil_petition_prompt()가
-    반환한 [(role, content), ...] 튜플 리스트. 응답 텍스트(str)만 반환한다."""
-    response = _get_client().invoke(messages)
+    반환한 [(role, content), ...] 튜플 리스트. 응답 텍스트(str)만 반환한다.
+
+    deterministic=True 는 평가·Smoke 전용 — temperature 0 + seed 고정 클라이언트를 쓴다.
+    seed 를 바꿔 다시 부르면 flaky 재확인용 재생성이 된다. 운영 호출부는 인자 없이 그대로."""
+    client = _get_eval_client(seed or EVAL_SEED) if deterministic else _get_client()
+    response = client.invoke(messages)
     return response.content
 
 

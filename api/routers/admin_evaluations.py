@@ -54,7 +54,7 @@ from api.schemas.evaluations import (CandidateResult, CorpusSearchResult,
                                      EvalItemInput, EvalItemList, EvalItemValidation,
                                      GateDetail)
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다). 서비스 vs 관리자 스키마 분리.
-from schema import documents, evaluation_dataset, rag_runs
+from schema import documents, evaluation_dataset, pipeline_jobs, rag_runs
 from schema_admin import evaluation_results, evaluation_runs, testset_items
 
 logger = logging.getLogger(__name__)
@@ -121,8 +121,8 @@ def _bootstrap_if_empty(db) -> None:
 
     편집용 사본(testset_items)은 신설이라 비어 있는데, 그대로 두면 문항 목록이 빈 채로 뜨고
     첫 apply 가 '기존 평가셋 없는 버전 2'를 만든다. 기존 골든셋을 편집 대상으로 끌어오는
-    다리다 — is_active 문항만, expected_sources(→expected_links)·업무·기준답변을 옮긴다.
-    ⚠️ intent·question_type 컬럼은 testset_items 에 없어 옮기지 못한다(docs/evaluation_api_notes.md).
+    다리다 — is_active 문항만, expected_sources(→expected_links)·업무·기준답변·라벨 2종
+    (question_type·intent, 2026-08-13 컬럼 추가)을 옮긴다.
     비었을 때 한 번만 도는 지연 씨딩이라 조회/반영 진입에서 함께 부른다.
     """
     if db.execute(select(func.count()).select_from(testset_items)).scalar_one():
@@ -130,6 +130,7 @@ def _bootstrap_if_empty(db) -> None:
     golden = db.execute(
         select(evaluation_dataset.c.question, evaluation_dataset.c.expected_sources,
                evaluation_dataset.c.expected_links, evaluation_dataset.c.business_function,
+               evaluation_dataset.c.question_type, evaluation_dataset.c.intent,
                evaluation_dataset.c.reference_answer)
         .where(evaluation_dataset.c.is_active.is_(True))
     ).all()
@@ -140,6 +141,7 @@ def _bootstrap_if_empty(db) -> None:
         db.execute(insert(testset_items).values(
             testset_version="1", question=g.question, expected_links=links,
             business_function=g.business_function, reference_answer=g.reference_answer,
+            question_type=g.question_type, intent=g.intent,
             excluded=False, created_by="system(bootstrap)"))
     db.commit()
     logger.info("testset_items 부트스트랩: evaluation_dataset %s문항 -> 버전 1", len(golden))
@@ -240,14 +242,14 @@ def _first_link(expected_links) -> Optional[str]:
 
 
 def _item_to_dict(row, titles: dict) -> dict:
-    """testset_items 한 행 -> EvalItem. question_type·intent 는 컬럼이 없어 null(모듈 주석)."""
+    """testset_items 한 행 -> EvalItem."""
     doc_id = _first_link(row.expected_links)
     return {
         "item_id": str(row.id),
         "question": row.question,
         "business_function": row.business_function,
-        "question_type": None,              # ⚠️ testset_items 컬럼 없음 → null(지어내지 않는다)
-        "intent": None,                     # ⚠️ 동상
+        "question_type": row.question_type,
+        "intent": row.intent,
         "expected_source": None if not doc_id else {
             "doc_id": doc_id, "title": titles.get(doc_id, "")},
     }
@@ -425,19 +427,35 @@ def validate_item(body: EvalItemInput, db: DbSession):
     }
 
 
+@router.get("/schedule")
+def get_schedule(admin: CurrentAdmin, db: DbSession):
+    """정기 재측정 일정 -> {next_check_at, testset_version}. 프론트(evaluation/api.ts
+    fetchSchedule)가 AD-006 진입 즉시 부르는데 라우트가 없어 항상 404 였다(2026-08-13 실측).
+    일정 정본은 PRD-03 '운영 재측정 4시점'의 정기 축 — 매주 월 04:00 KST.
+    ⚠️ 스케줄러 프로세스는 아직 없다 — '계획된 다음 시각'이지 실행 보장이 아니다."""
+    del admin
+    _bootstrap_if_empty(db)
+    kst = timezone(timedelta(hours=9))
+    nxt = datetime.now(kst).replace(hour=4, minute=0, second=0, microsecond=0)
+    while nxt <= datetime.now(kst) or nxt.weekday() != 0:   # 다음 월요일 04:00
+        nxt += timedelta(days=1)
+    return {"next_check_at": nxt.isoformat(), "testset_version": _current_version(db)}
+
+
 # ──────────────────────────────── 반영(apply) ───────────────────────────────
 
 @router.post("/apply", response_model=EvalApplyResult)
 def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
     """편집 묶음 반영 -> {testset_version, rerun_id}. EDITOR 이상 + 사유 필수(위험 작업).
 
-    🔴 **버전 증가 1회 + 재측정 1회가 한 트랜잭션**이다(E7). 새 버전 스냅샷 + 재측정 run 생성 +
-    재측정 실행(_measure)을 **한 커밋으로** 확정한다 — 재측정이 실패하면 버전 반영째 롤백해
-    '측정 안 된 버전'이나 영구 RUNNING 이 남지 않게 한다.
+    버전 스냅샷 + 재측정 run(RUNNING) + 재측정 잡(QUEUED)을 **한 커밋**으로 확정하고 즉시
+    반환한다 — 측정 자체는 워커(src/worker.py SMOKE_EVAL → run_evaluation)가 마감한다.
 
-    ⚠️ 재측정은 문항 수만큼 OpenAI·HCX 를 부르는 긴 작업이라 이 요청은 수 분 걸릴 수 있다 —
-    현재 팀에 워커가 없어 동기로 돈다(워커가 서면 run 을 RUNNING 으로 남기고 마감을 넘기는
-    방식으로 바꾼다). 클라이언트가 /items/validate 를 건너뛰어도 아래에서 서버가 다시 검증한다.
+    2026-08-13 전환: 종전에는 _measure 를 같은 HTTP 트랜잭션에서 동기 실행했다. 851문항 ×
+    (OpenAI+HCX) = 1,702콜·1.5~3시간 동안 취소 불가였고(브라우저 중단 무효 — 동기 def 는
+    클라이언트 종료를 모른다), 공유 Supabase 에 트랜잭션이 열린 채였으며, 프록시 타임아웃이면
+    전량 롤백이었다(실측 사고). run_evaluation docstring 의 "HTTP 요청에서 부르지 말 것"
+    경고를 이제 지킨다. 클라이언트가 /items/validate 를 건너뛰어도 아래에서 서버가 다시 검증한다.
     """
     _require_editor(me)
     if not (body.reason or "").strip():
@@ -488,7 +506,7 @@ def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
     for row in new_rows:
         db.execute(insert(testset_items).values(**row))
 
-    # 재측정 run 생성. 아래 _measure 가 같은 트랜잭션에서 이 행을 DONE 으로 채운다.
+    # 재측정 run 생성 — 마감(DONE)은 워커의 run_evaluation 이 한다.
     run = db.execute(
         insert(evaluation_runs).values(
             target="운영 설정", source="파이프라인 후속",
@@ -497,14 +515,16 @@ def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
         .returning(evaluation_runs.c.id, evaluation_runs.c.testset_version)
     ).first()
 
-    # 재측정을 같은 트랜잭션에서 실행하고 한 번에 커밋한다(E7). 실패하면 버전 반영까지 롤백.
-    try:
-        _measure(db, run)
-        db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("apply 재측정 실패 — 버전 반영을 롤백한다(원자성 보장)")
-        raise BadRequestError("재측정에 실패해 반영을 취소했습니다. 잠시 후 다시 시도해 주세요.")
+    # 측정을 워커에 넘긴다 — targets[0] = run_id 가 apply→워커 인계 계약이다(_run_smoke_eval).
+    db.execute(insert(pipeline_jobs).values(
+        id=uuid.uuid4(), type="SMOKE_EVAL", status="QUEUED",
+        targets=[str(run.id)],
+        reason=f"평가셋 v{new_version} 변경 반영 자동 재측정 — {body.reason.strip()}",
+        created_by=me.email,
+        target_summary=f"평가셋 v{new_version} 재측정", target_count=len(new_rows),
+        steps=[{"name": n, "status": "QUEUED"}
+               for n in ("수집", "변환", "청킹", "검증", "색인", "반영")]))
+    db.commit()
 
     logger.info("평가셋 반영 v%s (추가 %s·편집 %s·제외 %s), 재측정 run=%s, 요청자 %s",
                 new_version, len(body.adds), len(edits), len(excludes), run.id, me.email)
@@ -521,13 +541,14 @@ def _reject_if_invalid(db, inp: EvalItemInput, current_version: str, seen: set) 
 
 def _input_to_row(inp: EvalItemInput, version: int, created_by: str,
                   excluded: bool = False, exclude_reason: Optional[str] = None) -> dict:
-    """EvalItemInput -> testset_items insert 값. ⚠️ intent·question_type 은 컬럼이 없어 버려진다
-    (docs/evaluation_api_notes.md — 컬럼 추가 제안 대상)."""
+    """EvalItemInput -> testset_items insert 값."""
     return {
         "testset_version": str(version),
         "question": inp.question,
         "expected_links": [inp.expected_source_id] if inp.expected_source_id else None,
         "business_function": inp.business_function,
+        "question_type": inp.question_type,
+        "intent": inp.intent,
         "reference_answer": None,
         "excluded": excluded,
         "exclude_reason": exclude_reason,
@@ -543,6 +564,8 @@ def _carry_row(it, version: int, excluded: bool = False,
         "question": it.question,
         "expected_links": it.expected_links,
         "business_function": it.business_function,
+        "question_type": it.question_type,
+        "intent": it.intent,
         "reference_answer": it.reference_answer,
         "excluded": excluded or bool(it.excluded),
         "exclude_reason": exclude_reason or it.exclude_reason,
@@ -627,7 +650,11 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
             for it in items]
 
     retr, per = eval_retrieval(rows, pipeline.K_CANDIDATES, rerank)
-    gen_summary, gen_records, _failed = evaluate_generation(rows, load_page_urls(), rerank=rerank)
+    # 생성 축은 Smoke 표본(앞 30문항)만 실측한다 — 검색 축은 전 문항. 전량 생성은 851문항 기준
+    # (OpenAI+HCX) 1,702콜·1.5~3시간이라 재측정 취지(게이트 판정 기록)에 맞지 않는다(2026-08-13).
+    # compute_gate 의 smoke_passed/total 도 이 표본 기준이라 판정 의미는 동일하다.
+    gen_summary, gen_records, _failed = evaluate_generation(
+        rows[:SMOKE_REQUIRED], load_page_urls(), rerank=rerank)
 
     # 문항별 결과 저장 — item_count·failed_items 의 원천(리뷰 지적). 검색 per-row 를 test_id 로 합친다.
     per_by_id = {p["test_id"]: p for p in per}
@@ -664,9 +691,9 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
 def run_evaluation(db, run_id: str, *, rerank: bool = False) -> dict:
     """측정 실행(워커/CLI 전용) — run_id 로 부른다. _measure 후 커밋한다.
 
-    ⚠️ HTTP 요청에서 부르지 말 것(문항 수만큼 OpenAI·HCX). apply 는 _measure 를 자기 트랜잭션
-    안에서 직접 불러 원자적으로 마감한다. 워커가 서면 apply 가 RUNNING 으로 남긴 run 을 이
-    함수로 마감하는 방식으로 갈아탄다.
+    ⚠️ HTTP 요청에서 부르지 말 것(문항 수만큼 OpenAI·HCX). apply(AD-006)는 run 을 RUNNING
+    으로 남기고 SMOKE_EVAL 잡을 인큐한다 — 워커(_run_smoke_eval)가 targets[0]=run_id 로 이
+    함수를 불러 마감한다(2026-08-13 전환).
     """
     run = _get_run_or_404(db, run_id)
     result = _measure(db, run, rerank=rerank)

@@ -322,6 +322,127 @@ def log_failed_run(question: str, exc: Exception, phase: str, request_id: str, s
     )
 
 
+# ──────────────────────── 가드레일 · 질의 캐시 (2026-08-13 배선) ────────────────────────
+# 종전에는 AD-008 이 게시한 금칙어가 챗 경로 어디에도 적용되지 않았고(F-3), query_cache 는
+# 테이블·통계·비우기 API 만 있고 /api/chat 이 읽지도 쓰지도 않았다(F-4). 둘 다 sse.py 가
+# 이 헬퍼들을 통해 쓴다. 캐시·가드레일 실패는 답변을 막지 않는다(전부 실패-안전).
+
+GUARDRAIL_BLOCK_MESSAGE = (
+    "문의하신 내용에는 안내가 제한되는 표현이 포함되어 있어 답변을 드리기 어렵습니다. "
+    "예금보험공사 업무에 대한 질문으로 다시 작성해 주세요.")
+CACHE_TTL_H = 24   # PRD-03 AD-009: 적격 질문만 24시간 캐시
+
+
+def guardrail_hit(text: str) -> Optional[str]:
+    """게시본 금칙어(blocklist) 첫 적중 단어 -> str | None. 질문·답변 양방향에서 부른다."""
+    try:
+        from runtime_config import get_prompt
+        block = (get_prompt("guardrails", None) or {}).get("blocklist") or {}
+        if not block.get("active", True):
+            return None
+        folded = str(text or "").casefold()
+        for item in block.get("items") or []:
+            w = item if isinstance(item, str) else (item.get("pattern") or "")
+            w = str(w).strip()
+            if w and w.casefold() in folded:
+                return w
+    except Exception:  # noqa: BLE001
+        logger.exception("guardrail_hit 실패 — 미적용으로 통과")
+    return None
+
+
+def guardrail_refusal(session_id: str, request_id: str, latency_ms: int) -> ChatResponse:
+    """금칙어 적중 시의 고정 거절 응답 — 근거·출처 없이 범위 외로 처리한다."""
+    return ChatResponse(
+        answer=GUARDRAIL_BLOCK_MESSAGE, sources=[], attachments=[], out_of_scope=True,
+        sub_answers=[], clarification=None, error=None,
+        latency_ms=latency_ms, session_id=session_id, request_id=request_id)
+
+
+def _cache_versions() -> dict:
+    """캐시 유효성 스냅샷 — PRD-03: 키 = 정규화 질문 + (인덱스·RAG·프롬프트·모델 버전).
+    질의별 비우기(admin_ops purge)가 질문 해시로 지우므로 버전은 키가 아니라 **저장값**에
+    넣고 조회 시 대조한다 — 버전이 바뀌면 미스로 취급하고 행을 지운다(자동 무효화)."""
+    import os
+    from db import get_session
+    from schema import search_index_versions
+    from schema_admin import rag_param_versions
+    from sqlalchemy import select
+    from runtime_config import current_versions
+    snap = {"prompt": current_versions().get("prompt"),
+            "model": os.environ.get("CLOVA_MODEL", "")}
+    with get_session() as session:
+        snap["params"] = session.execute(
+            select(rag_param_versions.c.version)
+            .where(rag_param_versions.c.status == "current")).scalar()
+        snap["index"] = str(session.execute(
+            select(search_index_versions.c.id)
+            .where(search_index_versions.c.status == "ACTIVE")
+            .order_by(search_index_versions.c.created_at.desc()).limit(1)).scalar())
+    return snap
+
+
+def cache_get(question: str) -> Optional[dict]:
+    """적중 시 저장된 ChatResponse dict(식별자 제외)를 돌려주고 hit_count 를 올린다."""
+    try:
+        from datetime import datetime, timezone
+        from api.routers.admin_ops import cache_key_for_question
+        from db import get_session
+        from schema_admin import query_cache
+        from sqlalchemy import delete, select, update
+        key = cache_key_for_question(question)
+        now = datetime.now(timezone.utc)
+        with get_session() as session:
+            row = session.execute(select(query_cache).where(query_cache.c.cache_key == key)).first()
+            if row is None:
+                return None
+            if row.expires_at is not None and row.expires_at <= now:
+                session.execute(delete(query_cache).where(query_cache.c.cache_key == key))
+                session.commit()
+                return None
+            stored = row.response or {}
+            if stored.get("_versions") != _cache_versions():
+                # 인덱스·설정·프롬프트·모델 중 하나라도 바뀌었다 — 자동 무효화(PRD-03)
+                session.execute(delete(query_cache).where(query_cache.c.cache_key == key))
+                session.commit()
+                return None
+            session.execute(update(query_cache).where(query_cache.c.cache_key == key)
+                            .values(hit_count=query_cache.c.hit_count + 1, last_hit_at=now))
+            session.commit()
+            return stored.get("chat")
+    except Exception:  # noqa: BLE001
+        logger.exception("cache_get 실패 — 미스로 처리")
+        return None
+
+
+def cache_put(question: str, resp: ChatResponse) -> None:
+    """적격 응답을 24h TTL 로 저장한다(upsert). 적격 판정은 호출부(sse.py)가 한다."""
+    try:
+        from datetime import datetime, timedelta, timezone
+        from api.routers.admin_ops import cache_key_for_question
+        from db import get_session
+        from schema_admin import query_cache
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+        key = cache_key_for_question(question)
+        now = datetime.now(timezone.utc)
+        payload = {
+            "chat": resp.model_dump(exclude={"session_id", "request_id", "latency_ms"}),
+            "_versions": _cache_versions(),
+        }
+        stmt = pg_insert(query_cache).values(
+            cache_key=key, question=question, response=payload,
+            created_at=now, expires_at=now + timedelta(hours=CACHE_TTL_H))
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[query_cache.c.cache_key],
+            set_={"question": question, "response": payload,
+                  "created_at": now, "expires_at": now + timedelta(hours=CACHE_TTL_H)})
+        with get_session() as session:
+            session.execute(stmt)
+            session.commit()
+    except Exception:  # noqa: BLE001
+        logger.exception("cache_put 실패 — 저장만 포기")
+
+
 def error_from_exception(exc: Exception, phase: str = "llm", request_id: str = "") -> ApiError:
     """예외를 프론트가 분기하는 대문자 5종 code 로 매핑한다(codes.ts ErrorCode). timeout/rate 는
     어느 단계든 우선 감지하고, 그 외에는 단계(retrieval/llm)로 가른다. 사용자 문구는 담되 내부

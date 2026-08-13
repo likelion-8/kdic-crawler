@@ -94,11 +94,19 @@ class RequestIDMiddleware:
 
 
 class RateLimitMiddleware:
-    """클라이언트별 분당 요청 수 제한 — 슬라이딩 윈도우.
+    """클라이언트별 요청 수 제한 — 슬라이딩 윈도우 + AD-009 운영 정책 연동(2026-08-13).
+
+    사용자(챗봇) 경로에는 ops_policy 최신 행(분당·일일·burst)을 30초 TTL 로 읽어 적용하고,
+    10분 내 위반 3회면 rate_limit_blocks 에 10분 임시 차단을 적는다 — 종전에는 AD-009 에서
+    저장한 정책을 읽는 코드가 어디에도 없어 화면이 장식이었다(F-2). 관리자 경로(/api/admin)는
+    운영 정책의 대상이 아니므로(사용자 요청 제한 정책) 종전 settings 한도를 그대로 쓴다 —
+    분당 10회를 관리자 화면에 적용하면 대시보드 진입만으로 잠긴다.
 
     한계를 분명히 해둔다:
     - 프로세스 메모리에 카운트를 둔다. uvicorn 워커를 N개 띄우면 실질 한도가 N배가 된다.
-    - 서버를 재시작하면 카운트가 초기화된다.
+    - 서버를 재시작하면 카운트가 초기화된다(차단 목록은 DB 라 유지된다).
+    - 세션별 30분 한도(session_per_30min)는 미들웨어가 세션 id 를 모른다(요청 본문에 있다)
+      — 정책 값은 저장·표시되지만 집행은 후속 과제다.
     즉 남용을 늦추는 최소 장치이지 정확한 쿼터가 아니다. 정확한 제한이 필요해지면
     Redis 등 공유 저장소 기반으로 이 클래스만 갈아끼우면 된다.
 
@@ -116,6 +124,12 @@ class RateLimitMiddleware:
         self.window_s = 60.0
         self._hits = defaultdict(deque)  # client key -> 최근 요청 시각들
         self._last_sweep = 0.0
+        # AD-009 운영 정책 연동 상태 (전부 실패-안전 — DB 가 죽어도 기본값으로 동작)
+        self._policy = {"at": 0.0, "value": None}         # ops_policy 30초 TTL 캐시
+        self._blocks = {"at": 0.0, "value": {}}           # 활성 차단 {key: expires_ts} 10초 TTL
+        self._day = None                                  # 일일 카운터 리셋 기준일(KST)
+        self._day_hits = defaultdict(int)                 # key -> 오늘 요청 수
+        self._violations = defaultdict(deque)             # key -> 최근 위반 시각(10분 창)
 
     def _client_key(self, scope):
         if self.trust_proxy_headers:
@@ -140,6 +154,108 @@ class RateLimitMiddleware:
         for k in stale:
             del self._hits[k]
 
+    _POLICY_TTL_S = 30.0
+    _BLOCKS_TTL_S = 10.0
+    _BURST_WINDOW_S = 10.0
+    _VIOLATION_WINDOW_S = 600.0   # PRD-03: 10분 내 위반 3회 → 10분 차단
+    _VIOLATION_THRESHOLD = 3
+    _BLOCK_MINUTES = 10
+
+    def _get_policy(self, now):
+        """ops_policy 최신 행 -> {ip_per_min, ip_per_day, burst_per_10s}. 30초 TTL."""
+        if now - self._policy["at"] < self._POLICY_TTL_S and self._policy["value"]:
+            return self._policy["value"]
+        value = {"ip_per_min": 10, "ip_per_day": 300, "burst_per_10s": 3}  # AD-009 기본값
+        try:
+            from sqlalchemy import select
+            from db import get_session
+            from schema_admin import ops_policy
+            with get_session() as session:
+                row = session.execute(
+                    select(ops_policy).order_by(ops_policy.c.version.desc()).limit(1)).first()
+            if row is not None and row.policy:
+                for k in ("ip_per_min", "ip_per_day"):
+                    if row.policy.get(k) is not None:
+                        value[k] = row.policy[k]
+                # burst_per_10s 는 읽기 전용 상수(admin_ops READ_ONLY_POLICY_FIELDS)라 기본값 유지
+        except Exception:  # noqa: BLE001 — 정책을 못 읽으면 기본값으로 제한한다
+            logger.exception("ops_policy 조회 실패 — 기본 한도로 동작")
+        self._policy = {"at": now, "value": value}
+        return value
+
+    def _active_block_until(self, key, now):
+        """rate_limit_blocks 활성 차단 만료 monotonic 시각 | None. 10초 TTL 캐시."""
+        if now - self._blocks["at"] >= self._BLOCKS_TTL_S:
+            blocks = {}
+            try:
+                from datetime import datetime, timezone
+                from sqlalchemy import select
+                from db import get_session
+                from schema_admin import rate_limit_blocks
+                wall_now = datetime.now(timezone.utc)
+                with get_session() as session:
+                    rows = session.execute(
+                        select(rate_limit_blocks.c.target, rate_limit_blocks.c.expires_at)
+                        .where(rate_limit_blocks.c.released_at.is_(None),
+                               rate_limit_blocks.c.expires_at > wall_now)).all()
+                for r in rows:
+                    remain = (r.expires_at - wall_now).total_seconds()
+                    blocks[r.target] = now + max(remain, 0.0)
+            except Exception:  # noqa: BLE001
+                logger.exception("rate_limit_blocks 조회 실패 — 차단 미적용")
+            self._blocks = {"at": now, "value": blocks}
+        return self._blocks["value"].get(key)
+
+    def _record_violation(self, key, now):
+        """한도 위반 기록 — 10분 내 3회면 rate_limit_blocks 에 10분 임시 차단을 적는다."""
+        v = self._violations[key]
+        cutoff = now - self._VIOLATION_WINDOW_S
+        while v and v[0] < cutoff:
+            v.popleft()
+        v.append(now)
+        if len(v) < self._VIOLATION_THRESHOLD:
+            return
+        v.clear()
+        try:
+            from datetime import datetime, timedelta, timezone
+            from sqlalchemy import insert
+            from db import get_session
+            from schema_admin import rate_limit_blocks
+            wall_now = datetime.now(timezone.utc)
+            with get_session() as session:
+                session.execute(insert(rate_limit_blocks).values(
+                    target=key, target_kind="ip",
+                    reason=f"자동 차단 — 10분 내 요청 제한 {self._VIOLATION_THRESHOLD}회 초과",
+                    blocked_at=wall_now,
+                    expires_at=wall_now + timedelta(minutes=self._BLOCK_MINUTES)))
+                session.commit()
+            self._blocks["value"][key] = now + self._BLOCK_MINUTES * 60
+            logger.warning("임시 차단 등록: %s (%s분)", key, self._BLOCK_MINUTES)
+        except Exception:  # noqa: BLE001
+            logger.exception("임시 차단 기록 실패 — 이번 위반은 메모리로만 제한")
+
+    def _check_public(self, key, now, policy):
+        """사용자 경로 판정 — (허용 여부, 위반 사유). 분당·burst·일일 순서로 본다."""
+        from datetime import date, timedelta, timezone as _tz
+        hits = self._hits[key]
+        cutoff = now - self.window_s
+        while hits and hits[0] < cutoff:
+            hits.popleft()
+        if len(hits) >= int(policy["ip_per_min"]):
+            return False, "ip_per_min"
+        burst_cutoff = now - self._BURST_WINDOW_S
+        if sum(1 for t in hits if t >= burst_cutoff) >= int(policy["burst_per_10s"]):
+            return False, "burst_per_10s"
+        today = (date.today())
+        if self._day != today:
+            self._day = today
+            self._day_hits.clear()
+        if self._day_hits[key] >= int(policy["ip_per_day"]):
+            return False, "ip_per_day"
+        hits.append(now)
+        self._day_hits[key] += 1
+        return True, None
+
     def _is_allowed(self, key, now):
         self._sweep(now)
         hits = self._hits[key]
@@ -160,7 +276,45 @@ class RateLimitMiddleware:
             return
 
         key = self._client_key(scope)
-        if not self._is_allowed(key, time.monotonic()):
+        now = time.monotonic()
+
+        is_admin_path = scope["path"].startswith("/api/admin")
+        if not is_admin_path:
+            # 사용자(챗봇) 경로 — AD-009 운영 정책 집행 + 임시 차단
+            block_until = self._active_block_until(key, now)
+            if block_until is not None and block_until > now:
+                request_id = scope.get("state", {}).get("request_id")
+                retry_after = max(int(block_until - now), 1)
+                logger.warning("[%s] blocked: %s %s", request_id, key, scope["path"])
+                response = JSONResponse(
+                    status_code=429,
+                    content=build_error_body(
+                        code="LLM_RATE_LIMIT",
+                        user_message="요청이 반복되어 잠시 차단되었습니다. 잠시 후 이용해 주세요.",
+                        retryable=False, fallback_sources=[], request_id=request_id),
+                    headers={"Retry-After": str(retry_after)})
+                await response(scope, receive, send)
+                return
+            policy = self._get_policy(now)
+            self._sweep(now)
+            allowed, why = self._check_public(key, now, policy)
+            if not allowed:
+                self._record_violation(key, now)
+                request_id = scope.get("state", {}).get("request_id")
+                logger.warning("[%s] rate_limited(%s): %s %s", request_id, why, key, scope["path"])
+                response = JSONResponse(
+                    status_code=429,
+                    content=build_error_body(
+                        code="LLM_RATE_LIMIT",
+                        user_message="요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        retryable=False, fallback_sources=[], request_id=request_id),
+                    headers={"Retry-After": "60"})
+                await response(scope, receive, send)
+                return
+            await self.app(scope, receive, send)
+            return
+
+        if not self._is_allowed(key, now):
             request_id = scope.get("state", {}).get("request_id")
             logger.warning("[%s] rate_limited: %s %s", request_id, key, scope["path"])
             # code 는 프론트 codes.ts ErrorCode 5종 중 하나여야 한다. retryable 은 false —

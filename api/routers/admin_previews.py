@@ -6,15 +6,16 @@ Preview는 ``documents``를 URL 중복 확인용으로만 SELECT하고, 결과�
 """
 from __future__ import annotations
 
+import html as _html
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from sqlalchemy import func, select
 
-from api.deps import CurrentAdmin, DbSession
+from api.deps import CurrentAdmin, DbSession, write_activity_log
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.schemas.previews import (
     PreviewCreateRequest,
@@ -163,16 +164,30 @@ def create_document_preview(
                 f"이동된 최종 URL이 이미 등록되어 있습니다. (page_id: {existing_page_id})"
             )
 
-    response = PreviewResponse.model_validate(result)
+    # 크롤 원문의 HTML 엔티티(&#39; &#46; 등)가 요약·청크에 그대로 노출됐다(2026-08-13 실측).
+    # 화면 노출 직전에만 디코드한다 — 코퍼스 산출물(P1 규칙 기반 파서)은 건드리지 않는다.
+    response = PreviewResponse.model_validate(_unescape_deep(result))
     _preview_store.put(payload.request_id, response)
     return response
+
+
+def _unescape_deep(value):
+    if isinstance(value, str):
+        return _html.unescape(value)
+    if isinstance(value, list):
+        return [_unescape_deep(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _unescape_deep(v) for k, v in value.items()}
+    return value
 
 
 @router.post("/previews/{preview_id}/reject", response_model=PreviewRejectResponse)
 def reject_document_preview(
     preview_id: str,
     payload: PreviewRejectRequest,
+    request: Request,
     admin: CurrentAdmin,
+    db: DbSession,
 ):
     """메모리의 Preview를 즉시 버린다. 운영 문서/청크에는 접근하지 않는다."""
     _require_editor(admin)
@@ -182,6 +197,12 @@ def reject_document_preview(
     expires_at = _preview_store.discard(preview_id)
     if expires_at is None:
         raise NotFoundError("미리보기가 없거나 보관 시간이 지났습니다. 다시 수집해 주세요.")
+    # 화면 모달이 "모든 행위는 활동 로그(AD-011)에 남습니다"라고 약속하는데 기록이 없었다
+    # (2026-08-13 실측). CM-DF-002 07절 'URL 적재 · 버리기' 이벤트 요구이기도 하다.
+    write_activity_log(
+        db, request, actor=admin.email, actor_role=admin.role,
+        action="URL 버리기", target=f"미리보기 ({preview_id})",
+        reason=payload.reason.strip())
     return PreviewRejectResponse(
         preview_id=preview_id,
         purge_at=expires_at.isoformat(),

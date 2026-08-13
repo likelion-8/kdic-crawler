@@ -176,7 +176,7 @@ class LoginFailureList(BaseModel):
 
 
 class PasswordResetRequest(BaseModel):
-    """POST /api/admin/password/reset — 재설정 요청. 계정 유무와 무관하게 항상 202(A9)."""
+    """POST /api/admin/password/reset-request — 재설정 요청. 계정 유무와 무관하게 항상 202(A9)."""
     email: str
 
 

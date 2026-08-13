@@ -50,10 +50,11 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import and_, func, select
 
-from api.deps import CurrentAdmin, DbSession, SettingsDep, get_current_admin
+from api.deps import (CurrentAdmin, DbSession, SettingsDep, get_current_admin,
+                      write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.masking import mask_text
 from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
@@ -372,13 +373,18 @@ def _langfuse(trace_id: Optional[str], host: str) -> Optional[dict]:
 
 
 @router.get("/{request_id}", response_model=ConversationLogDetail)
-def get_log(request_id: str, admin: CurrentAdmin, db: DbSession, settings: SettingsDep):
+def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSession,
+            settings: SettingsDep):
     """질의 1건의 상세 = 목록 행 + 분류·피드백·오류.
 
     request_id 는 UUID 가 아니라 문자열 컬럼이다(rag_runs.request_id). 형식 검사를 하지
     않고 그대로 조회한다 — 활동 로그의 event_id 와 달리 UUID 캐스팅이 없어 500 위험이 없다.
     """
     _require(admin, READ_ROLES, "대화 로그 조회")
+    # CM-DF-002 07절 이벤트 사전의 '대화 로그 조회'(대상: 대화 (request_id)) — 상세 열람만
+    # 기록한다. 목록 조회까지 적으면 폴링·페이지 이동으로 원장이 뒤덮인다(admin_drafts 와 동일 판단).
+    write_activity_log(db, request, actor=admin.email, actor_role=admin.role,
+                       action="대화 로그 조회", target=f"대화 ({request_id})")
 
     row = db.execute(
         select(
@@ -450,7 +456,7 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession, settings: Setti
 
 
 @router.post("/exports", response_model=LogExportResponse)
-def export_logs(body: dict, admin: CurrentAdmin, db: DbSession):
+def export_logs(body: dict, request: Request, admin: CurrentAdmin, db: DbSession):
     """내보내기 접수. 데이터를 파일로 빼가는 행위라 ADMIN 만 할 수 있다.
 
     지금은 대상 건수를 세어 접수증만 돌려준다 — 실제 파일 생성·다운로드는 별도 작업이다
@@ -485,4 +491,11 @@ def export_logs(body: dict, admin: CurrentAdmin, db: DbSession):
     export_id = f"exp_{uuid.uuid4().hex[:12]}"
     logger.info("대화 로그 내보내기 접수: %s (%s건, 요청자 %s)",
                 export_id, estimated_rows, admin.email)
+    # PRD-03 AD-005 감사: "조회·검색·내보내기 자체를 활동 로그 이벤트로 기록" — activity/exports
+    # 와 동일한 접수 기록. reason 은 화면 계약에 없어 비운다(위 docstring).
+    write_activity_log(db, request, actor=admin.email, actor_role=admin.role,
+                       action="대화 로그 내보내기",
+                       target=f"대화 로그 · 현재 필터 ({export_id})",
+                       detail={"export_id": export_id, "estimated_rows": estimated_rows,
+                               "filter": {k: v for k, v in body.items() if k != "request_id"}})
     return {"export_id": export_id, "status": "QUEUED", "estimated_rows": estimated_rows}

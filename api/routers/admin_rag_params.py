@@ -383,7 +383,7 @@ def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession
 
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_EVALUATE,
-        target=f"초안 {signature}",
+        target=f"RAG 파라미터 초안 ({signature})",
         detail={"params": params, "gate_passed": gate["passed"],
                 "holdout": f"{gate['holdout_passed']}/{gate['holdout_total']}"},
     )

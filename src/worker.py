@@ -413,12 +413,16 @@ def _run_smoke_eval(session, job) -> None:
         _set_step(session, job.id, name, "SKIPPED")   # 평가에는 색인 단계가 없다
 
     def _measure_stage():
-        run_id = _uuid.uuid4()
-        session.execute(insert(evaluation_runs).values(
-            id=run_id, target="RAG", source="파이프라인 후속",
-            testset_version=str(_current_version(session)),
-            triggered_by=job.created_by, status="RUNNING"))
-        session.commit()
+        # apply(AD-006)가 run 을 만들어 targets[0] 에 실어 보낸다 — 그 run 을 마감한다.
+        # (새 run 을 만들면 원 run 이 영구 RUNNING 으로 남는다.) targets 가 비면 종전대로 자체 생성.
+        run_id = (job.targets or [None])[0]
+        if not run_id:
+            run_id = _uuid.uuid4()
+            session.execute(insert(evaluation_runs).values(
+                id=run_id, target="RAG", source="파이프라인 후속",
+                testset_version=str(_current_version(session)),
+                triggered_by=job.created_by, status="RUNNING"))
+            session.commit()
         result = run_evaluation(session, str(run_id))
         state["gate_passed"] = result["gate_passed"]
         state["run_id"] = str(run_id)

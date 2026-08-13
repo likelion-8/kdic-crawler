@@ -321,7 +321,8 @@ def test_activity_export_writes_an_audit_log(monkeypatch):
         "actor": "test_admin@example.com",
         "actor_role": "ADMIN",
         "action": ACTION_ACTIVITY_EXPORT,
-        "target": response.export_id,
+        # CM-DF-002 07절: 대상은 '이름 + (ID)' — ID 단독 노출 금지(2026-08-13 정합)
+        "target": f"활동 로그 · 현재 필터 ({response.export_id})",
         "result": RESULT_SUCCESS,
         "reason": "테스트 감사 자료 확인",
         "detail": {
