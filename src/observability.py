@@ -57,6 +57,18 @@ def update_current_generation(**kwargs):
         pass
 
 
+def update_current_span(**kwargs):
+    """현재 span의 input/metadata 등을 수동 기록한다. @observe(capture_input=False)와 짝으로
+    쓴다 — 메서드에 데코레이터를 그냥 붙이면 self까지 직렬화하려 드는데(QuestionTypeClassifier
+    는 참조 임베딩 행렬을 통째로 들고 있다), 자동 캡처를 끄고 필요한 값만 여기로 남긴다."""
+    if not _AVAILABLE:
+        return
+    try:
+        get_client().update_current_span(**kwargs)
+    except Exception:
+        pass
+
+
 def flush():
     """버퍼에 남은 trace를 즉시 전송. 서버(Streamlit·FastAPI)는 백그라운드 배치라 부를 필요
     없고, 프로세스가 곧 끝나는 CLI·평가 스크립트가 종료 직전에 부른다(유실 방지)."""
