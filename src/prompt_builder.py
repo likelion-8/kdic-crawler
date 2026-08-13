@@ -10,7 +10,7 @@
 citation.py/civil_petition.py가 이미 갖고 있는 실제 데이터를 결정론적으로 붙인다.
 LLM이 URL을 아예 안 보므로 지어낼 소스 자체가 없다.
 
-⚠️ 붙이는 방식은 경로마다 다르다. pipeline.py(Streamlit·CLI)는 이 파일의
+⚠️ 붙이는 방식은 경로마다 다르다. pipeline.py(CLI·평가)는 이 파일의
 assemble_civil_petition_answer()/assemble_informational_answer()로 마크다운 문자열에
 이어 붙이고, 웹 API(api/rag/answer.py finalize_sub)는 그 두 함수를 쓰지 않고 sources/
 attachments 를 구조화 필드로 따로 담는다. 다만 근거 사용 여부 판정에 쓰는 마커 정규식

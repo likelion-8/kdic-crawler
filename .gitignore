@@ -217,8 +217,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Streamlit
-.streamlit/secrets.toml
 .DS_Store
 
 # Dense 임베딩 캐시는 팀 공유용으로 커밋한다(src/embed_corpus.py 로 생성). 파일명=내용 해시라

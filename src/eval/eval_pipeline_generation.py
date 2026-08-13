@@ -15,9 +15,9 @@ must_include·거절감지는 결정론 프록시(하한선)로만 쓰고, 애�
    해당되지 않는다 — 2026-08-03에 Dense가 Supabase pgvector로 이관해 프로세스 배타 제약이
    사라졌다(retrieval.PgVectorDenseRetriever). 챗봇과 동시에 돌려도 된다.
 
-## 이 평가가 재는 것 = CLI/Streamlit 경로 (2026-08-14 명시)
+## 이 평가가 재는 것 = CLI(pipeline.py) 경로 (2026-08-14 명시)
 
-pipeline._rag_answer_traced를 직접 부르므로 **CLI·Streamlit 서비스 경로**를 잰다. 웹
+pipeline._rag_answer_traced를 직접 부르므로 **CLI 경로(pipeline.py 조립)**를 잰다. 웹
 API(api/rag/answer.py)는 같은 빌딩블록이지만 출처 재확인이 다르다 — 여기(pipeline)는 단일
 판정(recheck_source_usage) 1회, 웹은 3표 다수결(judge_answer_majority) + 재생성 분기.
 따라서 이 평가의 출처 관련 수치는 웹 경로의 하한으로 읽어야 하며, summary의

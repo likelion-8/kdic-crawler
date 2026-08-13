@@ -70,7 +70,7 @@ def update_current_span(**kwargs):
 
 
 def flush():
-    """버퍼에 남은 trace를 즉시 전송. 서버(Streamlit·FastAPI)는 백그라운드 배치라 부를 필요
+    """버퍼에 남은 trace를 즉시 전송. 서버(FastAPI)는 백그라운드 배치라 부를 필요
     없고, 프로세스가 곧 끝나는 CLI·평가 스크립트가 종료 직전에 부른다(유실 방지)."""
     if not _AVAILABLE:
         return
