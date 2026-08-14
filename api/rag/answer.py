@@ -79,6 +79,14 @@ class SubPlan:
     prompt: list                   # [(role, content), ...]
     civil: Optional[dict] = None   # build_civil_petition_answer 결과({procedure,documents,links}) 또는 None
     evidence: str = ""             # 근거 재확인(recheck)용 텍스트
+    # 아래 obs_* 는 finalize_sub 가 적고 observation.build 가 읽는 관측용 판정이다. 여기 둔 이유는
+    # log_run 이 이미 sub_plans 를 받고 있어 이음매를 넓히지 않아도 값이 건너가기 때문이다.
+    # 판정을 안 한 경우 None 을 유지한다 — false 로 적으면 '근거 미사용'이라는 거짓이 된다.
+    obs_marker: Optional[bool] = None        # LLM 자기보고 마커([SOURCE_USED]/[NO_SOURCE])
+    obs_used_source: Optional[bool] = None   # 최종 판정(검증이 마커를 오버라이드한 결과)
+    obs_kind: Optional[str] = None           # validate_answer 의 판정 종류
+    obs_appropriate: Optional[bool] = None   # 질문-답변 적절성
+    obs_normalized: Optional[bool] = None    # 본문이 표준 안내로 교체됐나
 
 
 def plan(query: str) -> list:
@@ -195,10 +203,12 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = marker_used_source
+    sp.obs_marker = marker_used_source
     if get_param("use_source_recheck", USE_SOURCE_RECHECK):
         # 단일 검증 1콜 — 3표 다수결은 2026-08-14 팀 결정으로 폐지(모든 경로 1콜 통일).
         v = validate_answer(sp.question, body, sp.evidence)
         if v is not None:
+            sp.obs_kind, sp.obs_appropriate = v.kind, v.appropriate
             used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
             inappropriate = not v.appropriate
             if inappropriate and used:
@@ -213,6 +223,7 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
                 # 서술 — 본문을 표준 안내로 교체하고 범위외 처리(환각·오답 노출 차단)
                 body = OUT_OF_SCOPE_MESSAGE
                 used = False
+                sp.obs_normalized = True
             elif not used and v.kind == "refusal" and sp.top:
                 # 근거가 강하게 검색돼 있는데 거절 — HCX 확률적 거절(같은 프롬프트로 정답·거절이
                 # 반반 갈리는 것이 실측됨)일 수 있어 딱 한 번 재생성한다. 재생성본도 판정을
@@ -221,6 +232,7 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
                 body2, used2 = _regenerate_once(sp)
                 if used2:
                     body, used = body2, True
+    sp.obs_used_source = used
     sources = _build_sources(sp.top) if used else []
     attachments = _build_attachments(sp.civil) if (used and sp.civil) else []
     return SubAnswer(title=sp.question, answer=body, sources=sources, attachments=attachments), used
@@ -289,6 +301,8 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
     log_rag_run 은 내부에서 모든 예외를 삼키므로 호출부가 실패를 신경 쓰지 않아도 된다.
     """
     from rag_logger import STATUS_NORMAL, STATUS_OUT_OF_SCOPE, log_rag_run
+
+    from . import observation
     intents, routes = _plan_labels(sub_plans)
     log_rag_run(
         question=question,
@@ -301,6 +315,9 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
         session_id=resp.session_id,
         status=STATUS_OUT_OF_SCOPE if resp.out_of_scope else STATUS_NORMAL,
         trace_id=trace_id,   # observability.record_trace 결과 — AD-005 상세의 Langfuse 링크 원천
+        # 검색 상위 청크·검증 판정. 이게 없으면 AD-005 상세의 source_count·source_used·marker·
+        # normalized 가 영원히 null 이라 관리자가 원인을 못 가린다(api/rag/observation.py).
+        observation=observation.build(sub_plans),
     )
 
 

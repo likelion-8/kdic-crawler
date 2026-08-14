@@ -54,6 +54,7 @@ from api.schemas.evaluations import (CandidateResult, CorpusSearchResult,
                                      EvalItemInput, EvalItemList, EvalItemValidation,
                                      GateDetail)
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다). 서비스 vs 관리자 스키마 분리.
+from api.rag import observation
 from schema import documents, evaluation_dataset, pipeline_jobs, rag_runs
 from schema_admin import evaluation_results, evaluation_runs, testset_items
 
@@ -598,26 +599,38 @@ def add_candidate(body: dict, db: DbSession, me: CurrentAdmin):
 
     후보는 숫자 버전과 섞이지 않게 sentinel 버전('candidate')으로 저장한다 — apply 로 정식
     버전에 편입되기 전까지 GET /items 에 노출되지 않는다.
-    ⚠️ intent·question_type 은 rag_runs 에 있으나 testset_items 컬럼이 없어 옮기지 못한다(문서).
+
+    **정답 출처를 미리 채운다(2026-08-14).** 종전에는 질문만 옮기고 expected_links·업무·
+    기준답변이 전부 None 이라, 관리자가 "이 질문의 정답 출처가 뭐였더라"를 맨손으로 찾아야 했다.
+    실제로 그 답변이 어떤 페이지를 근거로 삼았는지는 rag_runs.observation 에 있으므로 그걸
+    초안으로 넣는다 — 관리자는 **확인·수정만** 하면 된다. 이게 AD-005 → AD-006 인계의 알맹이다.
+    관측 이전에 쌓인 행은 observation 이 NULL 이라 종전처럼 빈 후보가 된다.
+    intent·question_type 도 함께 옮긴다(2026-08-13 컬럼 추가로 가능해졌다).
     """
     request_id = str(body.get("source_request_id") or "").strip()
     if not request_id:
         raise BadRequestError("source_request_id가 필요합니다.")
 
     run = db.execute(
-        select(rag_runs.c.question).where(rag_runs.c.request_id == request_id)).first()
+        select(rag_runs.c.question, rag_runs.c.intent, rag_runs.c.question_type,
+               rag_runs.c.observation)
+        .where(rag_runs.c.request_id == request_id)).first()
     if run is None:
         raise NotFoundError("대화 기록을 찾을 수 없습니다.")
 
+    pages = observation.expected_pages(run.observation)
     row = db.execute(
         insert(testset_items).values(
             testset_version=CANDIDATE_VERSION, question=run.question,
-            expected_links=None, business_function=None, reference_answer=None,
+            expected_links=pages or None, business_function=None, reference_answer=None,
+            question_type=run.question_type, intent=run.intent,
             excluded=False, created_by=me.email)
         .returning(testset_items.c.id)
     ).first()
     db.commit()
-    return {"candidate_id": str(row.id), "status": "REGISTERED"}
+    # prefilled_sources 로 화면이 "출처 N건을 미리 채웠습니다"를 안내한다(빈손 등록과 구분).
+    return {"candidate_id": str(row.id), "status": "REGISTERED",
+            "prefilled_sources": len(pages)}
 
 
 # ──────────────────────── 측정 실행(워커/CLI 전용) ──────────────────────────

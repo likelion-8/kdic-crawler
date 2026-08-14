@@ -158,7 +158,23 @@ export interface LogErrorDetail {
   root_cause: string | null
 }
 
+/** rag_runs.observation — 모양의 정본은 api/rag/observation.py */
+export interface RunObservation {
+  subs: {
+    question: string
+    intent: Intent | null
+    top: { chunk_id: string; page_id: string; score: number }[]
+    marker: boolean | null
+    used_source: boolean | null
+    kind: string | null
+    appropriate: boolean | null
+    normalized: boolean | null
+  }[]
+}
+
 export interface ConversationLogDetail extends ConversationLogRow {
+  /** 관측 신설(2026-08-14) 이전 대화는 null */
+  observation: RunObservation | null
   classification: {
     intent: Intent
     business_function: BusinessFunction | null
@@ -288,6 +304,24 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
 function detailOf(row: ConversationLogRow): ConversationLogDetail {
   const base: ConversationLogDetail = {
     ...row,
+    // 관측(rag_runs.observation). source_count 가 있는 행은 근거를 그만큼 만들어 실화면과
+    // 같은 모양을 낸다. 범위 외 답변은 근거 없이 빈 top — '데이터 없음' 갈래의 목업이다.
+    observation: {
+      subs: [{
+        question: row.question_masked,
+        intent: row.intent,
+        top: Array.from({ length: row.source_count ?? 0 }, (_, i) => ({
+          chunk_id: `dp_protlmts#c${i + 1}`,
+          page_id: i === 0 ? 'dp_protlmts' : `dp_faq_page_${i}`,
+          score: Number((0.87 - i * 0.06).toFixed(3)),
+        })),
+        marker: (row.source_count ?? 0) > 0,
+        used_source: (row.source_count ?? 0) > 0,
+        kind: (row.source_count ?? 0) > 0 ? 'grounded' : 'refusal',
+        appropriate: true,
+        normalized: false,
+      }],
+    },
     classification: {
       intent: row.intent,
       business_function: row.status === 'OUT_OF_SCOPE' ? null : '예금자보호제도',
@@ -435,10 +469,21 @@ export const adPipelineLogsHandlers = [
   http.post('/api/admin/evaluations/candidates', async ({ request }) => {
     const no = denied(request, 'EDITOR')
     if (no) return no
-    const body = (await request.json()) as { request_id?: string }
-    if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
+    // 🔴 종전 목은 request_id 를 요구했으나 프론트·백엔드 계약은 source_request_id 다
+    // (logs/api.ts addEvalCandidate · admin_evaluations.add_candidate). 목 모드에서 이
+    // 버튼이 항상 400 이던 원인이라 계약에 맞춘다(2026-08-14).
+    const body = (await request.json()) as { source_request_id?: string }
+    if (!body.source_request_id) return fail(400, 'source_request_id가 필요합니다.')
     await delay(300)
-    return HttpResponse.json({ candidate_id: nextId('cand'), status: 'PENDING' }, { status: 201 })
+    // 서버가 관측에서 정답 출처를 미리 채운 건수. 관측 이전 대화면 0.
+    const src = rows.find((r) => r.request_id === body.source_request_id)
+    const prefilled = src
+      ? [...new Set(detailOf(src).observation?.subs.flatMap((sub) =>
+          sub.top.map((t) => t.page_id)) ?? [])].length
+      : 0
+    return HttpResponse.json(
+      { candidate_id: nextId('cand'), status: 'PENDING', prefilled_sources: prefilled },
+      { status: 201 })
   }),
 
   // 내보내기 — 사실 자체가 활동 로그에 남는다(AD-005 Desc 0)

@@ -181,6 +181,11 @@ rag_runs = Table(
     Column("total_latency_ms", Integer),
     Column("llm_model", String),
     Column("embedding_model", String),
+    # 답변 시점에 계산되고 버려지던 관측값(검색 상위 청크·점수·검증 판정)을 담는다.
+    # 이게 없으면 AD-005 대화 로그 상세가 '왜 그렇게 답했는지'를 못 보여줘 관리자가 원인을
+    # 가릴 수 없고(source_count·source_used·marker·normalized 가 전부 null), AD-006 문항
+    # 후보도 정답 없는 껍데기로만 등록된다. 모양은 api/rag/observation.py 가 정본이다.
+    Column("observation", JSONB),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
@@ -458,6 +463,8 @@ def main():
         # 보지 않으니(테이블 존재 여부만 본다) 여기서 멱등하게 더한다 — 팀원들이 각자
         # `python src/schema.py` 만 돌리면 반영되므로 손으로 SQL 을 칠 필요가 없다.
         conn.execute(text("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sub_answers jsonb"))
+        # rag_runs.observation 도 뒤늦게 더한 컬럼이다(2026-08-14, 관리자 진단 루프).
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS observation jsonb"))
         # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
         # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.
         conn.execute(text("""
