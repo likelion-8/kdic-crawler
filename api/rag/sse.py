@@ -260,10 +260,21 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         logger.info("[%s] 금칙어 적중(답변): %r — 거절로 대체", request_id, a_hit)
         resp = answer.guardrail_refusal(session_id, request_id, latency_ms)
 
+    # Langfuse root trace — 웹 경로는 스레드풀 소비라 데코레이터 계측이 안 붙는다
+    # (observability.record_trace docstring). done 직전에 한 번에 남기고 rag_runs 에 잇는다.
+    from observability import record_trace
+    trace_id = record_trace(
+        "web_chat",
+        input={"question": message},
+        output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
+        metadata={"request_id": request_id, "session_id": session_id,
+                  "latency_ms": latency_ms, "composite": composite,
+                  "sub_questions": [sp.question for sp in sub_plans]})
+
     # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에
     # 남길 피드백(POST /api/feedback)의 연결 열쇠다 — 없으면 피드백을 붙일 곳이 사라진다.
     # log_rag_run 은 내부에서 예외를 삼키므로(실패-안전) 답변 전달을 막지 않는다.
-    answer.log_run(message, resp, sub_plans, latency_ms)
+    answer.log_run(message, resp, sub_plans, latency_ms, trace_id=trace_id)
 
     # 답변을 저장한다(대화 복원용). 출처·범위외 판정이 확정된 뒤여야 하므로 여기가 맞다.
     conversation.save_assistant_message(session_id, request_id, resp)

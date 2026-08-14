@@ -29,7 +29,7 @@ from llm_client import call_hyperclova
 from prompt_builder import (_strip_no_source_marker, build_civil_petition_prompt,
                             build_informational_prompt)
 from runtime_config import get_param
-from source_check import judge_answer_majority
+from source_check import validate_answer
 
 from api.errors import DEFAULT_FALLBACK_SOURCES
 from api.schemas.chat import Attachment, ChatResponse, SourceItem, SubAnswer
@@ -44,6 +44,11 @@ logger = logging.getLogger(__name__)
 # 상수는 지우지 않고 문서화된 기본값으로 남긴다 — DB 가 비면 여기로 떨어진다.
 K_CANDIDATES = 20
 K_FINAL = 5
+
+# pipeline.USE_SOURCE_RECHECK 와 동일 기본값(상수 중복도 위 K_* 와 같은 사정 — pipeline 을
+# import 하지 않는다). use_source_recheck 는 사후 검증(validate_answer) 전체의 on/off
+# 스위치다: Off 면 마커만 신뢰하고 검증·본문 교체·재생성을 전부 생략한다(2026-08-14 팀 결정).
+USE_SOURCE_RECHECK = True
 
 # 에러 응답에 실을 폴백 출처(공식 페이지). errors.py 것을 그대로 SourceItem 으로.
 _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
@@ -168,40 +173,42 @@ def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
         body, marker_used = _strip_no_source_marker(raw)
         if marker_used:
             return body, True
-        j = judge_answer_majority(body, sp.evidence, sp.question)
-        return body, bool(j) and j.used_source
+        # 단일 검증 1콜(2026-08-14 팀 결정으로 다수결 폐지). 재생성본은 근거를 썼고
+        # 질문에도 적절해야 채택한다 — 실패(None)는 미채택으로 원래 거절문 유지.
+        v = validate_answer(sp.question, body, sp.evidence)
+        return body, bool(v) and v.used_source and v.appropriate
     except Exception:
         logger.warning("재생성 실패 — 원래 답변 유지", exc_info=True)
         return "", False
 
 
 def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubAnswer, bool]:
-    """스트리밍이 끝난 하위 답변을 구조화한다. 근거 사용 여부 판정:
-    마커가 [SOURCE_USED]면 그대로 첨부(107건+36건 실측에서 이 방향 오판 0건), 아니면
-    source_check.judge_answer(luna structured output)로 판정해 실제로 근거를 썼으면 뒤집는다.
-    근거 미사용이면 sources/attachments 를 비우고, 판정이 "근거 없는 내용을 사실처럼
-    서술"(ungrounded_claims)이면 본문을 OUT_OF_SCOPE_MESSAGE 로 교체한다 — 인사·정체성·정상
-    거절문은 kind 가 다르므로 교체되지 않는다.
+    """스트리밍이 끝난 하위 답변을 구조화한다. 판정(2026-08-14 팀 결정):
+    use_source_recheck 가 켜져 있으면 **모든 답변**을 source_check.validate_answer 1콜로
+    검증한다 — used_source 가 마커([SOURCE_USED]/[NO_SOURCE])를 양방향 오버라이드하고,
+    appropriate=False(동문서답·근거와 모순)면 본문을 OUT_OF_SCOPE_MESSAGE 로 교체해
+    범위외 처리한다. "근거 없는 내용을 사실처럼 서술"(ungrounded_claims)의 본문 교체도
+    유지한다 — 인사·정체성·정상 거절문은 appropriate=true·kind 상이라 교체되지 않는다.
+    검증 실패(None)는 fail-open: 마커 판정 유지 + 적절성 통과(검증이 답변을 막지 않는다).
+    스위치 Off 면 마커만 신뢰하고 검증을 통째로 생략한다.
 
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = marker_used_source
-    if not used:
-        # 3표 다수결 판정 — 단일 판정은 경계 사례(정의형 답변·소관 밖 응대)에서 롤마다
-        # 뒤집혀서(실측), 부착(used) 판정과 교체·재생성 분기(kind)를 전부 다수결에 건다.
-        # 실패 시 None(경고 로그는 내부에서) = 마커의 원래 판정 유지.
-        j = judge_answer_majority(body, sp.evidence, sp.question)
-        if j is not None:
-            used = j.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
-            if not used and j.kind == "ungrounded_claims":
-                # 근거 없는 내용을 사실처럼 서술 — 본문을 표준 안내로 교체(환각 노출 차단)
+    if get_param("use_source_recheck", USE_SOURCE_RECHECK):
+        # 단일 검증 1콜 — 3표 다수결은 2026-08-14 팀 결정으로 폐지(모든 경로 1콜 통일).
+        v = validate_answer(sp.question, body, sp.evidence)
+        if v is not None:
+            used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
+            if not v.appropriate or (not used and v.kind == "ungrounded_claims"):
+                # 질문에 답하지 못했거나(동문서답·근거 모순) 근거 없는 내용을 사실처럼
+                # 서술 — 본문을 표준 안내로 교체하고 범위외 처리(환각·오답 노출 차단)
                 body = OUT_OF_SCOPE_MESSAGE
-            elif not used and j.kind == "refusal" and sp.top:
+                used = False
+            elif not used and v.kind == "refusal" and sp.top:
                 # 근거가 강하게 검색돼 있는데 거절 — HCX 확률적 거절(같은 프롬프트로 정답·거절이
                 # 반반 갈리는 것이 실측됨)일 수 있어 딱 한 번 재생성한다. 재생성본도 판정을
                 # 통과해야만 채택하므로 정당한 거절(근거에 답이 정말 없는 경우)은 그대로 유지된다.
-                # top-1 점수 조건이 없으면 도메인 인접 범위외 질문("보이스피싱범 잡는 법", 0.54)의
-                # 정당한 소관 밖 거절까지 재생성돼 곁다리 근거로 답을 만들어버린다(실측 1/6).
                 # 스트리밍엔 이미 거절문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
                 body2, used2 = _regenerate_once(sp)
                 if used2:
@@ -259,7 +266,8 @@ def _plan_labels(sub_plans: list) -> tuple[Optional[str], Optional[str]]:
     return intents, routes
 
 
-def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int) -> None:
+def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
+            trace_id=None) -> None:
     """실사용 질의 1건을 Supabase rag_runs 에 남긴다.
 
     pipeline.rag_answer() 는 자기 안에서 이걸 부르지만 API 는 그 함수를 우회해 흐름을
@@ -284,6 +292,7 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int)
         request_id=resp.request_id,
         session_id=resp.session_id,
         status=STATUS_OUT_OF_SCOPE if resp.out_of_scope else STATUS_NORMAL,
+        trace_id=trace_id,   # observability.record_trace 결과 — AD-005 상세의 Langfuse 링크 원천
     )
 
 

@@ -18,10 +18,10 @@ must_include·거절감지는 결정론 프록시(하한선)로만 쓰고, 애�
 ## 이 평가가 재는 것 = CLI(pipeline.py) 경로 (2026-08-14 명시)
 
 pipeline._rag_answer_traced를 직접 부르므로 **CLI 경로(pipeline.py 조립)**를 잰다. 웹
-API(api/rag/answer.py)는 같은 빌딩블록이지만 출처 재확인이 다르다 — 여기(pipeline)는 단일
-판정(recheck_source_usage) 1회, 웹은 3표 다수결(judge_answer_majority) + 재생성 분기.
-따라서 이 평가의 출처 관련 수치는 웹 경로의 하한으로 읽어야 하며, summary의
-recheck_mode 필드가 어느 경로를 쟀는지 기록한다.
+API(api/rag/answer.py)는 같은 빌딩블록에 같은 단일 검증 1콜(source_check.validate_answer,
+2026-08-14 팀 결정으로 다수결 폐지·전 답변 검증)을 쓰되, appropriate 기반 본문 교체와
+재생성 분기가 웹에만 있다. 따라서 이 평가의 출처 관련 수치는 웹 경로의 하한으로 읽어야
+하며, summary의 recheck_mode 필드가 어느 경로를 쟀는지 기록한다.
 
 ## DB 파라미터 오염 차단 (2026-08-14)
 

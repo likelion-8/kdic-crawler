@@ -257,8 +257,9 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
     2026-08-13 게이트 정합 2건:
     - 결정화: temperature 0 + seed 고정(llm_client deterministic). 같은 초안 2회 평가에서
       회귀/개선 판정이 뒤집히던 비결정성 제거. seed 를 넘기면 flaky 재확인용 재생성.
-    - 판정 정렬: 운영(pipeline.py:140-147)은 [NO_SOURCE] 오표기(실측 54%)를 source_check 로
-      복구하는데 평가만 원시 마커를 재서 '출처 부착 1건'이 항상 흔들렸다 — 같은 복구를 적용."""
+    - 판정 정렬: 운영은 마커 오표기를 source_check 로 복구하는데 평가만 원시 마커를 재서
+      '출처 부착 1건'이 항상 흔들렸다 — 같은 복구를 적용. 2026-08-14 팀 결정으로 운영과
+      함께 단일 검증 1콜(validate_answer, 모든 답변 대상)로 정렬했다(평가=운영 원칙)."""
     from candidate_ranking import gate_low_relevance, top_k_cut
     from citation import format_all_citations
     from llm_client import call_hyperclova
@@ -271,12 +272,16 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
              f"근거 자료:\n{context}\n\n질문: {question}\n답변:")
     raw = call_hyperclova([("system", si), ("human", human)], deterministic=True, seed=seed)
     body, marker_used = prompt_builder._strip_no_source_marker(raw)
-    if not marker_used and top:
+    if top:
         import pipeline as _pipeline
         import runtime_config as _rc
         if _rc.get_param("use_source_recheck", _pipeline.USE_SOURCE_RECHECK):
-            from source_check import recheck_source_usage
-            marker_used = recheck_source_usage(body, context)
+            # 모든 답변 검증(2026-08-14) — used_source 가 마커를 양방향 오버라이드.
+            # 실패(None)는 fail-open 으로 마커 유지. 결정화(deterministic 생성)는 그대로다.
+            from source_check import validate_answer
+            v = validate_answer(question, body, context)
+            if v is not None:
+                marker_used = v.used_source
     sources = format_all_citations([cid for cid, _, _ in top]) if top else []
     return body, marker_used, sources
 

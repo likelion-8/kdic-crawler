@@ -332,7 +332,7 @@ const RAG_PARAMS: RagParam[] = [
     note: '플래너를 껐을 때만 쓰는 HCX 분해 경로',
   },
   {
-    key: 'use_source_recheck', label: '출처 재확인(NO_SOURCE 사후 판정)', group: 'generation',
+    key: 'use_source_recheck', label: '답변 사후 검증(전 답변 1콜)', group: 'generation',
     control: 'toggle', apply_timing: '무중단',
     note: '마커 오표기(출처 소실 54% 실측)를 별도 LLM 판정으로 복구',
   },

@@ -11,11 +11,19 @@ int 변환·기본값·오타 처리를 부를 때마다 반복하게 된다. Ba
 것보다 낫다).
 """
 from functools import lru_cache
+import os
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+# LANGFUSE_BASE_URL 폴백(langfuse_host default_factory)이 os.environ 을 읽으므로, pydantic
+# env_file 과 별개로 .env 를 먼저 올려 둔다(API_ 접두사가 아닌 키는 pydantic 이 안 읽는다).
+from dotenv import load_dotenv
+load_dotenv(ROOT / ".env")
 
 
 class Settings(BaseSettings):
@@ -77,7 +85,10 @@ class Settings(BaseSettings):
     # 프론트가 Langfuse 호스트를 알 이유가 없어 서버가 URL 을 완성한다 — 조각으로 주면 배포
     # 환경이 바뀔 때마다 프론트를 고쳐야 한다. 비어 있으면(기본) trace_id 는 있어도 url=null 로
     # 내보내고, 화면은 링크 없이 id 만 글로 보여준다. 예: API_LANGFUSE_HOST=https://cloud.langfuse.com
-    langfuse_host: str = ""
+    # API_LANGFUSE_HOST 가 없으면 SDK 가 쓰는 LANGFUSE_BASE_URL 로 폴백한다 — 같은 호스트를
+    # 두 키에 중복 관리하다 한쪽만 바뀌는 사고 방지(2026-08-14 Langfuse 실연결하며 정리).
+    langfuse_host: str = Field(
+        default_factory=lambda: os.environ.get("LANGFUSE_BASE_URL", ""))
 
     @property
     def cors_origin_list(self) -> list[str]:

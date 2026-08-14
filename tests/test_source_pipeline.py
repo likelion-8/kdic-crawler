@@ -75,46 +75,50 @@ def test_assemble():
 
 
 def test_recheck_direction():
-    """2026-08-03 — [NO_SOURCE] 판정만 재확인하고 [SOURCE_USED]는 절대 건드리지 않는지.
-
-    마커의 오판은 [NO_SOURCE] 쪽에만 있었으므로(이슈 5), 맞고 있는 축까지 다시 물으면
-    거절·인사에 무관한 출처가 붙는 문제가 되살아난다. 재확인 콜백이 호출되는 조건 자체를
-    고정해 둔다."""
+    """2026-08-14 팀 결정 반영 — 검증 콜백은 **모든 답변**에 대해 호출되고 마커 판정을
+    양방향으로 오버라이드한다(source_check.validate_answer 1콜 통일). 종전의 "[NO_SOURCE]일
+    때만 재확인, [SOURCE_USED]는 불가침" 규칙(2026-08-03)은 폐지됐다. 여기서는 콜백
+    계약(항상 호출 · (본문, 마커_판정) 전달 · 결과가 최종 판정)을 고정한다."""
     citations = [{"page_id": "p1", "breadcrumb": "안내", "title": "제목", "url": "https://x/1"}]
     called = []
 
-    def recheck(body):
-        called.append(body)
+    def recheck(body, marker_used):
+        called.append((body, marker_used))
         return True
 
-    # [SOURCE_USED] — 재확인을 부르지 않고 그대로 출처 부착
+    # [SOURCE_USED] — 이제 이 방향도 검증을 거친다(모든 답변 검증). '썼다' 유지 → 출처 부착
     out = assemble_informational_answer("[SOURCE_USED]\n답변입니다.", citations, recheck=recheck)
-    assert not called, "[SOURCE_USED]인데 재확인을 호출함 — 맞고 있는 축을 건드리면 안 됨"
+    assert called == [("답변입니다.", True)], "검증에 (마커 뗀 본문, 마커 판정)이 넘어가야 함"
     assert "참고 출처" in out
 
-    # [NO_SOURCE] + 재확인이 '썼다' → 판정을 뒤집어 출처 부착(오표기 구제)
+    # [NO_SOURCE] + 검증이 '썼다' → 판정을 뒤집어 출처 부착(오표기 구제)
+    called.clear()
     out = assemble_informational_answer("[NO_SOURCE]\n반환 신청은 이렇게 합니다.", citations,
                                         recheck=recheck)
-    assert called == ["반환 신청은 이렇게 합니다."], "재확인에 마커 뗀 본문이 넘어가야 함"
-    assert "참고 출처" in out, "재확인이 '썼다'인데 출처가 안 붙음"
+    assert called == [("반환 신청은 이렇게 합니다.", False)], "검증에 마커 뗀 본문이 넘어가야 함"
+    assert "참고 출처" in out, "검증이 '썼다'인데 출처가 안 붙음"
 
-    # [NO_SOURCE] + 재확인도 '안 썼다' → 그대로 미부착(거절·인사 정상 동작 유지)
+    # [SOURCE_USED] + 검증이 '안 썼다' → 마커를 뒤집어 미부착(양방향 오버라이드)
+    out = assemble_informational_answer("[SOURCE_USED]\n안녕하세요.", citations,
+                                        recheck=lambda body, marker_used: False)
+    assert "참고 출처" not in out, "검증이 '안 썼다'인데 마커 판정대로 출처가 붙음"
+
+    # [NO_SOURCE] + 검증도 '안 썼다' → 그대로 미부착(거절·인사 정상 동작 유지)
     out = assemble_informational_answer("[NO_SOURCE]\n확인할 수 없습니다.", citations,
-                                        recheck=lambda body: False)
-    assert "참고 출처" not in out, "재확인이 '안 썼다'인데 출처가 붙음"
+                                        recheck=lambda body, marker_used: False)
+    assert "참고 출처" not in out, "검증이 '안 썼다'인데 출처가 붙음"
 
-    # 재확인 실패(예외)는 마커 판정 유지 — 이 기능이 죽어도 이전 동작으로 떨어질 뿐.
-    # 2026-08-10 판정기 교체(HCX call_hyperclova → OpenAI structured output)로 모킹 지점이
-    # source_check._parse 로 바뀌었다. 시나리오는 동일: 호출 실패 → False(안전한 쪽).
-    def boom(client, model, messages):
+    # 검증 실패(예외)는 None(fail-open) — 호출부(pipeline._recheck)가 마커 판정을 유지한다.
+    # 모킹 지점은 source_check._parse(2026-08-10 OpenAI structured output 교체 이후 동일).
+    def boom(client, model, messages, schema=None):
         raise RuntimeError("LLM 호출 실패")
 
-    from source_check import recheck_source_usage
+    from source_check import validate_answer
     orig_parse = sys.modules["source_check"]._parse
     try:
         sys.modules["source_check"]._parse = boom
-        assert recheck_source_usage("반환 신청은 이렇게 합니다.", "근거 본문") is False, \
-            "호출 실패가 True로 떨어짐 — 실패는 항상 안전한 쪽이어야 함"
+        assert validate_answer("질문", "반환 신청은 이렇게 합니다.", "근거 본문") is None, \
+            "호출 실패가 판정값으로 떨어짐 — 실패는 None(마커 유지 fail-open)이어야 함"
     finally:
         sys.modules["source_check"]._parse = orig_parse
 
@@ -131,7 +135,7 @@ def test_subanswer_independence():
     page = json.loads(open(ROOT / "data" / "corpus.jsonl", encoding="utf-8").readline())
     chunks = [(f"{page['page_id']}#0", 0.9, "본문")]
     orig = (pipeline.plan_query, pipeline.classify_question_type, pipeline.route_search_chunks,
-            pipeline.call_hyperclova, pipeline.recheck_source_usage)
+            pipeline.call_hyperclova, pipeline.validate_answer)
     try:
         # 플래너가 복합으로 분해 + 하위 intent를 함께 준다(질문1·질문2, 둘 다 informational).
         pipeline.plan_query = lambda q: {"should_split": True, "items": [
@@ -139,9 +143,10 @@ def test_subanswer_independence():
             {"question": "질문2", "intent": "informational"}]}
         pipeline.classify_question_type = lambda q: "fact"   # 로깅용 — DB 안 타게 가짜로
         pipeline.route_search_chunks = lambda q, k: chunks
-        # ①이 [NO_SOURCE]라 재확인이 실제로 호출된다 — HCX를 타지 않도록 가짜로 막고,
-        # '안 썼다'로 답하게 해 이 검사의 원래 시나리오(①은 출처 미부착)를 유지한다.
-        pipeline.recheck_source_usage = lambda body, evidence: False
+        # 2026-08-14부터 모든 답변이 검증(validate_answer)을 거친다 — LLM을 타지 않도록
+        # None(판정 불가 = fail-open, 마커 판정 유지)으로 가짜를 세워 이 검사의 원래
+        # 시나리오(①은 마커대로 미부착, ②는 마커대로 부착)를 유지한다.
+        pipeline.validate_answer = lambda question, body, evidence: None
         # ① 근거 미사용(거절) → ② 근거 사용. 판정은 이제 마커가 하므로 답변에 직접 붙인다.
         answers = iter(["[NO_SOURCE]\n확인할 수 없습니다.",
                         "[SOURCE_USED]\n반환지원 제도로 신청하시면 됩니다."])
@@ -153,7 +158,7 @@ def test_subanswer_independence():
         assert page["source_url"] in second, "②(사용)의 출처가 사라짐 — 이슈 4 재발!"
     finally:
         (pipeline.plan_query, pipeline.classify_question_type, pipeline.route_search_chunks,
-         pipeline.call_hyperclova, pipeline.recheck_source_usage) = orig
+         pipeline.call_hyperclova, pipeline.validate_answer) = orig
 
 
 if __name__ == "__main__":

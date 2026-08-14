@@ -100,7 +100,7 @@ def _format_examples():
 # 검색 게이트(candidate_ranking.gate_low_relevance)로 근거가 비었을 때 근거 자리에 넣는 지시.
 # 무근거 프롬프트를 그대로 주면 HCX가 일반 상식으로 답해버리는 것이 실측됐다(2026-08-10,
 # "스파이더맨" → 마블 설명). 이 지시로 대부분 잡히고, 그래도 새는 답변(예: 투자 조언)은
-# api/rag/answer.py가 사후 판정(source_check.judge_answer)의 kind로 걸러 본문을 교체한다.
+# api/rag/answer.py가 사후 판정(source_check.validate_answer)의 kind로 걸러 본문을 교체한다.
 NO_EVIDENCE_NOTICE = (
     "(검색된 근거 자료가 없습니다. 인사나 당신의 정체에 대한 질문이면 평소대로 답하고, "
     "그 외의 질문이면 일반 상식으로 답하지 말고 예금보험공사 안내 범위를 벗어난 질문이라 "
@@ -209,15 +209,15 @@ def _strip_no_source_marker(llm_text):
 def _resolve_used_source(llm_text, recheck):
     """마커를 떼고 근거 사용 여부를 확정한다 -> (본문, 근거_사용_여부).
 
-    recheck(본문)->bool을 주면, 마커가 [NO_SOURCE]로 판정했을 때만 그 콜백에 한 번 더
-    물어 True면 판정을 뒤집는다. [SOURCE_USED] 판정은 절대 재확인하지 않는다 — 라벨 107건
-    실측에서 마커의 오판은 [NO_SOURCE] 쪽에만 있었고(28건 중 0건 vs 79건 중 33건),
-    맞고 있는 축을 건드리면 거절·인사에 무관한 출처가 붙는 문제가 되살아난다.
-    recheck가 None이면(기본) 마커 판정을 그대로 쓴다 — 이 기능을 켜기 전과 동작이 같다.
+    recheck(본문, 마커_판정)->bool을 주면 **모든 답변**에 대해 한 번 호출하고 그 결과가
+    최종 판정이 된다 — 2026-08-14 팀 결정으로 "[NO_SOURCE]일 때만 재확인, [SOURCE_USED]는
+    불가침" 규칙을 폐지하고 검증(source_check.validate_answer)이 마커를 양방향으로
+    오버라이드한다. 콜백은 실패 시 마커_판정을 그대로 돌려줄 책임이 있다(fail-open).
+    recheck가 None이면(기본) 마커 판정을 그대로 쓴다 — 검증을 끈 때와 동작이 같다.
     상세: src/source_check.py, docs/pipeline_issue_history.md 이슈 5."""
     text, used_source = _strip_no_source_marker(llm_text)
-    if not used_source and recheck is not None:
-        used_source = recheck(text)
+    if recheck is not None:
+        used_source = recheck(text, used_source)
     return text, used_source
 
 
