@@ -93,7 +93,7 @@ export const MOCK_CHANGE_REQUESTS: ChangeRequest[] = [
 // ---------------------------------------------------------------- 파이프라인 작업
 
 export interface JobStep {
-  /** PIPELINE_STEPS(수집·변환·청킹·검증·색인·반영) 중 하나 */
+  /** PIPELINE_STEPS(수집·변환·청킹·검증·게이트·색인·반영) 중 하나 */
   name: string
   status: 'QUEUED' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED'
   /** 진행 중이면 undefined */
