@@ -80,3 +80,13 @@
 ⚠️ **API 계약 리뷰 포인트**: `evaluations/schedule`(신설) · `password/reset-request`(개명) ·
 `EvalItem.question_type/intent`(실값) · `ConversationLogDetail.classification.source_used`(null 유지) —
 `web/src/lib/api/types.ts` 와 목은 함께 갱신돼 있음.
+
+## 9. 머지 노트 (08-14, origin/main 7139f5a8 반영)
+
+팀 PR 6건(Langfuse 트레이싱 · question_type span · hard-71 벤치마크 · 표 청킹 재작성 ·
+평가 정합화 · Streamlit 은퇴)을 이 브랜치에 머지했다. 충돌은 `llm_client.call_hyperclova`
+한 곳 — **Langfuse `@observe` 계측과 평가 결정화 kwargs 는 직교라 둘 다 보존**했다.
+머지 후 pytest 179 · pnpm verify 재통과, 서비스 재기동 완료.
+
+⚠️ 참고: 표 청킹이 재작성됐으므로(**c52f7f3b**) 다음 [재적재] 때 청크 수·경계가 지금 DB(494)와
+달라질 수 있다 — 재적재 후 홀드아웃 재측정을 같이 볼 것.
