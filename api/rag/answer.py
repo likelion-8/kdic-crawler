@@ -447,6 +447,35 @@ def _cache_versions() -> dict:
     return snap
 
 
+def curated_get(question: str) -> Optional[dict]:
+    """답변 매핑(AD-009 curated_answers) 적중 시 ChatResponse 모양 dict, 미스면 None.
+
+    질의 캐시(cache_get)와 같은 반환 모양이라 sse.py 소비부를 그대로 공유한다. 캐시와의
+    차이: 관리자가 손으로 쓴 영구 콘텐츠라 TTL·버전 무효화가 없다(코퍼스가 바뀌어도
+    자동 삭제하지 않는다 — 내용 관리는 관리자 몫). 매칭은 캐시와 동일한 정규화 키의
+    **정확 일치만**이다(2026-08-14 팀 결정 — 유사도 자동 매칭은 역할축 질문에서 반대
+    답변을 서빙할 위험이 있어 하지 않는다). 실패는 미스로 취급되어 답변을 막지 않는다."""
+    try:
+        from api.routers.admin_ops import cache_key_for_question
+        from db import get_session
+        from schema import curated_answers
+        from sqlalchemy import select
+        key = cache_key_for_question(question)
+        with get_session() as session:
+            row = session.execute(
+                select(curated_answers.c.answer, curated_answers.c.sources)
+                .where(curated_answers.c.active.is_(True),
+                       curated_answers.c.question_keys.any(key))
+                .order_by(curated_answers.c.display_order).limit(1)).first()
+        if row is None:
+            return None
+        return {"answer": row.answer, "sources": row.sources or [], "attachments": [],
+                "out_of_scope": False, "sub_answers": [], "clarification": None, "error": None}
+    except Exception:  # noqa: BLE001
+        logger.exception("curated_get 실패 — 미스로 통과")
+        return None
+
+
 def cache_get(question: str) -> Optional[dict]:
     """적중 시 저장된 ChatResponse dict(식별자 제외)를 돌려주고 hit_count 를 올린다."""
     try:

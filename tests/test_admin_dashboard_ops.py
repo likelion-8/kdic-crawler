@@ -161,6 +161,9 @@ def test_ops_routes_are_exactly_the_requested_endpoints():
         ("GET", "/api/admin/suggested-questions"),
         ("PUT", "/api/admin/suggested-questions"),
         ("POST", "/api/admin/suggested-questions/validate"),
+        # 2026-08-14 추가: 답변 매핑(AD-009) — 추천 질문과 같은 전량 교체 계약(9종 -> 11종)
+        ("GET", "/api/admin/curated-answers"),
+        ("PUT", "/api/admin/curated-answers"),
     }
 
 

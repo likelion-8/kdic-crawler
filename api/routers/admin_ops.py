@@ -52,7 +52,7 @@ from api.deps import (CurrentAdmin, DbSession, get_current_admin,
                       require_reauth, write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.routers.admin_logs import _to_kst_iso
-from schema import suggested_questions
+from schema import curated_answers, documents, suggested_questions
 from schema_admin import (admin_activity_logs, guardrail_rules, ops_policy,
                           query_cache, rate_limit_blocks)
 
@@ -87,6 +87,7 @@ ACTION_POLICY_UPDATE = "사용량 제한 정책 변경"
 ACTION_CACHE_PURGE = "질의 캐시 비우기"
 ACTION_BLOCK_RELEASE = "차단 해제"
 ACTION_SUGGESTIONS_REPLACE = "추천 질문 변경"
+ACTION_CURATED_REPLACE = "답변 매핑 변경"
 
 _ELLIPSIS = re.compile(r"(?:\.{3,}|…+)")
 _WHITESPACE = re.compile(r"\s+")
@@ -497,6 +498,133 @@ def replace_suggested_questions(
     response_items = [_suggestion_out(item) for item in sorted(items, key=lambda value: value["order"])]
     return {"items": response_items, "total": len(response_items),
             "page": 1, "size": len(response_items)}
+
+
+# ─────────────────────────── 답변 매핑 (AD-009) ───────────────────────────
+#
+# 미리 작성한 답변에 질문 문구 여러 개를 매핑한다(2026-08-14 팀 결정: 정확 일치만·빈 상태
+# 시작). 서빙(answer.curated_get)은 질의 캐시보다 먼저 이 표를 본다. 추천 질문 문구를
+# questions 에 넣으면 웰컴 클릭 경로가 100% 적중한다. 추천 질문과 같은 전량 교체(PUT)
+# 패턴 — 수십 건 규모라 행 단위 CRUD 의 복잡성이 필요 없다.
+
+CURATED_MAX = 50            # ponytail: 전량 교체·전량 스캔 전제의 상한. 넘으면 그때 행 CRUD 로
+CURATED_ANSWER_MAX_CHARS = 4000
+
+
+def _curated_out(item: dict) -> dict:
+    return {"id": item["id"], "questions": item["questions"], "answer": item["answer"],
+            "sources": item["sources"], "active": item["active"], "order": item["order"]}
+
+
+def _validate_curated(raw_items, db) -> list[dict]:
+    """검증 + 서버 계산값(정규화 키·출처 확정)을 채운 항목 목록.
+
+    - 출처는 page_id 목록으로 받아 citation 으로 제목·URL 을 확정해 저장한다(출처 필수
+      불변식 — 빈 출처, 없는 page_id 는 거절). 서빙 시점 재조회가 없어 코퍼스와 무관하게
+      결정적으로 답한다.
+    - 정규화 키가 항목 간에 겹치면 거절한다 — 같은 질문이 두 답변에 걸리면 어느 쪽이
+      나갈지 순서에 좌우되는 조용한 비결정성이 된다.
+    """
+    if not isinstance(raw_items, list):
+        raise BadRequestError("items는 답변 매핑 배열이어야 합니다.")
+    if len(raw_items) > CURATED_MAX:
+        raise BadRequestError(f"답변 매핑은 최대 {CURATED_MAX}개까지 등록할 수 있습니다.")
+    import sys
+    from pathlib import Path as _Path
+    src = _Path(__file__).resolve().parent.parent.parent / "src"
+    if str(src) not in sys.path:
+        sys.path.insert(0, str(src))
+    from citation import format_all_citations
+
+    active_pages = {r.page_id for r in db.execute(
+        select(documents.c.page_id).where(documents.c.is_active.is_(True))).all()}
+
+    items, seen_ids, seen_keys = [], set(), {}
+    for raw in raw_items:
+        if not isinstance(raw, dict):
+            raise BadRequestError("답변 매핑 항목 형식이 올바르지 않습니다.")
+        item_id = str(raw.get("id") or "").strip()
+        questions = [str(q or "").strip() for q in (raw.get("questions") or [])]
+        questions = [q for q in questions if q]
+        answer_text = str(raw.get("answer") or "").strip()
+        page_ids = [str(x or "").strip() for x in (raw.get("source_page_ids") or []) if str(x or "").strip()]
+        active = raw.get("active")
+        order = raw.get("order")
+        if not item_id or item_id in seen_ids:
+            raise BadRequestError("답변 매핑 id는 비어 있지 않은 고유값이어야 합니다.")
+        if not questions:
+            raise BadRequestError("질문 문구가 최소 1개 필요합니다.")
+        if any(len(q) > 500 for q in questions):
+            raise BadRequestError("질문 문구는 500자 이하여야 합니다(입력 제한과 동일).")
+        if not answer_text or len(answer_text) > CURATED_ANSWER_MAX_CHARS:
+            raise BadRequestError(f"답변은 1자 이상 {CURATED_ANSWER_MAX_CHARS}자 이하여야 합니다.")
+        if not page_ids:
+            raise BadRequestError("출처 page_id가 최소 1개 필요합니다(출처 없는 답변 금지).")
+        missing = [pid for pid in page_ids if pid not in active_pages]
+        if missing:
+            raise BadRequestError(f"존재하지 않거나 비활성인 page_id: {', '.join(missing)}")
+        if not isinstance(active, bool):
+            raise BadRequestError("active 값은 true 또는 false여야 합니다.")
+        if isinstance(order, bool) or not isinstance(order, int) or order < 1:
+            raise BadRequestError("order 값은 1 이상의 정수여야 합니다.")
+        keys = []
+        for q in questions:
+            key = cache_key_for_question(q)
+            if key in keys:
+                continue          # 같은 항목 안의 중복 문구는 조용히 접는다
+            owner = seen_keys.get(key)
+            if owner is not None:
+                raise BadRequestError(
+                    f"질문 문구가 다른 답변과 겹칩니다: {q!r} (매핑 {owner})")
+            seen_keys[key] = item_id
+            keys.append(key)
+        seen_ids.add(item_id)
+        items.append({"id": item_id, "questions": questions, "question_keys": keys,
+                      "answer": answer_text, "sources": format_all_citations(page_ids),
+                      "active": active, "order": order})
+    return items
+
+
+@router.get("/curated-answers")
+def list_curated_answers(admin: CurrentAdmin, db: DbSession):
+    del admin
+    rows = db.execute(
+        select(curated_answers).order_by(curated_answers.c.display_order)).all()
+    items = [_curated_out({
+        "id": r.id, "questions": list(r.questions or []), "answer": r.answer,
+        "sources": r.sources or [], "active": r.active, "order": r.display_order,
+    }) for r in rows]
+    return {"items": items, "total": len(items)}
+
+
+@router.put("/curated-answers")
+def replace_curated_answers(body: dict, request: Request, admin: CurrentAdmin, db: DbSession):
+    _require_role(admin, "EDITOR", "답변 매핑 변경")
+    _, reason = _require_write_fields(body)
+    items = _validate_curated(body.get("items"), db)
+
+    before = [{"id": r.id, "questions": list(r.questions or []), "active": r.active}
+              for r in db.execute(
+                  select(curated_answers).order_by(curated_answers.c.display_order)).all()]
+    db.execute(delete(curated_answers))
+    if items:
+        db.execute(insert(curated_answers), [
+            {"id": it["id"], "questions": it["questions"], "question_keys": it["question_keys"],
+             "answer": it["answer"], "sources": it["sources"], "active": it["active"],
+             "display_order": it["order"], "created_by": admin.email}
+            for it in items
+        ])
+    db.commit()
+    write_activity_log(
+        db, request, actor=admin.email, actor_role=admin.role,
+        action=ACTION_CURATED_REPLACE, target=f"답변 매핑 {len(items)}건", reason=reason,
+        before_value=json.dumps(before, ensure_ascii=False),
+        after_value=json.dumps([{"id": it["id"], "questions": it["questions"],
+                                 "active": it["active"]} for it in items], ensure_ascii=False),
+        detail={"total": len(items), "active": sum(1 for it in items if it["active"])},
+    )
+    return {"items": [_curated_out(it) for it in sorted(items, key=lambda v: v["order"])],
+            "total": len(items)}
 
 
 @router.post("/suggested-questions/validate")

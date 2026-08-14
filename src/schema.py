@@ -282,6 +282,28 @@ suggested_questions = Table(
 )
 
 
+# 답변 매핑(AD-009) — 미리 작성해 둔 답변에 질문 문구 여러 개를 매핑한다(2026-08-14 팀 결정:
+# 정확 일치만·빈 상태 시작). 서빙은 질의 캐시보다 앞선다: 정규화 키가 일치하면 LLM 을 부르지
+# 않고 이 답변을 그대로 낸다(결정적·환각 0). 추천 질문(suggested_questions)은 클릭 시 문구가
+# 그대로 전송되므로, 그 문구를 questions 에 넣으면 클릭 경로가 100% 적중한다.
+# question_keys 는 admin_ops.cache_key_for_question 으로 서버가 계산한다 — 캐시와 같은
+# 정규화라야 "매핑엔 없는데 캐시엔 있는" 어긋남이 안 생긴다. sources 는 SourceItem 모양
+# ([{page_id,title,url,breadcrumb}])으로 저장 시점에 확정한다(출처 필수 불변식 — 빈 출처 금지).
+curated_answers = Table(
+    "curated_answers", metadata,
+    Column("id", String, primary_key=True),           # 클라이언트 부여(전량 교체 패턴 — 추천 질문과 동일)
+    Column("questions", ARRAY(Text), nullable=False),      # 등록 문구 원문(편집·표시용)
+    Column("question_keys", ARRAY(String), nullable=False),  # 정규화 키(조회용, 서버 계산)
+    Column("answer", Text, nullable=False),
+    Column("sources", JSONB, nullable=False),
+    Column("active", Boolean, nullable=False, server_default=text("true")),
+    Column("display_order", Integer, nullable=False),
+    Column("created_by", String),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+)
+
+
 # 데이터 파이프라인 작업(AD-004) — 재수집·재적재 잡의 접수·기록. 실제 실행(Redis·ARQ 워커)은
 # 아직 없다: 생성되면 QUEUED 로 남아 있고 상태는 바뀌지 않는다.
 #

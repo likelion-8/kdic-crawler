@@ -149,13 +149,16 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     # 0-3) 질의 캐시 — 첫 턴이면 조회한다(적격 = 단일 턴 · 정보성 · 성공, PRD-03 AD-009).
     #      적중 시 검색·생성을 통째로 건너뛴다. 캐시 실패는 미스로 취급되어 답변을 막지 않는다.
     if first_turn:
-        cached = answer.cache_get(message)
+        # 답변 매핑(관리자 작성 영구 답변)이 캐시보다 먼저다 — 같은 반환 모양이라 소비부 공유.
+        curated = answer.curated_get(message)
+        cached = curated if curated is not None else answer.cache_get(message)
         if cached is not None:
             resp_dict = {**cached, "session_id": session_id, "request_id": request_id,
                          "latency_ms": _elapsed_ms(started)}
             from api.schemas.chat import ChatResponse
             resp = ChatResponse.model_validate(resp_dict)
-            logger.info("[%s] 질의 캐시 적중", request_id)
+            logger.info("[%s] %s 적중", request_id,
+                        "답변 매핑" if curated is not None else "질의 캐시")
             answer.log_run(message, resp, [], resp.latency_ms)
             conversation.save_assistant_message(session_id, request_id, resp)
             yield _sse("answer_delta", {"text": resp.answer})
