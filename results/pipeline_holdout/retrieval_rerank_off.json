@@ -5,15 +5,18 @@
   "n_answerable": 79,
   "n_out_of_scope": 10,
   "retrieval": {
-    "Recall@1": 0.6055,
-    "Recall@3": 0.8544,
-    "Recall@5": 0.9219,
-    "Recall@10": 0.9494,
-    "MRR": 0.8064,
+    "Recall@1": 0.5928,
+    "Recall@3": 0.8671,
+    "Recall@5": 0.9346,
+    "Recall@10": 0.9599,
+    "Recall@20": 0.9662,
+    "MRR": 0.8022,
+    "ContextHit": 0.9241,
     "n": 79
   },
   "classification": {
-    "intent_accuracy": 0.7722,
+    "intent_accuracy": 0.9114,
+    "intent_source": "plan_query(운영)",
     "intent_n": 79,
     "question_type_accuracy_5way": 0.6456,
     "question_type_n": 79,
@@ -21,9 +24,9 @@
   },
   "typo_robustness": {
     "n_pairs": 30,
-    "orig_recall@5": 0.9667,
+    "orig_recall@5": 1.0,
     "typo_recall@5": 0.9667,
-    "drop": 0.0
+    "drop": 0.0333
   },
   "intent_misclassified": [
     {
@@ -51,88 +54,22 @@
       "pred": "civil_petition"
     },
     {
-      "test_id": "uc_gudn_pl1",
-      "q": "미수령금을 아무 지급대행점에서나 통합해서 신청할 수 있게 된 게 언제부터인가요?",
+      "test_id": "uc_hrpe_hist_pl1",
+      "q": "실종자나 금치산자에 대해서도 상속인 금융거래조회 서비스를 이용할 수 있나요?",
       "true": "informational",
       "pred": "civil_petition"
     },
     {
-      "test_id": "uc_gudn_pl1t",
-      "q": "미수령금을 아무 지급대행점에서나 통합해서 신청할 수 있게 된게 언재부터인가요?",
-      "true": "informational",
-      "pred": "civil_petition"
-    },
-    {
-      "test_id": "kmrs_proc_pl1",
-      "q": "착오송금반환지원은 어떤 절차로 진행되나요?",
+      "test_id": "cx06",
+      "q": "착오송금반환지원 제도가 뭔지, 신청 대상 조건이 어떻게 되는지, 그리고 신청은 어",
       "true": "civil_petition",
       "pred": "informational"
     },
     {
-      "test_id": "kmrs_proc_pl1t",
-      "q": "착오손금반환지원은 어떤 절차로 진행되나요?",
+      "test_id": "pl_uc_itgr_aply_1",
+      "q": "미수령금 통합 확인·신청 시스템 이름이 뭔가요?",
       "true": "civil_petition",
       "pred": "informational"
-    },
-    {
-      "test_id": "sender_qlfc_check_pl1",
-      "q": "착오송금반환지원을 신청할 수 있는 송금액 범위는 얼마인가요?",
-      "true": "informational",
-      "pred": "civil_petition"
-    },
-    {
-      "test_id": "sender_qlfc_check_pl1t",
-      "q": "착오송금반환지원을 신청할 수 있는 손금액 범위는 얼마인가요?",
-      "true": "informational",
-      "pred": "civil_petition"
-    },
-    {
-      "test_id": "dr_kruc_pl1t",
-      "q": "케이알앤씨가 인수한 채권의 채무조종은 어떤 서류가 필요한가요?",
-      "true": "civil_petition",
-      "pred": "informational"
-    },
-    {
-      "test_id": "dr_psn_rg_pl1",
-      "q": "개인회생을 신청할 수 있는 채무 한도는 얼마인가요?",
-      "true": "informational",
-      "pred": "civil_petition"
-    },
-    {
-      "test_id": "dr_psn_rg_pl1t",
-      "q": "개인회셍을 신청할 수 있는 채무 한도는 얼마인가요?",
-      "true": "informational",
-      "pred": "civil_petition"
-    },
-    {
-      "test_id": "cx01",
-      "q": "예금보호한도 1억원이 언제부터 적용됐는지, 그리고 별도로 신청해야 하는지 알려주시",
-      "true": "informational",
-      "pred": "civil_petition"
-    },
-    {
-      "test_id": "cx02",
-      "q": "예금자보호제도 안내자료는 어디서 다운로드하나요? 그리고 예금보호 로고는 색상을 바",
-      "true": "civil_petition",
-      "pred": "informational"
-    },
-    {
-      "test_id": "cx04",
-      "q": "우리 회사가 예금보험 대상 금융회사인지 검색해보고 싶고, 저희가 파는 상품이 보호",
-      "true": "civil_petition",
-      "pred": "informational"
-    },
-    {
-      "test_id": "cx05",
-      "q": "제가 파산금융회사에 채무가 있는지 온라인으로 조회하고 싶은데 방법이 뭔지, 모바일",
-      "true": "civil_petition",
-      "pred": "informational"
-    },
-    {
-      "test_id": "amb_pl_faq_msdr_top10_2",
-      "q": "착오송금 신청하면 실제로 돈 돌려받기까지 대충 얼마나 걸려요?",
-      "true": "informational",
-      "pred": "civil_petition"
     }
   ],
   "per_row_retrieval": [
@@ -149,6 +86,11 @@
         "dp_prdct"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_protlmts"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -164,6 +106,12 @@
         "dp_prdct"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_protlmts",
+        "faq_nramt"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -179,6 +127,14 @@
         "dp_gudn_data"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn_data",
+        "dp_josa_itrd",
+        "dp_prdct",
+        "dp_protlmts",
+        "dp_syst"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -194,6 +150,14 @@
         "dp_gudn_data"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn_data",
+        "dp_josa_itrd",
+        "dp_prdct",
+        "dp_protlmts",
+        "dp_syst"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -204,12 +168,19 @@
       "top5_pages": [
         "dp_faq_page",
         "dp_prdct",
+        "dp_fnst",
         "dp_syst",
-        "dp_protlmts",
-        "dp_prdct_srch"
+        "dp_protlmts"
       ],
-      "hit@5": false,
-      "rr": 0.0
+      "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_fnst",
+        "dp_prdct",
+        "dp_syst"
+      ],
+      "context_hit": true,
+      "rr": 0.3333
     },
     {
       "test_id": "dp_fnst_pl1t",
@@ -219,12 +190,19 @@
       "top5_pages": [
         "dp_faq_page",
         "dp_prdct",
+        "dp_fnst",
         "dp_syst",
-        "dp_prdct_srch",
-        "ms_expln"
+        "dp_prdct_srch"
       ],
-      "hit@5": false,
-      "rr": 0.0
+      "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_fnst",
+        "dp_prdct",
+        "dp_syst"
+      ],
+      "context_hit": true,
+      "rr": 0.3333
     },
     {
       "test_id": "dp_prdct_pl1",
@@ -239,6 +217,13 @@
         "faq_nramt"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_gudn_faq",
+        "dp_prdct",
+        "dp_protlmts"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -251,9 +236,16 @@
         "dp_faq_page",
         "dp_gudn_faq",
         "dp_protlmts",
-        "faq_nramt"
+        "dp_fnst"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_gudn_faq",
+        "dp_prdct",
+        "dp_protlmts"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -269,6 +261,11 @@
         "dp_gudn_data"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn",
+        "dp_gudn_faq"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -284,6 +281,11 @@
         "dp_gudn_data"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn",
+        "dp_gudn_faq"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -299,6 +301,13 @@
         "dp_syst"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_nramt",
+        "ms_aply_proc",
+        "ms_expln",
+        "ms_trgt_fnst"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -314,6 +323,13 @@
         "dp_faq_page"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_nramt",
+        "ms_aply_proc",
+        "ms_expln",
+        "ms_trgt_fnst"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -329,6 +345,13 @@
         "uc_hrpe_hist"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_nramt",
+        "ms_expln",
+        "uc_gudn",
+        "uc_itgr_aply"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -344,6 +367,13 @@
         "uc_hrpe_hist"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_nramt",
+        "ms_expln",
+        "uc_gudn",
+        "uc_itgr_aply"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -359,6 +389,14 @@
         "uc_bkrp_mng"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_fnst_srch",
+        "dp_prdct_srch",
+        "ms_aply_proc",
+        "ms_trgt_fnst",
+        "uc_bkrp_mng"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -374,6 +412,14 @@
         "ms_expln"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_fnst_srch",
+        "dp_prdct_srch",
+        "ms_aply_proc",
+        "ms_expln",
+        "ms_trgt_fnst"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -383,12 +429,19 @@
       ],
       "top5_pages": [
         "ms_poss_dcmnt",
-        "faq_nramt",
         "sender_docs",
+        "faq_nramt",
         "dp_gudn_data",
         "mtrs_rel_law"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn_data",
+        "faq_nramt",
+        "ms_poss_dcmnt",
+        "sender_docs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -398,12 +451,19 @@
       ],
       "top5_pages": [
         "ms_poss_dcmnt",
-        "faq_nramt",
         "sender_docs",
+        "faq_nramt",
         "dp_gudn_data",
         "mtrs_rel_law"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn_data",
+        "faq_nramt",
+        "ms_poss_dcmnt",
+        "sender_docs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -419,6 +479,13 @@
         "sender_docs"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_protlmts",
+        "faq_nramt",
+        "ms_expln",
+        "ms_poss_dcmnt"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -434,6 +501,13 @@
         "ms_expln"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_protlmts",
+        "faq_nramt",
+        "ms_poss_dcmnt",
+        "sender_docs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -446,9 +520,17 @@
         "uc_gudn",
         "uc_tel_qust",
         "faq_nramt",
-        "sender_docs"
+        "uc_hrpe_hist"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_nramt",
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "uc_itgr_aply",
+        "uc_tel_qust"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -464,6 +546,14 @@
         "uc_hrpe_hist"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_nramt",
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "uc_itgr_aply",
+        "uc_tel_qust"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -479,6 +569,14 @@
         "kmrs_apply_mthd"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_faq_dclr",
+        "kmrs_apply_mthd",
+        "ms_aply_proc",
+        "mtrs_vst_rcpt",
+        "uc_tel_qust"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -494,6 +592,14 @@
         "kmrs_apply_mthd"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_faq_dclr",
+        "kmrs_apply_mthd",
+        "ms_aply_proc",
+        "mtrs_vst_rcpt",
+        "uc_tel_qust"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -509,6 +615,14 @@
         "dp_fnst_srch"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_fnst_srch",
+        "dr_debt_cert",
+        "faq_top10",
+        "uc_bkrp_mng",
+        "uc_hrpe_hist"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -524,6 +638,14 @@
         "dp_fnst_srch"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_fnst_srch",
+        "faq_nramt",
+        "faq_top10",
+        "uc_bkrp_mng",
+        "uc_hrpe_hist"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -532,12 +654,18 @@
         "uc_bkrp_fndt"
       ],
       "top5_pages": [
-        "uc_bkrp_fndt",
         "uc_bkrp_mng",
+        "uc_bkrp_fndt",
         "ms_trgt_fnst"
       ],
       "hit@5": true,
-      "rr": 1.0
+      "context_pages": [
+        "ms_trgt_fnst",
+        "uc_bkrp_fndt",
+        "uc_bkrp_mng"
+      ],
+      "context_hit": true,
+      "rr": 0.5
     },
     {
       "test_id": "uc_bkrp_fndt_pl1t",
@@ -545,11 +673,14 @@
         "uc_bkrp_fndt"
       ],
       "top5_pages": [
-        "uc_bkrp_mng",
-        "uc_bkrp_fndt"
+        "uc_bkrp_mng"
       ],
-      "hit@5": true,
-      "rr": 0.5
+      "hit@5": false,
+      "context_pages": [
+        "uc_bkrp_mng"
+      ],
+      "context_hit": false,
+      "rr": 0.0
     },
     {
       "test_id": "uc_bkrp_mng_pl1",
@@ -564,6 +695,14 @@
         "dr_debt_cert"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_debt_cert",
+        "ms_trgt_fnst",
+        "uc_bkrp_mng",
+        "uc_gudn",
+        "uc_hrpe_hist"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -573,12 +712,20 @@
       ],
       "top5_pages": [
         "uc_bkrp_mng",
-        "uc_gudn",
         "ms_trgt_fnst",
+        "uc_gudn",
         "uc_hrpe_hist",
         "dr_info_aply"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_info_aply",
+        "ms_trgt_fnst",
+        "uc_bkrp_mng",
+        "uc_gudn",
+        "uc_hrpe_hist"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -594,6 +741,11 @@
         "receiver_attention"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10"
+      ],
+      "context_hit": false,
       "rr": 0.25
     },
     {
@@ -609,6 +761,13 @@
         "receiver_attention"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "mtrs_vst_rcpt",
+        "sender_attention"
+      ],
+      "context_hit": true,
       "rr": 0.3333
     },
     {
@@ -625,6 +784,13 @@
         "mtrs_gvbk_proc"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_proc",
+        "sender_attention"
+      ],
+      "context_hit": true,
       "rr": 0.3333
     },
     {
@@ -641,6 +807,13 @@
         "faq_msdr_apply"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_top10",
+        "kmrs_proc",
+        "mtrs_gvbk_proc",
+        "sender_attention"
+      ],
+      "context_hit": true,
       "rr": 0.3333
     },
     {
@@ -656,6 +829,13 @@
         "kmrs_aply_trgt"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "receiver_attention",
+        "receiver_docs"
+      ],
+      "context_hit": true,
       "rr": 0.3333
     },
     {
@@ -666,11 +846,19 @@
       "top5_pages": [
         "receiver_docs",
         "receiver_attention",
-        "faq_msdr_apply",
         "faq_top10",
-        "mtrs_gvbk_proc"
+        "mtrs_gvbk_proc",
+        "kmrs_aply_trgt"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "mtrs_gvbk_proc",
+        "receiver_attention",
+        "receiver_docs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -686,6 +874,13 @@
         "sender_qlfc_check"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "sender_attention"
+      ],
+      "context_hit": false,
       "rr": 0.2
     },
     {
@@ -701,6 +896,13 @@
         "sender_qlfc_check"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "sender_attention"
+      ],
+      "context_hit": false,
       "rr": 0.2
     },
     {
@@ -716,6 +918,13 @@
         "sender_qlfc_check"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "mtrs_rel_law",
+        "sender_attention"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -731,6 +940,14 @@
         "sender_qlfc_check"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "mtrs_rel_law",
+        "sender_attention",
+        "sender_qlfc_check"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -746,6 +963,11 @@
         "dp_faq_page"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -761,6 +983,11 @@
         "kmrs_proc"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -776,6 +1003,11 @@
         "dr_system"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -791,6 +1023,11 @@
         "mtrs_gvbk_proc"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 0.5
     },
     {
@@ -806,6 +1043,11 @@
         "dr_psn_br"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -821,6 +1063,11 @@
         "dp_faq_page"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -833,9 +1080,13 @@
         "ha_center",
         "faq_nramt",
         "dp_gudn_faq",
-        "ms_poss_dcmnt"
+        "dp_gudn_data"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -848,9 +1099,14 @@
         "ha_center",
         "dp_gudn_faq",
         "faq_nramt",
-        "uc_bkrp_mng"
+        "dp_gudn_data"
       ],
       "hit@5": true,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -860,12 +1116,20 @@
       ],
       "top5_pages": [
         "ha_status_agree",
+        "ha_center",
         "dp_josa_law",
         "ha_faq_dclr",
-        "ha_ilgl_intro",
-        "faq_top10"
+        "ha_ilgl_intro"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_josa_law",
+        "ha_center",
+        "ha_faq_dclr",
+        "ha_ilgl_intro",
+        "ha_status_agree"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -874,36 +1138,51 @@
         "ha_status_agree"
       ],
       "top5_pages": [
-        "dp_josa_law",
         "ha_center",
+        "dp_josa_law",
         "ha_status_agree",
         "ha_faq_dclr",
         "uc_bkrp_spcl_mng"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_josa_law",
+        "ha_center",
+        "ha_faq_dclr",
+        "ha_status_agree"
+      ],
+      "context_hit": true,
       "rr": 0.3333
     },
     {
       "test_id": "dr_system_pl1",
       "gold": [
-        "dr_system",
-        "dr_kruc"
+        "dr_kruc",
+        "dr_system"
       ],
       "top5_pages": [
         "dr_system",
         "dr_credit_sprt",
         "dr_info_aply",
         "dr_kruc",
-        "dr_psn_br"
+        "uc_bkrp_mng"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_system",
+        "uc_bkrp_mng"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "dr_system_pl1t",
       "gold": [
-        "dr_system",
-        "dr_kruc"
+        "dr_kruc",
+        "dr_system"
       ],
       "top5_pages": [
         "dr_system",
@@ -913,6 +1192,14 @@
         "dr_psn_br"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_psn_br",
+        "dr_system"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -928,6 +1215,14 @@
         "dr_credit_sprt"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_system",
+        "sender_docs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -943,6 +1238,14 @@
         "dr_credit_sprt"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_info_aply",
+        "dr_kruc",
+        "dr_system",
+        "sender_docs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -955,9 +1258,17 @@
         "dr_psn_rg",
         "dr_system",
         "dr_kruc",
-        "uc_bkrp_fndt"
+        "uc_bkrp_mng"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_kruc",
+        "dr_psn_rg",
+        "dr_system",
+        "uc_bkrp_mng"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -973,6 +1284,14 @@
         "dr_psn_br"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_kruc",
+        "dr_psn_br",
+        "dr_psn_rg",
+        "dr_system"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -984,10 +1303,18 @@
         "dr_psn_br",
         "dr_psn_rg",
         "dr_system",
-        "uc_bkrp_mng",
-        "dr_credit_sprt"
+        "dr_credit_sprt",
+        "dr_kruc"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_kruc",
+        "dr_psn_br",
+        "dr_psn_rg",
+        "dr_system"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -998,11 +1325,19 @@
       "top5_pages": [
         "dr_psn_br",
         "dr_psn_rg",
-        "uc_bkrp_mng",
+        "uc_hrpe_hist",
+        "dr_credit_sprt",
+        "uc_bkrp_fndt"
+      ],
+      "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_psn_br",
+        "dr_psn_rg",
         "uc_bkrp_fndt",
         "uc_hrpe_hist"
       ],
-      "hit@5": true,
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -1018,6 +1353,14 @@
         "dr_system"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_kruc",
+        "dr_psn_br",
+        "dr_psn_rg",
+        "dr_system"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -1033,13 +1376,21 @@
         "dr_system"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_credit_sprt",
+        "dr_kruc",
+        "dr_psn_br",
+        "dr_psn_rg",
+        "dr_system"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx01",
       "gold": [
-        "dp_ovrs",
-        "dp_faq_page"
+        "dp_faq_page",
+        "dp_ovrs"
       ],
       "top5_pages": [
         "dp_faq_page",
@@ -1048,6 +1399,11 @@
         "faq_nramt"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_ovrs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -1064,14 +1420,19 @@
         "dp_gudn_faq"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn_data",
+        "dp_logo"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx03",
       "gold": [
         "dp_josa_law",
-        "dp_josa_itrd",
-        "dp_josa_objc"
+        "dp_josa_objc",
+        "dp_josa_itrd"
       ],
       "top5_pages": [
         "dp_josa_objc",
@@ -1081,30 +1442,46 @@
         "dp_fnst"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_fnst",
+        "dp_gudn",
+        "dp_josa_itrd",
+        "dp_josa_law",
+        "dp_josa_objc"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx04",
       "gold": [
-        "dp_fnst_srch",
-        "dp_prdct_srch"
+        "dp_prdct_srch",
+        "dp_fnst_srch"
       ],
       "top5_pages": [
         "dp_prdct_srch",
         "dp_prdct",
         "dp_gudn",
         "dp_faq_page",
-        "ms_trgt_fnst"
+        "dp_protlmts"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_gudn",
+        "dp_prdct",
+        "dp_prdct_srch",
+        "dp_protlmts"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx05",
       "gold": [
-        "dr_info_aply",
         "dr_debt_cert",
-        "dr_faq_inq"
+        "dr_faq_inq",
+        "dr_info_aply"
       ],
       "top5_pages": [
         "dr_debt_cert",
@@ -1114,30 +1491,45 @@
         "uc_hrpe_hist"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dr_debt_cert",
+        "dr_faq_inq",
+        "dr_info_aply",
+        "dr_psn_br",
+        "uc_hrpe_hist"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx06",
       "gold": [
-        "kmrs_aply_trgt",
         "kmrs_apply_mthd",
-        "kmrs_itrd"
+        "kmrs_itrd",
+        "kmrs_aply_trgt"
       ],
       "top5_pages": [
         "sender_attention",
         "faq_top10",
         "faq_msdr_apply",
         "kmrs_aply_trgt",
-        "sender_qlfc_check"
+        "sender_docs"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "sender_attention"
+      ],
+      "context_hit": true,
       "rr": 0.25
     },
     {
       "test_id": "cx07",
       "gold": [
-        "sender_docs",
         "mtrs_stut_chc",
+        "sender_docs",
         "sender_attention"
       ],
       "top5_pages": [
@@ -1148,13 +1540,20 @@
         "faq_top10"
       ],
       "hit@5": true,
+      "context_pages": [
+        "kmrs_aply_trgt",
+        "mtrs_stut_chc",
+        "receiver_docs",
+        "sender_docs"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx08",
       "gold": [
-        "mtrs_stut_chc",
-        "receiver_attention"
+        "receiver_attention",
+        "mtrs_stut_chc"
       ],
       "top5_pages": [
         "receiver_attention",
@@ -1164,13 +1563,21 @@
         "mtrs_gvbk_proc"
       ],
       "hit@5": true,
+      "context_pages": [
+        "kmrs_aply_trgt",
+        "mtrs_gvbk_proc",
+        "mtrs_stut_chc",
+        "receiver_attention",
+        "sender_attention"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx09",
       "gold": [
-        "uc_bkrp_spcl_ast",
-        "uc_bkrp_spcl_mng"
+        "uc_bkrp_spcl_mng",
+        "uc_bkrp_spcl_ast"
       ],
       "top5_pages": [
         "uc_bkrp_spcl_mng",
@@ -1180,13 +1587,20 @@
         "uc_bkrp_trst_mng"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dp_prdct",
+        "uc_bkrp_spcl_ast",
+        "uc_bkrp_spcl_mng"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx10",
       "gold": [
-        "uc_bkrp_trst_mng",
-        "uc_bkrp_trst_psta"
+        "uc_bkrp_trst_psta",
+        "uc_bkrp_trst_mng"
       ],
       "top5_pages": [
         "uc_bkrp_trst_mng",
@@ -1196,23 +1610,38 @@
         "dp_gudn_faq"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_gudn_faq",
+        "dp_prdct",
+        "uc_bkrp_spcl_mng",
+        "uc_bkrp_trst_mng",
+        "uc_bkrp_trst_psta"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "cx11",
       "gold": [
-        "ha_ilgl_intro",
+        "dp_protlmts",
         "kmrs_apply_mthd",
-        "dp_protlmts"
+        "ha_ilgl_intro"
       ],
       "top5_pages": [
         "kmrs_aply_trgt",
         "ha_faq_dclr",
         "mtrs_rel_law",
-        "sender_attention",
-        "mtrs_gvbk_proc"
+        "ha_center",
+        "sender_attention"
       ],
       "hit@5": false,
+      "context_pages": [
+        "ha_center",
+        "ha_faq_dclr",
+        "kmrs_aply_trgt",
+        "mtrs_rel_law"
+      ],
+      "context_hit": false,
       "rr": 0.0
     },
     {
@@ -1223,9 +1652,13 @@
       "top5_pages": [
         "dp_svbk_hist",
         "dp_fnst_srch",
-        "uc_bkrp_mng"
+        "dp_prdct_srch"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_svbk_hist"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -1241,6 +1674,14 @@
         "sender_qlfc_check"
       ],
       "hit@5": true,
+      "context_pages": [
+        "sender_qlfc_check",
+        "uc_gudn",
+        "uc_hrpe_hist",
+        "uc_itgr_aply",
+        "uc_tel_qust"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -1257,13 +1698,18 @@
         "kmrs_aply_trgt"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "amb_pl_dp_gudn_faq_1",
       "gold": [
-        "dp_gudn_faq",
-        "dp_faq_page"
+        "dp_faq_page",
+        "dp_gudn_faq"
       ],
       "top5_pages": [
         "dp_gudn_data",
@@ -1273,6 +1719,13 @@
         "dp_syst"
       ],
       "hit@5": false,
+      "context_pages": [
+        "dp_gudn",
+        "dp_gudn_data",
+        "dp_prdct",
+        "dp_protlmts"
+      ],
+      "context_hit": false,
       "rr": 0.1429
     },
     {
@@ -1288,30 +1741,44 @@
         "mtrs_gvbk_proc"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_nramt",
+        "ms_expln",
+        "mtrs_stut_chc"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "amb_pl_dr_kruc_system_1",
       "gold": [
-        "dr_system",
-        "dr_kruc"
+        "dr_kruc",
+        "dr_system"
       ],
       "top5_pages": [
         "dr_kruc",
         "dp_svbk_hist",
         "dr_system",
         "faq_nramt",
-        "dp_faq_page"
+        "ha_center"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_svbk_hist",
+        "dr_kruc",
+        "dr_system",
+        "faq_nramt",
+        "ha_center"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
       "test_id": "amb_pl_uc_gudn_group_1",
       "gold": [
         "uc_gudn",
-        "uc_hrpe_hist",
-        "uc_itgr_aply"
+        "uc_itgr_aply",
+        "uc_hrpe_hist"
       ],
       "top5_pages": [
         "uc_gudn",
@@ -1321,6 +1788,14 @@
         "dp_faq_page"
       ],
       "hit@5": true,
+      "context_pages": [
+        "dp_faq_page",
+        "dr_psn_br",
+        "dr_system",
+        "uc_bkrp_mng",
+        "uc_gudn"
+      ],
+      "context_hit": true,
       "rr": 1.0
     },
     {
@@ -1337,6 +1812,13 @@
         "sender_attention"
       ],
       "hit@5": true,
+      "context_pages": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "kmrs_aply_trgt",
+        "receiver_attention"
+      ],
+      "context_hit": true,
       "rr": 1.0
     }
   ]

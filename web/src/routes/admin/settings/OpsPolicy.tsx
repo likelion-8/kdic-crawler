@@ -16,6 +16,7 @@ import { QUERY_CACHE_TTL_H } from '../../../lib/constants'
 import { needsReauth, useSession } from '../../../app/session'
 import { Card, SectionError, modalError } from './promptops/common'
 import { BlockImpact, BlockListCard, CachePurgeCard, CacheStatsCard, UsageLimitCard } from './promptops/ops-cards'
+import { CuratedAnswersCard } from './promptops/curated'
 import { SuggestedQuestionsCard } from './promptops/suggested'
 import type { BlockEntry, OpsPolicy as OpsPolicyValue } from './promptops/api'
 import {
@@ -169,6 +170,7 @@ export function OpsPolicy() {
       <BlockListCard canRelease={canOperate} onRelease={(block) => setAsk({ kind: 'release', block })} />
 
       <SuggestedQuestionsCard canEdit={canEditContent} />
+      <CuratedAnswersCard canEdit={canEditContent} />
 
       {/* 앞부분 수치는 바로 위 '사용량 제한 정책' 카드의 값과 같은 것을 되풀이한 것이고, 뒤는
           보관 정책 부연이다. 어느 카드 설명인지도 읽히지 않은 채 화면 끝만 늘렸다 —

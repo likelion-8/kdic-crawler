@@ -151,7 +151,7 @@ async function collectSse(message: string) {
 // 11. 파이프라인 — 6단계 · 시간이 지나면 진행 · 동시 실행 1개
 {
   const created = await (await post('/api/admin/jobs', { type: 'REINDEX', request_id: 'j1', reason: '자체 점검' })).json()
-  assert.equal(created.steps.length, 6)
+  assert.equal(created.steps.length, 7, '게이트 단계 신설(2026-08-14) — worker STEPS 와 같아야 한다')
   assert.equal(created.steps[0].name, '수집')
   const dup = await post('/api/admin/jobs', { type: 'REINDEX', request_id: 'j2', reason: '중복' })
   assert.equal(dup.status, 409, 'PIPELINE_CONCURRENCY=1이라 두 번째는 409')
