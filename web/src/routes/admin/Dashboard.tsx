@@ -36,8 +36,21 @@ const FAILURE_LINK: Record<string, string> = {
 
 /** 대시보드 API는 CM-DF-003 04절에 없다(09 issue D절).
  * mocks/handlers/extra/ad-dash-activity.ts가 정의한 모양을 그대로 옮겼다. */
+/**
+ * 할 일 — 대시보드를 '지표판'이 아니라 '시작점'으로 만드는 값(AD-DF-000 관리자 작업 흐름 ①).
+ * target 은 이 건수를 보여줄 화면과 필터라, 카드를 누르면 서버가 센 것과 같은 목록이 열린다.
+ * count 가 0 이어도 항목을 지우지 않는다 — 사라지면 '없는 것'과 '못 센 것'이 구분되지 않는다.
+ */
+interface DashboardTodo {
+  key: 'FEEDBACK_DOWN' | 'PIPELINE_OPEN' | 'GATE_FAILED'
+  label: string
+  count: number
+  target: { screen: 'logs' | 'pipeline' | 'evaluations'; filter: Record<string, string> }
+}
+
 interface DashboardSummary {
   generated_at: string
+  todos: DashboardTodo[]
   service: { level: 'OK' | 'ERROR'; error_count: number; cause: string | null }
   kpi: {
     pages: number

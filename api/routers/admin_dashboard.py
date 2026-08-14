@@ -40,6 +40,8 @@ from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError
 from api.routers.admin_logs import KST, _kst_day_start, _status_out, _to_kst_iso
 from schema import document_chunks, documents, pipeline_jobs, rag_runs
+from schema import feedback as feedback_table
+from schema_admin import evaluation_runs
 from schema_admin import admin_activity_logs
 
 router = APIRouter(
@@ -179,8 +181,43 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
     cause = "PIPELINE" if pipeline_failed else "ERROR_RATE" if error_count else None
     average = round(float(avg_latency or 0))
 
+    # ── 할 일(todos) — 대시보드를 '지표판'이 아니라 '시작점'으로 만드는 값이다.
+    # 관리자 화면은 관리 대상별로 나뉘어 있어, 이게 없으면 무엇을 해야 하는지 알려면 화면을
+    # 하나씩 열어 봐야 한다(AD-DF-000 관리자 작업 흐름 ①). 각 항목은 건수와 함께 **그 건수를
+    # 보여줄 화면의 필터**를 같이 내려, 카드를 눌렀을 때 여기서 센 것과 같은 목록이 열리게 한다.
+    # 0 건이어도 항목을 지우지 않는다 — 사라지면 '없는 것'과 '못 센 것'이 구분되지 않는다.
+    feedback_down = db.execute(
+        select(func.count()).select_from(feedback_table)
+        .where(feedback_table.c.vote == "down")
+    ).scalar_one()
+    jobs_open = db.execute(
+        select(func.count()).select_from(pipeline_jobs)
+        .where(pipeline_jobs.c.status.in_(("QUEUED", "RUNNING", "FAILED")))
+    ).scalar_one()
+    latest_run = db.execute(
+        select(evaluation_runs.c.gate)
+        .where(evaluation_runs.c.status == "DONE")
+        .order_by(evaluation_runs.c.finished_at.desc().nulls_last()).limit(1)
+    ).first()
+    gate = (latest_run.gate if latest_run else None) or {}
+    # gate 가 비면 '미통과'가 아니라 '아직 잰 적 없음'이다 — false 로 접으면 거짓 경보가 된다.
+    gate_failed = 0 if not gate else (0 if gate.get("passed") else 1)
+
+    todos = [
+        {"key": "FEEDBACK_DOWN", "label": "나쁨 평가를 받은 답변", "count": feedback_down,
+         "target": {"screen": "logs", "filter": {"feedback": "down"}}},
+        {"key": "PIPELINE_OPEN", "label": "대기·진행·실패한 작업", "count": jobs_open,
+         "target": {"screen": "pipeline", "filter": {}}},
+        {"key": "GATE_FAILED", "label": "최근 평가 게이트 미통과", "count": gate_failed,
+         "target": {"screen": "evaluations", "filter": {}}},
+    ]
+
     return {
         "generated_at": _to_kst_iso(now),
+        # ⚠️ '미처리'로 좁히지 못한다 — 대화 로그에 처리 상태를 저장하는 컬럼이 아직 없다
+        # (admin_logs 의 triage 가 늘 'NONE'인 것과 같은 사정). 처리 완료를 저장하게 되면
+        # FEEDBACK_DOWN 을 미처리 건수로 좁힌다.
+        "todos": todos,
         "service": {
             "level": "ERROR" if error_count else "OK",
             "error_count": error_count,
