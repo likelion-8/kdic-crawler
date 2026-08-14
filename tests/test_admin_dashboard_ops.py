@@ -84,11 +84,21 @@ def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
         Result(latest),
         Result(1),
         Result(2),
+        # 할 일 3종(2026-08-14) — 나쁨 평가 / 열린 작업 / 최근 게이트
+        Result(7),
+        Result(0),
+        Result(SimpleNamespace(gate={"passed": False})),
     ])
 
     response = admin_dashboard.dashboard_summary(_admin(), db)
 
     assert response["kpi"]["questions_today"] == 4
+    # 건수와 이동 대상이 짝을 이뤄야 카드를 눌렀을 때 서버가 센 것과 같은 목록이 열린다
+    assert [(t["key"], t["count"], t["target"]["screen"]) for t in response["todos"]] == [
+        ("FEEDBACK_DOWN", 7, "logs"),
+        ("PIPELINE_OPEN", 0, "pipeline"),     # 0건이어도 항목이 사라지지 않는다
+        ("GATE_FAILED", 1, "evaluations"),
+    ]
     assert response["service"] == {
         "level": "ERROR",
         "error_count": 4,  # RAG 1 + pipeline 1 + 활동 로그 2
@@ -305,3 +315,17 @@ def test_suggestion_limits_are_enforced():
     ]
     with pytest.raises(BadRequestError):
         admin_ops._validate_suggestions(too_many_active)
+
+
+def test_dashboard_todos_treat_never_measured_gate_as_zero():
+    """게이트 기록이 없으면 '미통과'가 아니라 '아직 잰 적 없음'이다 — false 로 접으면 거짓 경보."""
+    db = FakeDb([
+        Result(58), Result(812), Result([]), Result(0), Result([]),
+        Result(None), Result(0), Result(0),
+        Result(0), Result(0), Result(None),     # 게이트 실행 기록 없음
+    ])
+
+    response = admin_dashboard.dashboard_summary(_admin(), db)
+
+    gate = next(t for t in response["todos"] if t["key"] == "GATE_FAILED")
+    assert gate["count"] == 0
