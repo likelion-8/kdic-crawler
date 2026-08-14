@@ -233,13 +233,24 @@ def _titles_for(db, doc_ids: set) -> dict:
     return {pid: title for pid, title in rows}
 
 
+def _all_links(expected_links) -> list:
+    """testset_items.expected_links(JSONB, [doc_id,...]) 의 **모든** 출처 id.
+
+    채점은 반드시 이걸 쓴다. 종전에는 _first_link 로 첫 하나만 정답으로 넘겨서, 정답 출처가
+    여러 개인 문항(골든셋 851 중 110문항)이 두 번째 출처를 맞혀도 오답으로 잡혔다.
+    eval_pipeline_retrieval 은 정답이 여러 개면 비율로 Recall 을 매기므로(recall_mrr), 전량을
+    넘겨야 정기 평가·게이트와 같은 눈금이 된다."""
+    if not isinstance(expected_links, list):
+        return []
+    # [{doc_id,...}] 형태로 저장됐을 수도 있어 둘 다 받는다.
+    return [(x.get("doc_id") if isinstance(x, dict) else str(x)) for x in expected_links if x]
+
+
 def _first_link(expected_links) -> Optional[str]:
-    """testset_items.expected_links(JSONB, [doc_id,...]) 의 첫 출처 id. 비면 None."""
-    if isinstance(expected_links, list) and expected_links:
-        first = expected_links[0]
-        # [{doc_id,...}] 형태로 저장됐을 수도 있어 둘 다 받는다.
-        return first.get("doc_id") if isinstance(first, dict) else str(first)
-    return None
+    """대표 출처 하나 — **화면 표시 전용**이다(AD-006 목록의 '기대 출처' 칼럼).
+    채점에는 쓰지 말 것. 채점용은 _all_links."""
+    links = _all_links(expected_links)
+    return links[0] if links else None
 
 
 def _item_to_dict(row, titles: dict) -> dict:
@@ -659,7 +670,8 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
             testset_items.c.testset_version == run.testset_version,
             testset_items.c.excluded.is_(False))).all()
     rows = [{"test_id": str(it.id), "question": it.question,
-             "expected_sources": [d for d in [_first_link(it.expected_links)] if d]}
+             # 정답 출처 전량. 첫 하나만 넘기면 두 번째 출처를 맞힌 문항이 오답이 된다(_all_links).
+             "expected_sources": _all_links(it.expected_links)}
             for it in items]
 
     retr, per = eval_retrieval(rows, pipeline.K_CANDIDATES, rerank)

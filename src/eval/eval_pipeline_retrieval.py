@@ -65,7 +65,10 @@ def retrieve_pages(query, k_candidates, use_rerank):
       gate_low_relevance까지 거친 뒤 **LLM이 실제로 받는 청크들**의 페이지 집합.
       ranked_pages[:5]와 다를 수 있다 — top5 청크가 한 페이지에 몰리면 실제 컨텍스트는
       페이지 1~2개뿐인데 페이지 순위 상위 5는 후보 뒤쪽 페이지까지 담기 때문."""
-    chunks = route_search_chunks(query, k=k_candidates)
+    # 자기참조 누수 차단 — 골든셋 문항으로 재면 질문이 자기 자신을 유형 분류 예시로
+    # 끌어와 라우팅이 항상 정답이 된다. 홀드아웃은 겹침이 없어 무해하고, 골든셋 기반
+    # 재측정(AD-006)에서만 실제로 값이 달라진다.
+    chunks = route_search_chunks(query, k=k_candidates, exclude_self=True)
     if use_rerank:
         chunks = rerank(query, chunks)
     ranked_pages = []
