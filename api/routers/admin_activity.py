@@ -328,7 +328,7 @@ def export_activity_events(body: ActivityExportRequest, request: Request,
         actor=admin.email,
         actor_role=admin.role,
         action=ACTION_ACTIVITY_EXPORT,
-        target=export_id,
+        target=f"활동 로그 · 현재 필터 ({export_id})",
         result=RESULT_SUCCESS,
         reason=body.reason.strip(),
         detail={

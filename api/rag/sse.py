@@ -130,7 +130,37 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
     # 0-1) 질문을 먼저 저장한다(대화 복원용). 답변 뒤에 저장하면 LLM 이 실패한 턴의 질문이
     #      기록에 안 남아, 사용자는 분명 물어봤는데 복원하면 없는 상태가 된다.
+    #      first_turn 은 저장 **전에** 재야 0 == 첫 턴이 성립한다(질의 캐시 '단일 턴' 적격).
+    first_turn = conversation.turn_count(session_id) == 0
     conversation.save_user_message(session_id, message)
+
+    # 0-2) 가드레일 — AD-008 게시본 금칙어를 질문에 적용한다(질문·답변 양방향의 앞쪽 절반).
+    #      적중이면 LLM 을 부르지 않고 고정 거절로 답한다(2026-08-13 F-3 배선).
+    hit = answer.guardrail_hit(message)
+    if hit is not None:
+        resp = answer.guardrail_refusal(session_id, request_id, _elapsed_ms(started))
+        logger.info("[%s] 금칙어 적중(질문): %r", request_id, hit)
+        answer.log_run(message, resp, [], resp.latency_ms)
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("answer_delta", {"text": resp.answer})
+        yield _sse("done", resp.model_dump())
+        return
+
+    # 0-3) 질의 캐시 — 첫 턴이면 조회한다(적격 = 단일 턴 · 정보성 · 성공, PRD-03 AD-009).
+    #      적중 시 검색·생성을 통째로 건너뛴다. 캐시 실패는 미스로 취급되어 답변을 막지 않는다.
+    if first_turn:
+        cached = answer.cache_get(message)
+        if cached is not None:
+            resp_dict = {**cached, "session_id": session_id, "request_id": request_id,
+                         "latency_ms": _elapsed_ms(started)}
+            from api.schemas.chat import ChatResponse
+            resp = ChatResponse.model_validate(resp_dict)
+            logger.info("[%s] 질의 캐시 적중", request_id)
+            answer.log_run(message, resp, [], resp.latency_ms)
+            conversation.save_assistant_message(session_id, request_id, resp)
+            yield _sse("answer_delta", {"text": resp.answer})
+            yield _sse("done", resp.model_dump())
+            return
 
     # 1) 쿼리 플래너: 멀티쿼리 분해 + 하위질문별 intent를 한 콜(structured output)로 판단한다.
     #    LLM 호출이라 실패할 수 있다(내부에서 안전 폴백하지만 예외도 방어).
@@ -221,13 +251,40 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     resp = answer.to_chat_response(
         finalized, used_flags, "".join(full_parts), composite, session_id, request_id, latency_ms)
 
+    # 5-1) 가드레일 — 답변 쪽 절반. 스트리밍으로 이미 나간 조각은 되돌릴 수 없지만 프론트는
+    #      done 을 확정본으로 그리므로(계약: done 이 최종) 여기서 거절로 바꾼다.
+    # 복합 답변의 resp.answer 는 하위 본문을 이어붙인 것(to_chat_response)이라 최상위 검사로 충분
+    a_hit = answer.guardrail_hit(resp.answer)
+    if a_hit is not None:
+        logger.info("[%s] 금칙어 적중(답변): %r — 거절로 대체", request_id, a_hit)
+        resp = answer.guardrail_refusal(session_id, request_id, latency_ms)
+
+    # Langfuse root trace — 웹 경로는 스레드풀 소비라 데코레이터 계측이 안 붙는다
+    # (observability.record_trace docstring). done 직전에 한 번에 남기고 rag_runs 에 잇는다.
+    from observability import record_trace
+    trace_id = record_trace(
+        "web_chat",
+        input={"question": message},
+        output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
+        metadata={"request_id": request_id, "session_id": session_id,
+                  "latency_ms": latency_ms, "composite": composite,
+                  "sub_questions": [sp.question for sp in sub_plans]})
+
     # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에
     # 남길 피드백(POST /api/feedback)의 연결 열쇠다 — 없으면 피드백을 붙일 곳이 사라진다.
     # log_rag_run 은 내부에서 예외를 삼키므로(실패-안전) 답변 전달을 막지 않는다.
-    answer.log_run(message, resp, sub_plans, latency_ms)
+    answer.log_run(message, resp, sub_plans, latency_ms, trace_id=trace_id)
 
     # 답변을 저장한다(대화 복원용). 출처·범위외 판정이 확정된 뒤여야 하므로 여기가 맞다.
     conversation.save_assistant_message(session_id, request_id, resp)
+
+    # 5-2) 질의 캐시 적재 — 적격: 단일 턴 · 단일 질문(비복합) · 정보성 · 성공 · 범위 내 ·
+    #      되묻기 아님(PRD-03 AD-009). 역할·개인 맥락 판정기는 없으므로 intent=informational
+    #      로 갈음한다(civil_petition 은 역할축 위험이 있어 캐시하지 않는다).
+    if (first_turn and not composite and resp.error is None and resp.clarification is None
+            and not resp.out_of_scope
+            and sub_plans and getattr(sub_plans[0], "intent", None) == "informational"):
+        answer.cache_put(message, resp)
 
     # sources/attachments 이벤트는 보내지 않는다(프론트 합의 2026-08-05).
     # 출처는 근거 사용 여부(source_check)가 확정돼야 정해지는데 그 판정이 스트리밍이 끝난 뒤라,

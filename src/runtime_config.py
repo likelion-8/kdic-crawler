@@ -119,6 +119,7 @@ def _load_prompt() -> dict:
                 select(prompt_versions.c.system_instruction,
                        prompt_versions.c.few_shot,
                        prompt_versions.c.no_evidence_notice,
+                       prompt_versions.c.guardrails,
                        prompt_versions.c.version)
                 .where(prompt_versions.c.is_current)
             ).first()
@@ -128,6 +129,9 @@ def _load_prompt() -> dict:
             "system_instruction": row.system_instruction,
             "few_shot": row.few_shot,
             "no_evidence_notice": row.no_evidence_notice,
+            # AD-008 이 게시한 금칙어·마스킹 규칙. 챗 경로(api/rag/answer.py guardrail_hit)가
+            # 읽는다 — 종전에는 게시해도 어디에도 적용되지 않았다(2026-08-13 F-3).
+            "guardrails": row.guardrails,
             "version": row.version,
         }
     except Exception as exc:  # noqa: BLE001

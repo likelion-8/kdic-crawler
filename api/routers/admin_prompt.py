@@ -250,8 +250,16 @@ def _blockwords(guardrails: dict) -> list:
 
 # ──────────────────────── 생성 실측 공통 ────────────────────────
 
-def _generate(question: str, si: str, few_shot: list) -> tuple[str, bool, list]:
-    """실서비스와 같은 검색 근거로 1문항 생성 -> (본문, 마커 SOURCE_USED, 출처 목록)."""
+def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
+              ) -> tuple[str, bool, list]:
+    """실서비스와 같은 검색 근거로 1문항 생성 -> (본문, 마커 SOURCE_USED, 출처 목록).
+
+    2026-08-13 게이트 정합 2건:
+    - 결정화: temperature 0 + seed 고정(llm_client deterministic). 같은 초안 2회 평가에서
+      회귀/개선 판정이 뒤집히던 비결정성 제거. seed 를 넘기면 flaky 재확인용 재생성.
+    - 판정 정렬: 운영은 마커 오표기를 source_check 로 복구하는데 평가만 원시 마커를 재서
+      '출처 부착 1건'이 항상 흔들렸다 — 같은 복구를 적용. 2026-08-14 팀 결정으로 운영과
+      함께 단일 검증 1콜(validate_answer, 모든 답변 대상)로 정렬했다(평가=운영 원칙)."""
     from candidate_ranking import gate_low_relevance, top_k_cut
     from citation import format_all_citations
     from llm_client import call_hyperclova
@@ -262,8 +270,18 @@ def _generate(question: str, si: str, few_shot: list) -> tuple[str, bool, list]:
     examples = "\n\n".join(f"질문: {ex['question']}\n답변: {ex['answer']}" for ex in few_shot)
     human = (f"{examples}\n\n--- 아래는 실제 질문입니다 ---\n\n"
              f"근거 자료:\n{context}\n\n질문: {question}\n답변:")
-    raw = call_hyperclova([("system", si), ("human", human)])
+    raw = call_hyperclova([("system", si), ("human", human)], deterministic=True, seed=seed)
     body, marker_used = prompt_builder._strip_no_source_marker(raw)
+    if top:
+        import pipeline as _pipeline
+        import runtime_config as _rc
+        if _rc.get_param("use_source_recheck", _pipeline.USE_SOURCE_RECHECK):
+            # 모든 답변 검증(2026-08-14) — used_source 가 마커를 양방향 오버라이드.
+            # 실패(None)는 fail-open 으로 마커 유지. 결정화(deterministic 생성)는 그대로다.
+            from source_check import validate_answer
+            v = validate_answer(question, body, context)
+            if v is not None:
+                marker_used = v.used_source
     sources = format_all_citations([cid for cid, _, _ in top]) if top else []
     return body, marker_used, sources
 
@@ -339,14 +357,22 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
             b_body, b_marker, b_sources = _generate(q, base["system_instruction"], base["few_shot"])
             a_body, a_marker, a_sources = _generate(q, content["system_instruction"], content["few_shot"])
             hits = [w for w in blockwords if w in a_body]
+            before_ok = b_marker if kind == "in" else (not b_marker)
+            after_ok = ((a_marker if kind == "in" else not a_marker) and not hits)
+            if before_ok and not after_ok:
+                # REGRESSED 후보만 seed 바꿔 1회 재생성 — 2연속 실패만 회귀 확정(flaky 흡수).
+                # seed 고정도 best-effort 라 잔여 비결정이 남는다(2026-08-13 리서치).
+                from llm_client import EVAL_SEED
+                a_body, a_marker, a_sources = _generate(
+                    q, content["system_instruction"], content["few_shot"], seed=EVAL_SEED + 1)
+                hits = [w for w in blockwords if w in a_body]
+                after_ok = ((a_marker if kind == "in" else not a_marker) and not hits)
             guard_hits += len(hits)
             if kind == "in":
-                before_ok, after_ok = b_marker, a_marker and not hits
                 if after_ok:
                     src_ok += 1
                 axis = "출처 부착"
             else:
-                before_ok, after_ok = (not b_marker), (not a_marker) and not hits
                 if after_ok:
                     oos_ok += 1
                 axis = "범위외 거절"
@@ -367,10 +393,14 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
                 "after": {"answer": a_body, "sources": a_sources},
             })
 
+    # 출처 부착은 1건 흔들림 허용(≥ 3/4) — 소표본 100% 요구는 p=0.9 에도 통과율 66%인
+    # 동전던지기였다(2026-08-13 실측: 무변경 초안 2회 실행에서 판정 반전). 회귀 확정은
+    # 위 seed 재시도(2연속 실패)로 이미 좁혔고, 범위외·금칙어 축은 역사적으로 안정이라 유지.
+    src_need = max(len(in_scope) - 1, 1)
     gate = {
-        "passed": (src_ok == len(in_scope) and oos_ok == len(oos)
+        "passed": (src_ok >= src_need and oos_ok == len(oos)
                    and guard_hits == 0 and regressed == 0),
-        "source_attached": {"passed": src_ok == len(in_scope),
+        "source_attached": {"passed": src_ok >= src_need,
                             "count": src_ok, "total": len(in_scope)},
         "out_of_scope": {"passed": oos_ok == len(oos), "count": oos_ok, "total": len(oos)},
         "guardrail": {"passed": guard_hits == 0},
@@ -407,14 +437,22 @@ def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         raise BadRequestError(f"Smoke 문항이 부족합니다({len(questions)}/{SMOKE_TOTAL}).")
 
     blockwords = _blockwords(content["guardrails"])
-    passed = 0
-    for q in questions:
+
+    def _smoke_ok(q: str, *, seed: int | None = None) -> bool:
         try:
-            a_body, marker, _src = _generate(q, content["system_instruction"], content["few_shot"])
+            a_body, marker, _src = _generate(
+                q, content["system_instruction"], content["few_shot"], seed=seed)
         except Exception:  # noqa: BLE001 — 한 문항 호출 실패 = 그 문항 실패
             logger.warning("smoke 호출 실패: %s", q, exc_info=True)
-            continue
-        if marker and not any(w in a_body for w in blockwords):
+            return False
+        return bool(marker) and not any(w in a_body for w in blockwords)
+
+    from llm_client import EVAL_SEED
+    passed = 0
+    for q in questions:
+        # 실패 문항만 seed 바꿔 1회 재시도(2연속 실패만 실패) — 문항당 p=0.97 이어도
+        # 30연속 통과율이 ~40%로 떨어지는 이항 함정을 흡수한다. 전건 통과 의미는 유지.
+        if _smoke_ok(q) or _smoke_ok(q, seed=EVAL_SEED + 1):
             passed += 1
 
     activate = passed == SMOKE_TOTAL

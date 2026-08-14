@@ -50,10 +50,11 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import and_, func, select
 
-from api.deps import CurrentAdmin, DbSession, SettingsDep, get_current_admin
+from api.deps import (CurrentAdmin, DbSession, SettingsDep, get_current_admin,
+                      write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.masking import mask_text
 from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
@@ -64,9 +65,8 @@ from schema import rag_runs
 
 logger = logging.getLogger(__name__)
 
-# 🔴 mask_text 는 아직 패스스루 스텁이다(api/masking.py) — question_masked·answer_masked_*
-# 의 값은 마스킹되지 않은 원문이다. 필드 이름만 보고 안전하다 판단하지 말 것. 그 스텁이
-# 채워지면 이 파일을 고치지 않아도 전 경로가 함께 마스킹된다.
+# mask_text 는 4종(주민·전화·카드·이메일) 마스킹을 조회 시점에 적용한다(2026-08-14 구현,
+# api/masking.py). question_masked·answer_masked_*·feedback comment 가 전부 이 함수를 거친다.
 
 router = APIRouter(
     prefix="/api/admin/logs",
@@ -266,7 +266,7 @@ def _row_to_log(row) -> dict:
         "request_id": row.request_id or "",
         # 🔴 KST(+09:00) ISO. UTC 로 주면 화면의 '오늘'이 9시간 어긋난다.
         "occurred_at": _to_kst_iso(row.created_at) or "",
-        # 마스킹은 아직 미구현이다(api/masking.py 는 패스스루 스텁 — 값은 원문 그대로).
+        # 마스킹 4종(주민·전화·카드·이메일)은 api/masking.py 가 조회 시점에 적용한다(2026-08-14 구현).
         # 호출 지점만 남겨 두어, 그 스텁이 채워지면 전 경로가 함께 바뀐다.
         "question_masked": mask_text(row.question) or "",
         "intent": row.intent,
@@ -372,13 +372,18 @@ def _langfuse(trace_id: Optional[str], host: str) -> Optional[dict]:
 
 
 @router.get("/{request_id}", response_model=ConversationLogDetail)
-def get_log(request_id: str, admin: CurrentAdmin, db: DbSession, settings: SettingsDep):
+def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSession,
+            settings: SettingsDep):
     """질의 1건의 상세 = 목록 행 + 분류·피드백·오류.
 
     request_id 는 UUID 가 아니라 문자열 컬럼이다(rag_runs.request_id). 형식 검사를 하지
     않고 그대로 조회한다 — 활동 로그의 event_id 와 달리 UUID 캐스팅이 없어 500 위험이 없다.
     """
     _require(admin, READ_ROLES, "대화 로그 조회")
+    # CM-DF-002 07절 이벤트 사전의 '대화 로그 조회'(대상: 대화 (request_id)) — 상세 열람만
+    # 기록한다. 목록 조회까지 적으면 폴링·페이지 이동으로 원장이 뒤덮인다(admin_drafts 와 동일 판단).
+    write_activity_log(db, request, actor=admin.email, actor_role=admin.role,
+                       action="대화 로그 조회", target=f"대화 ({request_id})")
 
     row = db.execute(
         select(
@@ -433,7 +438,8 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession, settings: Setti
             # 화면은 사람이 읽는 한 줄을 기대한다. 코드 배열을 그대로 이어 붙여 두고,
             # 라벨 사전(codes.ts ReasonCode)은 프론트가 갖고 있다.
             "reason_label": ", ".join(row.reason_codes or []),
-            "comment": row.comment or "",
+            # 자유 의견은 개인정보가 가장 잘 섞이는 자유 텍스트다 — 질문·답변과 같은 마스킹을 거친다
+            "comment": mask_text(row.comment) or "",
         },
         # 실패 건에만 싣는다. code·meaning·user_message·auto_retry·fallback 은 rag_runs 에
         # 원천이 없어 비워 둔다 — 처리 방침은 별도 조사에서 정한다(모듈 주석).
@@ -450,7 +456,7 @@ def get_log(request_id: str, admin: CurrentAdmin, db: DbSession, settings: Setti
 
 
 @router.post("/exports", response_model=LogExportResponse)
-def export_logs(body: dict, admin: CurrentAdmin, db: DbSession):
+def export_logs(body: dict, request: Request, admin: CurrentAdmin, db: DbSession):
     """내보내기 접수. 데이터를 파일로 빼가는 행위라 ADMIN 만 할 수 있다.
 
     지금은 대상 건수를 세어 접수증만 돌려준다 — 실제 파일 생성·다운로드는 별도 작업이다
@@ -485,4 +491,11 @@ def export_logs(body: dict, admin: CurrentAdmin, db: DbSession):
     export_id = f"exp_{uuid.uuid4().hex[:12]}"
     logger.info("대화 로그 내보내기 접수: %s (%s건, 요청자 %s)",
                 export_id, estimated_rows, admin.email)
+    # PRD-03 AD-005 감사: "조회·검색·내보내기 자체를 활동 로그 이벤트로 기록" — activity/exports
+    # 와 동일한 접수 기록. reason 은 화면 계약에 없어 비운다(위 docstring).
+    write_activity_log(db, request, actor=admin.email, actor_role=admin.role,
+                       action="대화 로그 내보내기",
+                       target=f"대화 로그 · 현재 필터 ({export_id})",
+                       detail={"export_id": export_id, "estimated_rows": estimated_rows,
+                               "filter": {k: v for k, v in body.items() if k != "request_id"}})
     return {"export_id": export_id, "status": "QUEUED", "estimated_rows": estimated_rows}

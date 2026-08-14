@@ -297,7 +297,8 @@ export function Pipeline() {
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               {/* 실행 중 상태 점 — 카드가 살아있음을 알린다. 색만이 아니라 이 캡션 텍스트와 병기 */}
               <span className="pulse-dot size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-              실행 중
+              {/* CM-DF-002 06절: QUEUED=대기 · RUNNING=진행 중. 워커가 죽어도 '실행 중'으로 읽히던 오표기 수정 */}
+              {running.status === 'RUNNING' ? '실행 중' : '대기 중 (실행 시작 대기)'}
               {/* 교체·실패 정책은 지금 상태가 아니라 규칙이라 접는다 */}
               <InfoHint label="인덱스 교체 정책 설명" size="sm">
                 6단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면 기존 인덱스를 그대로

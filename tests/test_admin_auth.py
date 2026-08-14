@@ -374,7 +374,7 @@ def test_every_track_a_endpoint_reaches_the_app():
         "/api/admin/accounts",
         "/api/admin/accounts/{account_id}",
         "/api/admin/login-failures",
-        "/api/admin/password/reset",
+        "/api/admin/password/reset-request",
         "/api/admin/password/reset-confirm",
         "/api/admin/password/change",
         "/api/admin/activity/risky-today",

@@ -69,6 +69,31 @@ def update_current_span(**kwargs):
         pass
 
 
+def record_trace(name, *, input=None, output=None, metadata=None):
+    """단일 root trace 를 **사후에 한 번에** 기록하고 trace_id 를 돌려준다 — 웹 SSE 경로용.
+
+    웹 응답은 동기 제너레이터를 스레드풀이 조각 단위로 소비한다(starlette
+    iterate_in_threadpool — next() 마다 워커 스레드가 바뀔 수 있다). 그래서 pipeline.py 처럼
+    @observe 데코레이터로 ambient 컨텍스트를 여는 방식은 조각 사이에 컨텍스트가 유실돼
+    쓸 수 없다(이 경로에 계측이 없던 구조적 이유). 대신 done 시점에 질문·답변·메타를 실어
+    root trace 하나를 남기고, 그 trace_id 를 rag_runs 에 연결한다(AD-005 링크용).
+
+    한계(의도된 것): 웹 trace 는 단계별 자식 span 이 없다 — 단계 span 은 pipeline 경로
+    (CLI·평가)에서 본다. 실패·비활성 시 None(호출부는 그대로 컬럼에 넣으면 된다)."""
+    if not _AVAILABLE:
+        return None
+    try:
+        # SDK v4 는 start_span 이 아니라 start_observation(as_type=...) 이다(4.14 실확인).
+        span = get_client().start_observation(
+            name=name, as_type="span", input=input, metadata=metadata)
+        if output is not None:
+            span.update(output=output)
+        span.end()
+        return span.trace_id
+    except Exception:
+        return None
+
+
 def flush():
     """버퍼에 남은 trace를 즉시 전송. 서버(FastAPI)는 백그라운드 배치라 부를 필요
     없고, 프로세스가 곧 끝나는 CLI·평가 스크립트가 종료 직전에 부른다(유실 방지)."""

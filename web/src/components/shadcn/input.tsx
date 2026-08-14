@@ -6,6 +6,9 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input
       type={type}
+      // 관리자 검색창·사유 입력에 브라우저가 로그인 이메일을 자동완성해 목록이 비어 보이던
+      // 실사용 장애(2026-08-13 실측)의 근본 차단. 필요한 곳은 props 로 덮어쓴다
+      autoComplete="off"
       data-slot="input"
       className={cn(
         "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30",

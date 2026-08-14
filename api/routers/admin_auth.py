@@ -795,7 +795,10 @@ def _issue_reset_token(db, account_id, email: str, request, now: datetime,
     return token
 
 
-@router.post("/password/reset", status_code=202)
+# 경로는 규격(PRD-02 'password(reset-request/…)')과 프론트 실호출(PasswordResetPanel.tsx
+# reset-request)에 맞춘다 — 종전 /password/reset 은 프론트가 부르지 않아 재설정 1단계가
+# 항상 404 였다(2026-08-13 실측 F-5).
+@router.post("/password/reset-request", status_code=202)
 def request_password_reset(body: PasswordResetRequest, request: Request, db: DbSession):
     """재설정 요청. 🔴 계정 존재 여부와 무관하게 **항상 202** 다(A9).
 

@@ -39,7 +39,7 @@ from rag_logger import log_rag_run
 # 있지만, DB 에 값이 없으면 get_param 이 이 값을 그대로 쓴다. 각 상수 주석의 실측 근거가
 # "왜 이 값인가"의 유일한 기록이라 DB 로 옮겼다고 지우면 안 된다(src/runtime_config.py 참고).
 from runtime_config import get_param
-from source_check import recheck_source_usage
+from source_check import validate_answer
 
 K_CANDIDATES = 20
 K_FINAL = 5
@@ -68,13 +68,13 @@ USE_RERANKER = False
 # 그때 USE_QUERY_DECOMPOSITION로 분해 자체를 켜고 끈다(둘 다 off면 원문 그대로 단일 처리).
 USE_QUERY_DECOMPOSITION = True
 
-# 2026-08-03: 마커가 [NO_SOURCE]로 판정한 답변만 source_check.recheck_source_usage()로 한 번
-# 더 확인한다(근거를 실제로 썼다고 나오면 출처를 붙인다). 자기보고 마커는 근거를 쓴 답변
-# 61건 중 33건(54%)에서 출처를 잃었고, 그 오판이 전부 [NO_SOURCE] 쪽에만 몰려 있었다
-# ([SOURCE_USED] 28건은 오판 0건 — docs/pipeline_issue_history.md 이슈 5). 프롬프트로 마커 정확도를
-# 올리는 길은 이미 35회 통제 실험으로 막혔으므로, 프롬프트가 아니라 판정 시점을 생성과
-# 분리하는 쪽으로 잡았다. 대가는 [NO_SOURCE] 답변당 LLM 호출 1회 추가다(정상 답변엔 없음).
-# 끄려면 False — 그러면 마커 판정만 쓰던 이전 동작으로 정확히 돌아간다.
+# 2026-08-03: 마커가 [NO_SOURCE]로 판정한 답변만 별도 호출로 재확인하던 것을,
+# 2026-08-14 팀 결정으로 **모든 답변**에 대한 단일 검증(source_check.validate_answer 1콜)으로
+# 확대했다 — 근거 실사용(used_source)이 마커를 양방향 오버라이드한다(자기보고 마커는 근거를
+# 쓴 답변 61건 중 33건(54%)에서 출처를 잃었다 — docs/pipeline_issue_history.md 이슈 5).
+# 프롬프트로 마커 정확도를 올리는 길은 이미 35회 통제 실험으로 막혔으므로, 판정 시점을
+# 생성과 분리한다. 대가는 답변당 LLM 호출 1회 추가(팀 수용).
+# 끄려면 False — 그러면 마커 판정만 쓰던 동작으로 정확히 돌아간다(검증 생략).
 USE_SOURCE_RECHECK = True
 
 
@@ -132,16 +132,22 @@ def _answer_one(query, timings, intent=None):
     # 출처를 "붙일지 말지"는 LLM 자기보고 마커([SOURCE_USED]/[NO_SOURCE])로 판단한다 —
     # prompt_builder가 답변 첫 줄에서 마커를 떼며 함께 판정한다. source_verifier(코드 판정)
     # 로 옮겼다가 2026-08-03 이 자기보고 방식으로 되돌렸다.
-    # 다만 마커가 [NO_SOURCE]라고 한 경우에만(USE_SOURCE_RECHECK) 생성과 분리된 별도 호출로
-    # 한 번 더 확인한다 — 근거를 재확인할 때 생성 때와 "같은 자료"를 넘겨야 판정이 성립하므로,
-    # informational은 근거 청크 본문을, civil_petition은 절차 안내 근거를 그대로 넘긴다.
+    # USE_SOURCE_RECHECK 면 생성과 분리된 검증 1콜(validate_answer)이 모든 답변의 판정을
+    # 확정한다(2026-08-14 팀 결정 — 웹 api/rag/answer.py 와 동일 판정). 검증 실패(None)는
+    # fail-open 으로 마커 판정을 유지한다. 근거는 생성 때와 "같은 자료"를 넘겨야 판정이
+    # 성립하므로, informational은 근거 청크 본문을, civil_petition은 절차 안내 근거를 그대로
+    # 넘긴다. appropriate=False 의 본문 교체는 웹 경로만 한다(CLI 는 출처 부착 판정까지).
     with measure_time(timings, "answer_assembly", accumulate=True):
         if intent == "civil_petition":
             evidence = civil_petition_answer["procedure"]
         else:
             evidence = "\n\n".join(text for _, _, text in top)
-        recheck = ((lambda body: recheck_source_usage(body, evidence))
-                   if get_param("use_source_recheck", USE_SOURCE_RECHECK) else None)
+
+        def _recheck(body, marker_used, _q=query, _ev=evidence):
+            v = validate_answer(_q, body, _ev)
+            return v.used_source if v is not None else marker_used
+
+        recheck = (_recheck if get_param("use_source_recheck", USE_SOURCE_RECHECK) else None)
 
         if intent == "civil_petition":
             answer = assemble_civil_petition_answer(

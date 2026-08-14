@@ -114,10 +114,10 @@ def _param_meta() -> list:
          "group": "retrieval", "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_QUERY_DECOMPOSITION,
          "note": "플래너를 껐을 때만 쓰는 HCX 분해 경로"},
-        {"key": "use_source_recheck", "label": "출처 재확인(NO_SOURCE 사후 판정)",
+        {"key": "use_source_recheck", "label": "답변 사후 검증(전 답변 1콜)",
          "group": "generation", "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_SOURCE_RECHECK,
-         "note": "마커 오표기(출처 소실 54% 실측)를 별도 LLM 판정으로 복구"},
+         "note": "근거 실사용·질문-답변 적절성을 별도 LLM 1콜로 검증(2026-08-14 확대) — Off 면 마커만 신뢰"},
     ]
 
 
@@ -383,7 +383,7 @@ def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession
 
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_EVALUATE,
-        target=f"초안 {signature}",
+        target=f"RAG 파라미터 초안 ({signature})",
         detail={"params": params, "gate_passed": gate["passed"],
                 "holdout": f"{gate['holdout_passed']}/{gate['holdout_total']}"},
     )

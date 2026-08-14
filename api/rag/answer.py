@@ -29,7 +29,7 @@ from llm_client import call_hyperclova
 from prompt_builder import (_strip_no_source_marker, build_civil_petition_prompt,
                             build_informational_prompt)
 from runtime_config import get_param
-from source_check import judge_answer_majority
+from source_check import validate_answer
 
 from api.errors import DEFAULT_FALLBACK_SOURCES
 from api.schemas.chat import Attachment, ChatResponse, SourceItem, SubAnswer
@@ -44,6 +44,11 @@ logger = logging.getLogger(__name__)
 # 상수는 지우지 않고 문서화된 기본값으로 남긴다 — DB 가 비면 여기로 떨어진다.
 K_CANDIDATES = 20
 K_FINAL = 5
+
+# pipeline.USE_SOURCE_RECHECK 와 동일 기본값(상수 중복도 위 K_* 와 같은 사정 — pipeline 을
+# import 하지 않는다). use_source_recheck 는 사후 검증(validate_answer) 전체의 on/off
+# 스위치다: Off 면 마커만 신뢰하고 검증·본문 교체·재생성을 전부 생략한다(2026-08-14 팀 결정).
+USE_SOURCE_RECHECK = True
 
 # 에러 응답에 실을 폴백 출처(공식 페이지). errors.py 것을 그대로 SourceItem 으로.
 _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
@@ -168,40 +173,50 @@ def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
         body, marker_used = _strip_no_source_marker(raw)
         if marker_used:
             return body, True
-        j = judge_answer_majority(body, sp.evidence, sp.question)
-        return body, bool(j) and j.used_source
+        # 단일 검증 1콜(2026-08-14 팀 결정으로 다수결 폐지). 재생성본은 근거를 썼고
+        # 질문에도 적절해야 채택한다 — 실패(None)는 미채택으로 원래 거절문 유지.
+        v = validate_answer(sp.question, body, sp.evidence)
+        return body, bool(v) and v.used_source and v.appropriate
     except Exception:
         logger.warning("재생성 실패 — 원래 답변 유지", exc_info=True)
         return "", False
 
 
 def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubAnswer, bool]:
-    """스트리밍이 끝난 하위 답변을 구조화한다. 근거 사용 여부 판정:
-    마커가 [SOURCE_USED]면 그대로 첨부(107건+36건 실측에서 이 방향 오판 0건), 아니면
-    source_check.judge_answer(luna structured output)로 판정해 실제로 근거를 썼으면 뒤집는다.
-    근거 미사용이면 sources/attachments 를 비우고, 판정이 "근거 없는 내용을 사실처럼
-    서술"(ungrounded_claims)이면 본문을 OUT_OF_SCOPE_MESSAGE 로 교체한다 — 인사·정체성·정상
-    거절문은 kind 가 다르므로 교체되지 않는다.
+    """스트리밍이 끝난 하위 답변을 구조화한다. 판정(2026-08-14 팀 결정):
+    use_source_recheck 가 켜져 있으면 **모든 답변**을 source_check.validate_answer 1콜로
+    검증한다 — used_source 가 마커([SOURCE_USED]/[NO_SOURCE])를 양방향 오버라이드하고,
+    appropriate=False(동문서답·근거와 모순)면 본문을 OUT_OF_SCOPE_MESSAGE 로 교체해
+    범위외 처리한다. "근거 없는 내용을 사실처럼 서술"(ungrounded_claims)의 본문 교체도
+    유지한다 — 인사·정체성·정상 거절문은 appropriate=true·kind 상이라 교체되지 않는다.
+    검증 실패(None)는 fail-open: 마커 판정 유지 + 적절성 통과(검증이 답변을 막지 않는다).
+    스위치 Off 면 마커만 신뢰하고 검증을 통째로 생략한다.
 
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = marker_used_source
-    if not used:
-        # 3표 다수결 판정 — 단일 판정은 경계 사례(정의형 답변·소관 밖 응대)에서 롤마다
-        # 뒤집혀서(실측), 부착(used) 판정과 교체·재생성 분기(kind)를 전부 다수결에 건다.
-        # 실패 시 None(경고 로그는 내부에서) = 마커의 원래 판정 유지.
-        j = judge_answer_majority(body, sp.evidence, sp.question)
-        if j is not None:
-            used = j.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
-            if not used and j.kind == "ungrounded_claims":
-                # 근거 없는 내용을 사실처럼 서술 — 본문을 표준 안내로 교체(환각 노출 차단)
+    if get_param("use_source_recheck", USE_SOURCE_RECHECK):
+        # 단일 검증 1콜 — 3표 다수결은 2026-08-14 팀 결정으로 폐지(모든 경로 1콜 통일).
+        v = validate_answer(sp.question, body, sp.evidence)
+        if v is not None:
+            used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
+            inappropriate = not v.appropriate
+            if inappropriate and used:
+                # 근거를 쓴 답변이 '부적절' — 단일 판정 1콜은 경계 문항에서 롤마다 흔들린다
+                # (다수결이 있던 이유). 정답을 한 롤 판정으로 버리지 않도록 1회 재생성 후
+                # 재검증해 2연속 부적절일 때만 확정한다(게이트의 '2연속 실패 확정'과 같은 철학).
+                body2, used2 = _regenerate_once(sp)
+                if used2:
+                    body, used, inappropriate = body2, True, False
+            if inappropriate or (not used and v.kind == "ungrounded_claims"):
+                # 질문에 답하지 못했거나(동문서답·근거 모순) 근거 없는 내용을 사실처럼
+                # 서술 — 본문을 표준 안내로 교체하고 범위외 처리(환각·오답 노출 차단)
                 body = OUT_OF_SCOPE_MESSAGE
-            elif not used and j.kind == "refusal" and sp.top:
+                used = False
+            elif not used and v.kind == "refusal" and sp.top:
                 # 근거가 강하게 검색돼 있는데 거절 — HCX 확률적 거절(같은 프롬프트로 정답·거절이
                 # 반반 갈리는 것이 실측됨)일 수 있어 딱 한 번 재생성한다. 재생성본도 판정을
                 # 통과해야만 채택하므로 정당한 거절(근거에 답이 정말 없는 경우)은 그대로 유지된다.
-                # top-1 점수 조건이 없으면 도메인 인접 범위외 질문("보이스피싱범 잡는 법", 0.54)의
-                # 정당한 소관 밖 거절까지 재생성돼 곁다리 근거로 답을 만들어버린다(실측 1/6).
                 # 스트리밍엔 이미 거절문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
                 body2, used2 = _regenerate_once(sp)
                 if used2:
@@ -259,7 +274,8 @@ def _plan_labels(sub_plans: list) -> tuple[Optional[str], Optional[str]]:
     return intents, routes
 
 
-def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int) -> None:
+def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
+            trace_id=None) -> None:
     """실사용 질의 1건을 Supabase rag_runs 에 남긴다.
 
     pipeline.rag_answer() 는 자기 안에서 이걸 부르지만 API 는 그 함수를 우회해 흐름을
@@ -284,6 +300,7 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int)
         request_id=resp.request_id,
         session_id=resp.session_id,
         status=STATUS_OUT_OF_SCOPE if resp.out_of_scope else STATUS_NORMAL,
+        trace_id=trace_id,   # observability.record_trace 결과 — AD-005 상세의 Langfuse 링크 원천
     )
 
 
@@ -320,6 +337,127 @@ def log_failed_run(question: str, exc: Exception, phase: str, request_id: str, s
         # 원인 구분이 안 되고, 조사에 필요한 것은 어떤 예외가 어디서 났는지다.
         root_cause=f"{type(exc).__name__}: {exc}",
     )
+
+
+# ──────────────────────── 가드레일 · 질의 캐시 (2026-08-13 배선) ────────────────────────
+# 종전에는 AD-008 이 게시한 금칙어가 챗 경로 어디에도 적용되지 않았고(F-3), query_cache 는
+# 테이블·통계·비우기 API 만 있고 /api/chat 이 읽지도 쓰지도 않았다(F-4). 둘 다 sse.py 가
+# 이 헬퍼들을 통해 쓴다. 캐시·가드레일 실패는 답변을 막지 않는다(전부 실패-안전).
+
+GUARDRAIL_BLOCK_MESSAGE = (
+    "문의하신 내용에는 안내가 제한되는 표현이 포함되어 있어 답변을 드리기 어렵습니다. "
+    "예금보험공사 업무에 대한 질문으로 다시 작성해 주세요.")
+CACHE_TTL_H = 24   # PRD-03 AD-009: 적격 질문만 24시간 캐시
+
+
+def guardrail_hit(text: str) -> Optional[str]:
+    """게시본 금칙어(blocklist) 첫 적중 단어 -> str | None. 질문·답변 양방향에서 부른다."""
+    try:
+        from runtime_config import get_prompt
+        block = (get_prompt("guardrails", None) or {}).get("blocklist") or {}
+        if not block.get("active", True):
+            return None
+        folded = str(text or "").casefold()
+        for item in block.get("items") or []:
+            w = item if isinstance(item, str) else (item.get("pattern") or "")
+            w = str(w).strip()
+            if w and w.casefold() in folded:
+                return w
+    except Exception:  # noqa: BLE001
+        logger.exception("guardrail_hit 실패 — 미적용으로 통과")
+    return None
+
+
+def guardrail_refusal(session_id: str, request_id: str, latency_ms: int) -> ChatResponse:
+    """금칙어 적중 시의 고정 거절 응답 — 근거·출처 없이 범위 외로 처리한다."""
+    return ChatResponse(
+        answer=GUARDRAIL_BLOCK_MESSAGE, sources=[], attachments=[], out_of_scope=True,
+        sub_answers=[], clarification=None, error=None,
+        latency_ms=latency_ms, session_id=session_id, request_id=request_id)
+
+
+def _cache_versions() -> dict:
+    """캐시 유효성 스냅샷 — PRD-03: 키 = 정규화 질문 + (인덱스·RAG·프롬프트·모델 버전).
+    질의별 비우기(admin_ops purge)가 질문 해시로 지우므로 버전은 키가 아니라 **저장값**에
+    넣고 조회 시 대조한다 — 버전이 바뀌면 미스로 취급하고 행을 지운다(자동 무효화)."""
+    import os
+    from db import get_session
+    from schema import search_index_versions
+    from schema_admin import rag_param_versions
+    from sqlalchemy import select
+    from runtime_config import current_versions
+    snap = {"prompt": current_versions().get("prompt"),
+            "model": os.environ.get("CLOVA_MODEL", "")}
+    with get_session() as session:
+        snap["params"] = session.execute(
+            select(rag_param_versions.c.version)
+            .where(rag_param_versions.c.status == "current")).scalar()
+        snap["index"] = str(session.execute(
+            select(search_index_versions.c.id)
+            .where(search_index_versions.c.status == "ACTIVE")
+            .order_by(search_index_versions.c.created_at.desc()).limit(1)).scalar())
+    return snap
+
+
+def cache_get(question: str) -> Optional[dict]:
+    """적중 시 저장된 ChatResponse dict(식별자 제외)를 돌려주고 hit_count 를 올린다."""
+    try:
+        from datetime import datetime, timezone
+        from api.routers.admin_ops import cache_key_for_question
+        from db import get_session
+        from schema_admin import query_cache
+        from sqlalchemy import delete, select, update
+        key = cache_key_for_question(question)
+        now = datetime.now(timezone.utc)
+        with get_session() as session:
+            row = session.execute(select(query_cache).where(query_cache.c.cache_key == key)).first()
+            if row is None:
+                return None
+            if row.expires_at is not None and row.expires_at <= now:
+                session.execute(delete(query_cache).where(query_cache.c.cache_key == key))
+                session.commit()
+                return None
+            stored = row.response or {}
+            if stored.get("_versions") != _cache_versions():
+                # 인덱스·설정·프롬프트·모델 중 하나라도 바뀌었다 — 자동 무효화(PRD-03)
+                session.execute(delete(query_cache).where(query_cache.c.cache_key == key))
+                session.commit()
+                return None
+            session.execute(update(query_cache).where(query_cache.c.cache_key == key)
+                            .values(hit_count=query_cache.c.hit_count + 1, last_hit_at=now))
+            session.commit()
+            return stored.get("chat")
+    except Exception:  # noqa: BLE001
+        logger.exception("cache_get 실패 — 미스로 처리")
+        return None
+
+
+def cache_put(question: str, resp: ChatResponse) -> None:
+    """적격 응답을 24h TTL 로 저장한다(upsert). 적격 판정은 호출부(sse.py)가 한다."""
+    try:
+        from datetime import datetime, timedelta, timezone
+        from api.routers.admin_ops import cache_key_for_question
+        from db import get_session
+        from schema_admin import query_cache
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+        key = cache_key_for_question(question)
+        now = datetime.now(timezone.utc)
+        payload = {
+            "chat": resp.model_dump(exclude={"session_id", "request_id", "latency_ms"}),
+            "_versions": _cache_versions(),
+        }
+        stmt = pg_insert(query_cache).values(
+            cache_key=key, question=question, response=payload,
+            created_at=now, expires_at=now + timedelta(hours=CACHE_TTL_H))
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[query_cache.c.cache_key],
+            set_={"question": question, "response": payload,
+                  "created_at": now, "expires_at": now + timedelta(hours=CACHE_TTL_H)})
+        with get_session() as session:
+            session.execute(stmt)
+            session.commit()
+    except Exception:  # noqa: BLE001
+        logger.exception("cache_put 실패 — 저장만 포기")
 
 
 def error_from_exception(exc: Exception, phase: str = "llm", request_id: str = "") -> ApiError:

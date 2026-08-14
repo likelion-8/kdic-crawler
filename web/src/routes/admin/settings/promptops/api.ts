@@ -161,7 +161,8 @@ export interface SuggestedQuestion {
   business_function: BusinessFunction
   active: boolean
   order: number
-  click_count: number
+  /** 최근 7일 클릭. 집계 경로가 없어 서버가 null 을 내린다(admin_ops.py:401) */
+  click_count: number | null
 }
 
 // ---------------------------------------------------------------- 쿼리 키

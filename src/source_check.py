@@ -1,4 +1,4 @@
-"""출처 부착 재확인 — 마커가 [NO_SOURCE]라고 판정했을 때만 별도 LLM에게 한 번 더 묻는다.
+"""답변 사후 검증 — 생성과 분리된 별도 LLM 1콜로 근거 실사용·질문-답변 적절성을 판정한다.
 
 ## 왜 필요한가
 
@@ -38,6 +38,14 @@ LLM이다(2026-08-03 팀 결정 — 판정은 LLM이 하는 방향이 맞다).
 "썼다"는 판정은 틀린 적이 없으므로 건드리지 않는다. 틀리는 쪽만 재확인하면 (a) 마커가
 완벽했던 축(거절·인사에 무관한 출처가 안 붙는 것)을 그대로 보존하고 (b) 추가 LLM 호출이
 [NO_SOURCE] 답변에만 발생해 비용도 그만큼만 는다.
+
+## 2026-08-14 팀 결정 — 단일 1콜(validate_answer)로 통일 + 모든 답변으로 확대
+
+위 "[NO_SOURCE]일 때만" 원칙과 3표 다수결(judge_answer_majority)을 폐지했다. 이제 모든
+경로(웹 api/rag/answer.py · CLI src/pipeline.py · 관리자 평가 api/routers/admin_prompt.py)가
+validate_answer 1콜로 **모든 답변**을 검증한다 — 근거 실사용(used_source, 마커를 양방향
+오버라이드)에 더해 질문-답변 적절성(appropriate: 질문에 실제로 답했는가, 근거와 모순되지
+않는가)까지 함께 판정한다. 답변당 LLM +1콜의 지연 증가는 팀이 수용했다.
 """
 import logging
 import os
@@ -71,6 +79,16 @@ SYSTEM_INSTRUCTION = """당신은 RAG 챗봇의 답변 검사기입니다. 질�
 - used_source와 kind는 일관돼야 합니다: used_source=true는 kind="grounded"와만,
   false는 나머지 kind와만 짝지을 수 있습니다."""
 
+# 2026-08-14 팀 결정: 검증을 모든 답변으로 확대하면서 "질문-답변 적절성" 축을 추가했다.
+# 기존 판정 규칙(SYSTEM_INSTRUCTION)은 그대로 두고 축 하나만 덧붙인다.
+VALIDATE_INSTRUCTION = SYSTEM_INSTRUCTION + """
+
+추가로 판정할 것: "답변"이 "질문"에 대한 응답으로 적절한가? (appropriate)
+- 답변이 질문이 물은 것에 실제로 답했으면 true입니다. 인사에 인사로 응대하거나,
+  범위 밖·답변 불가 사유를 안내하는 정상 거절도 적절한 응답이므로 true입니다.
+- 답변이 질문과 동떨어진 내용을 다루거나(동문서답), 자료에 있는 내용과 모순되는 사실을
+  서술하면 false입니다."""
+
 
 class AnswerJudgement(BaseModel):
     """근거 사용 여부 + 답변 성격. kind는 범위외 답변의 본문 교체 판단에 쓰인다(api/rag/answer.py)."""
@@ -80,83 +98,61 @@ class AnswerJudgement(BaseModel):
                     "refusal=답변 거절·안내 불가 표명, ungrounded_claims=자료에 없는 내용을 사실처럼 서술")
 
 
+class AnswerValidation(AnswerJudgement):
+    """AnswerJudgement + 질문-답변 적절성 축(2026-08-14 팀 결정)."""
+    appropriate: bool = Field(
+        description="답변이 질문에 실제로 답했거나 정상적으로 응대·거절했으면 true. "
+                    "동문서답이거나 자료 내용과 모순되면 false.")
+
+
 # query_planner._parse와 같은 사정 — 일부 모델이 temperature 파라미터를 거부(400)하므로
 # 실패 시 파라미터 없이 한 번 재시도한다.
 _temperature_unsupported = set()
 
 
-def _parse(client, model, messages):
+def _parse(client, model, messages, schema=AnswerJudgement):
     if model not in _temperature_unsupported:
         try:
             return client.beta.chat.completions.parse(
-                model=model, messages=messages, response_format=AnswerJudgement, temperature=0)
+                model=model, messages=messages, response_format=schema, temperature=0)
         except Exception:
             _temperature_unsupported.add(model)
     return client.beta.chat.completions.parse(
-        model=model, messages=messages, response_format=AnswerJudgement)
+        model=model, messages=messages, response_format=schema)
 
 
-def judge_answer(answer_text, evidence, question=None) -> Optional[AnswerJudgement]:
-    """답변이 근거 자료를 실제로 썼는지 + 답변 성격을 별도 LLM으로 판정한다.
+def validate_answer(question, answer_text, evidence) -> Optional[AnswerValidation]:
+    """답변 하나를 단일 LLM 1콜로 검증한다 -> AnswerValidation | None.
 
+    2026-08-14 팀 결정 2건의 구현체(모듈 docstring 참고):
+    - 3표 다수결(judge_answer_majority) 폐지 — 모든 경로가 이 단일 호출로 통일.
+    - [NO_SOURCE] 한정 재확인(recheck_source_usage) 폐지 — **모든 답변**을 검증하며
+      used_source 가 마커 판정을 양방향으로 오버라이드하고, appropriate(질문에 실제로
+      답했는가·근거와 모순되지 않는가) 축을 함께 판정한다.
+
+    question: 사용자 질문. 판정 규칙들이 "질문에 대한 핵심 답" "질문이 뜻을 묻는 경우"처럼
+              질문을 기준으로 삼으므로 반드시 넘긴다(2026-08-10: 질문 없이 판정하던 동안
+              정의형 답변 판정이 롤마다 흔들리는 원인 중 하나였다).
     answer_text: 마커를 떼어낸 답변 본문.
     evidence: 그 답변을 만들 때 준 근거 텍스트. 검색 게이트로 근거가 비었으면 빈 문자열이어도
-              된다 — 그 경우 used_source는 자연히 false, kind 분류만 의미를 갖는다.
-    question: 사용자 질문. 판정 규칙들이 "질문에 대한 핵심 답" "질문이 뜻을 묻는 경우"처럼
-              질문을 기준으로 삼으므로 반드시 넘기는 것이 정확하다(2026-08-10: 질문 없이
-              판정하던 동안 정의형 답변 판정이 롤마다 흔들리는 원인 중 하나였다).
+              된다 — 그 경우 used_source는 자연히 false, kind·appropriate 만 의미를 갖는다.
 
-    실패(키 없음·호출 오류·파싱 오류)는 None을 돌려준다. 호출부는 None을 "판정 불가 = 마커의
-    원래 판정 유지"로 다뤄야 하며, 여기서 경고 로그를 남긴다."""
+    실패(키 없음·호출 오류·파싱 오류)는 None — fail-open: 호출부는 마커의 원래 판정을
+    유지하고 appropriate 는 통과로 다룬다(검증이 답변을 막으면 안 된다). 조용히 죽지
+    않도록 경고 로그는 여기서 남긴다."""
     if not answer_text.strip():
         return None
     q_part = f"질문:\n{question}\n\n" if question else ""
     messages = [
-        {"role": "system", "content": SYSTEM_INSTRUCTION},
+        {"role": "system", "content": VALIDATE_INSTRUCTION},
         {"role": "user", "content": f"{q_part}자료:\n{evidence if str(evidence).strip() else '(검색된 근거 없음)'}\n\n답변:\n{answer_text}"},
     ]
     try:
         from openai import OpenAI
         client = OpenAI()
         model = os.environ["OPENAI_PLANNER_MODEL"]
-        r = _parse(client, model, messages)
+        r = _parse(client, model, messages, schema=AnswerValidation)
         return r.choices[0].message.parsed
     except Exception:
-        logger.warning("judge_answer 실패 — 마커의 원래 판정을 유지한다", exc_info=True)
+        logger.warning("validate_answer 실패 — 마커의 원래 판정을 유지한다(fail-open)", exc_info=True)
         return None
-
-
-def judge_answer_majority(answer_text, evidence, question=None, votes=3):
-    """judge_answer 를 병렬 3회 돌려 다수결로 집계한다 -> AnswerJudgement | None.
-
-    왜: 경계 사례(정의형 답변·소관 밖 응대)에서 단일 판정이 롤마다 뒤집히는 것이 실측됐고,
-    규칙 문구를 조여도 오차가 자리만 옮겼다(2026-08-10: 자진반환 오기각 ↔ 보이스피싱 오채택).
-    부착·본문 교체·재생성 채택은 전부 이 판정 하나에 걸려 있어, 노이즈 자체를 다수결로 줄인다.
-    호출은 마커가 [NO_SOURCE]인 소수 경로에만 발생한다.
-
-    집계: used_source 는 "used=true 이면서 kind=grounded" 표가 과반일 때 true(그때 kind 도
-    grounded). 아니면 kind 는 나머지 표의 최빈값. 유효 표가 과반 미만이면 None(판정 불가)."""
-    from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=votes) as ex:
-        results = list(ex.map(lambda _: judge_answer(answer_text, evidence, question), range(votes)))
-    valid = [j for j in results if j is not None]
-    if len(valid) < (votes // 2 + 1):
-        return None
-    grounded = sum(1 for j in valid if j.used_source and j.kind == "grounded")
-    if grounded >= (len(valid) // 2 + 1):
-        return AnswerJudgement(used_source=True, kind="grounded")
-    kinds = [j.kind for j in valid if not (j.used_source and j.kind == "grounded")]
-    top_kind = max(set(kinds), key=kinds.count)
-    return AnswerJudgement(used_source=False, kind=top_kind)
-
-
-def recheck_source_usage(answer_text, evidence):
-    """답변이 근거 자료를 실제로 썼는지 다시 묻는다 -> bool. (judge_answer의 bool 축약 —
-    pipeline.py 등 kind가 필요 없는 호출부용. 계약은 교체 전과 동일하다.)
-
-    True면 "근거를 실제로 썼다"(= 마커의 [NO_SOURCE] 판정을 뒤집어 출처를 붙인다).
-    호출·파싱 실패는 False로, 마커의 원래 판정을 그대로 둔다."""
-    if not str(evidence).strip():
-        return False
-    j = judge_answer(answer_text, evidence)
-    return bool(j) and j.used_source

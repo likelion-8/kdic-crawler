@@ -177,8 +177,8 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
         db, request,
         actor=me.email, actor_role=me.role,
         action=ACTION_BY_JOB_TYPE.get(body.type, body.type),
-        # 대상은 잡 id 다 — 화면에서 이 값으로 어느 작업인지 짚을 수 있어야 한다.
-        target=str(row.id),
+        # CM-DF-002 07절: 대상은 '사람이 읽는 이름 + (ID)' — ID 단독 노출 금지.
+        target=f"{row.target_summary or body.type} ({row.id})",
         reason=body.reason or None,
         detail={"job_type": body.type, "targets": body.targets or []},
     )
@@ -266,7 +266,7 @@ def cancel_job(job_id: str, body: JobCancel, request: Request,
     write_activity_log(
         db, request,
         actor=me.email, actor_role=me.role,
-        action="작업 취소", target=job_id, reason=reason,
+        action="작업 취소", target=f"{row.target_summary or row.type} ({job_id})", reason=reason,
         detail={"job_type": row.type},
     )
     return _row_to_job(row)
@@ -461,7 +461,7 @@ def retry_job(job_id: str, body: JobRetry, request: Request, db: DbSession, me: 
 
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action="작업 재시도",
-        target=str(row.id), reason=body.reason.strip() or None,
+        target=f"{row.target_summary or original.type} ({row.id})", reason=body.reason.strip() or None,
         detail={"job_type": original.type, "retry_of": job_id},
     )
     return _row_to_job(row)
@@ -505,7 +505,7 @@ def rollback_job(job_id: str, body: JobRollback, request: Request, db: DbSession
     # '긴급 롤백'은 RISKY_ACTIONS 에 들어 있어 접근 관리의 '오늘의 위험 작업'에도 뜬다.
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action="긴급 롤백",
-        target=str(row.id), reason=body.reason.strip(),
+        target=f"{row.target_summary or original.type} ({row.id})", reason=body.reason.strip(),
         detail={"job_type": original.type, "rollback_of": job_id},
     )
     return _row_to_job(row)

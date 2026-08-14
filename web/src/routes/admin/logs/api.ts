@@ -71,10 +71,12 @@ export interface ConversationLogDetail extends ConversationLogRow {
     intent: Intent
     business_function: BusinessFunction | null
     question_type: QuestionType
-    source_used: boolean
-    marker: string
+    /** rag_runs 에 원천 컬럼이 없어 서버가 null 을 내린다(admin_logs.py 모듈 주석) */
+    source_used: boolean | null
+    /** 서버가 원천 부재로 항상 null 을 내린다(admin_logs.py get_log) */
+    marker: string | null
     /** 마커가 어긋나 정규화로 보정한 건 — 급증하면 프롬프트 점검(AD-008) 신호 */
-    normalized: boolean
+    normalized: boolean | null
   }
   /** 검색 후보·단계별 소요는 여기 없다 — Langfuse가 갖는다(위 LangfuseTrace 주석) */
   langfuse: LangfuseTrace | null
