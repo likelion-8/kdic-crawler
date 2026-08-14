@@ -214,27 +214,29 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
             sp.obs_normalized = False
             used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
             inappropriate = not v.appropriate
-            if inappropriate and used:
-                # 근거를 쓴 답변이 '부적절' — 단일 판정 1콜은 경계 문항에서 롤마다 흔들린다
-                # (다수결이 있던 이유). 정답을 한 롤 판정으로 버리지 않도록 1회 재생성 후
-                # 재검증해 2연속 부적절일 때만 확정한다(게이트의 '2연속 실패 확정'과 같은 철학).
+            # 나쁜 판정(부적절·근거이탈·거절)인데 근거가 강하게 검색돼 있으면 딱 한 번
+            # 재생성한다. 단일 판정 1콜은 경계 문항에서 롤마다 흔들리므로(다수결이 있던 이유)
+            # 한 롤 판정만으로 정답 후보를 버리지 않는다 — 재생성본도 판정을 통과해야만
+            # 채택되니(2연속 실패 확정) 정당한 거절·미달은 그대로 유지된다.
+            # ⚠️ 종전에는 '부적절+근거사용'과 '거절'만 구제하고 used_source=false +
+            # ungrounded_claims 는 재시도 없이 즉시 범위외로 교체하는 비대칭이 있었다.
+            # 2026-08-14 실측(같은 질문 5연속): 4회는 거절→재생성 구제로 정상 답변,
+            # 1회가 이 빠진 경로로 떨어져 동일 질문에 답변이 뒤집혔다(관측 기록으로 확인).
+            bad = inappropriate or (not used and v.kind in ("ungrounded_claims", "refusal"))
+            if bad and sp.top:
+                # 스트리밍엔 이미 원래 본문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
                 body2, used2 = _regenerate_once(sp)
                 if used2:
                     body, used, inappropriate = body2, True, False
             if inappropriate or (not used and v.kind == "ungrounded_claims"):
-                # 질문에 답하지 못했거나(동문서답·근거 모순) 근거 없는 내용을 사실처럼
-                # 서술 — 본문을 표준 안내로 교체하고 범위외 처리(환각·오답 노출 차단)
+                # 재생성으로도 구제되지 않았다(또는 근거 자체가 비어 시도조차 못 했다) —
+                # 질문에 답하지 못했거나 근거 없는 내용을 사실처럼 서술한 건이므로 본문을
+                # 표준 안내로 교체하고 범위외 처리한다(환각·오답 노출 차단).
+                # kind=refusal 이 구제에 실패한 경우는 여기 걸리지 않고 원래 거절문을
+                # 유지한다 — 정당한 거절문이 범위외 문구보다 정보량이 많다(종전 동작 보존).
                 body = OUT_OF_SCOPE_MESSAGE
                 used = False
                 sp.obs_normalized = True
-            elif not used and v.kind == "refusal" and sp.top:
-                # 근거가 강하게 검색돼 있는데 거절 — HCX 확률적 거절(같은 프롬프트로 정답·거절이
-                # 반반 갈리는 것이 실측됨)일 수 있어 딱 한 번 재생성한다. 재생성본도 판정을
-                # 통과해야만 채택하므로 정당한 거절(근거에 답이 정말 없는 경우)은 그대로 유지된다.
-                # 스트리밍엔 이미 거절문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
-                body2, used2 = _regenerate_once(sp)
-                if used2:
-                    body, used = body2, True
     sp.obs_used_source = used
     sources = _build_sources(sp.top) if used else []
     attachments = _build_attachments(sp.civil) if (used and sp.civil) else []
@@ -370,18 +372,44 @@ GUARDRAIL_BLOCK_MESSAGE = (
 CACHE_TTL_H = 24   # PRD-03 AD-009: 적격 질문만 24시간 캐시
 
 
-def guardrail_hit(text: str) -> Optional[str]:
-    """게시본 금칙어(blocklist) 첫 적중 단어 -> str | None. 질문·답변 양방향에서 부른다."""
+def guardrail_hit(text: str, side: str = "질문") -> Optional[str]:
+    """게시본 금칙어(blocklist) 첫 적중 단어 -> str | None. side 는 '질문' 또는 '답변'.
+
+    규칙의 필드를 전부 존중한다(2026-08-14 정정 — 종전에는 pattern 만 읽고 유형·적용 범위·
+    행별 활성을 무시해서, 관리자가 AD-008 에서 무엇을 고르든 항상 '전 규칙·양방향·문자
+    그대로'로 동작했다. 편집 UI 가 받는 값이 실제 동작에 반영되지 않는 거짓 입력칸이었다):
+      - active(행별)  꺼진 규칙은 건너뛴다 — 목록 전체 스위치와 별개다
+      - scope         '질문'/'답변' 규칙은 해당 방향에서만, '질문 + 답변'은 양방향
+      - type          '정규식'은 re 매칭(IGNORECASE), '단어'·'사전'은 부분 문자열
+    잘못된 정규식은 그 규칙만 건너뛴다(전체 실패-안전 원칙 유지). 문자열 항목(옛 형식)은
+    종전과 같이 '단어·양방향·활성'으로 취급한다."""
     try:
+        import re as _re
+
         from runtime_config import get_prompt
         block = (get_prompt("guardrails", None) or {}).get("blocklist") or {}
         if not block.get("active", True):
             return None
         folded = str(text or "").casefold()
         for item in block.get("items") or []:
-            w = item if isinstance(item, str) else (item.get("pattern") or "")
-            w = str(w).strip()
-            if w and w.casefold() in folded:
+            if isinstance(item, str):
+                item = {"pattern": item}
+            if not item.get("active", True):
+                continue
+            scope = item.get("scope") or "질문 + 답변"
+            if scope != "질문 + 답변" and scope != side:
+                continue
+            w = str(item.get("pattern") or "").strip()
+            if not w:
+                continue
+            if item.get("type") == "정규식":
+                try:
+                    if _re.search(w, str(text or ""), _re.IGNORECASE):
+                        return w
+                except _re.error:
+                    logger.warning("금칙어 정규식 오류 — 규칙 건너뜀: %r", w)
+                continue
+            if w.casefold() in folded:
                 return w
     except Exception:  # noqa: BLE001
         logger.exception("guardrail_hit 실패 — 미적용으로 통과")

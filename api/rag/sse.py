@@ -136,7 +136,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
     # 0-2) 가드레일 — AD-008 게시본 금칙어를 질문에 적용한다(질문·답변 양방향의 앞쪽 절반).
     #      적중이면 LLM 을 부르지 않고 고정 거절로 답한다(2026-08-13 F-3 배선).
-    hit = answer.guardrail_hit(message)
+    hit = answer.guardrail_hit(message, side="질문")
     if hit is not None:
         resp = answer.guardrail_refusal(session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] 금칙어 적중(질문): %r", request_id, hit)
@@ -254,7 +254,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     # 5-1) 가드레일 — 답변 쪽 절반. 스트리밍으로 이미 나간 조각은 되돌릴 수 없지만 프론트는
     #      done 을 확정본으로 그리므로(계약: done 이 최종) 여기서 거절로 바꾼다.
     # 복합 답변의 resp.answer 는 하위 본문을 이어붙인 것(to_chat_response)이라 최상위 검사로 충분
-    a_hit = answer.guardrail_hit(resp.answer)
+    a_hit = answer.guardrail_hit(resp.answer, side="답변")
     if a_hit is not None:
         logger.info("[%s] 금칙어 적중(답변): %r — 거절로 대체", request_id, a_hit)
         resp = answer.guardrail_refusal(session_id, request_id, latency_ms)
