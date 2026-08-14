@@ -65,9 +65,8 @@ from schema import rag_runs
 
 logger = logging.getLogger(__name__)
 
-# 🔴 mask_text 는 아직 패스스루 스텁이다(api/masking.py) — question_masked·answer_masked_*
-# 의 값은 마스킹되지 않은 원문이다. 필드 이름만 보고 안전하다 판단하지 말 것. 그 스텁이
-# 채워지면 이 파일을 고치지 않아도 전 경로가 함께 마스킹된다.
+# mask_text 는 4종(주민·전화·카드·이메일) 마스킹을 조회 시점에 적용한다(2026-08-14 구현,
+# api/masking.py). question_masked·answer_masked_*·feedback comment 가 전부 이 함수를 거친다.
 
 router = APIRouter(
     prefix="/api/admin/logs",
@@ -267,7 +266,7 @@ def _row_to_log(row) -> dict:
         "request_id": row.request_id or "",
         # 🔴 KST(+09:00) ISO. UTC 로 주면 화면의 '오늘'이 9시간 어긋난다.
         "occurred_at": _to_kst_iso(row.created_at) or "",
-        # 마스킹은 아직 미구현이다(api/masking.py 는 패스스루 스텁 — 값은 원문 그대로).
+        # 마스킹 4종(주민·전화·카드·이메일)은 api/masking.py 가 조회 시점에 적용한다(2026-08-14 구현).
         # 호출 지점만 남겨 두어, 그 스텁이 채워지면 전 경로가 함께 바뀐다.
         "question_masked": mask_text(row.question) or "",
         "intent": row.intent,
@@ -439,7 +438,8 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             # 화면은 사람이 읽는 한 줄을 기대한다. 코드 배열을 그대로 이어 붙여 두고,
             # 라벨 사전(codes.ts ReasonCode)은 프론트가 갖고 있다.
             "reason_label": ", ".join(row.reason_codes or []),
-            "comment": row.comment or "",
+            # 자유 의견은 개인정보가 가장 잘 섞이는 자유 텍스트다 — 질문·답변과 같은 마스킹을 거친다
+            "comment": mask_text(row.comment) or "",
         },
         # 실패 건에만 싣는다. code·meaning·user_message·auto_retry·fallback 은 rag_runs 에
         # 원천이 없어 비워 둔다 — 처리 방침은 별도 조사에서 정한다(모듈 주석).

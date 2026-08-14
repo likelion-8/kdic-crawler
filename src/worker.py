@@ -423,7 +423,18 @@ def _run_smoke_eval(session, job) -> None:
                 testset_version=str(_current_version(session)),
                 triggered_by=job.created_by, status="RUNNING"))
             session.commit()
-        result = run_evaluation(session, str(run_id))
+        try:
+            result = run_evaluation(session, str(run_id))
+        except Exception:
+            # 측정 실패·워커 예외 시 run 을 FAILED 로 마감한다 — 잡만 실패로 남기면
+            # AD-006 이력에 영구 RUNNING 이 남는다(apply 원자성 해체의 대가, 2026-08-14 리뷰 #4).
+            session.rollback()
+            from datetime import datetime as _dt, timezone as _tz
+            session.execute(update(evaluation_runs)
+                            .where(evaluation_runs.c.id == run_id)
+                            .values(status="FAILED", finished_at=_dt.now(_tz.utc)))
+            session.commit()
+            raise
         state["gate_passed"] = result["gate_passed"]
         state["run_id"] = str(run_id)
         return None

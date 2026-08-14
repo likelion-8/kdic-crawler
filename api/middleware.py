@@ -153,6 +153,11 @@ class RateLimitMiddleware:
         stale = [k for k, hits in self._hits.items() if not hits or hits[-1] < cutoff]
         for k in stale:
             del self._hits[k]
+        # 위반 기록도 같이 청소한다 — 스캔·NAT 로 IP 가 다양하면 이 dict 만 무한히 큰다
+        v_cutoff = now - self._VIOLATION_WINDOW_S
+        v_stale = [k for k, v in self._violations.items() if not v or v[-1] < v_cutoff]
+        for k in v_stale:
+            del self._violations[k]
 
     _POLICY_TTL_S = 30.0
     _BLOCKS_TTL_S = 10.0
@@ -236,7 +241,6 @@ class RateLimitMiddleware:
 
     def _check_public(self, key, now, policy):
         """사용자 경로 판정 — (허용 여부, 위반 사유). 분당·burst·일일 순서로 본다."""
-        from datetime import date, timedelta, timezone as _tz
         hits = self._hits[key]
         cutoff = now - self.window_s
         while hits and hits[0] < cutoff:
@@ -246,7 +250,9 @@ class RateLimitMiddleware:
         burst_cutoff = now - self._BURST_WINDOW_S
         if sum(1 for t in hits if t >= burst_cutoff) >= int(policy["burst_per_10s"]):
             return False, "burst_per_10s"
-        today = (date.today())
+        # 일일 한도 리셋은 KST 자정 기준(AD-009) — 서버 로컬 날짜가 아니다
+        from datetime import datetime, timedelta, timezone
+        today = (datetime.now(timezone(timedelta(hours=9)))).date()
         if self._day != today:
             self._day = today
             self._day_hits.clear()
@@ -279,8 +285,13 @@ class RateLimitMiddleware:
         now = time.monotonic()
 
         is_admin_path = scope["path"].startswith("/api/admin")
-        if not is_admin_path:
-            # 사용자(챗봇) 경로 — AD-009 운영 정책 집행 + 임시 차단
+        # AD-009 정책의 대상은 '질문 요청'이다(분당 10·burst 3/10초·일 300 — 화면 라벨도
+        # "IP별 분당 요청"이 질문 기준). 세션 복원·추천 질문·피드백까지 같은 한도로 재면
+        # 첫 방문의 정상 흐름(진입 3콜 + 질문)이 burst 를 넘겨 429·자동 차단까지 간다
+        # (2026-08-14 리뷰 지적). 질문 외 공개 경로는 아래 완만한 공용 한도로 간다.
+        is_question = scope["path"] == "/api/chat"
+        if is_question:
+            # 사용자(챗봇) 질문 — AD-009 운영 정책 집행 + 임시 차단
             block_until = self._active_block_until(key, now)
             if block_until is not None and block_until > now:
                 request_id = scope.get("state", {}).get("request_id")
@@ -297,7 +308,9 @@ class RateLimitMiddleware:
                 return
             policy = self._get_policy(now)
             self._sweep(now)
-            allowed, why = self._check_public(key, now, policy)
+            # 카운터 버킷을 경로 계층별로 분리한다 — 관리자·공용 트래픽이 질문 쿼터를
+            # 잠식해 챗봇이 차단되던 공유 deque 버그 수정(2026-08-14 리뷰 #1).
+            allowed, why = self._check_public(f"chat:{key}", now, policy)
             if not allowed:
                 self._record_violation(key, now)
                 request_id = scope.get("state", {}).get("request_id")
@@ -314,7 +327,8 @@ class RateLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        if not self._is_allowed(key, now):
+        bucket = ("admin:" if is_admin_path else "pub:") + key
+        if not self._is_allowed(bucket, now):
             request_id = scope.get("state", {}).get("request_id")
             logger.warning("[%s] rate_limited: %s %s", request_id, key, scope["path"])
             # code 는 프론트 codes.ts ErrorCode 5종 중 하나여야 한다. retryable 은 false —

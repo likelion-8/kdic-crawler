@@ -200,7 +200,15 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
         v = validate_answer(sp.question, body, sp.evidence)
         if v is not None:
             used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
-            if not v.appropriate or (not used and v.kind == "ungrounded_claims"):
+            inappropriate = not v.appropriate
+            if inappropriate and used:
+                # 근거를 쓴 답변이 '부적절' — 단일 판정 1콜은 경계 문항에서 롤마다 흔들린다
+                # (다수결이 있던 이유). 정답을 한 롤 판정으로 버리지 않도록 1회 재생성 후
+                # 재검증해 2연속 부적절일 때만 확정한다(게이트의 '2연속 실패 확정'과 같은 철학).
+                body2, used2 = _regenerate_once(sp)
+                if used2:
+                    body, used, inappropriate = body2, True, False
+            if inappropriate or (not used and v.kind == "ungrounded_claims"):
                 # 질문에 답하지 못했거나(동문서답·근거 모순) 근거 없는 내용을 사실처럼
                 # 서술 — 본문을 표준 안내로 교체하고 범위외 처리(환각·오답 노출 차단)
                 body = OUT_OF_SCOPE_MESSAGE
