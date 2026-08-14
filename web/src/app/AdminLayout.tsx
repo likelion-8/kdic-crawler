@@ -160,6 +160,21 @@ export function AdminLayout() {
 
   return (
     <div className="grid min-h-full min-w-[1024px] grid-cols-[240px_1fr] bg-background">
+      {/* 브라우저 비밀번호 관리자용 디코이 —— Chrome 은 저장된 관리자 계정을 페이지의 첫
+          텍스트 입력에 채우는데, 그 대상이 검색창이면 사용자가 치지도 않은 검색어로 목록이
+          비어 버린다(2026-08-14 실측: 화면 아무 곳이나 클릭하면 재현, 적재 페이지 58 → 0건).
+          autocomplete="off"·type="search" 로는 막히지 않아(둘 다 실측 무시됨) 채울 자리를
+          따로 준다. 보조기기·탭 순회에서는 숨긴다. */}
+      <input
+        type="text"
+        name="username"
+        autoComplete="username"
+        tabIndex={-1}
+        aria-hidden="true"
+        className="pointer-events-none absolute h-0 w-0 opacity-0"
+        onChange={() => {}}
+        value=""
+      />
       {/* 키보드 사용자가 GNB 11개를 건너뛰고 본문으로 갈 수 있어야 한다 (CM-DF-004 09절) */}
       <a
         className="absolute top-2 -left-[9999px] z-50 rounded-md border bg-background px-3 py-2 text-sm font-medium focus:left-2"
