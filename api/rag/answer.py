@@ -208,7 +208,10 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
         # 단일 검증 1콜 — 3표 다수결은 2026-08-14 팀 결정으로 폐지(모든 경로 1콜 통일).
         v = validate_answer(sp.question, body, sp.evidence)
         if v is not None:
+            # 검증이 돌았으면 '보정 없음'도 사실이다 — False 로 적는다. None 은 '판정 안 함'
+            # 전용이라 여기서 남겨두면 화면이 검증 여부를 구분하지 못한다.
             sp.obs_kind, sp.obs_appropriate = v.kind, v.appropriate
+            sp.obs_normalized = False
             used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
             inappropriate = not v.appropriate
             if inappropriate and used:

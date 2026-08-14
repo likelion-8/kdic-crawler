@@ -70,6 +70,14 @@ def test_expected_pages_keeps_unverified_subs():
     assert obs.expected_pages(obs.build([sp])) == ["dp_protlmts"]
 
 
+def test_validated_but_unchanged_is_false_not_none():
+    # 검증이 돌았고 보정이 없었다면 그건 '모름'이 아니라 '보정 안 함'이다.
+    # answer.finalize_sub 가 v is not None 일 때 obs_normalized=False 를 적는 규약과 짝이다.
+    sp = FakeSubPlan("한도?", obs_kind="grounded", obs_appropriate=True,
+                     obs_used_source=True, obs_normalized=False, top=[("a#c", 0.9, "t")])
+    assert obs.summarize(obs.build([sp]))["normalized"] is False
+
+
 def test_mixed_markers_report_as_mixed():
     a = FakeSubPlan("한도?", obs_marker=True, top=[("a#c", 0.9, "t")])
     b = FakeSubPlan("절차?", obs_marker=False, top=[("b#c", 0.9, "t")])
