@@ -18,6 +18,7 @@ import os
 
 from dotenv import load_dotenv
 
+from observability import observe, update_current_span
 from retrieval import DEFAULT_DENSE_MODEL, ROOT, _encode_query, _get_model
 
 load_dotenv(ROOT / ".env")  # OPENAI_API_KEY 등 로드(intent 분류 OpenAI 호출용)
@@ -54,21 +55,38 @@ class QuestionTypeClassifier:
         with get_engine().connect() as conn:
             rows = conn.execute(stmt).all()
 
+        self.questions = [r[0] for r in rows]  # trace에서 "어떤 예시가 끌어당겼는지" 보여주기 위해 보존
         self.types = [r[1] for r in rows]
         self.emb = np.array([r[2] for r in rows])
         self.model = _get_model(model)
 
+    # capture_input=False인 이유: 자동 캡처는 self(참조 임베딩 행렬 통째)까지 직렬화하려
+    # 들어 trace가 무거워진다. 질문은 아래 update_current_span(input=...)으로 직접 넣는다.
+    @observe(name="classify_question_type", capture_input=False)
     def classify(self, query):
         import numpy as np
         q = _encode_query(self.model, query)
-        best = int(np.argmax(self.emb @ q))
+        sims = self.emb @ q
+        best = int(np.argmax(sims))
+        # 오분류 원인 추적용(2026-08-14): 예측을 결정한 최근접 예시 top5의 라벨·유사도·질문
+        # 원문을 span metadata로 남긴다. 1-NN의 오분류는 "정답 유형의 비슷한 예시가 없다"
+        # 또는 "다른 유형 예시가 더 가깝다" 둘 중 하나라, 1~2위 경합과 예시 원문이 보여야
+        # 개선 수단(evaluation_dataset 예시 보강)이 특정된다. 관측이 꺼져 있으면 no-op.
+        top5 = np.argsort(sims)[::-1][:5]
+        update_current_span(
+            input=query,
+            metadata={"top5_nearest": [
+                {"label": self.types[i], "score": round(float(sims[i]), 4),
+                 "example": self.questions[i]}
+                for i in top5]},
+        )
         return self.types[best]
 
 
 # 2026-07-29 팀 결정: 업무(business_function) 분류는 검색에 쓰지 않기로 하여 비활성화.
 # (retrieval._build_engines가 bf_classifier를 넘기지 않아 이미 무필터였고, 이 클래스는
 #  아무도 인스턴스화하지 않던 죽은 코드였음.) 재도입 시 아래 주석을 되살리고, retrieval.py의
-#  import·RoutedRetriever 인자, app.py 워밍업도 함께 복원할 것.
+#  import·RoutedRetriever 인자도 함께 복원할 것.
 # class BusinessFunctionClassifier(QuestionTypeClassifier):
 #     """질의 → 6개 업무(business_function) 분류. QuestionTypeClassifier와 같은 1-NN·같은
 #     질문 임베딩 캐시를 쓰되 라벨만 business_function으로 바꾼다. 결과값을 RoutedRetriever

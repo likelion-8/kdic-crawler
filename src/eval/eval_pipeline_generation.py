@@ -15,6 +15,24 @@ must_include·거절감지는 결정론 프록시(하한선)로만 쓰고, 애�
    해당되지 않는다 — 2026-08-03에 Dense가 Supabase pgvector로 이관해 프로세스 배타 제약이
    사라졌다(retrieval.PgVectorDenseRetriever). 챗봇과 동시에 돌려도 된다.
 
+## 이 평가가 재는 것 = CLI(pipeline.py) 경로 (2026-08-14 명시)
+
+pipeline._rag_answer_traced를 직접 부르므로 **CLI 경로(pipeline.py 조립)**를 잰다. 웹
+API(api/rag/answer.py)는 같은 빌딩블록이지만 출처 재확인이 다르다 — 여기(pipeline)는 단일
+판정(recheck_source_usage) 1회, 웹은 3표 다수결(judge_answer_majority) + 재생성 분기.
+따라서 이 평가의 출처 관련 수치는 웹 경로의 하한으로 읽어야 하며, summary의
+recheck_mode 필드가 어느 경로를 쟀는지 기록한다.
+
+## DB 파라미터 오염 차단 (2026-08-14)
+
+관리자 화면(AD-007)이 rag 파라미터를 DB에 넣은 뒤에는 get_param이 모듈 전역 대신 DB 값을
+쓰므로, `pipeline.USE_RERANKER = rerank` 토글이 조용히 무시될 수 있다(runtime_config 모듈
+주석). CLI(main)는 override("params", {})로 "DB 빈 상태"를 강제해 문서화된 기본값 위에서
+A/B가 성립하게 한다. evaluate_generation 자체는 override를 걸지 않는다 — 관리자 평가
+API(run_evaluation)가 라이브 FastAPI 프로세스 안에서 이 함수를 부르는데, 거기서 override를
+걸면 **실서비스 답변 파라미터까지 바뀐다.** 대신 실효 파라미터를 summary.effective_params로
+기록하고, 토글이 무시되는 상황이면 경고를 출력한다.
+
 읽기 전용: 기존 파일 수정/git 실행 없음.
 실행: python3 src/eval/eval_pipeline_generation.py [--limit N] [--rerank]
 """
@@ -29,6 +47,8 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 import pipeline  # noqa: E402  (USE_RERANKER 토글 + _rag_answer_traced 호출)
+import runtime_config  # noqa: E402  (CLI: 기본값 동결 / 공유 함수: 실효 파라미터 기록)
+from runtime_config import current_versions, get_param  # noqa: E402
 
 TESTSET = ROOT / "data" / "testset" / "testset_pipeline.jsonl"
 CORPUS = ROOT / "data" / "corpus.jsonl"
@@ -84,6 +104,20 @@ def evaluate_generation(rows, page2url, *, rerank=False):
     ⚠️ 문항당 HCX 1회 이상 호출(비용·시간). 대량이면 rows 를 잘라 넘겨 소규모로 검증할 것.
     """
     pipeline.USE_RERANKER = rerank  # 모듈 전역 토글 → _answer_one 이 런타임에 참조
+
+    # 실효 파라미터 기록 — DB(AD-007)가 값을 넣어뒀으면 get_param이 모듈 전역 대신 그걸 쓴다.
+    # 어떤 설정으로 돌았는지 결과에 박아둬야 수치 간 비교가 성립한다(모듈 docstring 참고).
+    effective = {
+        "k_candidates": get_param("k_candidates", pipeline.K_CANDIDATES),
+        "k_final": get_param("k_final", pipeline.K_FINAL),
+        "use_reranker": get_param("use_reranker", rerank),
+        "use_source_recheck": get_param("use_source_recheck", pipeline.USE_SOURCE_RECHECK),
+        "prompt_version": current_versions().get("prompt"),
+    }
+    if bool(effective["use_reranker"]) != bool(rerank):
+        print(f"⚠️ DB rag 파라미터가 use_reranker={effective['use_reranker']}로 --rerank 토글을 "
+              f"덮어쓴다 — 이 실행은 요청한 A/B 조건이 아니다 (CLI는 override로 차단됨).", flush=True)
+
     records, failed = [], []
     t0 = time.time()
     for i, r in enumerate(rows, 1):
@@ -128,6 +162,8 @@ def evaluate_generation(rows, page2url, *, rerank=False):
         "출처링크_포함률(답변형)": rate([r["has_source"] for r in ans_recs]),
         "oos_적절거절률": rate([r["refused"] for r in oos_recs]),
         "n_answerable": len(ans_recs), "n_oos": len(oos_recs),
+        "effective_params": effective,
+        "recheck_mode": "single(pipeline·CLI경로)",  # 웹 API는 3표 다수결 — docstring 참고
     }
     return summary, records, failed
 
@@ -141,13 +177,20 @@ def main():
     pipeline.USE_RERANKER = args.rerank  # 모듈 전역 토글 → _answer_one이 런타임에 참조
     tag = "on" if args.rerank else "off"
 
+    # CLI 전용 프로세스이므로 안전 — "DB 빈 상태"를 강제해 문서화된 기본값 위에서 A/B가
+    # 성립하게 한다(DB에 use_reranker 등이 들어가 있으면 --rerank 토글이 무시되는 함정 차단).
+    runtime_config.override("params", {})
+
     rows = [json.loads(l) for l in open(TESTSET, encoding="utf-8") if l.strip()]
     if args.limit:
         rows = rows[:args.limit]
     page2url = load_page_urls()
 
-    n_ans = sum(1 for r in rows if r.get("expected_sources"))
-    print(f"testset_pipeline: {len(rows)}행 (답변형 {n_ans} / out-of-scope {len(rows)-n_ans})")
+    # OOS 판정 기준을 채점(evaluate_generation의 is_oos = question_type)과 통일 —
+    # 이전엔 여기만 expected_sources 유무로 세어 두 숫자가 어긋날 수 있었다.
+    n_oos = sum(1 for r in rows if r.get("question_type") == "out_of_scope")
+    n_ans = len(rows) - n_oos
+    print(f"testset_pipeline: {len(rows)}행 (답변형 {n_ans} / out-of-scope {n_oos})")
     print(f"리랭킹: {tag.upper()} · ⚠️ 문항당 HCX 호출 — 챗봇 켜지 말 것\n")
 
     # 채점은 evaluate_generation 이 한다(관리자 평가 API 와 공유하는 순수 함수).

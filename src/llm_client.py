@@ -9,6 +9,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from observability import observe, update_current_generation
+
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
@@ -65,12 +67,15 @@ def _get_client():
     return _client["model"]
 
 
+@observe(as_type="generation")
 def call_hyperclova(messages, *, deterministic=False, seed=None):
     """messages: prompt_builder.build_informational_prompt()/build_civil_petition_prompt()가
     반환한 [(role, content), ...] 튜플 리스트. 응답 텍스트(str)만 반환한다.
 
     deterministic=True 는 평가·Smoke 전용 — temperature 0 + seed 고정 클라이언트를 쓴다.
-    seed 를 바꿔 다시 부르면 flaky 재확인용 재생성이 된다. 운영 호출부는 인자 없이 그대로."""
+    seed 를 바꿔 다시 부르면 flaky 재확인용 재생성이 된다. 운영 호출부는 인자 없이 그대로.
+    (머지 노트 2026-08-14: Langfuse 계측(@observe)과 결정화 kwargs 는 직교라 둘 다 유지)"""
+    update_current_generation(model=os.environ.get("CLOVA_MODEL"))
     client = _get_eval_client(seed or EVAL_SEED) if deterministic else _get_client()
     response = client.invoke(messages)
     return response.content

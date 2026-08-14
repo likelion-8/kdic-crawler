@@ -35,6 +35,8 @@ rerank()로 재정렬한 뒤 top_k_cut(..., k=5)로 최종 5개만 남긴다(기
 평가 기준인 AnswerRecall@5와 동일한 k).
 현재(USE_RERANKER=False)는 가운데 rerank() 없이 route_search_chunks → top_k_cut 두 단계다.
 """
+from observability import observe
+
 RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
 _reranker = {}
 
@@ -46,6 +48,7 @@ def _get_reranker():
     return _reranker["model"]
 
 
+@observe()
 def rerank(query, candidates):
     """candidates: [(chunk_id, score, text), ...] — retrieval.route_search_chunks() 등
     1차 검색이 내놓은 후보. 각 후보를 (질문, 텍스트) 쌍으로 cross-encoder에 넣어 관련도

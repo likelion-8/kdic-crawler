@@ -43,7 +43,7 @@ DB 를 봐야 한다. 그런데 그냥 DB 조회로 바꾸면 **DB 가 느리거
 매 질의마다 DB 를 치면 latency 가 는다. 프로세스당 dict 하나를 TTL 로 들고 있는다.
 
 - 같은 프로세스(FastAPI 안의 관리자 API)가 값을 바꾸면 `invalidate()` 로 즉시 반영한다.
-- CLI·Streamlit 처럼 다른 프로세스는 TTL 이 만료될 때 따라온다(최대 CACHE_TTL_S 지연).
+- CLI 처럼 다른 프로세스는 TTL 이 만료될 때 따라온다(최대 CACHE_TTL_S 지연).
 
 ## 실패를 조용히 삼키지 않는다
 
@@ -56,7 +56,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
-# 다른 프로세스(CLI·Streamlit)가 관리자 변경을 따라잡는 최대 지연. 짧게 잡으면 DB 왕복이
+# 다른 프로세스(CLI)가 관리자 변경을 따라잡는 최대 지연. 짧게 잡으면 DB 왕복이
 # 늘고, 길게 잡으면 "바꿨는데 왜 그대로냐"가 된다. 파라미터 변경은 사람이 가끔 하는 일이라
 # 60초면 충분하다(같은 프로세스는 invalidate() 로 즉시 반영된다).
 CACHE_TTL_S = 60
@@ -188,7 +188,7 @@ def current_versions() -> dict:
 def invalidate(kind: str = None) -> None:
     """캐시를 버린다. 관리자 API 가 값을 바꾼 **직후** 부를 것.
 
-    같은 프로세스(FastAPI)는 이걸로 즉시 반영되고, 다른 프로세스(CLI·Streamlit)는 TTL 이
+    같은 프로세스(FastAPI)는 이걸로 즉시 반영되고, 다른 프로세스(CLI)는 TTL 이
     만료될 때 따라온다. kind 를 안 주면 둘 다 버린다.
     """
     for key in ([kind] if kind else list(_cache)):

@@ -1,12 +1,12 @@
 """실사용 질문·답변을 Supabase rag_runs에 기록.
 
-실사용 경로에서만 호출한다 — pipeline.rag_answer()(Streamlit·터미널)와 api/rag/sse.py
+실사용 경로에서만 호출한다 — pipeline.rag_answer()(터미널 CLI)와 api/rag/sse.py
 (웹 챗봇). eval_pipeline_generation.py/measure_baseline.py 등은 _rag_answer_traced()를
 직접 불러 로깅을 우회하므로, 평가·성능측정 실행이 실사용 로그를 오염시키지 않는다.
 
 API 경로는 request_id/session_id를 함께 넘긴다. request_id는 응답으로 나간 답변 식별자와
 같은 값이라, 사용자가 그 답변에 남긴 피드백(feedback 테이블)을 이 행에 연결하는 열쇠다.
-Streamlit·터미널은 그 개념이 없어 비운다.
+터미널(CLI)은 그 개념이 없어 비운다.
 
 검색 후보/선택 상세(rag_retrieval_results)는 일부러 로깅하지 않는다 — 질문 1건당 20행씩
 쌓여 부담이 크고, 추후 Langfuse로 trace를 붙이면 그쪽이 이 역할을 전담한다(2026-08-04
@@ -45,15 +45,18 @@ STAGE_LLM = "llm"
 def log_rag_run(question, answer, intent, question_type, retrieval_route,
                  total_latency_ms, llm_model=None, embedding_model=None,
                  request_id=None, session_id=None, status=STATUS_NORMAL,
-                 failure_stage=None, root_cause=None):
+                 failure_stage=None, root_cause=None, trace_id=None):
     """질의 1건을 rag_runs 에 남긴다.
 
-    status/failure_stage/root_cause 는 전부 기본값이 있다. src/pipeline.py(CLI·Streamlit)가
+    status/failure_stage/root_cause 는 전부 기본값이 있다. src/pipeline.py(CLI)가
     이 함수를 위치·키워드 혼용으로 부르는데 그 파일은 이 변경의 소유가 아니므로, 기본값이
     없으면 머지는 깨끗하게 되고 실행 시점에 TypeError 로 죽는다.
 
     failure_stage/root_cause 는 status=FAILED 일 때만 의미가 있다. root_cause 는 예외 타입과
     메시지 원문이다 — 사용자에게 보여준 문구가 아니라 조사에 쓸 내부 원문을 넣는다.
+
+    trace_id 는 Langfuse trace 식별자(observability.current_trace_id())다. 관리자 대화 로그
+    상세(AD-005)가 API_LANGFUSE_HOST 로 링크를 완성한다. 관측이 꺼져 있으면 None(무해).
     """
     try:
         with get_session() as session:
@@ -66,6 +69,7 @@ def log_rag_run(question, answer, intent, question_type, retrieval_route,
                     "total_latency_ms": round(total_latency_ms),
                     "llm_model": llm_model, "embedding_model": embedding_model,
                     "request_id": request_id, "session_id": session_id,
+                    "trace_id": trace_id,
                 },
             )
     except Exception as e:

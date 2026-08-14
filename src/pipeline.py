@@ -5,7 +5,8 @@
     plan_query(분해+intent 한 콜) → route_search_chunks → top_k_cut → 근거조립 → 프롬프트 → HCX
 재정렬(rerank)은 USE_RERANKER=False라 이 흐름에 끼지 않는다. 아래 각 스위치 주석 참고.
 
-rag_answer()를 부르는 곳은 Streamlit(app.py:316)과 이 파일의 CLI 둘뿐이다. 이 파일을
+rag_answer()를 부르는 곳은 이 파일의 CLI뿐이다(Streamlit 데모는 2026-08-14 은퇴 —
+docs/streamlit-retired.md, React 웹이 대체). 이 파일을
 import하는 나머지 셋(src/crawler/measure_baseline.py · src/eval/eval_pipeline_generation.py ·
 src/eval/eval_pipeline_retrieval.py)은 rag_answer()를 건너뛰고 _rag_answer_traced()나
 상수(K_CANDIDATES 등)만 가져다 쓴다 — rag_runs 로깅을 우회하기 위한 의도된 구조다.
@@ -31,6 +32,7 @@ from prompt_builder import (
     build_civil_petition_prompt, build_informational_prompt,
 )
 from llm_client import call_hyperclova
+from observability import current_trace_id, flush as flush_traces, observe
 from performance import measure_time
 from rag_logger import log_rag_run
 # 아래 상수들은 지우지 않고 '문서화된 기본값'으로 남긴다 — 관리자 화면(AD-007)이 값을 바꿀 수
@@ -76,6 +78,7 @@ USE_QUERY_DECOMPOSITION = True
 USE_SOURCE_RECHECK = True
 
 
+@observe()
 def _answer_one(query, timings, intent=None):
     """질문 하나(원본 질문 또는 복합 질문의 하위 질문 하나)에 대해 검색부터 답변 조립까지
     수행한다. 하위 답변끼리는 출처를 포함해 완전히 독립이다 — 하위 답변 간 "중복 출처
@@ -193,11 +196,12 @@ def _rag_answer_traced(query):
     return answer, timings, log_intent
 
 
+@observe()
 def rag_answer(query):
     """질문 하나 -> 답변 문자열. intent(informational/civil_petition)에 따라
     근거 조립·프롬프트 조립 방식만 갈리고, 검색·재정렬·LLM호출은 공통이다.
 
-    Streamlit(app.py)·터미널(본 파일 __main__)이 실제로 부르는 유일한 경로라, 여기서만
+    터미널(본 파일 __main__)이 실제로 부르는 유일한 경로라, 여기서만
     rag_runs에 실행 결과를 로깅한다 — eval_pipeline_generation.py 등 평가 스크립트는
     _rag_answer_traced()를 직접 불러 이 로깅을 우회한다(의도적). 검색 후보/선택 상세
     (rag_retrieval_results)는 로깅하지 않는다 — 질문당 20행씩 쌓여 부담이고, 추후 Langfuse로
@@ -214,6 +218,7 @@ def rag_answer(query):
         question=query, answer=answer, intent=intent, question_type=qtype,
         retrieval_route=route, total_latency_ms=timings["total"] * 1000,
         embedding_model=DEFAULT_DENSE_MODEL, llm_model=os.environ.get("CLOVA_MODEL"),
+        trace_id=current_trace_id(),
     )
 
     return answer
@@ -228,3 +233,4 @@ if __name__ == "__main__":
         if not query:
             continue
         print(f"답변: {rag_answer(query)}")
+    flush_traces()  # CLI는 곧 종료되므로 버퍼에 남은 trace를 지금 보낸다(서버 경로는 불필요)
