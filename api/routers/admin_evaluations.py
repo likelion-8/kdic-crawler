@@ -515,8 +515,10 @@ def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
     for add in body.adds:
         new_rows.append(_input_to_row(add, new_version, me.email))
 
-    for row in new_rows:
-        db.execute(insert(testset_items).values(**row))
+    # 버전 스냅샷은 851행짜리라 낱건 execute 를 하면 왕복만 851번이다(2026-08-14 실측:
+    # 화면이 수십 초 잠김). executemany 한 번으로 보낸다 — 컬럼 구성이 모든 행 동일해 안전하다.
+    if new_rows:
+        db.execute(insert(testset_items), new_rows)
 
     # 재측정 run 생성 — 마감(DONE)은 워커의 run_evaluation 이 한다.
     run = db.execute(
