@@ -82,10 +82,19 @@ class SubPlan:
     prompt: list                   # [(role, content), ...]
     civil: Optional[dict] = None   # build_civil_petition_answer 결과({procedure,documents,links}) 또는 None
     evidence: str = ""             # 근거 재확인(recheck)용 텍스트
+    # OOS/Context Supervisor 판정 결과
     decision: str = "ANSWERABLE"   # 앞단 게이트/Context Supervisor 판정
     early_answer: Optional[str] = None  # 조기 종료 시 LLM 없이 보낼 본문
     route_type: Optional[str] = None
     route_score: Optional[float] = None
+    # 아래 obs_* 는 finalize_sub 가 적고 observation.build 가 읽는 관측용 판정이다. 여기 둔 이유는
+    # log_run 이 이미 sub_plans 를 받고 있어 이음매를 넓히지 않아도 값이 건너가기 때문이다.
+    # 판정을 안 한 경우 None 을 유지한다 — false 로 적으면 '근거 미사용'이라는 거짓이 된다.
+    obs_marker: Optional[bool] = None        # LLM 자기보고 마커([SOURCE_USED]/[NO_SOURCE])
+    obs_used_source: Optional[bool] = None   # 최종 판정(검증이 마커를 오버라이드한 결과)
+    obs_kind: Optional[str] = None           # validate_answer 의 판정 종류
+    obs_appropriate: Optional[bool] = None   # 질문-답변 적절성
+    obs_normalized: Optional[bool] = None    # 본문이 표준 안내로 교체됐나
 
 
 def pre_route(query: str):
@@ -248,32 +257,41 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = marker_used_source
+    sp.obs_marker = marker_used_source
     if get_param("use_source_recheck", USE_SOURCE_RECHECK):
         # 단일 검증 1콜 — 3표 다수결은 2026-08-14 팀 결정으로 폐지(모든 경로 1콜 통일).
         v = validate_answer(sp.question, body, sp.evidence)
         if v is not None:
+            # 검증이 돌았으면 '보정 없음'도 사실이다 — False 로 적는다. None 은 '판정 안 함'
+            # 전용이라 여기서 남겨두면 화면이 검증 여부를 구분하지 못한다.
+            sp.obs_kind, sp.obs_appropriate = v.kind, v.appropriate
+            sp.obs_normalized = False
             used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
             inappropriate = not v.appropriate
-            if inappropriate and used:
-                # 근거를 쓴 답변이 '부적절' — 단일 판정 1콜은 경계 문항에서 롤마다 흔들린다
-                # (다수결이 있던 이유). 정답을 한 롤 판정으로 버리지 않도록 1회 재생성 후
-                # 재검증해 2연속 부적절일 때만 확정한다(게이트의 '2연속 실패 확정'과 같은 철학).
+            # 나쁜 판정(부적절·근거이탈·거절)인데 근거가 강하게 검색돼 있으면 딱 한 번
+            # 재생성한다. 단일 판정 1콜은 경계 문항에서 롤마다 흔들리므로(다수결이 있던 이유)
+            # 한 롤 판정만으로 정답 후보를 버리지 않는다 — 재생성본도 판정을 통과해야만
+            # 채택되니(2연속 실패 확정) 정당한 거절·미달은 그대로 유지된다.
+            # ⚠️ 종전에는 '부적절+근거사용'과 '거절'만 구제하고 used_source=false +
+            # ungrounded_claims 는 재시도 없이 즉시 범위외로 교체하는 비대칭이 있었다.
+            # 2026-08-14 실측(같은 질문 5연속): 4회는 거절→재생성 구제로 정상 답변,
+            # 1회가 이 빠진 경로로 떨어져 동일 질문에 답변이 뒤집혔다(관측 기록으로 확인).
+            bad = inappropriate or (not used and v.kind in ("ungrounded_claims", "refusal"))
+            if bad and sp.top:
+                # 스트리밍엔 이미 원래 본문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
                 body2, used2 = _regenerate_once(sp)
                 if used2:
                     body, used, inappropriate = body2, True, False
             if inappropriate or (not used and v.kind == "ungrounded_claims"):
-                # 질문에 답하지 못했거나(동문서답·근거 모순) 근거 없는 내용을 사실처럼
-                # 서술 — 본문을 표준 안내로 교체하고 범위외 처리(환각·오답 노출 차단)
+                # 재생성으로도 구제되지 않았다(또는 근거 자체가 비어 시도조차 못 했다) —
+                # 질문에 답하지 못했거나 근거 없는 내용을 사실처럼 서술한 건이므로 본문을
+                # 표준 안내로 교체하고 범위외 처리한다(환각·오답 노출 차단).
+                # kind=refusal 이 구제에 실패한 경우는 여기 걸리지 않고 원래 거절문을
+                # 유지한다 — 정당한 거절문이 범위외 문구보다 정보량이 많다(종전 동작 보존).
                 body = OUT_OF_SCOPE_MESSAGE
                 used = False
-            elif not used and v.kind == "refusal" and sp.top:
-                # 근거가 강하게 검색돼 있는데 거절 — HCX 확률적 거절(같은 프롬프트로 정답·거절이
-                # 반반 갈리는 것이 실측됨)일 수 있어 딱 한 번 재생성한다. 재생성본도 판정을
-                # 통과해야만 채택하므로 정당한 거절(근거에 답이 정말 없는 경우)은 그대로 유지된다.
-                # 스트리밍엔 이미 거절문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
-                body2, used2 = _regenerate_once(sp)
-                if used2:
-                    body, used = body2, True
+                sp.obs_normalized = True
+    sp.obs_used_source = used
     sources = _build_sources(sp.top) if used else []
     attachments = _build_attachments(sp.civil) if (used and sp.civil) else []
     return SubAnswer(title=sp.question, answer=body, sources=sources, attachments=attachments), used
@@ -342,6 +360,8 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
     log_rag_run 은 내부에서 모든 예외를 삼키므로 호출부가 실패를 신경 쓰지 않아도 된다.
     """
     from rag_logger import STATUS_NORMAL, STATUS_OUT_OF_SCOPE, log_rag_run
+
+    from . import observation
     intents, routes = _plan_labels(sub_plans)
     log_rag_run(
         question=question,
@@ -354,6 +374,9 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
         session_id=resp.session_id,
         status=STATUS_OUT_OF_SCOPE if resp.out_of_scope else STATUS_NORMAL,
         trace_id=trace_id,   # observability.record_trace 결과 — AD-005 상세의 Langfuse 링크 원천
+        # 검색 상위 청크·검증 판정. 이게 없으면 AD-005 상세의 source_count·source_used·marker·
+        # normalized 가 영원히 null 이라 관리자가 원인을 못 가린다(api/rag/observation.py).
+        observation=observation.build(sub_plans),
     )
 
 
@@ -403,18 +426,44 @@ GUARDRAIL_BLOCK_MESSAGE = (
 CACHE_TTL_H = 24   # PRD-03 AD-009: 적격 질문만 24시간 캐시
 
 
-def guardrail_hit(text: str) -> Optional[str]:
-    """게시본 금칙어(blocklist) 첫 적중 단어 -> str | None. 질문·답변 양방향에서 부른다."""
+def guardrail_hit(text: str, side: str = "질문") -> Optional[str]:
+    """게시본 금칙어(blocklist) 첫 적중 단어 -> str | None. side 는 '질문' 또는 '답변'.
+
+    규칙의 필드를 전부 존중한다(2026-08-14 정정 — 종전에는 pattern 만 읽고 유형·적용 범위·
+    행별 활성을 무시해서, 관리자가 AD-008 에서 무엇을 고르든 항상 '전 규칙·양방향·문자
+    그대로'로 동작했다. 편집 UI 가 받는 값이 실제 동작에 반영되지 않는 거짓 입력칸이었다):
+      - active(행별)  꺼진 규칙은 건너뛴다 — 목록 전체 스위치와 별개다
+      - scope         '질문'/'답변' 규칙은 해당 방향에서만, '질문 + 답변'은 양방향
+      - type          '정규식'은 re 매칭(IGNORECASE), '단어'·'사전'은 부분 문자열
+    잘못된 정규식은 그 규칙만 건너뛴다(전체 실패-안전 원칙 유지). 문자열 항목(옛 형식)은
+    종전과 같이 '단어·양방향·활성'으로 취급한다."""
     try:
+        import re as _re
+
         from runtime_config import get_prompt
         block = (get_prompt("guardrails", None) or {}).get("blocklist") or {}
         if not block.get("active", True):
             return None
         folded = str(text or "").casefold()
         for item in block.get("items") or []:
-            w = item if isinstance(item, str) else (item.get("pattern") or "")
-            w = str(w).strip()
-            if w and w.casefold() in folded:
+            if isinstance(item, str):
+                item = {"pattern": item}
+            if not item.get("active", True):
+                continue
+            scope = item.get("scope") or "질문 + 답변"
+            if scope != "질문 + 답변" and scope != side:
+                continue
+            w = str(item.get("pattern") or "").strip()
+            if not w:
+                continue
+            if item.get("type") == "정규식":
+                try:
+                    if _re.search(w, str(text or ""), _re.IGNORECASE):
+                        return w
+                except _re.error:
+                    logger.warning("금칙어 정규식 오류 — 규칙 건너뜀: %r", w)
+                continue
+            if w.casefold() in folded:
                 return w
     except Exception:  # noqa: BLE001
         logger.exception("guardrail_hit 실패 — 미적용으로 통과")
@@ -461,6 +510,35 @@ def _cache_versions() -> dict:
             .where(search_index_versions.c.status == "ACTIVE")
             .order_by(search_index_versions.c.created_at.desc()).limit(1)).scalar())
     return snap
+
+
+def curated_get(question: str) -> Optional[dict]:
+    """답변 매핑(AD-009 curated_answers) 적중 시 ChatResponse 모양 dict, 미스면 None.
+
+    질의 캐시(cache_get)와 같은 반환 모양이라 sse.py 소비부를 그대로 공유한다. 캐시와의
+    차이: 관리자가 손으로 쓴 영구 콘텐츠라 TTL·버전 무효화가 없다(코퍼스가 바뀌어도
+    자동 삭제하지 않는다 — 내용 관리는 관리자 몫). 매칭은 캐시와 동일한 정규화 키의
+    **정확 일치만**이다(2026-08-14 팀 결정 — 유사도 자동 매칭은 역할축 질문에서 반대
+    답변을 서빙할 위험이 있어 하지 않는다). 실패는 미스로 취급되어 답변을 막지 않는다."""
+    try:
+        from api.routers.admin_ops import cache_key_for_question
+        from db import get_session
+        from schema import curated_answers
+        from sqlalchemy import select
+        key = cache_key_for_question(question)
+        with get_session() as session:
+            row = session.execute(
+                select(curated_answers.c.answer, curated_answers.c.sources)
+                .where(curated_answers.c.active.is_(True),
+                       curated_answers.c.question_keys.any(key))
+                .order_by(curated_answers.c.display_order).limit(1)).first()
+        if row is None:
+            return None
+        return {"answer": row.answer, "sources": row.sources or [], "attachments": [],
+                "out_of_scope": False, "sub_answers": [], "clarification": None, "error": None}
+    except Exception:  # noqa: BLE001
+        logger.exception("curated_get 실패 — 미스로 통과")
+        return None
 
 
 def cache_get(question: str) -> Optional[dict]:

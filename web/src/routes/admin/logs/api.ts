@@ -66,19 +66,48 @@ export interface LogErrorDetail {
   root_cause: string | null
 }
 
+/** rag_runs.observation 의 subs[].top[] 원소. 모양의 정본은 api/rag/observation.py */
+export interface ObservedChunk {
+  chunk_id: string
+  page_id: string
+  score: number
+}
+
+/** 하위 질문 하나의 관측. 판정 필드가 null 이면 '판정하지 않음'이지 '아니오'가 아니다 */
+export interface ObservedSub {
+  question: string
+  intent: Intent | null
+  top: ObservedChunk[]
+  marker: boolean | null
+  used_source: boolean | null
+  kind: string | null
+  appropriate: boolean | null
+  normalized: boolean | null
+}
+
+export interface RunObservation {
+  subs: ObservedSub[]
+}
+
 export interface ConversationLogDetail extends ConversationLogRow {
   classification: {
     intent: Intent
     business_function: BusinessFunction | null
     question_type: QuestionType
-    /** rag_runs 에 원천 컬럼이 없어 서버가 null 을 내린다(admin_logs.py 모듈 주석) */
+    /** rag_runs.observation 에서 온다. 관측 신설(2026-08-14) 이전 대화는 null */
     source_used: boolean | null
-    /** 서버가 원천 부재로 항상 null 을 내린다(admin_logs.py get_log) */
+    /** '[SOURCE_USED]' | '[NO_SOURCE]' | '혼재'. 관측 이전 대화는 null */
     marker: string | null
     /** 마커가 어긋나 정규화로 보정한 건 — 급증하면 프롬프트 점검(AD-008) 신호 */
     normalized: boolean | null
   }
-  /** 검색 후보·단계별 소요는 여기 없다 — Langfuse가 갖는다(위 LangfuseTrace 주석) */
+  /**
+   * 왜 그렇게 답했는지의 근거 — 하위 질문별 검색 상위 청크와 판정(rag_runs.observation).
+   * 관리자가 '검색이 잘못됐나 / 프롬프트가 잘못됐나 / 데이터가 없나'를 가르는 재료다.
+   * 2026-08-14 신설이라 그 이전 대화는 null. 판정 필드의 null 은 '판정 안 함'이지 '아니오'가 아니다.
+   */
+  observation: RunObservation | null
+  /** 단계별 소요는 여기 없다 — Langfuse가 갖는다(위 LangfuseTrace 주석) */
   langfuse: LangfuseTrace | null
   /** rag_runs.total_latency_ms — 단계별 분해 없이 총합만 남았다 */
   total_latency_ms: number | null
@@ -199,12 +228,17 @@ export function resolveLog(requestId: string, reason: string) {
   })
 }
 
-/** [테스트셋 보강 후보로 등록] — 마스킹된 질문과 기대 출처 초안만 넘긴다 (Desc 3) */
+/**
+ * [테스트셋 보강 후보로 등록] — request_id 만 넘기면 서버가 관측(rag_runs.observation)에서
+ * 그 답변이 실제로 근거로 쓴 페이지를 정답 출처 초안으로 채운다. prefilled_sources 가 그 건수라
+ * 화면이 "출처 N건을 미리 채웠습니다"로 안내한다(빈손 등록과 구분).
+ */
 export function addEvalCandidate(requestId: string) {
-  return apiRequest<{ candidate_id: string; status: string }>('/api/admin/evaluations/candidates', {
-    method: 'POST',
-    body: { source_request_id: requestId },
-  })
+  return apiRequest<{ candidate_id: string; status: string; prefilled_sources: number }>(
+    '/api/admin/evaluations/candidates', {
+      method: 'POST',
+      body: { source_request_id: requestId },
+    })
 }
 
 /** 내보내기 — 사실 자체가 활동 로그(AD-011)에 남는다 */

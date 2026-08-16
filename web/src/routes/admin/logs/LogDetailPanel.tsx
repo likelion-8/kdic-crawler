@@ -11,7 +11,7 @@ import {
   LOG_STATUS_LABEL,
   formatMonthDayTime,
 } from './api'
-import type { ConversationLogDetail, LangfuseTrace } from './api'
+import type { ConversationLogDetail, LangfuseTrace, RunObservation } from './api'
 import { formatTime } from '../../../lib/format'
 
 export interface LogDetailPanelProps {
@@ -72,6 +72,54 @@ function TraceLink({ trace }: { trace: LangfuseTrace | null }) {
   )
 }
 
+/**
+ * 답변이 무엇을 근거로 삼았는지 — 민원 대응의 첫 단추다.
+ *
+ * 이게 없으면 관리자는 "답변이 이상하다"는 민원을 받아도 **검색이 잘못됐는지 · 프롬프트가
+ * 잘못됐는지 · 데이터가 아예 없는지**를 가릴 수 없어 다음 화면(AD-007/AD-008/AD-002)을
+ * 고르지 못한다. 근거 페이지가 엉뚱하면 검색 문제, 근거는 맞는데 답이 틀리면 프롬프트 문제,
+ * 근거가 비었으면 데이터 문제 — 이 세 갈래가 여기서 갈린다.
+ *
+ * 검색 후보 전체와 단계별 소요는 Langfuse 전담이다(2026-08-04 팀 결정). 여기 두는 것은
+ * '근거로 실제 쓴 페이지'까지이고, 그 이상은 추적 링크로 보낸다.
+ */
+function EvidencePanel({ observation }: { observation: RunObservation }) {
+  return (
+    <div>
+      <SectionTitle>근거</SectionTitle>
+      <ul className="space-y-3">
+        {observation.subs.map((sub, i) => (
+          <li key={i} className="text-[13px]">
+            {observation.subs.length > 1 && (
+              <p className="mb-1 font-medium">{sub.question}</p>
+            )}
+            {sub.top.length === 0 ? (
+              // 근거가 비었다 = 검색이 아무것도 못 찾았거나 무관질문 게이트가 잘랐다.
+              // '데이터 없음' 갈래의 신호라 회색 문구로 죽이지 않고 명시한다.
+              <p className="text-muted-foreground">검색된 근거 없음 — 지식베이스(AD-002) 점검 대상</p>
+            ) : (
+              <ul className="space-y-0.5">
+                {sub.top.map((t) => (
+                  <li key={t.chunk_id} className="grid grid-cols-[1fr_auto] gap-2">
+                    <span className="truncate font-mono text-xs">{t.page_id}</span>
+                    <span className="tabular-nums text-xs text-muted-foreground">
+                      {t.score.toFixed(3)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {/* 판정 null 은 '판정 안 함'이지 '아니오'가 아니다 — 단정 문구를 쓰지 않는다 */}
+            {sub.used_source === false && (
+              <p className="mt-1 text-xs text-muted-foreground">이 근거를 답변에 쓰지 않음</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /** [2][3] 단계별 처리 추적 */
 function TracePanel({ detail, canEdit, onAddCandidate, candidatePending }: LogDetailPanelProps) {
   const [expanded, setExpanded] = useState(false)
@@ -96,6 +144,13 @@ function TracePanel({ detail, canEdit, onAddCandidate, candidatePending }: LogDe
         {/* 마커가 어긋나 정규화로 보정한 건은 '표기 보정'으로 기록된다(Desc 2) */}
         {c.normalized && <p className="mt-1.5 text-xs text-muted-foreground">표기 보정</p>}
       </div>
+
+      {detail.observation && (
+        <>
+          <Separator className="my-4" />
+          <EvidencePanel observation={detail.observation} />
+        </>
+      )}
 
       <Separator className="my-4" />
 

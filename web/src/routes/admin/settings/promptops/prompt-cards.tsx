@@ -495,6 +495,18 @@ export function GuardrailListCard({ draft, onEditBlocklist, onEditMasking }: Gua
 const BLOCK_TYPES: BlocklistRule['type'][] = ['단어', '정규식', '사전']
 const BLOCK_SCOPES: BlocklistRule['scope'][] = ['질문', '답변', '질문 + 답변']
 
+/**
+ * 동작은 입력받지 않고 적용 범위에서 파생한다(2026-08-14). 종전에는 자유 입력칸이었는데,
+ * 여기 적은 문구는 백엔드가 읽지 않아(차단 안내 문구는 서버 상수) LLM 프롬프트나 대체
+ * 문구로 오해하게 만드는 거짓 입력칸이었다. 실제 동작은 규칙 적중 → 고정 안내 문구뿐이라
+ * 관리자가 고를 수 있는 것은 '어느 방향을 검사할지'까지다.
+ */
+const BLOCK_ACTION_BY_SCOPE: Record<BlocklistRule['scope'], string> = {
+  질문: '질문 접수 차단 → 안전 문구 응답',
+  답변: '답변 생성 차단 → 안전 문구로 대체',
+  '질문 + 답변': '질문·답변 차단 → 안전 문구로 대체',
+}
+
 export interface BlocklistDialogProps {
   open: boolean
   items: BlocklistRule[]
@@ -508,7 +520,7 @@ export function BlocklistDialog({ open, items, canEdit, onSave, onClose }: Block
   const [rows, setRows] = useState<BlocklistRule[]>(items)
   const [keyword, setKeyword] = useState('')
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ pattern: '', type: '단어' as BlocklistRule['type'], scope: '답변' as BlocklistRule['scope'], action: '답변 생성 차단 → 안전 문구로 대체' })
+  const [form, setForm] = useState({ pattern: '', type: '단어' as BlocklistRule['type'], scope: '답변' as BlocklistRule['scope'] })
 
   const visible = keyword.trim() ? rows.filter((r) => r.pattern.includes(keyword.trim())) : rows
   /** 제외를 물어볼 행 — 지운 규칙은 다시 입력할 수밖에 없다 */
@@ -599,20 +611,18 @@ export function BlocklistDialog({ open, items, canEdit, onSave, onClose }: Block
               </option>
             ))}
           </select>
-          <Input
-            className="h-8 w-auto min-w-45 flex-1"
-            type="text"
-            value={form.action}
-            aria-label="동작"
-            onChange={(e) => setForm({ ...form, action: e.target.value })}
-          />
+          {/* 동작은 적용 범위에서 자동으로 정해진다 — 안내 문구는 서버 고정이라 여기서
+              바꿀 수 없다(BLOCK_ACTION_BY_SCOPE 주석). 입력칸으로 두면 프롬프트로 오해한다 */}
+          <span aria-label="동작(자동)" className="text-[13px] text-muted-foreground">
+            {BLOCK_ACTION_BY_SCOPE[form.scope]} <span className="text-xs">(안내 문구는 고정)</span>
+          </span>
           <Button
             size="sm"
             variant="primary"
             disabled={form.pattern.trim() === ''}
             disabledReason={form.pattern.trim() === '' ? '단어 · 패턴을 입력해 주세요' : undefined}
             onClick={() => {
-              setRows([...rows, { id: `bw_new_${Date.now()}`, ...form, pattern: form.pattern.trim(), active: true }])
+              setRows([...rows, { id: `bw_new_${Date.now()}`, ...form, action: BLOCK_ACTION_BY_SCOPE[form.scope], pattern: form.pattern.trim(), active: true }])
               setForm({ ...form, pattern: '' })
               setAdding(false)
             }}

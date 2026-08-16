@@ -63,10 +63,24 @@ class QuestionTypeClassifier:
     # capture_input=False인 이유: 자동 캡처는 self(참조 임베딩 행렬 통째)까지 직렬화하려
     # 들어 trace가 무거워진다. 질문은 아래 update_current_span(input=...)으로 직접 넣는다.
     @observe(name="classify_question_type", capture_input=False)
-    def classify_with_score(self, query):
+    def classify_with_score(self, query, *, exclude_self=False):
+        """exclude_self=True 면 질문 원문이 똑같은 예시를 후보에서 뺀다 — **평가 전용**이다.
+
+        참조 예시는 골든셋(evaluation_dataset)이고 골든셋 문항으로 평가하면 질문이 자기
+        자신을 유사도 1.0 으로 끌어와 라우팅이 항상 정답이 된다. 그러면 평가 수치가 실서비스
+        (처음 보는 질문)보다 후하게 나온다 — 실제로 홀드아웃에서 이 분류의 정확도는 0.6456 인데
+        골든셋으로 재면 사실상 1.0 이다. 운영 호출은 기본값 False 그대로라 동작이 안 바뀐다.
+
+        원문 일치로만 뺀다(임베딩 유사도 임계값이 아니라). 같은 뜻의 다른 문장은 실서비스에서도
+        정당한 예시이므로 빼면 오히려 실제와 멀어진다."""
         import numpy as np
         q = _encode_query(self.model, query)
         sims = self.emb @ q
+        if exclude_self:
+            sims = sims.copy()
+            for i, example in enumerate(self.questions):
+                if example == query:
+                    sims[i] = -np.inf
         best = int(np.argmax(sims))
         # 오분류 원인 추적용(2026-08-14): 예측을 결정한 최근접 예시 top5의 라벨·유사도·질문
         # 원문을 span metadata로 남긴다. 1-NN의 오분류는 "정답 유형의 비슷한 예시가 없다"
@@ -82,9 +96,9 @@ class QuestionTypeClassifier:
         )
         return self.types[best], float(sims[best])
 
-    def classify(self, query):
+    def classify(self, query, *, exclude_self=False):
         """기존 호환 인터페이스 — 라벨만 반환한다."""
-        return self.classify_with_score(query)[0]
+        return self.classify_with_score(query, exclude_self=exclude_self)[0]
 
 
 # 2026-07-29 팀 결정: 업무(business_function) 분류는 검색에 쓰지 않기로 하여 비활성화.

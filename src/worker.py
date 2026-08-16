@@ -20,8 +20,8 @@
 | 타입 | 실행 | 내용 |
 |---|---|---|
 | FULL_RECRAWL · SELECTED_RECRAWL | ✅ 실제 실행 | 수집(inventory.PAGES 기준 실제 재크롤, expect 판본 검증 + 재시도) -> 변환(파싱 + 코퍼스 재조립, **content_sha256 비교로 바뀐 페이지만 갱신 집계**) -> 이하 재적재와 동일 |
-| REINDEX · RECHUNK · REEMBED | ✅ 실제 실행 | 코퍼스(data/corpus.jsonl) -> 청킹 -> 검증 -> 색인(UPSERT) -> 버전 기록. index_document_chunks.py 의 정식 경로를 그대로 쓴다 |
-| 롤백 잡(rollback_of 있음)   | ✅ 실제 실행 | search_index_versions 의 직전 스냅샷으로 corpus.jsonl 을 되돌린 뒤 위와 동일 재적재(docs/search_index_versioning.md 의 복원 흐름) |
+| REINDEX · RECHUNK · REEMBED | ✅ 실제 실행 | 코퍼스(data/corpus.jsonl) -> 청킹 -> 검증 -> **게이트(홀드아웃 평가)** -> 색인(UPSERT) -> 버전 기록. 게이트 미달이면 색인에 들어가지 않아 운영 인덱스가 그대로 남는다(src/index_gate.py) |
+| 롤백 잡(rollback_of 있음)   | ✅ 실제 실행 | search_index_versions 의 직전 스냅샷으로 corpus.jsonl 을 되돌린 뒤 위와 동일 재적재. **게이트는 SKIPPED** — 직전에 통과했던 스냅샷이라 다시 재는 의미가 없고, 장애 복구를 게이트가 막으면 안 된다 |
 | SMOKE_EVAL                  | ✅ 실제 실행 | admin_evaluations.run_evaluation 위임(문항 수만큼 OpenAI·HCX — 수 분) |
 
 ## 재수집(수집 단계)이 하는 일 — 기존 크롤 파이프라인을 그대로 자동화
@@ -84,12 +84,12 @@ for p in (str(ROOT), str(ROOT / "src")):
 from sqlalchemy import select, text, update  # noqa: E402
 
 from db import get_engine, get_session  # noqa: E402
-from schema import pipeline_jobs, search_index_versions  # noqa: E402
+from schema import pipeline_jobs, search_index_versions, test_set  # noqa: E402
 
 logger = logging.getLogger("worker")
 
 POLL_INTERVAL_S = 3
-STEPS = ("수집", "변환", "청킹", "검증", "색인", "반영")
+STEPS = ("수집", "변환", "청킹", "검증", "게이트", "색인", "반영")
 CORPUS = ROOT / "data" / "corpus.jsonl"
 
 # 재적재 계열(수집 없음). 셋을 같은 경로로 돌리는 이유: 청킹·임베딩·색인이 한 스크립트
@@ -103,6 +103,10 @@ CRAWL_TYPES = frozenset({"FULL_RECRAWL", "SELECTED_RECRAWL"})
 
 class JobCancelled(Exception):
     """cancel 엔드포인트가 잡을 CANCELLED 로 바꿨다 — 남은 단계를 접고 즉시 멈춘다."""
+
+
+class _GateSkipped(Exception):
+    """게이트를 재는 것이 의미 없는 잡(롤백) — 실패가 아니라 SKIPPED 로 기록한다."""
 
 
 class StageFailed(Exception):
@@ -348,7 +352,7 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
 
     def _chunk():
         uids, texts, u2p = build_units("all")
-        state["uids"] = uids
+        state["uids"], state["texts"] = uids, texts   # texts 는 게이트가 메모리 인덱스를 만들 때 쓴다
         return len(uids)
 
     def _validate():
@@ -364,6 +368,32 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         if empty:
             raise StageFailed("검증", f"본문이 빈 페이지 {empty}건")
         return 0   # 발견한 문제 수 — 0 이 정상이다
+
+    def _gate():
+        """새 청크를 메모리 인덱스로 올려 홀드아웃으로 채점한다. 미달이면 여기서 멈추므로
+        **색인 단계에 들어가지 않는다** — 운영 인덱스를 손대기 전이라 '실패하면 롤백'이 아니라
+        '통과해야 반영'이 그대로 성립한다(docs/search_index_versioning.md 의 원칙).
+
+        임시 색인을 만들지 않는 이유와 홀드아웃을 쓰는 이유는 src/index_gate.py 참고.
+        롤백 잡은 게이트를 건너뛴다 — 직전에 통과했던 스냅샷으로 되돌리는 것이라 다시 재는
+        것이 의미가 없고, 장애 복구를 게이트가 막으면 안 된다."""
+        import index_gate
+        import pipeline
+
+        if job.rollback_of:
+            raise _GateSkipped("롤백은 직전 통과 스냅샷으로 되돌리는 것이라 게이트를 건너뛴다")
+
+        rows = [{"question": q, "expected_sources": list(src or [])}
+                for q, src in session.execute(
+                    select(test_set.c.question, test_set.c.expected_sources)
+                    .where(test_set.c.is_active.is_(True))).all()]
+        result = index_gate.evaluate(state["uids"], state["texts"], rows,
+                                     k_candidates=pipeline.K_CANDIDATES)
+        state["gate"] = result
+        if not result["passed"]:
+            raise StageFailed("게이트", index_gate.describe(result))
+        logger.info("게이트 통과: %s", index_gate.describe(result))
+        return result["metrics"]["n"]
 
     def _index():
         # 정식 적재 경로 그대로. 재적재의 본체라 이 단계가 제일 오래 걸린다(새 청크가 있으면
@@ -393,6 +423,11 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
     _run_stage(session, job.id, "변환", _transform)
     _run_stage(session, job.id, "청킹", _chunk)
     _run_stage(session, job.id, "검증", _validate)
+    try:
+        _run_stage(session, job.id, "게이트", _gate)
+    except _GateSkipped as skip:
+        _set_step(session, job.id, "게이트", "SKIPPED")
+        logger.info("게이트 건너뜀: %s", skip)
     _run_stage(session, job.id, "색인", _index)
     _run_stage(session, job.id, "반영", _activate)
     logger.warning("⚠️ BM25 는 프로세스 기동 시 조립되는 싱글턴이다 — API 재시작 전까지 "

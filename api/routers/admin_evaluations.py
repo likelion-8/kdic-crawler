@@ -54,6 +54,7 @@ from api.schemas.evaluations import (CandidateResult, CorpusSearchResult,
                                      EvalItemInput, EvalItemList, EvalItemValidation,
                                      GateDetail)
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다). 서비스 vs 관리자 스키마 분리.
+from api.rag import observation
 from schema import documents, evaluation_dataset, pipeline_jobs, rag_runs
 from schema_admin import evaluation_results, evaluation_runs, testset_items
 
@@ -232,13 +233,24 @@ def _titles_for(db, doc_ids: set) -> dict:
     return {pid: title for pid, title in rows}
 
 
+def _all_links(expected_links) -> list:
+    """testset_items.expected_links(JSONB, [doc_id,...]) 의 **모든** 출처 id.
+
+    채점은 반드시 이걸 쓴다. 종전에는 _first_link 로 첫 하나만 정답으로 넘겨서, 정답 출처가
+    여러 개인 문항(골든셋 851 중 110문항)이 두 번째 출처를 맞혀도 오답으로 잡혔다.
+    eval_pipeline_retrieval 은 정답이 여러 개면 비율로 Recall 을 매기므로(recall_mrr), 전량을
+    넘겨야 정기 평가·게이트와 같은 눈금이 된다."""
+    if not isinstance(expected_links, list):
+        return []
+    # [{doc_id,...}] 형태로 저장됐을 수도 있어 둘 다 받는다.
+    return [(x.get("doc_id") if isinstance(x, dict) else str(x)) for x in expected_links if x]
+
+
 def _first_link(expected_links) -> Optional[str]:
-    """testset_items.expected_links(JSONB, [doc_id,...]) 의 첫 출처 id. 비면 None."""
-    if isinstance(expected_links, list) and expected_links:
-        first = expected_links[0]
-        # [{doc_id,...}] 형태로 저장됐을 수도 있어 둘 다 받는다.
-        return first.get("doc_id") if isinstance(first, dict) else str(first)
-    return None
+    """대표 출처 하나 — **화면 표시 전용**이다(AD-006 목록의 '기대 출처' 칼럼).
+    채점에는 쓰지 말 것. 채점용은 _all_links."""
+    links = _all_links(expected_links)
+    return links[0] if links else None
 
 
 def _item_to_dict(row, titles: dict) -> dict:
@@ -503,8 +515,10 @@ def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
     for add in body.adds:
         new_rows.append(_input_to_row(add, new_version, me.email))
 
-    for row in new_rows:
-        db.execute(insert(testset_items).values(**row))
+    # 버전 스냅샷은 851행짜리라 낱건 execute 를 하면 왕복만 851번이다(2026-08-14 실측:
+    # 화면이 수십 초 잠김). executemany 한 번으로 보낸다 — 컬럼 구성이 모든 행 동일해 안전하다.
+    if new_rows:
+        db.execute(insert(testset_items), new_rows)
 
     # 재측정 run 생성 — 마감(DONE)은 워커의 run_evaluation 이 한다.
     run = db.execute(
@@ -598,26 +612,38 @@ def add_candidate(body: dict, db: DbSession, me: CurrentAdmin):
 
     후보는 숫자 버전과 섞이지 않게 sentinel 버전('candidate')으로 저장한다 — apply 로 정식
     버전에 편입되기 전까지 GET /items 에 노출되지 않는다.
-    ⚠️ intent·question_type 은 rag_runs 에 있으나 testset_items 컬럼이 없어 옮기지 못한다(문서).
+
+    **정답 출처를 미리 채운다(2026-08-14).** 종전에는 질문만 옮기고 expected_links·업무·
+    기준답변이 전부 None 이라, 관리자가 "이 질문의 정답 출처가 뭐였더라"를 맨손으로 찾아야 했다.
+    실제로 그 답변이 어떤 페이지를 근거로 삼았는지는 rag_runs.observation 에 있으므로 그걸
+    초안으로 넣는다 — 관리자는 **확인·수정만** 하면 된다. 이게 AD-005 → AD-006 인계의 알맹이다.
+    관측 이전에 쌓인 행은 observation 이 NULL 이라 종전처럼 빈 후보가 된다.
+    intent·question_type 도 함께 옮긴다(2026-08-13 컬럼 추가로 가능해졌다).
     """
     request_id = str(body.get("source_request_id") or "").strip()
     if not request_id:
         raise BadRequestError("source_request_id가 필요합니다.")
 
     run = db.execute(
-        select(rag_runs.c.question).where(rag_runs.c.request_id == request_id)).first()
+        select(rag_runs.c.question, rag_runs.c.intent, rag_runs.c.question_type,
+               rag_runs.c.observation)
+        .where(rag_runs.c.request_id == request_id)).first()
     if run is None:
         raise NotFoundError("대화 기록을 찾을 수 없습니다.")
 
+    pages = observation.expected_pages(run.observation)
     row = db.execute(
         insert(testset_items).values(
             testset_version=CANDIDATE_VERSION, question=run.question,
-            expected_links=None, business_function=None, reference_answer=None,
+            expected_links=pages or None, business_function=None, reference_answer=None,
+            question_type=run.question_type, intent=run.intent,
             excluded=False, created_by=me.email)
         .returning(testset_items.c.id)
     ).first()
     db.commit()
-    return {"candidate_id": str(row.id), "status": "REGISTERED"}
+    # prefilled_sources 로 화면이 "출처 N건을 미리 채웠습니다"를 안내한다(빈손 등록과 구분).
+    return {"candidate_id": str(row.id), "status": "REGISTERED",
+            "prefilled_sources": len(pages)}
 
 
 # ──────────────────────── 측정 실행(워커/CLI 전용) ──────────────────────────
@@ -646,7 +672,8 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
             testset_items.c.testset_version == run.testset_version,
             testset_items.c.excluded.is_(False))).all()
     rows = [{"test_id": str(it.id), "question": it.question,
-             "expected_sources": [d for d in [_first_link(it.expected_links)] if d]}
+             # 정답 출처 전량. 첫 하나만 넘기면 두 번째 출처를 맞힌 문항이 오답이 된다(_all_links).
+             "expected_sources": _all_links(it.expected_links)}
             for it in items]
 
     retr, per = eval_retrieval(rows, pipeline.K_CANDIDATES, rerank)

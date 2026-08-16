@@ -375,18 +375,24 @@ def route_search(query, k):
 
 
 @observe()
-def route_search_chunks(query, k, qtype=None):
+def route_search_chunks(query, k, qtype=None, *, exclude_self=False):
     """route_search()와 같은 라우팅 판단(Dense 전용 vs Hybrid)을 쓰되, 페이지 단위가 아니라
     청크 단위로 (chunk_id, score, text)를 반환한다. candidate_ranking.rerank()는 실제 본문
     텍스트가 있어야 질문과 재비교할 수 있으므로, PageRanked로 접기 전의 청크 단위 결과가
     필요해 이 함수를 따로 둔다 — route_search()의 페이지 접기(.inner 우회)만 빼면 로직은
-    RoutedRetriever.search()와 동일하다."""
+    RoutedRetriever.search()와 동일하다.
+
+    exclude_self 는 **평가 전용**이다. 유형 분류의 참조 예시가 골든셋이라, 골든셋 문항으로
+    평가하면 질문이 자기 자신을 예시로 끌어와 라우팅이 항상 정답이 된다(자기참조 누수).
+    켜면 원문이 같은 예시를 후보에서 빼 실서비스와 같은 조건으로 잰다. 기본값은 꺼짐이라
+    운영 경로 동작은 그대로다."""
     e = _build_engines()
     routed = e["routed"]
     # 앞단 OOS 게이트가 이미 계산한 question_type을 넘길 수 있다. 넘기지 않는
     # 기존 호출은 종전처럼 여기서 자동 분류한다.
     qtype = qtype if qtype is not None else (
-        routed.classifier.classify(query) if routed.classifier else None)
+        routed.classifier.classify(query, exclude_self=exclude_self)
+        if routed.classifier else None)
     bf = routed.bf_classifier.classify(query) if routed.bf_classifier else None
 
     bm25_inner, dense_inner = e["bm25"].inner, e["dense"].inner
