@@ -375,7 +375,7 @@ def route_search(query, k):
 
 
 @observe()
-def route_search_chunks(query, k):
+def route_search_chunks(query, k, qtype=None):
     """route_search()와 같은 라우팅 판단(Dense 전용 vs Hybrid)을 쓰되, 페이지 단위가 아니라
     청크 단위로 (chunk_id, score, text)를 반환한다. candidate_ranking.rerank()는 실제 본문
     텍스트가 있어야 질문과 재비교할 수 있으므로, PageRanked로 접기 전의 청크 단위 결과가
@@ -383,7 +383,10 @@ def route_search_chunks(query, k):
     RoutedRetriever.search()와 동일하다."""
     e = _build_engines()
     routed = e["routed"]
-    qtype = routed.classifier.classify(query) if routed.classifier else None
+    # 앞단 OOS 게이트가 이미 계산한 question_type을 넘길 수 있다. 넘기지 않는
+    # 기존 호출은 종전처럼 여기서 자동 분류한다.
+    qtype = qtype if qtype is not None else (
+        routed.classifier.classify(query) if routed.classifier else None)
     bf = routed.bf_classifier.classify(query) if routed.bf_classifier else None
 
     bm25_inner, dense_inner = e["bm25"].inner, e["dense"].inner

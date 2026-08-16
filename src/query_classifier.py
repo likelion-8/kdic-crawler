@@ -63,7 +63,7 @@ class QuestionTypeClassifier:
     # capture_input=False인 이유: 자동 캡처는 self(참조 임베딩 행렬 통째)까지 직렬화하려
     # 들어 trace가 무거워진다. 질문은 아래 update_current_span(input=...)으로 직접 넣는다.
     @observe(name="classify_question_type", capture_input=False)
-    def classify(self, query):
+    def classify_with_score(self, query):
         import numpy as np
         q = _encode_query(self.model, query)
         sims = self.emb @ q
@@ -80,7 +80,11 @@ class QuestionTypeClassifier:
                  "example": self.questions[i]}
                 for i in top5]},
         )
-        return self.types[best]
+        return self.types[best], float(sims[best])
+
+    def classify(self, query):
+        """기존 호환 인터페이스 — 라벨만 반환한다."""
+        return self.classify_with_score(query)[0]
 
 
 # 2026-07-29 팀 결정: 업무(business_function) 분류는 검색에 쓰지 않기로 하여 비활성화.
@@ -119,6 +123,15 @@ def classify_question_type(query):
     반환한다. classify_query_type()과 같은 분류기(같은 캐시된 인스턴스)를 재사용하되, 라우팅용
     이진 접기 없이 원본 라벨이 필요한 곳(rag_runs 로깅 등)에서 쓴다."""
     return _get_classifier("question_type").classify(query)
+
+
+def classify_question_type_with_score(query):
+    """question_type 라벨과 1-NN top-1 코사인 유사도를 함께 반환한다.
+
+    OOS 코사인 극단값 게이트가 검색 라우팅에서 이미 계산하는 신호를 재사용하기
+    위한 함수다. 반환값은 ``(label, similarity)``다.
+    """
+    return _get_classifier("question_type").classify_with_score(query)
 
 
 # ── intent 분류: OpenAI Structured Output (2026-08-03, 기존 Kiwi+TF-IDF+LogReg에서 교체) ──

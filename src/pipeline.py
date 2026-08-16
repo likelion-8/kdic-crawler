@@ -24,7 +24,8 @@ from query_decomposer import decompose_query
 from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent, classify_question_type
 from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever, route_search_chunks
-from candidate_ranking import gate_low_relevance, rerank, top_k_cut
+from candidate_ranking import (gate_low_relevance, gate_low_rerank_relevance,
+                                rerank, top_k_cut)
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
 from prompt_builder import (
@@ -40,6 +41,8 @@ from rag_logger import log_rag_run
 # "왜 이 값인가"의 유일한 기록이라 DB 로 옮겼다고 지우면 안 된다(src/runtime_config.py 참고).
 from runtime_config import get_param
 from source_check import validate_answer
+from oos_routing import (INSUFFICIENT_EVIDENCE_MESSAGE, OUT_OF_SCOPE_MESSAGE,
+                         USE_CONTEXT_SUPERVISOR, pre_route, supervise_context)
 
 K_CANDIDATES = 20
 K_FINAL = 5
@@ -79,7 +82,7 @@ USE_SOURCE_RECHECK = True
 
 
 @observe()
-def _answer_one(query, timings, intent=None):
+def _answer_one(query, timings, intent=None, route_qtype=None):
     """질문 하나(원본 질문 또는 복합 질문의 하위 질문 하나)에 대해 검색부터 답변 조립까지
     수행한다. 하위 답변끼리는 출처를 포함해 완전히 독립이다 — 하위 답변 간 "중복 출처
     제거"를 하던 누적 집합(seen_pages/seen_urls)은 2026-07-30 제거했다. 출처를 실제로
@@ -98,19 +101,40 @@ def _answer_one(query, timings, intent=None):
     # 동작이 오늘과 완전히 같다. 모듈 최상단이 아니라 **쓰는 자리에서** 부르는 것이 중요하다 —
     # 위에서 한 번 읽어 두면 값이 import 시점에 굳어 재시작 전까지 반영되지 않는다.
     with measure_time(timings, "retrieval", accumulate=True):
-        candidates = route_search_chunks(query, k=get_param("k_candidates", K_CANDIDATES))
+        k_candidates = get_param("k_candidates", K_CANDIDATES)
+        if route_qtype is None:
+            candidates = route_search_chunks(query, k=k_candidates)
+        else:
+            candidates = route_search_chunks(query, k=k_candidates, qtype=route_qtype)
 
     with measure_time(timings, "reranking", accumulate=True):
         # 전역 USE_RERANKER 를 default 로 넘기는 이유: eval_pipeline_generation.py 가
         # `pipeline.USE_RERANKER = args.rerank` 로 전역을 덮어써 A/B 를 돌린다. DB 에 이
         # 파라미터가 없는 동안은 그 덮어쓰기가 계속 이긴다(runtime_config 모듈 주석 참고).
-        reranked = rerank(query, candidates) if get_param("use_reranker", USE_RERANKER) else candidates
+        use_reranker = get_param("use_reranker", USE_RERANKER)
+        reranked = rerank(query, candidates) if use_reranker else candidates
+        if use_reranker:
+            reranked = gate_low_rerank_relevance(reranked)
         # 무관 질문 게이트(2026-08-10) — api/rag/answer.py 와 동일 동작 유지.
         # 게이트에 걸리면 근거 없이 informational 경로로 통일한다(civil 조립은 근거가 있어야
         # 의미가 있고, 빈 근거 civil 프롬프트는 few-shot leak 이력이 있다).
         top = gate_low_relevance(top_k_cut(reranked, k=get_param("k_final", K_FINAL)))
         if not top:
             intent = "informational"
+
+    # 검색 근거가 살아 있을 때만 가장 정보가 많은 지점에서 3-way supervisor를
+    # 호출한다. 빈 근거는 이미 검색 게이트가 확실한 무관 질문으로 판정했으므로
+    # 추가 LLM 호출 없이 바로 OOS 응답한다.
+    if not top:
+        return f"[NO_SOURCE]\n{OUT_OF_SCOPE_MESSAGE}"
+
+    if get_param("use_context_supervisor", USE_CONTEXT_SUPERVISOR):
+        with measure_time(timings, "context_supervisor", accumulate=True):
+            supervisor = supervise_context(query, top)
+        if supervisor.decision == "OOS":
+            return f"[NO_SOURCE]\n{OUT_OF_SCOPE_MESSAGE}"
+        if supervisor.decision == "INSUFFICIENT_EVIDENCE":
+            return f"[NO_SOURCE]\n{INSUFFICIENT_EVIDENCE_MESSAGE}"
 
     with measure_time(timings, "context_building", accumulate=True):
         if intent == "civil_petition":
@@ -168,6 +192,14 @@ def _rag_answer_traced(query):
     classify_intent를 부른다(= 이 기능 도입 전과 동일 동작)."""
     timings = {}
 
+    # 검색·플래너보다 앞서 확실한 인사/잡담과 코사인 극단 저값만 종료한다.
+    with measure_time(timings, "oos_pre_gate"):
+        pre_gate = pre_route(query)
+    if pre_gate.is_terminal:
+        timings["total"] = round(sum(timings.values()), 4)
+        log_intent = "smalltalk" if pre_gate.stage == "rule" else "out_of_scope"
+        return f"[NO_SOURCE]\n{pre_gate.response}", timings, log_intent
+
     if get_param("use_query_planner", USE_QUERY_PLANNER):
         # 멀티쿼리 분해 + intent를 한 콜(structured output)로 함께 판단한다.
         with measure_time(timings, "query_planning"):
@@ -178,7 +210,11 @@ def _rag_answer_traced(query):
         if not (plan["should_split"] and len(items) > 1):
             # 단일 질문 - 플래너가 하위 질문을 살짝 바꿔 썼어도 원본 질문 그대로 검색하고
             # (기존 설계 유지: 재질문판 문구로 검색하지 않는다), intent만 플래너 결과를 쓴다.
-            answer = _answer_one(query, timings, intent=(items[0]["intent"] if items else None))
+            answer = _answer_one(
+                query, timings,
+                intent=(items[0]["intent"] if items else None),
+                route_qtype=pre_gate.route_type,
+            )
         else:
             sub_answers = [_answer_one(it["question"], timings, intent=it["intent"]) for it in items]
             answer = "\n\n".join(f"**{it['question']}**\n{a}"

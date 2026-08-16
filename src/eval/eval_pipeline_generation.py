@@ -47,6 +47,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 import pipeline  # noqa: E402  (USE_RERANKER 토글 + _rag_answer_traced 호출)
+import oos_routing  # noqa: E402
 import runtime_config  # noqa: E402  (CLI: 기본값 동결 / 공유 함수: 실효 파라미터 기록)
 from runtime_config import current_versions, get_param  # noqa: E402
 
@@ -93,7 +94,7 @@ def load_page_urls():
     return m
 
 
-def evaluate_generation(rows, page2url, *, rerank=False):
+def evaluate_generation(rows, page2url, *, rerank=False, supervisor=True):
     """생성 평가 채점 — main() 과 api 의 run_evaluation 이 공유하는 순수 함수.
 
     채점 로직(출처 정확률·OOS 거절·must_include 커버리지·실패 기록)을 한 곳에 둔다. 감싸는
@@ -104,12 +105,18 @@ def evaluate_generation(rows, page2url, *, rerank=False):
     ⚠️ 문항당 HCX 1회 이상 호출(비용·시간). 대량이면 rows 를 잘라 넘겨 소규모로 검증할 것.
     """
     pipeline.USE_RERANKER = rerank  # 모듈 전역 토글 → _answer_one 이 런타임에 참조
+    pipeline.USE_CONTEXT_SUPERVISOR = supervisor
+    oos_routing.USE_CONTEXT_SUPERVISOR = supervisor
 
     # 실효 파라미터 기록 — DB(AD-007)가 값을 넣어뒀으면 get_param이 모듈 전역 대신 그걸 쓴다.
     # 어떤 설정으로 돌았는지 결과에 박아둬야 수치 간 비교가 성립한다(모듈 docstring 참고).
     effective = {
         "k_candidates": get_param("k_candidates", pipeline.K_CANDIDATES),
         "k_final": get_param("k_final", pipeline.K_FINAL),
+        "min_top1_score": get_param("min_top1_score", 0.35),
+        "min_route_cosine_score": get_param("min_route_cosine_score", 0.0),
+        "min_rerank_top1_score": get_param("min_rerank_top1_score", -100.0),
+        "use_context_supervisor": get_param("use_context_supervisor", supervisor),
         "use_reranker": get_param("use_reranker", rerank),
         "use_source_recheck": get_param("use_source_recheck", pipeline.USE_SOURCE_RECHECK),
         "prompt_version": current_versions().get("prompt"),
@@ -161,9 +168,10 @@ def evaluate_generation(rows, page2url, *, rerank=False):
         "출처_정확률(답변형)": rate([r["src_correct"] for r in ans_recs]),
         "출처링크_포함률(답변형)": rate([r["has_source"] for r in ans_recs]),
         "oos_적절거절률": rate([r["refused"] for r in oos_recs]),
+        "인스코프_오거절률": rate([r["refused"] for r in ans_recs]),
         "n_answerable": len(ans_recs), "n_oos": len(oos_recs),
         "effective_params": effective,
-        "recheck_mode": "single(pipeline·CLI경로)",  # 웹 API는 3표 다수결 — docstring 참고
+        "recheck_mode": "single(pipeline·CLI경로)",  # 웹 API도 동일한 단일 검증 1콜
     }
     return summary, records, failed
 
@@ -172,9 +180,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="앞에서 N문항만(소규모 검증)")
     ap.add_argument("--rerank", action="store_true", help="리랭킹 On(GPU 확보 후 도입 시)")
+    ap.add_argument("--no-supervisor", action="store_true", help="Context Supervisor를 끄고 기준선 측정")
     args = ap.parse_args()
 
     pipeline.USE_RERANKER = args.rerank  # 모듈 전역 토글 → _answer_one이 런타임에 참조
+    oos_routing.USE_CONTEXT_SUPERVISOR = not args.no_supervisor
     tag = "on" if args.rerank else "off"
 
     # CLI 전용 프로세스이므로 안전 — "DB 빈 상태"를 강제해 문서화된 기본값 위에서 A/B가
@@ -194,7 +204,8 @@ def main():
     print(f"리랭킹: {tag.upper()} · ⚠️ 문항당 HCX 호출 — 챗봇 켜지 말 것\n")
 
     # 채점은 evaluate_generation 이 한다(관리자 평가 API 와 공유하는 순수 함수).
-    summary, records, failed = evaluate_generation(rows, page2url, rerank=args.rerank)
+    summary, records, failed = evaluate_generation(
+        rows, page2url, rerank=args.rerank, supervisor=not args.no_supervisor)
 
     # 사람이 확인할 표본: 답변형인데 must_include 실패 + oos인데 거절 안 함
     review = [{"test_id": r["test_id"], "why": "must_include 실패", "answer": r["answer"]}

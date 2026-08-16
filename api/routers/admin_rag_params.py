@@ -52,6 +52,7 @@ from api.deps import CurrentAdmin, DbSession, get_current_admin, write_activity_
 from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다).
 import candidate_ranking
+import oos_routing
 import pipeline
 import query_planner
 import runtime_config
@@ -102,10 +103,26 @@ def _param_meta() -> list:
          "min": 0.0, "max": 1.0, "step": 0.05, "default": candidate_ranking.MIN_TOP1_SCORE,
          "scale_start": "관대(통과 많음)", "scale_end": "엄격(차단 많음)",
          "note": "top-1 점수가 미만이면 근거를 비워 환각 차단 (0.35 = 인스코프 오차단 0 실측)"},
+        {"key": "min_route_cosine_score", "label": "라우팅 코사인 극단값 임계값", "group": "retrieval",
+         "control": "slider", "apply_timing": "무중단",
+         "min": 0.0, "max": 1.0, "step": 0.01,
+         "default": oos_routing.MIN_ROUTE_COSINE_SCORE,
+         "scale_start": "관대(통과 많음)", "scale_end": "엄격(차단 많음)",
+         "note": "BGE-m3-ko 1-NN 라우팅 유사도가 미만이면 planner 전에 OOS 처리. 821개 인스코프 오차단 0 실측 후 조정"},
         {"key": "use_reranker", "label": "리랭커(cross-encoder)", "group": "retrieval",
          "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_RERANKER,
          "note": "CPU 문항당 96초 실측으로 기본 Off — GPU 확보 시 재검증(README 2.4)"},
+        {"key": "min_rerank_top1_score", "label": "리랭크 점수 극단값 임계값", "group": "retrieval",
+         "control": "slider", "apply_timing": "무중단",
+         "min": -100.0, "max": 100.0, "step": 0.05,
+         "default": oos_routing.MIN_RERANK_TOP1_SCORE,
+         "scale_start": "관대(통과 많음)", "scale_end": "엄격(차단 많음)",
+         "note": "cross-encoder top-1 로짓이 미만이면 supervisor 전에 OOS 처리. GPU held-out 분포 실측 전에는 -100으로 비활성"},
+        {"key": "use_context_supervisor", "label": "Context Supervisor(3-way)", "group": "generation",
+         "control": "toggle", "apply_timing": "무중단",
+         "default": oos_routing.USE_CONTEXT_SUPERVISOR,
+         "note": "Top5 근거와 Scope KB를 보고 ANSWERABLE/OOS/근거부족을 판정하는 추가 LLM 1콜"},
         {"key": "use_query_planner", "label": "쿼리 플래너(분해+intent 한 콜)", "group": "retrieval",
          "control": "toggle", "apply_timing": "무중단",
          "default": query_planner.USE_QUERY_PLANNER,

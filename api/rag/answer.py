@@ -22,7 +22,8 @@ from query_decomposer import decompose_query
 from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent
 from retrieval import route_search_chunks
-from candidate_ranking import gate_low_relevance, top_k_cut
+from candidate_ranking import (gate_low_relevance, gate_low_rerank_relevance,
+                                rerank, top_k_cut)
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
 from llm_client import call_hyperclova
@@ -30,6 +31,10 @@ from prompt_builder import (_strip_no_source_marker, build_civil_petition_prompt
                             build_informational_prompt)
 from runtime_config import get_param
 from source_check import validate_answer
+from oos_routing import (INSUFFICIENT_EVIDENCE_MESSAGE,
+                         OUT_OF_SCOPE_MESSAGE as OOS_MESSAGE,
+                         USE_CONTEXT_SUPERVISOR, pre_route as run_pre_route,
+                         supervise_context)
 
 from api.errors import DEFAULT_FALLBACK_SOURCES
 from api.schemas.chat import Attachment, ChatResponse, SourceItem, SubAnswer
@@ -49,6 +54,7 @@ K_FINAL = 5
 # import 하지 않는다). use_source_recheck 는 사후 검증(validate_answer) 전체의 on/off
 # 스위치다: Off 면 마커만 신뢰하고 검증·본문 교체·재생성을 전부 생략한다(2026-08-14 팀 결정).
 USE_SOURCE_RECHECK = True
+USE_RERANKER = False
 
 # 에러 응답에 실을 폴백 출처(공식 페이지). errors.py 것을 그대로 SourceItem 으로.
 _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
@@ -57,10 +63,7 @@ _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
 # 환각 본문이 정상 답변처럼 노출되는 것을 막는다(2026-08-10 "스파이더맨" 마블 설명 실측).
 # 스트리밍으로 이미 흘러간 델타는 못 무르지만, 프론트는 done 의 answer 를 최종으로 신뢰하므로
 # 완성 화면·대화 복원·rag_runs 로그에는 이 문구가 남는다. 인사·정체성·정상 거절문은 교체하지 않는다.
-OUT_OF_SCOPE_MESSAGE = (
-    "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 "
-    "어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
-)
+OUT_OF_SCOPE_MESSAGE = OOS_MESSAGE
 
 # 재생성 가드의 점수 하한 변천(2026-08-10): 0.60 → 0.45 → 폐지. 처음엔 도메인 인접 범위외의
 # 재생성 채택을 점수로 막았지만, 그 역할은 다수결 판정 + 판정 입력에 질문 포함으로 대체됐다
@@ -79,6 +82,15 @@ class SubPlan:
     prompt: list                   # [(role, content), ...]
     civil: Optional[dict] = None   # build_civil_petition_answer 결과({procedure,documents,links}) 또는 None
     evidence: str = ""             # 근거 재확인(recheck)용 텍스트
+    decision: str = "ANSWERABLE"   # 앞단 게이트/Context Supervisor 판정
+    early_answer: Optional[str] = None  # 조기 종료 시 LLM 없이 보낼 본문
+    route_type: Optional[str] = None
+    route_score: Optional[float] = None
+
+
+def pre_route(query: str):
+    """planner보다 먼저 적용하는 공통 룰·코사인 게이트."""
+    return run_pre_route(query)
 
 
 def plan(query: str) -> list:
@@ -100,24 +112,53 @@ def plan(query: str) -> list:
     return [(q, None) for q in subs]
 
 
-def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
+def prepare_sub(q: str, intent: Optional[str] = None, route_signal=None) -> SubPlan:
     """하위 질문 하나에 대해 intent 분류·검색·근거조립·프롬프트까지 준비(동기, LLM 생성 전).
     pipeline._answer_one 의 검색~프롬프트 단계와 동일하다(리랭커 off).
 
     intent: 쿼리 플래너(plan)가 이미 판단한 값을 넘기면 그대로 쓴다. None이면(플래너 Off 폴백)
     여기서 classify_intent 로 분류한다."""
+    pre_gate = run_pre_route(q, route_signal=route_signal)
+    if pre_gate.is_terminal:
+        return SubPlan(
+            question=q, intent=intent or "informational", top=[], prompt=[],
+            decision=pre_gate.decision or "OOS", early_answer=pre_gate.response,
+            route_type=pre_gate.route_type, route_score=pre_gate.route_score,
+        )
     if intent is None:
         intent = classify_intent(q)
     # 관리자 화면(AD-007)이 바꾼 값을 쓰되, DB 가 비면 위 상수로 떨어진다. 모듈 최상단이
     # 아니라 여기서 부르는 것이 중요하다 — 위에서 읽어 두면 import 시점에 값이 굳는다.
-    candidates = route_search_chunks(q, k=get_param("k_candidates", K_CANDIDATES))
-    top = gate_low_relevance(top_k_cut(candidates, k=get_param("k_final", K_FINAL)))
+    k_candidates = get_param("k_candidates", K_CANDIDATES)
+    if pre_gate.route_type is None:
+        candidates = route_search_chunks(q, k=k_candidates)
+    else:
+        candidates = route_search_chunks(q, k=k_candidates, qtype=pre_gate.route_type)
+    use_reranker = get_param("use_reranker", USE_RERANKER)
+    ranked = rerank(q, candidates) if use_reranker else candidates
+    if use_reranker:
+        ranked = gate_low_rerank_relevance(ranked)
+    top = gate_low_relevance(top_k_cut(ranked, k=get_param("k_final", K_FINAL)))
     if not top:
         # 무관 질문 게이트에 걸림 — 저점수 청크를 근거로 주면 환각 소재가 되므로 근거 없이
         # 인사 응대/범위외 거절 프롬프트로 보낸다(NO_EVIDENCE_NOTICE). civil_petition 조립은
         # 근거가 있어야 의미가 있으므로 informational 경로로 통일한다.
-        return SubPlan(question=q, intent=intent, top=[],
-                       prompt=build_informational_prompt(q, []), civil=None, evidence="")
+        return SubPlan(
+            question=q, intent=intent, top=[], prompt=[], civil=None, evidence="",
+            decision="OOS", early_answer=OUT_OF_SCOPE_MESSAGE,
+            route_type=pre_gate.route_type, route_score=pre_gate.route_score,
+        )
+    if get_param("use_context_supervisor", USE_CONTEXT_SUPERVISOR):
+        supervisor = supervise_context(q, top)
+        if supervisor.decision != "ANSWERABLE":
+            message = (OUT_OF_SCOPE_MESSAGE if supervisor.decision == "OOS"
+                       else INSUFFICIENT_EVIDENCE_MESSAGE)
+            return SubPlan(
+                question=q, intent=intent, top=[], prompt=[], civil=None, evidence="",
+                decision=supervisor.decision, early_answer=message,
+                route_type=pre_gate.route_type, route_score=pre_gate.route_score,
+            )
+
     if intent == "civil_petition":
         civil = build_civil_petition_answer(top)
         prompt = build_civil_petition_prompt(q, civil)
@@ -126,7 +167,19 @@ def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
         civil = None
         prompt = build_informational_prompt(q, top)
         evidence = "\n\n".join(text for _, _, text in top)
-    return SubPlan(question=q, intent=intent, top=top, prompt=prompt, civil=civil, evidence=evidence)
+    return SubPlan(
+        question=q, intent=intent, top=top, prompt=prompt, civil=civil, evidence=evidence,
+        route_type=pre_gate.route_type, route_score=pre_gate.route_score,
+    )
+
+
+def early_subanswer(sp: SubPlan) -> SubAnswer:
+    """앞단 게이트/supervisor가 만든 LLM 없는 하위 답변."""
+    return SubAnswer(
+        title=sp.question,
+        answer=sp.early_answer or OUT_OF_SCOPE_MESSAGE,
+        sources=[], attachments=[],
+    )
 
 
 def _build_sources(top: list) -> list[SourceItem]:
@@ -374,6 +427,17 @@ def guardrail_refusal(session_id: str, request_id: str, latency_ms: int) -> Chat
         answer=GUARDRAIL_BLOCK_MESSAGE, sources=[], attachments=[], out_of_scope=True,
         sub_answers=[], clarification=None, error=None,
         latency_ms=latency_ms, session_id=session_id, request_id=request_id)
+
+
+def early_gate_response(gate, session_id: str, request_id: str,
+                        latency_ms: int) -> ChatResponse:
+    """룰/코사인 게이트의 고정 응답. 검색·planner·생성 LLM을 호출하지 않는다."""
+    return ChatResponse(
+        answer=gate.response or OUT_OF_SCOPE_MESSAGE,
+        sources=[], attachments=[], out_of_scope=True,
+        sub_answers=[], clarification=None, error=None,
+        latency_ms=latency_ms, session_id=session_id, request_id=request_id,
+    )
 
 
 def _cache_versions() -> dict:

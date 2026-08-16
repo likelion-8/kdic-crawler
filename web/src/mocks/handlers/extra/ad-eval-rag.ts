@@ -317,9 +317,26 @@ const RAG_PARAMS: RagParam[] = [
     note: 'top-1 점수가 미만이면 근거를 비워 환각 차단 (0.35 = 인스코프 오차단 0 실측)',
   },
   {
+    key: 'min_route_cosine_score', label: '라우팅 코사인 극단값 임계값', group: 'retrieval', control: 'slider',
+    apply_timing: '무중단', min: 0, max: 1, step: 0.01,
+    scale_start: '관대(통과 많음)', scale_end: '엄격(차단 많음)',
+    note: '1-NN 라우팅 유사도가 미만이면 planner 전에 OOS 처리 (실측 전 0으로 비활성)',
+  },
+  {
     key: 'use_reranker', label: '리랭커(cross-encoder)', group: 'retrieval', control: 'toggle',
     apply_timing: '무중단',
     note: 'CPU 문항당 96초 실측으로 기본 Off — GPU 확보 시 재검증(README 2.4)',
+  },
+  {
+    key: 'min_rerank_top1_score', label: '리랭크 점수 극단값 임계값', group: 'retrieval', control: 'slider',
+    apply_timing: '무중단', min: -100, max: 100, step: 0.05,
+    scale_start: '관대(통과 많음)', scale_end: '엄격(차단 많음)',
+    note: 'cross-encoder top-1 로짓이 미만이면 supervisor 전에 OOS 처리 (GPU 실측 전 -100으로 비활성)',
+  },
+  {
+    key: 'use_context_supervisor', label: 'Context Supervisor(3-way)', group: 'generation', control: 'toggle',
+    apply_timing: '무중단',
+    note: 'Top5 근거와 Scope KB를 보고 ANSWERABLE/OOS/근거부족을 판정하는 추가 LLM 1콜',
   },
   {
     key: 'use_query_planner', label: '쿼리 플래너(분해+intent 한 콜)', group: 'retrieval', control: 'toggle',
@@ -342,7 +359,10 @@ let currentValues: Record<string, ParamValue> = {
   k_candidates: 20,
   k_final: 5,
   min_top1_score: 0.35,
+  min_route_cosine_score: 0,
   use_reranker: false,
+  min_rerank_top1_score: -100,
+  use_context_supervisor: true,
   use_query_planner: true,
   use_query_decomposition: true,
   use_source_recheck: true,

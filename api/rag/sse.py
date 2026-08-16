@@ -146,7 +146,20 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
-    # 0-3) 질의 캐시 — 첫 턴이면 조회한다(적격 = 단일 턴 · 정보성 · 성공, PRD-03 AD-009).
+    # 0-3) OOS 게이트 캐스케이드의 앞단 — 명백한 인사·잡담과 실측된 코사인
+    # 극단 저값만 planner/search/generation 전에 종료한다. 애매한 질의는 통과한다.
+    pre_gate = answer.pre_route(message)
+    if pre_gate.is_terminal:
+        resp = answer.early_gate_response(pre_gate, session_id, request_id,
+                                          _elapsed_ms(started))
+        logger.info("[%s] OOS 사전 게이트 종료: %s", request_id, pre_gate.stage)
+        answer.log_run(message, resp, [], resp.latency_ms)
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("answer_delta", {"text": resp.answer})
+        yield _sse("done", resp.model_dump())
+        return
+
+    # 0-4) 질의 캐시 — 첫 턴이면 조회한다(적격 = 단일 턴 · 정보성 · 성공, PRD-03 AD-009).
     #      적중 시 검색·생성을 통째로 건너뛴다. 캐시 실패는 미스로 취급되어 답변을 막지 않는다.
     if first_turn:
         cached = answer.cache_get(message)
@@ -181,11 +194,17 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     used_flags = []
     sub_plans = []   # 로깅에 쓸 intent·검색경로 (하위질문마다 다를 수 있다)
     full_parts = []  # 흘려보낸 모든 조각(구분자 포함) — done.answer 로 쓴다(불변식 보장)
+    route_signal = ((pre_gate.route_type, pre_gate.route_score)
+                    if pre_gate.route_type is not None and pre_gate.route_score is not None
+                    else None)
 
     for i, (q, intent) in enumerate(plan_items):
         # 2) 하위질문 준비(검색+프롬프트) — 동기. intent는 플래너 결과를 그대로 넘긴다.
         try:
-            sp = answer.prepare_sub(q, intent)
+            sp = answer.prepare_sub(
+                q, intent,
+                route_signal=(route_signal if not composite else None),
+            )
         except Exception as e:  # noqa: BLE001
             logger.exception("[%s] prepare_sub 실패: %s", request_id, q)
             # sub_plans 는 여기까지 성공한 하위질문들이다(이번 것은 아직 안 들어갔다).
@@ -202,6 +221,16 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
             sep = "\n\n"
             full_parts.append(sep)
             yield _sse("answer_delta", {"text": sep})
+
+        # 검색 게이트 또는 Context Supervisor가 이미 고정 응답을 만들었으면
+        # 생성 LLM 스트리밍을 시작하지 않는다.
+        if sp.early_answer is not None:
+            sub = answer.early_subanswer(sp)
+            finalized.append(sub)
+            used_flags.append(False)
+            full_parts.append(sp.early_answer)
+            yield _sse("answer_delta", {"text": sp.early_answer})
+            continue
 
         # 3) 토큰 스트리밍 + 마커 제거 + 토큰 간 타임아웃
         stripper = _MarkerStripper()

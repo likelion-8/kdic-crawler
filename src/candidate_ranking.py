@@ -91,3 +91,19 @@ def gate_low_relevance(top, threshold=None):
     if top and top[0][1] < threshold:
         return []
     return top
+
+
+def gate_low_rerank_relevance(reranked, threshold=None):
+    """리랭커 top-1 로짓이 극단적으로 낮을 때만 근거를 전멸시킨다.
+
+    cross-encoder 점수는 임베딩 검색점수와 스케일이 다르므로 ``min_top1_score``를
+    재사용하지 않는다. 임계값은 GPU held-out 재측정 뒤 ``get_param``으로 조정한다.
+    애매한 점수는 통과시켜 Context Supervisor가 질문·근거를 함께 판단하게 한다.
+    """
+    if threshold is None:
+        from oos_routing import MIN_RERANK_TOP1_SCORE
+        from runtime_config import get_param
+        threshold = get_param("min_rerank_top1_score", MIN_RERANK_TOP1_SCORE)
+    if reranked and reranked[0][1] < threshold:
+        return []
+    return reranked
