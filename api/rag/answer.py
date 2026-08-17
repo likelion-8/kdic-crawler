@@ -376,6 +376,19 @@ def guardrail_refusal(session_id: str, request_id: str, latency_ms: int) -> Chat
         latency_ms=latency_ms, session_id=session_id, request_id=request_id)
 
 
+def gate1_response(g1, session_id: str, request_id: str, latency_ms: int) -> ChatResponse:
+    """Gate 1(결정론적 룰)이 EXIT 로 판정한 질문의 고정 응답을 ChatResponse 로 감싼다.
+
+    Gate 1 은 검색·LLM 을 타지 않으므로 근거·출처가 없다 — out_of_scope=True 로 두어 프론트가
+    출처·서류 섹션을 그리지 않게 한다(인사·정체성·범위 밖 응답과 동일 취급). g1 은
+    gate1.Gate1Result; response_text 가 없으면(설정 누락) 표준 범위외 문구로 폴백한다."""
+    return ChatResponse(
+        answer=(getattr(g1, "response_text", None) or OUT_OF_SCOPE_MESSAGE),
+        sources=[], attachments=[], out_of_scope=True, sub_answers=[],
+        clarification=None, error=None,
+        latency_ms=latency_ms, session_id=session_id, request_id=request_id)
+
+
 def _cache_versions() -> dict:
     """캐시 유효성 스냅샷 — PRD-03: 키 = 정규화 질문 + (인덱스·RAG·프롬프트·모델 버전).
     질의별 비우기(admin_ops purge)가 질문 해시로 지우므로 버전은 키가 아니라 **저장값**에

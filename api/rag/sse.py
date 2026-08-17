@@ -134,6 +134,30 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     first_turn = conversation.turn_count(session_id) == 0
     conversation.save_user_message(session_id, message)
 
+    # 0-1.5) Gate 1 — 파이프라인 최앞단의 결정론적 룰 필터(정규화 + 고정 규칙, LLM 없음).
+    #        인사·감사·노이즈·정체성·보안우회·개인정보 직접조회·명백한 타 분야 단일 질문만
+    #        '확실할 때' EXIT 로 즉시 고정 응답한다(precision ≈ 100% 목표 — 애매하면 CONTINUE).
+    #        EXIT 처리는 가드레일 거절과 같은 골격이다(질문은 위에서 저장 완료 → 고정 응답 저장
+    #        → answer_delta·done). 웹 경로는 ambient trace 가 없어(record_trace docstring) Gate 1
+    #        결과를 record_trace 메타데이터로 남긴다.
+    from gate1 import run_gate1
+    g1 = run_gate1(message)
+    if g1.action == "EXIT":
+        resp = answer.gate1_response(g1, session_id, request_id, _elapsed_ms(started))
+        logger.info("[%s] Gate1 EXIT: %s (%s)", request_id, g1.label, g1.rule_id)
+        from observability import record_trace
+        record_trace("web_chat", input={"question": message},
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
+                     metadata={"request_id": request_id, "session_id": session_id,
+                               "latency_ms": resp.latency_ms, "exit_at": "gate1",
+                               "gate1_label": g1.label, "gate1_rule_id": g1.rule_id,
+                               "gate1_reason": g1.reason})
+        answer.log_run(message, resp, [], resp.latency_ms)
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("answer_delta", {"text": resp.answer})
+        yield _sse("done", resp.model_dump())
+        return
+
     # 0-2) 가드레일 — AD-008 게시본 금칙어를 질문에 적용한다(질문·답변 양방향의 앞쪽 절반).
     #      적중이면 LLM 을 부르지 않고 고정 거절로 답한다(2026-08-13 F-3 배선).
     hit = answer.guardrail_hit(message)
@@ -268,6 +292,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
         metadata={"request_id": request_id, "session_id": session_id,
                   "latency_ms": latency_ms, "composite": composite,
+                  "gate1_label": g1.label, "gate1_reason": g1.reason,  # CONTINUE 도 기록(오탐 모니터링)
                   "sub_questions": [sp.question for sp in sub_plans]})
 
     # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에

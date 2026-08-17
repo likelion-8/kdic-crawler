@@ -27,12 +27,13 @@ from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever, route_search_chunks
 from candidate_ranking import gate_low_relevance, rerank, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
+from gate1 import run_gate1
 from prompt_builder import (
     assemble_civil_petition_answer, assemble_informational_answer,
     build_civil_petition_prompt, build_informational_prompt,
 )
 from llm_client import call_hyperclova
-from observability import current_trace_id, flush as flush_traces, observe
+from observability import current_trace_id, flush as flush_traces, observe, record_gate1_span
 from performance import measure_time
 from rag_logger import log_rag_run
 # 아래 상수들은 지우지 않고 '문서화된 기본값'으로 남긴다 — 관리자 화면(AD-007)이 값을 바꿀 수
@@ -213,6 +214,14 @@ def rag_answer(query):
     (rag_retrieval_results)는 로깅하지 않는다 — 질문당 20행씩 쌓여 부담이고, 추후 Langfuse로
     trace를 붙이면 그쪽이 이 역할을 전담한다(2026-08-04 팀 결정).
     로깅은 log_rag_run 내부에서 전부 실패-안전(예외를 삼킴)이라 여기서 답변을 막지 않는다."""
+    # Gate 1 — 파이프라인 최앞단의 결정론적 룰 필터(LLM 없음). @observe 로 열린 이 trace 아래에
+    # gate1_rulebase span 을 첫 자식으로 남기고, EXIT 면 검색·LLM 을 아예 타지 않고 고정 응답을
+    # 그대로 돌려준다(순수 삽입 — CONTINUE 면 아래 기존 흐름이 그대로 이어진다).
+    gate1 = run_gate1(query)
+    record_gate1_span(gate1.canonical_text, gate1.rule_text, gate1)
+    if gate1.action == "EXIT":
+        return gate1.response_text
+
     answer, timings, log_intent = _rag_answer_traced(query)
 
     # 로깅용 intent: 플래너 경로는 이미 판단한 대표 intent를 재사용해 추가 호출을 안 한다
