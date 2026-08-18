@@ -87,6 +87,11 @@ const STATUS_OPTIONS = [
 ]
 
 /** 목업은 '전체'만 보여 나머지 3값은 프론트가 확정했다(11 §L2 제안) */
+const TRIAGE_FILTER_OPTIONS = [
+  { value: '', label: '전체' },
+  { value: 'OPEN', label: '미처리' },
+  { value: 'RESOLVED', label: '처리 완료' },
+]
 const FEEDBACK_OPTIONS = [
   { value: '', label: '전체' },
   { value: 'up', label: '👍 좋아요' },
@@ -116,7 +121,8 @@ export function ConversationLogs() {
     return next as unknown as LogFilters
   })
   const [page, setPage] = useState(1)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // ?request= 로 특정 행을 바로 연다 — 되돌아가기 띠의 [로그로 돌아가기]가 그 대화를 들고 온다
+  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('request'))
   const [resolving, setResolving] = useState<string | null>(null)
 
   // 필터가 바뀌면 첫 페이지로 돌아가고 선택도 푼다(선택한 행이 결과에서 빠질 수 있다)
@@ -327,6 +333,15 @@ export function ConversationLogs() {
           value={filters.feedback}
           options={FEEDBACK_OPTIONS}
           onChange={(v) => patch({ feedback: v as LogFilters['feedback'] })}
+        />
+        {/* 처리 상태(2026-08-18) — 대시보드 '미처리 나쁨 평가' 카드가 triage=OPEN 을 들고
+            들어온다. 완료 처리하면 이 필터의 목록과 카드 건수가 함께 줄어야 한다 */}
+        <Select
+          layout="stack"
+          label="처리"
+          value={filters.triage}
+          options={TRIAGE_FILTER_OPTIONS}
+          onChange={(v) => patch({ triage: v as LogFilters['triage'] })}
         />
         <div className="min-w-45 flex-[1_1_220px]">
           <TextField

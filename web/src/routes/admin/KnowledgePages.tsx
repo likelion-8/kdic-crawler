@@ -7,6 +7,7 @@
  * 오류 문구는 서버 user_message 그대로 쓴다 — 이 파일은 오류 문구를 만들지 않는다.
  * "페이지 내용 직접 편집은 범위 밖(CM-DF-004 04절)" (B-7) → 편집 UI를 만들지 않는다. */
 import { useEffect, useId, useState } from 'react'
+import { ReturnBand } from './ReturnBand'
 import { useSearchParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, Search } from 'lucide-react'
@@ -169,8 +170,10 @@ export function KnowledgePages() {
   const canRunJob = hasRole(role, 'OPERATOR')
 
   const [tab, setTab] = useState<Tab>('indexed')
-  const [search, setSearch] = useState('')
-  const [q, setQ] = useState('')
+  // ?q= 프리필 — 대화 로그 [지식베이스에서 찾아보기]가 그 질문을 들고 온다(바통, 2026-08-18)
+  const [initialParams] = useSearchParams()
+  const [search, setSearch] = useState(initialParams.get('q') ?? '')
+  const [q, setQ] = useState(initialParams.get('q') ?? '')
   const [business, setBusiness] = useState(ALL)
   const [state, setState] = useState(ALL)
   const [sort, setSort] = useState<SortState | undefined>(undefined)
@@ -185,8 +188,12 @@ export function KnowledgePages() {
   useEffect(() => {
     if (searchParams.get('new') === null) return
     setNewPage({ candidateId: searchParams.get('candidate') })
-    // 쿼리는 한 번 쓰고 지운다 — 남겨 두면 닫은 뒤 새로고침에 다시 열린다
-    setSearchParams({}, { replace: true })
+    // 쿼리는 한 번 쓰고 지운다 — 남겨 두면 닫은 뒤 새로고침에 다시 열린다.
+    // 단 from(되돌아가기 띠 바통)은 남긴다 — 지우면 띠가 사라져 처리 완료를 못 누른다
+    const keep = new URLSearchParams()
+    const from = searchParams.get('from')
+    if (from) keep.set('from', from)
+    setSearchParams(keep, { replace: true })
   }, [searchParams, setSearchParams])
 
   useEffect(() => {
@@ -365,6 +372,7 @@ export function KnowledgePages() {
 
   return (
     <div className="flex flex-col gap-4">
+      <ReturnBand />
       <div className="flex flex-wrap items-center gap-3 border-b pb-3">
         {/* 탭 — 세그먼트 컨트롤(B-2). shadcn Tabs 룩 + aria-pressed. 건수는 탭별 API 총계로 렌더한다 */}
         <div

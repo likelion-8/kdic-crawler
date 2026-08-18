@@ -5,7 +5,8 @@
  * 매핑해 두면 웰컴 클릭 경로가 100% 적중한다. 유사도 자동 매칭은 하지 않는다(팀 결정 —
  * 역할축 질문에 반대 답변이 서빙될 위험). 출처는 page_id 로 입력하고 서버가 확정한다
  * (출처 없는 답변은 서버가 거절 — 민원 리스크 불변식). */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookmarkCheck } from 'lucide-react'
 import { Button, ConfirmModal, DataTable, EmptyState, Loading, TextField } from '../../../../components/ui'
@@ -39,6 +40,18 @@ export function CuratedAnswersCard({ canEdit }: { canEdit: boolean }) {
   const [removing, setRemoving] = useState<CuratedAnswer | null>(null)
 
   const query = useQuery({ queryKey: opsKeys.curated, queryFn: fetchCuratedAnswers })
+  // ?curated_new={질문} — 대화 로그 [이 질문에 고정 답변 달기]의 목적지. 편집 모달을 질문 프리필로 연다.
+  // 한 번 쓰고 지우되 from(되돌아가기 띠)은 남긴다
+  const [sp, setSp] = useSearchParams()
+  useEffect(() => {
+    const seed = sp.get('curated_new')
+    if (seed === null) return
+    setForm({ id: null, questionsText: seed, answer: '', pageIdsText: '' })
+    const keep = new URLSearchParams()
+    const from = sp.get('from')
+    if (from) keep.set('from', from)
+    setSp(keep, { replace: true })
+  }, [sp, setSp])
   const save = useMutation({
     mutationFn: (input: { items: CuratedAnswerInput[]; reason: string }) =>
       saveCuratedAnswers(input.items, input.reason),

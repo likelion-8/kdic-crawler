@@ -3,6 +3,7 @@
  * 표시되는 질문·답변·의견은 전부 마스킹된 저장본이다. 원문 복호화 진입점은 두지 않는다(Desc 2). */
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router'
 import { Button } from '../../../components/ui'
 import { Separator } from '@/components/shadcn/separator'
 import { INTENT_LABEL, QUESTION_TYPE_LABEL } from '../../../lib/codes'
@@ -120,8 +121,50 @@ function EvidencePanel({ observation }: { observation: RunObservation }) {
   )
 }
 
+/**
+ * [다음 조치] — 근거 구획이 가른 세 갈래를 **누를 수 있게** 만든다(2026-08-18).
+ *
+ * 관측(observation)이 판정한 상태로 하나만 primary 로 강조한다. 강조는 힌트지 판정이
+ * 아니다 — 세 버튼을 다 남긴다. 감추면 강조가 틀렸을 때 관리자가 갇힌다.
+ * 목적지에는 ?from=log:{request_id} 와 프리필 값을 넘긴다. 목적지 상단 되돌아가기 띠에서
+ * [처리 완료]를 눌러도 이 로그의 처리 상태가 바뀌어 루프가 닫힌다(돌아오지 않아도 된다).
+ */
+function NextActions({ detail }: { detail: ConversationLogDetail }) {
+  const navigate = useNavigate()
+  const subs = detail.observation?.subs ?? []
+  const anyTop = subs.some((s) => s.top.length > 0)
+  const anyUsed = subs.some((s) => s.used_source === true)
+  // 근거 없음 → 데이터 / 근거 있으나 미사용 → 검색(엉뚱한 근거) / 근거 사용했는데 나쁨 → 프롬프트
+  const hint: 'data' | 'search' | 'prompt' = !anyTop ? 'data' : !anyUsed ? 'search' : 'prompt'
+  const from = `from=log:${encodeURIComponent(detail.request_id)}`
+  const q = encodeURIComponent(detail.question_masked)
+  const v = (k: typeof hint) => (hint === k ? 'primary' : 'secondary')
+  return (
+    <div className="mt-3">
+      <SectionTitle>다음 조치</SectionTitle>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant={v('data')} onClick={() => navigate(`/admin/knowledge/pages?q=${q}&${from}`)}>
+          지식베이스에서 찾아보기
+        </Button>
+        <Button size="sm" variant={v('search')} onClick={() => navigate(`/admin/settings/rag?q=${q}&${from}`)}>
+          검색 설정 비교하기
+        </Button>
+        <Button size="sm" variant={v('prompt')} onClick={() => navigate(`/admin/settings/prompt?${from}`)}>
+          답변 규칙 고치기
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/settings/ops?curated_new=${q}&${from}`)}>
+          이 질문에 고정 답변 달기
+        </Button>
+      </div>
+      <p className="mt-1.5 text-xs text-muted-foreground">
+        굵은 버튼은 근거 상태로 고른 힌트입니다 — 판정이 아니니 다른 갈래도 열려 있습니다
+      </p>
+    </div>
+  )
+}
+
 /** [2][3] 단계별 처리 추적 */
-function TracePanel({ detail, canEdit, onAddCandidate, candidatePending }: LogDetailPanelProps) {
+function TracePanel({ detail, canEdit, canRun, onAddCandidate, onResolve, candidatePending }: LogDetailPanelProps) {
   const [expanded, setExpanded] = useState(false)
   const { classification: c } = detail
   return (
@@ -149,6 +192,7 @@ function TracePanel({ detail, canEdit, onAddCandidate, candidatePending }: LogDe
         <>
           <Separator className="my-4" />
           <EvidencePanel observation={detail.observation} />
+          <NextActions detail={detail} />
         </>
       )}
 
@@ -210,6 +254,16 @@ function TracePanel({ detail, canEdit, onAddCandidate, candidatePending }: LogDe
         <div className="mt-4">
           <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
             테스트셋 보강 후보로 등록
+          </Button>
+        </div>
+      )}
+
+      {/* 처리 완료 — 실패 건 전용이던 것을 전체 건으로(2026-08-18). 나쁨 평가 대응은 정상 건이
+          대부분이라, 여기 없으면 조치를 끝내고도 대시보드 할 일 건수가 영원히 안 줄어든다 */}
+      {canRun && detail.triage !== 'RESOLVED' && (
+        <div className="mt-4">
+          <Button size="sm" onClick={onResolve}>
+            처리 완료 표시
           </Button>
         </div>
       )}

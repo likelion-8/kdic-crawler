@@ -51,7 +51,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, update
 
 from api.deps import (CurrentAdmin, DbSession, SettingsDep, get_current_admin,
                       write_activity_log)
@@ -59,7 +59,8 @@ from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.masking import mask_text
 from api.rag import observation
 from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
-                              LogExportRequest, LogExportResponse, LogSummary)
+                              ConversationLogRow, LogExportRequest, LogExportResponse,
+                              LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
 from schema import feedback as feedback_table
 from schema import rag_runs
@@ -94,6 +95,7 @@ EXPORT_ROLES = frozenset({"ADMIN"})
 STATUSES = frozenset({"NORMAL", "OUT_OF_SCOPE", "FAILED"})   # logs/api.ts LogStatus
 INTENTS = frozenset({"informational", "civil_petition"})     # query_planner.PlanItem.intent
 FEEDBACKS = frozenset({"up", "down", "none"})                # logs/api.ts LogFilters.feedback
+TRIAGES = frozenset({"NONE", "IN_REVIEW", "RESOLVED"})       # codes.ts TriageStatus (CM-DF-002 06절)
 
 # 2026-08-12 실측: 기존 238행이 **전부** status="success" 다. rag_logger 의 기본값이 그 문자열
 # 하나뿐이었고 다른 값을 넘기는 호출부가 없었기 때문이다(실패 기록 자체가 없었다).
@@ -189,7 +191,7 @@ def _require(admin: CurrentAdmin, roles: frozenset, what: str) -> None:
 # ---------------------------------------------------------------- 쿼리 빌더
 
 def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
-                      from_raw, to_raw, sort: str):
+                      from_raw, to_raw, sort: str, triage: str = ""):
     """목록·total·내보내기가 **같은 조건**을 쓰도록 한 곳에서 만든다.
 
     한쪽에만 조건이 붙으면 '3건인데 5페이지'처럼 개수와 목록이 어긋나고, 내보내기에서는
@@ -231,6 +233,16 @@ def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
         if intent not in INTENTS:
             raise BadRequestError("지원하지 않는 intent 값입니다.")
         filters.append(rag_runs.c.intent == intent)
+    if triage:
+        # 처리 상태(2026-08-18). 'OPEN' 은 RESOLVED 가 아닌 것(NONE·IN_REVIEW) — 화면의
+        # '미처리' 선택지이자 대시보드 할 일 카드가 넘기는 값이다. 카드 건수와 같은 조건이라야
+        # 눌렀을 때 같은 목록이 열린다.
+        if triage == "OPEN":
+            filters.append(rag_runs.c.triage != "RESOLVED")
+        elif triage in TRIAGES:
+            filters.append(rag_runs.c.triage == triage)
+        else:
+            raise BadRequestError("triage 값이 올바르지 않습니다.")
     if feedback:
         if feedback not in FEEDBACKS:
             raise BadRequestError("지원하지 않는 피드백 값입니다.")
@@ -248,6 +260,7 @@ def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
             rag_runs.c.status,
             rag_runs.c.total_latency_ms,
             rag_runs.c.observation,
+            rag_runs.c.triage,
             feedback_table.c.vote,
         )
         .select_from(joined)
@@ -263,7 +276,7 @@ def _row_to_log(row) -> dict:
 
     source_count 는 rag_runs.observation 에서 온다(2026-08-14 신설). 관측 이전에 쌓인 행은
     observation 이 NULL 이라 그대로 None 이다 — 0 을 넣으면 '출처가 하나도 없었다'는 사실처럼
-    읽힌다. triage 는 여전히 원천이 없어 'NONE'(미확인=사실)이다.
+    읽힌다. triage 는 rag_runs.triage(2026-08-18 신설) — 없던 시절 행은 NONE 이다.
     """
     return {
         "request_id": row.request_id or "",
@@ -277,7 +290,7 @@ def _row_to_log(row) -> dict:
         "feedback": row.vote,
         "source_count": observation.summarize(getattr(row, "observation", None))["source_count"],
         "latency_s": round(row.total_latency_ms / 1000, 2) if row.total_latency_ms else None,
-        "triage": "NONE",
+        "triage": getattr(row, "triage", None) or "NONE",
     }
 
 
@@ -294,6 +307,7 @@ def list_logs(
     status: str = "",
     intent: str = "",
     feedback: str = "",
+    triage: str = "",
     # 화면은 기간 선택을 KST 날짜로 환산해 보낸다(logs/api.ts periodRange).
     from_: Optional[str] = Query(default=None, alias="from"),
     to: Optional[str] = None,
@@ -306,6 +320,7 @@ def list_logs(
     rows_query, total_query = build_log_queries(
         q=q.strip(), status=status.strip(), intent=intent.strip(),
         feedback=feedback.strip(), from_raw=from_, to_raw=to, sort=sort,
+        triage=triage.strip(),
     )
     total = db.execute(total_query).scalar_one()
     rows = db.execute(rows_query.offset((page - 1) * size).limit(size)).all()
@@ -402,6 +417,7 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             rag_runs.c.total_latency_ms,
             rag_runs.c.trace_id,
             rag_runs.c.observation,
+            rag_runs.c.triage,
             feedback_table.c.vote,
             feedback_table.c.reason_codes,
             feedback_table.c.comment,
@@ -459,6 +475,51 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             "root_cause": row.root_cause,
         },
     }
+
+
+@router.patch("/{request_id}", response_model=ConversationLogRow)
+def patch_log(request_id: str, body: dict, request: Request, admin: CurrentAdmin, db: DbSession):
+    """처리 상태 변경(AD-005 [처리 완료 표시]). 프론트 계약(logs/api.ts resolveLog):
+    PATCH {triage, reason}. 화면은 오래전부터 이 요청을 보내고 있었고 백엔드가 받는 곳이
+    없어 405 였다 — 관리자 유저플로우 설계(2026-08-18) 미구현 6건 중 1순위.
+
+    이 값이 바뀌어야 대시보드 '나쁨 평가' 할 일 건수가 줄고, 목적지 화면의 되돌아가기
+    띠에서 [처리 완료]를 눌러도 루프가 닫힌다. 되돌리기(→NONE)도 같은 경로로 허용한다 —
+    잘못 누른 완료를 풀 수 없으면 건수가 거짓이 된다.
+    """
+    _require(admin, READ_ROLES, "대화 로그 처리 상태 변경")
+    triage = str(body.get("triage") or "").strip()
+    if triage not in TRIAGES:
+        raise BadRequestError("triage 값이 올바르지 않습니다(NONE·IN_REVIEW·RESOLVED).")
+    reason = str(body.get("reason") or "").strip()
+    if triage == "RESOLVED" and not reason:
+        raise BadRequestError("처리 완료에는 사유가 필요합니다.")
+
+    row = db.execute(
+        select(rag_runs.c.request_id, rag_runs.c.triage)
+        .where(rag_runs.c.request_id == request_id)).first()
+    if row is None:
+        raise NotFoundError("대화 기록을 찾을 수 없습니다.")
+
+    now = datetime.now(timezone.utc)
+    db.execute(update(rag_runs).where(rag_runs.c.request_id == request_id).values(
+        triage=triage,
+        triaged_by=admin.email if triage != "NONE" else None,
+        triaged_at=now if triage != "NONE" else None))
+    db.commit()
+    write_activity_log(db, request, actor=admin.email, actor_role=admin.role,
+                       action="대화 로그 처리 상태 변경", target=f"대화 ({request_id})",
+                       reason=reason,
+                       before_value=row.triage or "NONE", after_value=triage)
+
+    fresh = db.execute(
+        select(rag_runs.c.request_id, rag_runs.c.created_at, rag_runs.c.question,
+               rag_runs.c.intent, rag_runs.c.status, rag_runs.c.total_latency_ms,
+               rag_runs.c.observation, rag_runs.c.triage, feedback_table.c.vote)
+        .select_from(rag_runs.outerjoin(
+            feedback_table, rag_runs.c.request_id == feedback_table.c.request_id))
+        .where(rag_runs.c.request_id == request_id)).first()
+    return _row_to_log(fresh)
 
 
 @router.post("/exports", response_model=LogExportResponse)

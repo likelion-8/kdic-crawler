@@ -186,6 +186,12 @@ rag_runs = Table(
     # 가릴 수 없고(source_count·source_used·marker·normalized 가 전부 null), AD-006 문항
     # 후보도 정답 없는 껍데기로만 등록된다. 모양은 api/rag/observation.py 가 정본이다.
     Column("observation", JSONB),
+    # 관리자 처리 상태(AD-005). CM-DF-002 06절 triage_status 3종 — NONE(미확인) / IN_REVIEW /
+    # RESOLVED. 이게 없으면 대시보드 '나쁨 평가' 할 일 건수가 조치해도 줄지 않아, 시작점이
+    # 3일이면 무의미해진다(관리자 유저플로우 설계 2026-08-18 · 미구현 6건 중 1순위).
+    Column("triage", String, nullable=False, server_default=text("'NONE'")),
+    Column("triaged_by", String),
+    Column("triaged_at", DateTime(timezone=True)),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
@@ -487,6 +493,10 @@ def main():
         conn.execute(text("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sub_answers jsonb"))
         # rag_runs.observation 도 뒤늦게 더한 컬럼이다(2026-08-14, 관리자 진단 루프).
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS observation jsonb"))
+        # 처리 상태 3열(2026-08-18) — 기존 행은 NONE 으로 채워져 '미확인=사실'이 유지된다.
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triage text NOT NULL DEFAULT 'NONE'"))
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_by text"))
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_at timestamptz"))
         # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
         # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.
         conn.execute(text("""

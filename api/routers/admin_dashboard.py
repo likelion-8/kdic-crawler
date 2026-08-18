@@ -190,10 +190,14 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
     # 없어서, 전체 기간을 세면 카드 건수와 열리는 목록의 건수가 어긋난다(카드 3건 → 목록 0건).
     # 카드가 넘기는 filter 도 같은 30일이라야 "센 것과 같은 목록"이 열린다.
     since_30d = now - timedelta(days=30)
+    # '미처리'만 센다(2026-08-18) — rag_runs.triage 가 생겨 처리 완료를 저장할 수 있다.
+    # 조치하면 이 숫자가 줄어야 대시보드가 시작점 노릇을 한다.
     feedback_down = db.execute(
-        select(func.count()).select_from(feedback_table)
+        select(func.count()).select_from(
+            feedback_table.join(rag_runs, rag_runs.c.request_id == feedback_table.c.request_id))
         .where(feedback_table.c.vote == "down",
-               feedback_table.c.created_at >= since_30d)
+               feedback_table.c.created_at >= since_30d,
+               rag_runs.c.triage != "RESOLVED")
     ).scalar_one()
     jobs_open = db.execute(
         select(func.count()).select_from(pipeline_jobs)
@@ -209,8 +213,8 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
     gate_failed = 0 if not gate else (0 if gate.get("passed") else 1)
 
     todos = [
-        {"key": "FEEDBACK_DOWN", "label": "나쁨 평가를 받은 답변", "count": feedback_down,
-         "target": {"screen": "logs", "filter": {"feedback": "down", "period": "30d"}}},
+        {"key": "FEEDBACK_DOWN", "label": "미처리 나쁨 평가", "count": feedback_down,
+         "target": {"screen": "logs", "filter": {"feedback": "down", "period": "30d", "triage": "OPEN"}}},
         {"key": "PIPELINE_OPEN", "label": "대기·진행·실패한 작업", "count": jobs_open,
          "target": {"screen": "pipeline", "filter": {}}},
         {"key": "GATE_FAILED", "label": "최근 평가 게이트 미통과", "count": gate_failed,
