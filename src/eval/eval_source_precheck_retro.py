@@ -11,16 +11,19 @@
 경계 문항에서 흔들리므로(api/rag/answer.py 재생성 주석) luna 판정 자체가 정답지가 아니다.
 "진짜 놓침"이면 프리체크 조건 보강, "luna 오판"이면 오히려 프리체크가 막아줄 사고다.
 
-## 소급으로 잴 수 없는 것 (한계 — 건수는 세서 보고한다)
+## 표본의 두 출처
 
-- 다중 하위질문 답변: rag_runs.answer 는 합본이라 하위 답변별 본문을 못 가른다 → 제외
-- civil_petition: 검증 evidence 가 절차 안내문(civil_petition.py 조립)이라 로그의
-  chunk_id 로 재구성 불가 → 제외
-- 본문 교체 건(normalized=True): 저장된 answer 는 교체 후 문구라 생성 원문이 유실 → 제외
-  (이 건들은 luna 가 문제로 판정한 건들이므로, 별도 건수로 보고해 놓침 상한 해석에 쓴다)
-- 근거 evidence 는 observation.top 의 chunk_id 를 data/chunks_all.jsonl 에서 되찾아
-  조립한다. 청크가 재수집으로 갈렸으면(chunk_id 부재) 그 행은 제외하고 건수만 센다.
-  observation.top 은 TOP_N=5 = K_FINAL 이라 생성 때 프롬프트에 든 근거와 같은 범위다.
+1) 섀도 필드(observation.subs[].precheck — 2026-08-19 finalize_sub 가 기록 시작):
+   실제 생성 원문·실제 evidence 로 판정된 값이라 그대로 쓴다. 다중 하위질문·civil·
+   본문 교체 건까지 전부 표본이 된다. 새 트래픽은 모두 이 경로.
+2) 그 이전 로그는 소급 재구성 — rag_runs.answer(합본)와 chunk_id 복원의 한계 탓에
+   아래 조건이 전부 맞아야만 표본이 된다(못 재는 건 사유별 건수로 보고):
+   - 단일 하위질문(합본이라 다중이면 본문 분리 불가)
+   - informational(civil 은 검증 evidence 가 절차 안내문이라 재구성 불가)
+   - 본문 미교체(normalized=True 는 생성 원문 유실 — luna 문제 판정 건들이므로
+     별도 건수로 보고해 놓침 상한 해석에 쓴다)
+   - observation.top 의 chunk_id 가 data/chunks_all.jsonl 에 생존(TOP_N=5 = K_FINAL
+     이라 생성 때 프롬프트에 든 근거와 같은 범위다)
 
 읽기 전용: rag_runs 를 SELECT 만 한다. 기존 파일 수정/git 실행 없음.
 실행: python src/eval/eval_source_precheck_retro.py [--limit N] [--csv out.csv]
@@ -80,47 +83,64 @@ def main():
 
     for run_id, question, answer, status, obs in rows:
         subs = (obs or {}).get("subs") or []
-        if len(subs) != 1:
-            skipped["다중 하위질문(합본이라 본문 분리 불가)"] += 1
+        if not subs:
+            # 검색을 안 탄 경로(캐시 적중·가드레일 차단 등) — 검증 자체가 없어 실험 무관.
+            # 조용히 버리면 "전체 N행"과 분석 건수의 차이를 설명할 수 없으니 세서 보고한다.
+            skipped["하위답변 없음(캐시·가드레일 등 검색 미경유)"] += 1
             continue
-        sub = subs[0]
-        if sub.get("marker") is None:
-            skipped["검증 미실행(marker None — 스위치 Off 또는 구버전 로그)"] += 1
-            continue
-        if sub.get("intent") == "civil_petition":
-            skipped["civil_petition(검증 evidence 재구성 불가)"] += 1
-            continue
-        if sub.get("normalized"):
-            skipped["본문 교체됨(생성 원문 유실 — luna 문제 판정 건)"] += 1
-            continue
-        if not answer or not str(answer).strip():
-            skipped["답변 없음"] += 1
-            continue
-        top_ids = [t["chunk_id"] for t in (sub.get("top") or [])]
-        missing_chunks = [cid for cid in top_ids if cid not in chunk_texts]
-        if missing_chunks:
-            skipped["청크 유실(재수집으로 chunk_id 변경)"] += 1
-            continue
-        evidence = "\n\n".join(chunk_texts[cid] for cid in top_ids)
+        for sub in subs:
+            # 1) 섀도 필드가 있으면 그대로 쓴다(finalize_sub 가 실제 생성 원문·실제 evidence 로
+            #    판정한 값) — 다중 하위질문·civil·본문 교체 건까지 전부 표본이 된다.
+            if sub.get("precheck") is not None:
+                reason = sub["precheck"]
+                missing = sub.get("precheck_missing") or []
+                sub_q = sub.get("question") or question
+            # 2) 섀도 필드 이전 로그는 소급 재구성 — 단일 하위질문·informational·본문 미교체·
+            #    청크 생존 조건이 전부 맞아야 답변↔근거 대응이 성립한다.
+            else:
+                if len(subs) != 1:
+                    skipped["구버전 로그: 다중 하위질문(합본이라 본문 분리 불가)"] += 1
+                    continue
+                if sub.get("intent") == "civil_petition":
+                    skipped["구버전 로그: civil_petition(검증 evidence 재구성 불가)"] += 1
+                    continue
+                if sub.get("normalized"):
+                    skipped["구버전 로그: 본문 교체됨(생성 원문 유실 — luna 문제 판정 건)"] += 1
+                    continue
+                if not answer or not str(answer).strip():
+                    skipped["답변 없음"] += 1
+                    continue
+                if sub.get("marker") is None:
+                    skipped["검증 미실행(marker None — 스위치 Off 또는 구버전 로그)"] += 1
+                    continue
+                top_ids = [t["chunk_id"] for t in (sub.get("top") or [])]
+                if any(cid not in chunk_texts for cid in top_ids):
+                    skipped["구버전 로그: 청크 유실(재수집으로 chunk_id 변경)"] += 1
+                    continue
+                evidence = "\n\n".join(chunk_texts[cid] for cid in top_ids)
+                result = classify(answer, evidence, bool(sub["marker"]))
+                reason, missing, sub_q = result.reason, result.missing, question
 
-        result = classify(answer, evidence, bool(sub["marker"]))
-        reasons[result.reason] += 1
-        # luna 의 문제 판정: 부적절 / 근거이탈 / 마커를 뒤집어 근거 미사용으로 확정
-        luna_flagged = (sub.get("appropriate") is False
-                        or sub.get("kind") == "ungrounded_claims"
-                        or (sub["marker"] and sub.get("used_source") is False))
-        cell[("clean" if result.clean else "suspicious",
-              "flagged" if luna_flagged else "ok")] += 1
-        records.append({
-            "run_id": str(run_id), "question": question,
-            "precheck": result.reason, "missing_numbers": ";".join(result.missing),
-            "marker": sub["marker"], "used_source": sub.get("used_source"),
-            "kind": sub.get("kind"), "appropriate": sub.get("appropriate"),
-            "luna_flagged": luna_flagged, "status": status,
-        })
+            if sub.get("marker") is None:
+                skipped["검증 미실행(marker None — luna 판정 없어 교차표 불가)"] += 1
+                continue
+            reasons[reason] += 1
+            # luna 의 문제 판정: 부적절 / 근거이탈 / 마커를 뒤집어 근거 미사용으로 확정
+            luna_flagged = (sub.get("appropriate") is False
+                            or sub.get("kind") == "ungrounded_claims"
+                            or (sub["marker"] and sub.get("used_source") is False))
+            cell[("clean" if reason == "clean" else "suspicious",
+                  "flagged" if luna_flagged else "ok")] += 1
+            records.append({
+                "run_id": str(run_id), "question": sub_q,
+                "precheck": reason, "missing_numbers": ";".join(missing),
+                "marker": sub["marker"], "used_source": sub.get("used_source"),
+                "kind": sub.get("kind"), "appropriate": sub.get("appropriate"),
+                "luna_flagged": luna_flagged, "status": status,
+            })
 
     analyzed = sum(cell.values())
-    print(f"전체 {len(rows)}행 중 분석 {analyzed}건, 제외 {sum(skipped.values())}건")
+    print(f"전체 {len(rows)}행 → 하위답변 기준 분석 {analyzed}건, 제외 {sum(skipped.values())}건")
     for why, n in skipped.most_common():
         print(f"  제외: {why} — {n}건")
 
