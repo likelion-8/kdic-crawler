@@ -15,11 +15,16 @@ from pydantic import BaseModel, Field
 
 
 class JobStep(BaseModel):
-    """6단계(수집·변환·청킹·검증·색인·반영) 중 한 단계의 진행상황."""
+    """7단계(수집·변환·청킹·검증·게이트·색인·반영) 중 한 단계의 진행상황.
+    정본은 src/worker.py STEPS."""
     name: str
     status: str  # QUEUED | RUNNING | SUCCESS | FAILED | SKIPPED
     elapsed_ms: Optional[int] = None
-    count: Optional[int] = None  # 단계별 처리 건수(아직 서버가 안 채움)
+    count: Optional[int] = None  # 단계별 처리 건수
+    # 단계가 남긴 구조화 정보(2026-08-18). 게이트가 판정(passed·metrics·targets·failures·
+    # summary)을 싣는다 — 이 필드가 없으면 response_model 이 잘라내 화면에 '—'만 남는다
+    # (전날 prefilled_sources 와 같은 함정). 모양은 src/index_gate.evaluate 결과 + summary.
+    detail: Optional[dict] = None
 
 
 class JobError(BaseModel):

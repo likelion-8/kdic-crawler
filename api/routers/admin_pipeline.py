@@ -64,8 +64,11 @@ JOB_TYPES = frozenset(
     {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL"})
 ACTIVE_STATUSES = ("QUEUED", "RUNNING")  # 동시 실행 1개 규칙의 판정 대상
 JOB_STATUSES = frozenset({"QUEUED", "RUNNING", "SUCCESS", "FAILED", "CANCELLED"})
-# 6단계 이름 정본: web/src/lib/constants.ts PIPELINE_STEPS (수집·변환·청킹·검증·색인·반영)
-PIPELINE_STEPS = ("수집", "변환", "청킹", "검증", "색인", "반영")
+# 단계 이름 정본은 src/worker.py STEPS 하나다(2026-08-18 정정). 종전에 여기 6단계를 따로 적어
+# 두어 게이트 단계가 신설된 뒤에도 잡의 steps 에 '게이트'가 없었고, 워커의 _set_step("게이트")가
+# 매칭할 항목이 없어 판정이 통째로 기록되지 않았다(게이트는 돌았는데 화면엔 흔적 없음).
+# 프론트 정본 web/src/lib/constants.ts PIPELINE_STEPS 도 같은 7단계다.
+from worker import STEPS as PIPELINE_STEPS  # noqa: E402
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 SORT_COLUMNS = {"created_at": pipeline_jobs.c.created_at}

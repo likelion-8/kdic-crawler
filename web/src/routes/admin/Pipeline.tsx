@@ -234,6 +234,25 @@ export function Pipeline() {
         </span>
       ),
     },
+    // 게이트 판정 — 완료 후에도 남는다. 실행 카드의 판정 줄은 진행 중에만 보여서, 관리자가
+    // 자리를 비운 사이 끝나면 놓친다. 이력 행에서 통과/미달과 수치를 그대로 읽는다(2026-08-18)
+    {
+      key: 'gate',
+      header: '게이트',
+      width: '150px',
+      render: (j) => {
+        const v = j.steps.find((s) => s.name === '게이트')?.detail
+        if (!v) return <span className="text-muted-foreground">—</span>
+        return (
+          <span
+            className={cn('nums text-xs', v.passed ? '' : 'text-destructive')}
+            title={v.summary}
+          >
+            {v.passed ? '통과' : '미달'} · R@5 {v.metrics['recall@5']} · MRR {v.metrics.mrr}
+          </span>
+        )
+      },
+    },
     // 진행 중은 소요가 확정되지 않아 '—' (목업 표기 그대로)
     {
       key: 'elapsed',

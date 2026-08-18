@@ -33,11 +33,11 @@ from api.routers.admin_pipeline import (
 from api.schemas.pipeline import JobCreate, PipelineJob
 
 
-def test_initial_steps_are_six_queued():
+def test_initial_steps_are_all_queued():
     """생성 시 6단계를 전부 QUEUED 로 초기화해야 진행바가 빈 채로 안 뜬다."""
     steps = _initial_steps()
     assert [s["name"] for s in steps] == list(PIPELINE_STEPS)
-    assert len(steps) == 6
+    assert len(steps) == len(PIPELINE_STEPS)
     assert all(s["status"] == "QUEUED" for s in steps)
 
 
@@ -92,7 +92,7 @@ def test_row_to_job_maps_all_fields():
     assert job.id == "11111111-1111-1111-1111-111111111111"
     assert job.type == "REINDEX"
     assert job.targets == ["p1", "p2"]
-    assert len(job.steps) == 6 and job.steps[0].status == "QUEUED"
+    assert len(job.steps) == len(PIPELINE_STEPS) and job.steps[0].status == "QUEUED"
 
 
 def test_row_to_job_handles_null_json_columns():
@@ -182,7 +182,7 @@ def test_cancel_endpoint_changes_queued_job_to_cancelled(monkeypatch):
 
 
 if __name__ == "__main__":
-    test_initial_steps_are_six_queued()
+    test_initial_steps_are_all_queued()
     test_default_sort_is_created_at_desc()
     test_invalid_sort_is_rejected()
     test_conflict_error_is_409_and_not_retryable()
@@ -193,3 +193,28 @@ if __name__ == "__main__":
     test_create_endpoint_returns_202()
     test_jobs_routes_are_exposed()
     print("OK - 관리자 파이프라인 잡 API 계약")
+
+
+def test_job_steps_match_the_worker_stage_list_exactly():
+    """잡 생성 시 steps 는 워커의 STEPS 와 이름·순서가 같아야 한다 — 어긋나면 워커의
+    _set_step 이 매칭할 항목이 없어 그 단계 기록이 조용히 사라진다(2026-08-18 실사고:
+    API 가 옛 6단계를 따로 들고 있어 게이트 판정이 화면에 남지 않았다)."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+    from worker import STEPS
+
+    assert tuple(PIPELINE_STEPS) == tuple(STEPS)
+    assert "게이트" in PIPELINE_STEPS
+
+
+def test_job_step_detail_survives_the_response_model():
+    """게이트 판정은 단계 detail 에 실려 온다 — response_model 이 잘라내면 화면에 '—'만
+    남는다(2026-08-18 실사고). 워커가 남기는 모양 그대로 통과해야 한다."""
+    from api.schemas.pipeline import JobStep
+
+    verdict = {"passed": True, "metrics": {"recall@5": 0.94, "mrr": 0.80, "n": 79},
+               "targets": {"recall@5": 0.92, "mrr": 0.80}, "failures": [],
+               "summary": "홀드아웃 79문항 통과"}
+    step = JobStep.model_validate({"name": "게이트", "status": "SUCCESS", "detail": verdict})
+    assert step.model_dump()["detail"] == verdict
