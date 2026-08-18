@@ -90,10 +90,22 @@ def split_table(text, rows_per_chunk=3):
 
 def build_units(mode):
     """mode: 'page' | 'faq_atomic'(FAQ만 QA쌍) | 'table_row'(표만 행묶음) | 'all'(FAQ+표).
-    반환: (unit_ids, texts, unit2page)."""
+    반환: (unit_ids, texts, unit2page).
+
+    2026-08-19: 모든 유닛 앞에 [page_title · business_function] 프리픽스를 붙인다
+    (contextual retrieval의 결정론 버전). 제목·업무가 DB 컬럼에만 있고 색인엔 통째로
+    빠져 있어("보호한도" 페이지 본문에 그 단어가 없음), 특히 본문에 주제 신호가 없는
+    300자 미만 청크 161/503개가 검색에 안 걸렸다. A/B 실측(eval_prefix_embedding,
+    testset_retrieval_eval_v1 66문항): 새 실패 0 · 전체 R@5 0.955→1.0 · 전 서브셋
+    MRR +0.06~0.07 · link_guide 3문항 top5 진입(제목 토큰이 BM25 렉시컬 매칭에 직격).
+    LLM 전달 텍스트에도 그대로 들어간다 — 색인용/전달용을 분리하지 않는 이유는 구현
+    단순화 + top5에 여러 페이지가 섞일 때 생성 LLM의 출처 혼동 감소. 프리픽스는 라인
+    추가가 아니라 첫 라인 앞 연장이라 _selftest의 원문 유실 불변식(부분문자열 검사)과
+    충돌하지 않는다. 분할 자체는 안 건드리므로 unit_id도 불변."""
     unit_ids, texts, unit2page = [], [], {}
     for d in load_records():
         pid, text = d["page_id"], d["text"]
+        prefix = f"[{d['page_title']} · {d['business_function']}] "
         if mode in ("faq_atomic", "all") and is_faq(text):
             chunks = split_faq(text)
         elif mode in ("table_row", "all") and is_table(text):
@@ -103,7 +115,7 @@ def build_units(mode):
         for i, ch in enumerate(chunks):
             uid = pid if len(chunks) == 1 else f"{pid}#{i}"
             unit_ids.append(uid)
-            texts.append(ch)
+            texts.append(prefix + ch)
             unit2page[uid] = pid
     return unit_ids, texts, unit2page
 
