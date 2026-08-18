@@ -61,7 +61,8 @@ router = APIRouter(
 
 # JobType/JobStatus 정본: web/src/lib/codes.ts
 JOB_TYPES = frozenset(
-    {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL"})
+    {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL",
+     "CHANGE_DETECT"})   # CHANGE_DETECT: 변경 감지(2026-08-18) — [지금 확인]이 만든다
 ACTIVE_STATUSES = ("QUEUED", "RUNNING")  # 동시 실행 1개 규칙의 판정 대상
 JOB_STATUSES = frozenset({"QUEUED", "RUNNING", "SUCCESS", "FAILED", "CANCELLED"})
 # 단계 이름 정본은 src/worker.py STEPS 하나다(2026-08-18 정정). 종전에 여기 6단계를 따로 적어
@@ -313,6 +314,9 @@ def _resolve_targets(db, job_type: str, targets: list) -> tuple[str, int]:
     if job_type == "SMOKE_EVAL":
         count = db.execute(select(func.count()).select_from(test_set)).scalar_one()
         return f"평가 {count}문항", count
+    if job_type == "CHANGE_DETECT":
+        count = _active_document_count(db)
+        return f"변경 감지 · 전체 {count}페이지", count
     if targets:
         return f"선택 {len(targets)}페이지", len(targets)
     count = _active_document_count(db)
@@ -391,22 +395,37 @@ def list_changes(db: DbSession):
 
 @router.post("/pipeline/changes/recheck", response_model=ChangedPagesResponse)
 def recheck_changes(request: Request, db: DbSession, me: CurrentAdmin):
-    """[지금 확인] — 재확인을 실행했다는 사실을 남기고 현재 목록을 돌려준다(P3).
+    """[지금 확인] — 변경 감지 잡(CHANGE_DETECT)을 만들어 워커가 실제 비교를 돌리게 한다.
 
-    🔴 실제 재크롤·본문 비교는 여기서 하지 않는다. 그 일은 워커의 몫인데 워커가 아직 없다
-    (POST /jobs 가 잡을 QUEUED 로만 만들고 실행하지 않는 것과 같은 상태다). 그래서 이
-    호출은 index_status 를 바꾸지 않으며, 목록도 직전과 같을 수 있다.
+    2026-08-18 정정(미구현 ②). 종전에는 확인 시각만 기록하고 비교를 하지 않아 관리자가
+    "변경 없음"과 "감지 안 함"을 구분할 수 없었다. 58페이지 GET 은 30초 남짓이라 동기로
+    두면 화면이 잠긴다(AD-006 apply 사고와 같은 패턴) — 워커 잡으로 넘긴다.
+    저장·색인은 하지 않고 index_status=PENDING 표시만 한다(src/change_detect.py).
 
-    그런데도 기록을 남기는 이유는 last_checked_at 의 유일한 원천이라서다 — 이 행이 없으면
-    화면이 '마지막 확인'을 영원히 '—' 로 띄운다. 워커가 붙으면 이 자리에서 비교를 돌리고
-    기록은 그대로 두면 된다.
+    다른 잡이 진행 중이면(동시 실행 1개 규칙) 잡을 만들지 않고 현재 목록만 돌려준다 —
+    409 로 막으면 [지금 확인] 버튼이 오류처럼 보인다. 응답의 job_queued 로 화면이 구분한다.
     """
     if ROLE_RANK.get(me.role, -1) < ROLE_RANK["OPERATOR"]:
         raise ForbiddenError("변경 감지 재확인에는 OPERATOR 이상 권한이 필요합니다.")
 
+    active = db.execute(
+        select(func.count()).select_from(pipeline_jobs)
+        .where(pipeline_jobs.c.status.in_(ACTIVE_STATUSES))).scalar_one()
+    job_queued = False
+    if not active:
+        summary, count = _resolve_targets(db, "CHANGE_DETECT", [])
+        db.execute(insert(pipeline_jobs).values(
+            type="CHANGE_DETECT", status="QUEUED", targets=[], reason="변경 감지 재확인",
+            created_by=me.email, steps=_initial_steps(),
+            target_summary=summary, target_count=count))
+        db.commit()
+        job_queued = True
+
     write_activity_log(db, request, actor=me.email, actor_role=me.role,
-                       action=ACTION_CHANGES_RECHECK, target="지식베이스 전체")
-    return ChangedPagesResponse(last_checked_at=_last_checked_at(db), items=_changed_pages(db))
+                       action=ACTION_CHANGES_RECHECK, target="지식베이스 전체",
+                       detail={"job_queued": job_queued})
+    return ChangedPagesResponse(last_checked_at=_last_checked_at(db), items=_changed_pages(db),
+                                job_queued=job_queued)
 
 
 # ─────────────────────────── 재시도 · 긴급 롤백 ───────────────────────────

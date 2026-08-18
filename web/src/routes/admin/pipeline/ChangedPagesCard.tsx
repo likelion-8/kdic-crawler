@@ -95,13 +95,20 @@ export function ChangedPagesCard({ onRecrawl, disabledReason, canRun }: ChangedP
           onRefresh={() => recheck.mutate()}
         />
       </header>
-      {/* 감지를 실제로 돌리는 주체가 아직 없다(미구현 ②). [지금 확인]은 확인 시각만 기록하고
-          비교는 하지 않으므로, 이 목록이 "변경 없음"인지 "감지 안 함"인지 관리자가 구분할 수
-          있게 사실을 적는다. 감지 주체가 붙으면 이 줄을 지운다. */}
-      <p className="mt-2 text-xs text-destructive" role="note">
-        자동 감지 미가동 — 이 목록은 저장된 상태값이며 원본과의 비교 결과가 아닙니다. 원본 변경은
-        [전체 재수집] 실행 시 변환 단계에서만 감지됩니다.
-      </p>
+      {/* [지금 확인]은 변경 감지 잡을 만든다(2026-08-18, src/change_detect.py). 워커가 정적
+          페이지를 다시 읽어 본문 해시를 대조하고 바뀐 것만 표시한다 — 저장·색인은 안 한다.
+          결과는 파이프라인 카드에서 진행을 보고, 끝나면 이 목록이 갱신된다 */}
+      {recheck.data?.job_queued && (
+        <p className="mt-2 text-xs text-muted-foreground" role="status">
+          변경 감지를 시작했습니다 — 정적 페이지를 다시 읽어 본문을 대조합니다(30초 안팎). 끝나면
+          이 목록이 갱신됩니다
+        </p>
+      )}
+      {recheck.data && recheck.data.job_queued === false && (
+        <p className="mt-2 text-xs text-muted-foreground" role="status">
+          다른 작업이 진행 중이라 지금은 감지를 시작할 수 없습니다 — 끝난 뒤 다시 확인해 주세요
+        </p>
+      )}
 
       {recheck.isError && (
         <div className="mt-3" role="alert">

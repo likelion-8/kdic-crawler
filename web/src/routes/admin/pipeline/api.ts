@@ -63,6 +63,8 @@ export interface ChangedPage {
 export interface ChangedPagesResponse {
   last_checked_at: string
   items: ChangedPage[]
+  /** [지금 확인]이 실제 감지 잡을 만들었는지(2026-08-18). 다른 잡 진행 중이면 false. GET 은 항상 false */
+  job_queued?: boolean
 }
 
 /** 확인 모달의 대상 건수·예상 소요 */
@@ -141,6 +143,7 @@ export const JOB_TYPE_LABEL: Record<JobType, string> = {
   RECHUNK: '재청킹',
   REEMBED: '재임베딩',
   SMOKE_EVAL: '적재 후 확인 평가',
+  CHANGE_DETECT: '변경 감지',
 }
 
 /** CM-DF-002 06절 job status 5종 */

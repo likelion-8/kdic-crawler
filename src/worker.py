@@ -23,6 +23,7 @@
 | REINDEX · RECHUNK · REEMBED | ✅ 실제 실행 | 코퍼스(data/corpus.jsonl) -> 청킹 -> 검증 -> **게이트(홀드아웃 평가)** -> 색인(UPSERT) -> 버전 기록. 게이트 미달이면 색인에 들어가지 않아 운영 인덱스가 그대로 남는다(src/index_gate.py) |
 | 롤백 잡(rollback_of 있음)   | ✅ 실제 실행 | search_index_versions 의 직전 스냅샷으로 corpus.jsonl 을 되돌린 뒤 위와 동일 재적재. **게이트는 SKIPPED** — 직전에 통과했던 스냅샷이라 다시 재는 의미가 없고, 장애 복구를 게이트가 막으면 안 된다 |
 | SMOKE_EVAL                  | ✅ 실제 실행 | admin_evaluations.run_evaluation 위임(문항 수만큼 OpenAI·HCX — 수 분) |
+| CHANGE_DETECT               | ✅ 실제 실행 | change_detect.run — 정적 페이지 재수집 후 본문 해시 대조, 바뀐 것만 index_status=PENDING 표시(저장·색인 안 함). AD-004 [지금 확인]·주기 배치가 만든다(2026-08-18, 미구현 ② 해소) |
 
 ## 재수집(수집 단계)이 하는 일 — 기존 크롤 파이프라인을 그대로 자동화
 
@@ -515,12 +516,33 @@ def claim_next(session):
     ).first()
 
 
+def _run_change_detect(session, job) -> None:
+    """변경 감지 — 단계 그림에서는 '수집'만 쓰고 나머지는 SKIPPED. 저장·색인은 하지 않는다."""
+    import change_detect
+
+    def _detect():
+        result = change_detect.run(session)
+        _set_step(session, job.id, "수집", "RUNNING", detail={
+            "changed": result["changed"], "failed": result["failed"],
+            "unchanged": len(result["unchanged"]), "skipped": len(result["skipped"]),
+            "summary": (f"변경 {len(result['changed'])}건 · 동일 {len(result['unchanged'])}건"
+                        + (f" · 확인 실패 {len(result['failed'])}건" if result["failed"] else ""))})
+        return len(result["changed"])
+
+    _run_stage(session, job.id, "수집", _detect)
+    for name in STEPS[1:]:
+        _set_step(session, job.id, name, "SKIPPED")
+    _finish(session, job.id, "SUCCESS", index_impact="색인 변경 없음(감지만 수행)")
+
+
 def run_job(session, job) -> None:
     logger.info("잡 시작: %s %s (rollback_of=%s, 대상 %s)",
                 job.id, job.type, job.rollback_of, job.target_summary or "전체")
     try:
         if job.type == "SMOKE_EVAL":
             _run_smoke_eval(session, job)
+        elif job.type == "CHANGE_DETECT":
+            _run_change_detect(session, job)
         else:
             # 재수집 계열은 수집(실제 크롤)·변환(파싱+해시 대조)까지 하고, 이후 단계는
             # 재적재와 완전히 같다. 롤백 잡은 타입과 무관하게 스냅샷 복원 경로를 탄다.

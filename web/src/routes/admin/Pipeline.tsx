@@ -142,7 +142,11 @@ export function Pipeline() {
   // 작업이 끝나면 이력 목록을 한 번 갱신해 상태 칩·소요를 맞춘다
   const finishedId = activeJob.data && !isJobActive(activeJob.data) ? activeJob.data.id : undefined
   useEffect(() => {
-    if (finishedId) void queryClient.invalidateQueries({ queryKey: jobsQueryKey })
+    if (!finishedId) return
+    void queryClient.invalidateQueries({ queryKey: jobsQueryKey })
+    // 변경 감지·재수집이 끝나면 변경 페이지 목록도 갱신 — 감지 결과(PENDING 표시)와
+    // 재수집 후 해소된 항목이 카드에 반영되어야 관리자가 새로고침을 누르지 않는다
+    void queryClient.invalidateQueries({ queryKey: changesQueryKey })
   }, [finishedId, queryClient])
 
   const running = activeJob.data ?? activeInList

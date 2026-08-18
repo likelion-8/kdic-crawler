@@ -106,6 +106,9 @@ class ChangedPagesResponse(BaseModel):
     """
     last_checked_at: str = ""
     items: list[ChangedPage] = Field(default_factory=list)
+    # [지금 확인]이 실제 감지 잡을 만들었는지(2026-08-18). 다른 잡이 진행 중이면 False —
+    # 화면이 "지금은 확인할 수 없습니다(다른 작업 진행 중)"를 알린다. GET 은 항상 False.
+    job_queued: bool = False
 
 
 class JobEstimate(BaseModel):
