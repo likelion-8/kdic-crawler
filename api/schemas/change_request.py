@@ -25,6 +25,9 @@ class ChangeRequestCreate(BaseModel):
     target_title: Optional[str] = None
     business_function: Optional[str] = None
     payload: Optional[dict[str, Any]] = None       # action='ADD' 의 새 페이지 객체(K8)
+    # 프론트(NewPageForm)는 새 페이지 객체를 최상위 `page` 로 보낸다 — payload 만 받으면 조용히
+    # 버려져(extra=ignore) 승인 시 적재할 값이 없다(2026-08-18 실사고). 둘 다 받아 payload.page 로 접는다.
+    page: Optional[dict[str, Any]] = None
 
 
 class ChangeRequestDecision(BaseModel):
