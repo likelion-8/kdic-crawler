@@ -7,8 +7,8 @@
   "required": true,
   "note": "예솜24 1.1 보호 대상 금융회사",
   "summary": "보호대상 금융회사 종류(은행·보험·투자매매중개업자·종금사·상호저축은행)와 부보금융회사 수를 기준일과 함께 표로 제공한다. 농수협 지역조합·신협·새마을금고는 비대상임을 명시한다.",
-  "collected_at": "2026-07-13",
-  "content_sha256": "f9aefe8660a4ae5b77f5874c415d24703eeb43fa23a4238cf219d3c617c06747",
+  "collected_at": "2026-08-18",
+  "content_sha256": "084bb072659a3cbaab7f6ff4498bb960ebc33793c9c090874487357bc161feac",
   "links": [],
   "attachments": [],
   "form_attachments": [
@@ -19,8 +19,8 @@
       "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
       "download_method": "POST",
       "download_params": {
-        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHaOsOoYpEqSk1rT1UwcjwQIsK+qehqnKhigaTSdPMKxEnqfT3tG6l7WMmUQhaDAUbaDg5hVr3U6mnMHMJOrsyLs=",
-        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+08TCIPieizUaFkXS5VhDnJ+ZU8KS0jR+zJoAytpWz/nlEZohtTBuLTSZoizo3lu2twGhQMGOMERUWdJZuF3eYUzDIgr6Uv4+2hujH33In3VJ"
+        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHaEvZJkxCc0ikp+KszK0y31fPfjZrk8URiWGLALd91KAs1TJZAF9CZAp0x4uxGpNxfLT6U+/20VUaxa7HQYQFV0=",
+        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+08TCIPieizUaFkXS5VhDnJ+ZU8KS0jR+zJoAytpWz/nlqqoy59SW2PtiU4154tT07JnndtvFYfhK4sEFKv+79b7qCmBC/irp3TrvkCgBbFhB"
       }
     },
     {
@@ -30,8 +30,8 @@
       "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
       "download_method": "POST",
       "download_params": {
-        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHQmILOrUoAcbbVw3ts1Rkv3GPIrfdAlGzJGYAkclAJ4quWzxPCvVWf5mVOHidEiyUltJgBZCrFcGdKAVfb5eN8g=",
-        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+04CoVBYM3LJbFkzhc+6JSwdVRUNkqrmICVjnKk4DyW7mDIvJQcyr12hTjPviKgbd/d8WG6dsgOwPAGw5owdMM1q4Gm0bY6D0KwC5OhyRD/b4"
+        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHT1hvjLuj//nYaPIzIxGWYS4eayRgAgkYAfqdTYuqejcqFCgPhzOpPmhyFPhKEab+9z3SpVUVF8ogx7AmxVDSnI=",
+        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+04CoVBYM3LJbFkzhc+6JSwc6i8gc4abfy2MgxCVRa65MKeHzRb4sq4VmmBtwwt2ERxUAPSzxHWkooramxjurZ8zy+3nK7fw/ru5pAfvFyDnK"
       }
     },
     {
@@ -41,8 +41,8 @@
       "resolved_url": "https://www.kdic.or.kr/cm/file/downloadFile.do",
       "download_method": "POST",
       "download_params": {
-        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHdxUSnF6W7MK+cdWN8htNnhqt4vAJ9YZ+gatnzqHYBcJTQDang5tf5L53+mKIHWRMxhQrKP1XxeA9H2RyYgnxbQ=",
-        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+04CoVBYM3LJbFkzhc+6JSwdVRUNkqrmICVjnKk4DyW7mDIvJQcyr12hTjPviKgbd/a5LCRt+3un3diS6yKIHKak4NJDlSFZSoN622cWu2w/W"
+        "encAtchFilePathNm": "V+13S4VUod7BED7OA2bFHU0V2LBCgTFUPJCDpO6NteMcmKTtZKQC1n0RezqeKQZqbeMloYEsDWS9phGmwbpyFWuBhn9zcS2Us9kN6LAgQkY=",
+        "encOrgnlFileNm": "Xqp2uD2fF68hNQysnA3+04CoVBYM3LJbFkzhc+6JSwc6i8gc4abfy2MgxCVRa65MKeHzRb4sq4VmmBtwwt2ERxLg8o+PNdMhkAy8WT+yX/sWJbVmkgvdzn6shAkpebB/"
       }
     }
   ],

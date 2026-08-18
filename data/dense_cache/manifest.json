@@ -1,19 +1,19 @@
 {
   "model": "dragonkue/BGE-m3-ko",
   "page": {
-    "file": "320293803d593651.npy",
+    "file": "2dc9c79a6507fbb4.npy",
     "units": 58
   },
   "faq_atomic": {
-    "file": "e29f43d2803424a7.npy",
-    "units": 135
+    "file": "c04cba480a1db818.npy",
+    "units": 132
   },
   "table_row": {
-    "file": "11409b8d58e77797.npy",
-    "units": 417
+    "file": "4ea39c68cd9618bf.npy",
+    "units": 429
   },
   "all": {
-    "file": "a855a49216d67a14.npy",
-    "units": 494
+    "file": "af8d763478559706.npy",
+    "units": 503
   }
 }
