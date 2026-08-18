@@ -50,6 +50,8 @@ class PipelineJob(BaseModel):
     target_count: Optional[int] = None
     index_impact: Optional[str] = None
     metrics: Optional[dict[str, Any]] = None
+    # 적재 파라미터(2026-08-18) — {"chunk_mode": ...}. 이력 표가 "어느 청킹으로 돌렸나"를 그린다
+    params: Optional[dict[str, Any]] = None
 
 
 class PipelineJobList(BaseModel):
@@ -66,6 +68,9 @@ class JobCreate(BaseModel):
     type: str
     targets: list[str] = Field(default_factory=list)
     reason: str = ""
+    # 적재 파라미터(2026-08-18). 재적재 모달의 청킹 모드 — chunking.build_units 의 mode.
+    # 종전에는 프론트가 보내도 여기 없어 조용히 버려졌다(extra=ignore 의 함정).
+    chunk_mode: Optional[str] = None
 
 
 class JobCancel(BaseModel):

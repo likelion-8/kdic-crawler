@@ -70,6 +70,8 @@ JOB_STATUSES = frozenset({"QUEUED", "RUNNING", "SUCCESS", "FAILED", "CANCELLED"}
 # 매칭할 항목이 없어 판정이 통째로 기록되지 않았다(게이트는 돌았는데 화면엔 흔적 없음).
 # 프론트 정본 web/src/lib/constants.ts PIPELINE_STEPS 도 같은 7단계다.
 from worker import STEPS as PIPELINE_STEPS  # noqa: E402
+# 청킹 모드 정본: src/crawler/chunking.build_units 의 mode 4종. 프론트(Pipeline.tsx CHUNK_MODES)와 같아야 한다
+CHUNK_MODES = frozenset({"all", "page", "faq_atomic", "table_row"})
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 SORT_COLUMNS = {"created_at": pipeline_jobs.c.created_at}
@@ -134,6 +136,7 @@ def _row_to_job(row) -> PipelineJob:
         target_count=row.target_count,
         index_impact=row.index_impact,
         metrics=row.metrics,
+        params=getattr(row, "params", None),
     )
 
 
@@ -153,6 +156,9 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
     단계). 동시 실행 1개 규칙: QUEUED/RUNNING 잡이 있으면 409(retryable=false)."""
     if body.type not in JOB_TYPES:
         raise BadRequestError("지원하지 않는 작업 종류입니다.")
+    if body.chunk_mode is not None and body.chunk_mode not in CHUNK_MODES:
+        raise BadRequestError(f"지원하지 않는 청킹 모드입니다: {body.chunk_mode}")
+    params = {"chunk_mode": body.chunk_mode} if body.chunk_mode else None
 
     active = db.execute(
         select(func.count()).select_from(pipeline_jobs)
@@ -168,7 +174,7 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
         insert(pipeline_jobs)
         .values(type=body.type, status="QUEUED", targets=body.targets,
                 reason=body.reason, created_by=me.email, steps=_initial_steps(),
-                target_summary=summary, target_count=count)
+                target_summary=summary, target_count=count, params=params)
         .returning(*pipeline_jobs.c)
     ).first()
     db.commit()
@@ -184,7 +190,8 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
         # CM-DF-002 07절: 대상은 '사람이 읽는 이름 + (ID)' — ID 단독 노출 금지.
         target=f"{row.target_summary or body.type} ({row.id})",
         reason=body.reason or None,
-        detail={"job_type": body.type, "targets": body.targets or []},
+        detail={"job_type": body.type, "targets": body.targets or [],
+                **({"chunk_mode": body.chunk_mode} if body.chunk_mode else {})},
     )
     return _row_to_job(row)
 

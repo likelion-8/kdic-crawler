@@ -48,6 +48,8 @@ export interface PipelineJob {
   target_summary?: string
   /** 대상 건수. targets가 비는 전체 작업(전체 재수집·재적재)은 서버만 안다(백엔드 계약 요청 항목) */
   target_count?: number
+  /** 적재 파라미터(2026-08-18) — 재적재 모달의 청킹 모드가 여기 남는다 */
+  params?: { chunk_mode?: string } | null
   /** 실패가 인덱스에 미친 영향. 없으면 화면이 단언하지 않는다(백엔드 계약 요청 항목) */
   index_impact?: string
 }

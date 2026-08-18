@@ -79,8 +79,14 @@ const NO_DOWNTIME = '재색인 중에는 검색 결과가 일시적으로 빌 �
 /** 사유 입력 아래 각주(모달 안 상시 노출) */
 const REASON_NOTE = '※사유는 관리자 활동 로그에 그대로 기록됩니다. 비워두면 실행 버튼이 비활성'
 
-/** 청킹 모드 옵션 집합이 기획서에 없다(이슈 G-22) — 목업 값 all만 넣었다 */
-const CHUNK_MODES = [{ value: 'all', label: 'all' }]
+/** 청킹 모드 4종 — src/crawler/chunking.build_units 의 mode 와 1:1(2026-08-18, 미구현 ④ 해소).
+ * 서버(admin_pipeline.CHUNK_MODES)가 같은 집합으로 검증한다. 운영 기본은 all */
+const CHUNK_MODES = [
+  { value: 'all', label: 'all — FAQ·표 구조 인식(운영 기본)' },
+  { value: 'page', label: 'page — 페이지 통째로 1청크' },
+  { value: 'faq_atomic', label: 'faq_atomic — FAQ만 Q/A 쌍으로' },
+  { value: 'table_row', label: 'table_row — 표만 행 묶음으로' },
+]
 
 const STEP_STATE: Record<JobStep['status'], StepState> = {
   QUEUED: 'waiting',
@@ -220,7 +226,20 @@ export function Pipeline() {
       render: (j) => <span className="nums">{formatMonthDayTime(j.created_at)}</span>,
       width: '128px',
     },
-    { key: 'type', header: '유형', render: (j) => JOB_TYPE_LABEL[j.type], width: '110px' },
+    {
+      key: 'type',
+      header: '유형',
+      width: '130px',
+      render: (j) => (
+        <span>
+          {JOB_TYPE_LABEL[j.type]}
+          {/* 적재 파라미터 — 운영 기본(all)이 아닐 때만 표기해 "어느 청킹으로 돌렸나"를 남긴다 */}
+          {j.params?.chunk_mode && j.params.chunk_mode !== 'all' && (
+            <span className="ml-1 text-xs text-muted-foreground">· {j.params.chunk_mode}</span>
+          )}
+        </span>
+      ),
+    },
     { key: 'target', header: '대상', render: (j) => jobTargetText(j) },
     {
       key: 'status',

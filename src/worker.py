@@ -356,9 +356,14 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         state["records"] = load_records()
         return len(state["records"])
 
+    # 적재 파라미터(2026-08-18) — 잡에 실린 chunk_mode 를 쓴다. 없으면 운영 기본 "all".
+    # 종전에는 여기가 "all" 고정이라 재색인·재청킹·재임베딩 세 버튼이 같은 동작이었다.
+    chunk_mode = ((getattr(job, "params", None) or {}).get("chunk_mode")) or "all"
+
     def _chunk():
-        uids, texts, u2p = build_units("all")
+        uids, texts, u2p = build_units(chunk_mode)
         state["uids"], state["texts"] = uids, texts   # texts 는 게이트가 메모리 인덱스를 만들 때 쓴다
+        logger.info("청킹: mode=%s → %d청크", chunk_mode, len(uids))
         return len(uids)
 
     def _validate():
@@ -408,8 +413,9 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
 
     def _index():
         # 정식 적재 경로 그대로. 재적재의 본체라 이 단계가 제일 오래 걸린다(새 청크가 있으면
-        # 임베딩 인코딩 — 첫 실행 시 bge-m3 ~2GB 다운로드까지).
-        idx.main()
+        # 임베딩 인코딩 — 첫 실행 시 bge-m3 ~2GB 다운로드까지). chunk_mode 를 넘겨 청킹 단계와
+        # 같은 청크가 색인되고, 버전 기록(build_params)에도 그 값이 남는다.
+        idx.main(chunk_mode=chunk_mode)
         with get_session() as s:
             return s.execute(text("select count(*) from document_chunks")).scalar_one()
 
