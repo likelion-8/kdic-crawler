@@ -34,8 +34,33 @@ _RULES = (
 )
 
 
+def _published_rules() -> list:
+    """게시본(prompt.guardrails.masking)의 활성 규칙 → [(compiled, replacement)].
+    읽기 실패·정규식 오류는 그 규칙만 건너뛴다 — 마스킹이 예외로 죽어 로그 화면이 통째로
+    안 뜨는 것보다, 규칙 하나가 빠지는 쪽이 낫다."""
+    try:
+        from runtime_config import get_prompt
+        block = (get_prompt("guardrails", None) or {}).get("masking") or {}
+        if not block.get("active", True):
+            return []
+        out = []
+        for item in block.get("items") or []:
+            if not isinstance(item, dict) or not item.get("active", True):
+                continue
+            pat = str(item.get("pattern") or "").strip()
+            if not pat:
+                continue
+            try:
+                out.append((re.compile(pat), str(item.get("replacement") or "[마스킹]")))
+            except re.error:
+                continue
+        return out
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def mask_text(value: Optional[str]) -> Optional[str]:
-    """개인정보 4종을 대체 문구로 치환한다. None 은 None 그대로(빈 필드 방어).
+    """개인정보를 대체 문구로 치환한다 — 고정 4종 + 게시된 활성 규칙. None 은 None 그대로.
 
     호출부(admin_logs.py 등)는 이 함수 하나만 거치면 된다 — 시그니처는 스텁 시절과 동일해
     기존 배선이 그대로 산다."""
@@ -43,6 +68,8 @@ def mask_text(value: Optional[str]) -> Optional[str]:
         return None
     masked = value
     for pattern, repl in _RULES:
+        masked = pattern.sub(repl, masked)
+    for pattern, repl in _published_rules():
         masked = pattern.sub(repl, masked)
     return masked
 

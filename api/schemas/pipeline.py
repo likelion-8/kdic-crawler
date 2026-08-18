@@ -15,11 +15,16 @@ from pydantic import BaseModel, Field
 
 
 class JobStep(BaseModel):
-    """6단계(수집·변환·청킹·검증·색인·반영) 중 한 단계의 진행상황."""
+    """7단계(수집·변환·청킹·검증·게이트·색인·반영) 중 한 단계의 진행상황.
+    정본은 src/worker.py STEPS."""
     name: str
     status: str  # QUEUED | RUNNING | SUCCESS | FAILED | SKIPPED
     elapsed_ms: Optional[int] = None
-    count: Optional[int] = None  # 단계별 처리 건수(아직 서버가 안 채움)
+    count: Optional[int] = None  # 단계별 처리 건수
+    # 단계가 남긴 구조화 정보(2026-08-18). 게이트가 판정(passed·metrics·targets·failures·
+    # summary)을 싣는다 — 이 필드가 없으면 response_model 이 잘라내 화면에 '—'만 남는다
+    # (전날 prefilled_sources 와 같은 함정). 모양은 src/index_gate.evaluate 결과 + summary.
+    detail: Optional[dict] = None
 
 
 class JobError(BaseModel):
@@ -45,6 +50,8 @@ class PipelineJob(BaseModel):
     target_count: Optional[int] = None
     index_impact: Optional[str] = None
     metrics: Optional[dict[str, Any]] = None
+    # 적재 파라미터(2026-08-18) — {"chunk_mode": ...}. 이력 표가 "어느 청킹으로 돌렸나"를 그린다
+    params: Optional[dict[str, Any]] = None
 
 
 class PipelineJobList(BaseModel):
@@ -61,6 +68,9 @@ class JobCreate(BaseModel):
     type: str
     targets: list[str] = Field(default_factory=list)
     reason: str = ""
+    # 적재 파라미터(2026-08-18). 재적재 모달의 청킹 모드 — chunking.build_units 의 mode.
+    # 종전에는 프론트가 보내도 여기 없어 조용히 버려졌다(extra=ignore 의 함정).
+    chunk_mode: Optional[str] = None
 
 
 class JobCancel(BaseModel):
@@ -101,6 +111,9 @@ class ChangedPagesResponse(BaseModel):
     """
     last_checked_at: str = ""
     items: list[ChangedPage] = Field(default_factory=list)
+    # [지금 확인]이 실제 감지 잡을 만들었는지(2026-08-18). 다른 잡이 진행 중이면 False —
+    # 화면이 "지금은 확인할 수 없습니다(다른 작업 진행 중)"를 알린다. GET 은 항상 False.
+    job_queued: bool = False
 
 
 class JobEstimate(BaseModel):

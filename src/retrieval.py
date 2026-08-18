@@ -313,12 +313,57 @@ class RoutedRetriever:
 # 매 질문마다 BM25 토크나이저·DB 연결·분류기를 새로 만들면 느려지므로,
 # query_classifier.py의 _classifiers 캐시와 같은 방식으로 싱글턴을 쓴다.
 _engines = {}
+# 엔진을 조립할 때 본 ACTIVE 색인 버전 id. 다음 호출에서 DB 의 ACTIVE 가 달라져 있으면(재적재·
+# 롤백으로 색인이 교체됨) 엔진을 버리고 다시 조립한다(2026-08-18, 미구현 ⑤ 해소). 종전에는
+# 프로세스 수명 동안 캐시라 재적재 뒤에도 BM25 축이 옛 코퍼스를 봤고, 관리자에게 재시작 수단이
+# 없어 여기서 개발자를 불렀다. pgvector 축은 DB 를 직접 읽어 즉시 반영됐지만 BM25(메모리)와
+# unit_texts(청크 본문)는 아니었다 — 두 축이 다른 코퍼스를 보는 상태였다.
+_engines_version = None
+_VERSION_CHECK_INTERVAL_S = 5.0   # ponytail: 질의마다 SELECT 하지 않게 5초 캐시. 재적재는 분 단위라 충분
+_version_checked_at = 0.0
+
+
+def _active_index_version():
+    """search_index_versions 의 ACTIVE 행 (id, activated_at). 실패하면 None — 확인 못 한 것을
+    '바뀜'으로 치지 않는다(엔진을 헛되이 재조립하면 질의가 수 초 멈춘다).
+
+    id 만 보면 안 된다: 재적재는 새 행을 만들지 않고 같은 ACTIVE 행을 갱신한다(index_document_chunks
+    _record_active_version). 교체 시각(activated_at)까지 봐야 "같은 행이지만 새 인덱스"를 안다."""
+    try:
+        from sqlalchemy import select
+        from db import get_session
+        from schema import search_index_versions
+        with get_session() as session:
+            row = session.execute(
+                select(search_index_versions.c.id, search_index_versions.c.activated_at)
+                .where(search_index_versions.c.status == "ACTIVE")
+                .order_by(search_index_versions.c.created_at.desc()).limit(1)).first()
+        return (str(row.id), str(row.activated_at)) if row else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _index_changed() -> bool:
+    """5초에 한 번만 DB 를 본다. 바뀌었으면 True."""
+    global _version_checked_at
+    import time as _time
+    now = _time.monotonic()
+    if now - _version_checked_at < _VERSION_CHECK_INTERVAL_S:
+        return False
+    _version_checked_at = now
+    current = _active_index_version()
+    return current is not None and _engines_version is not None and current != _engines_version
 
 
 def _build_engines():
-    """all 모드(제품이 실제로 쓰는 색인) 검색 엔진 일체를 한 번만 조립한다.
+    """제품이 실제로 쓰는 색인의 검색 엔진 일체를 조립한다. 한 번 조립하면 재사용하되, ACTIVE
+    색인 버전이 바뀌면(재적재·롤백) 다시 조립한다.
     eval_retrieval.build_retrievers("all")와 하는 일은 같지만, retrieval.py는 평가
     스크립트(crawler/)에 의존하면 안 되므로 필요한 조립 로직만 여기 자체적으로 둔다."""
+    global _engines_version
+    if _engines and _index_changed():
+        _engines.clear()
+        _QEMB_CACHE.clear()   # 질문 임베딩 캐시는 코퍼스와 무관하지만 관례상 함께 비운다
     if _engines:
         return _engines
 
@@ -327,7 +372,22 @@ def _build_engines():
     from chunking import build_units, load_records
     from query_classifier import QuestionTypeClassifier  # BusinessFunctionClassifier 미사용(업무필터 비활성)
 
-    uids, texts, u2p = build_units("all")
+    # 청킹 모드는 ACTIVE 버전 기록(build_params.chunk_mode)을 따른다 — 관리자가 재적재 모달에서
+    # 고른 값이 여기까지 와야 BM25 축과 pgvector 축이 같은 청크를 본다. 기록이 없으면 "all".
+    chunk_mode = "all"
+    try:
+        from sqlalchemy import select as _select
+        from db import get_session as _gs
+        from schema import search_index_versions as _siv
+        with _gs() as _s:
+            bp = _s.execute(_select(_siv.c.build_params).where(_siv.c.status == "ACTIVE")
+                            .order_by(_siv.c.created_at.desc()).limit(1)).scalar()
+        chunk_mode = (bp or {}).get("chunk_mode") or "all"
+    except Exception:  # noqa: BLE001
+        pass
+    _engines_version = _active_index_version()
+
+    uids, texts, u2p = build_units(chunk_mode)
     page2bf = {r["page_id"]: r["business_function"] for r in load_records()}
     unit2bf = {u: page2bf.get(p) for u, p in u2p.items()}
 

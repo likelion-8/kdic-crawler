@@ -263,6 +263,12 @@ export function NewPageForm({ candidateId = null, onClose }: NewPageFormProps) {
   })
   const job = jobQuery.data ?? null
   const jobRunning = job !== null && (job.status === 'QUEUED' || job.status === 'RUNNING')
+  // 재색인이 끝나면 목록·탭 건수를 다시 읽는다 — 적재 직후 invalidate 는 잡이 돌기 전이라 documents 에
+  // 아직 없어 "적재 페이지 58"이 그대로였다(2026-08-18 브라우저 검증). 완료 시점에 한 번 더
+  const jobFinishedId = job && !jobRunning ? job.id : null
+  useEffect(() => {
+    if (jobFinishedId) void queryClient.invalidateQueries({ queryKey: ['kb-pages'] })
+  }, [jobFinishedId, queryClient])
 
   // 프론트는 URL 형식만 본다. 허용 도메인·중복·차단 판정은 서버가 하고, 실패 문구는 서버가 준다(10 issue G-5)
   const urlValid = /^https?:\/\/\S+$/.test(form.source_url.trim())
@@ -502,7 +508,8 @@ export function NewPageForm({ candidateId = null, onClose }: NewPageFormProps) {
         impact={
           <>
             <p>지식베이스 목록에 등록되고 재색인 작업이 만들어집니다.</p>
-            <p>· 적재가 곧 서비스 반영은 아닙니다. 6단계까지 통과해야 인덱스를 교체합니다</p>
+            <p>· 적재가 곧 서비스 반영은 아닙니다. 게이트(홀드아웃 평가)를 통과해야 색인·반영합니다</p>
+            <p>· 게이트 미달이면 이 페이지는 색인되지 않고 수집 대상 탭에 남습니다 — 실패 뒤에는 그 탭에서 확인합니다</p>
             <p>· 실패·취소·검증 미달이면 기존 인덱스를 유지합니다</p>
           </>
         }

@@ -72,7 +72,7 @@
 		<script type="text/javascript" src="/js/rMateChartH5/JS/rMateChartH5.js"></script>
 		<script type="text/javascript" src="/js/rMateChartH5/Assets/Theme/theme.js"></script>
 		<link rel="stylesheet" type="text/css" href="/js/rMateChartH5/Assets/Css/rMateChartH5.css"/>
-		<script language="javascript" type="text/javascript" src="/js/rMateChartH5/LicenseKey/rMateChartH5License.js?ver=20260713114524"></script>
+		<script language="javascript" type="text/javascript" src="/js/rMateChartH5/LicenseKey/rMateChartH5License.js?ver=20260818150315"></script>
 
 		
 		
@@ -88,8 +88,8 @@
 		<!-- 개발 스크립트 소스 -->
 		<script src="/developerJs/developer.js"></script>
 		<script src="/developerJs/Basic.js"></script>
-		<script src="/developerJs/dev_leb.js?ver=20260713114524"></script>
-		<script src="/developerJs/dev_pjm.js?ver=20260713114524"></script>
+		<script src="/developerJs/dev_leb.js?ver=20260818150315"></script>
+		<script src="/developerJs/dev_pjm.js?ver=20260818150315"></script>
 		<script src="/developerJs/dev_sjd.js"></script>
 		
 
@@ -751,8 +751,19 @@
 				}
 			}
 			
+			//마우스 클릭방지
+			var isMouseDown = false;
+			$(document).on("mousedown", function(){
+				isMouseDown = true;
+			});
+			$(document).on("keydown", function(){
+				isMouseDown = false;
+			});
+			
 			// 탭키이동
 			$(document).on("focus", "#gnb dt a", function(){
+				if(isMouseDown) return;
+				
 				var $target = $(this).closest("dt");
 				
 				$(".gnb .mCustomScrollbar").mCustomScrollbar("scrollTo",$target,
@@ -762,6 +773,8 @@
 						});
 			});
 			$(document).on("focus", "#gnb ul.depth03 li a", function(){
+				if(isMouseDown) return;
+				
 				var $target = $(this).closest("li");
 				
 				$(".gnb .mCustomScrollbar").mCustomScrollbar("scrollTo",$target,

@@ -186,6 +186,12 @@ rag_runs = Table(
     # 가릴 수 없고(source_count·source_used·marker·normalized 가 전부 null), AD-006 문항
     # 후보도 정답 없는 껍데기로만 등록된다. 모양은 api/rag/observation.py 가 정본이다.
     Column("observation", JSONB),
+    # 관리자 처리 상태(AD-005). CM-DF-002 06절 triage_status 3종 — NONE(미확인) / IN_REVIEW /
+    # RESOLVED. 이게 없으면 대시보드 '나쁨 평가' 할 일 건수가 조치해도 줄지 않아, 시작점이
+    # 3일이면 무의미해진다(관리자 유저플로우 설계 2026-08-18 · 미구현 6건 중 1순위).
+    Column("triage", String, nullable=False, server_default=text("'NONE'")),
+    Column("triaged_by", String),
+    Column("triaged_at", DateTime(timezone=True)),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
@@ -334,6 +340,10 @@ pipeline_jobs = Table(
     # 3주차 Smoke 평가 결과가 들어갈 자리. 미리 넣어둔다 — 나중에 추가하면 create_all 이 컬럼
     # diff 를 안 봐서 ALTER 손패치가 또 쌓인다(이 파일 main() 의 evaluation_dataset 주석 참고).
     Column("metrics", JSONB),
+    # 적재 파라미터(2026-08-18, 미구현 ④ 해소). {"chunk_mode": "all"|"page"|"faq_atomic"|"table_row"}.
+    # 종전에는 프론트가 chunk_mode 를 보내도 서버가 버려 재색인·재청킹·재임베딩이 같은 동작이었다.
+    # 여기 남아야 이력에서 "어느 청킹으로 돌렸나"를 읽고, 롤백이 그때 설정을 복원한다.
+    Column("params", JSONB),
 )
 
 
@@ -487,6 +497,11 @@ def main():
         conn.execute(text("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sub_answers jsonb"))
         # rag_runs.observation 도 뒤늦게 더한 컬럼이다(2026-08-14, 관리자 진단 루프).
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS observation jsonb"))
+        # 처리 상태 3열(2026-08-18) — 기존 행은 NONE 으로 채워져 '미확인=사실'이 유지된다.
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triage text NOT NULL DEFAULT 'NONE'"))
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_by text"))
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_at timestamptz"))
+        conn.execute(text("ALTER TABLE pipeline_jobs ADD COLUMN IF NOT EXISTS params jsonb"))
         # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
         # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.
         conn.execute(text("""

@@ -19,6 +19,18 @@ export interface JobStep {
   elapsed_ms?: number
   /** 단계별 처리 건수 — 서버가 아직 주지 않는다(백엔드 계약 요청 항목) */
   count?: number
+  /** 단계가 남긴 구조화 정보(2026-08-18). 게이트 단계가 판정 요약을 싣는다 — 관리자가
+   * 판정을 보러 AD-006 으로 옮기지 않아도 카드 안에서 읽는다 */
+  detail?: GateVerdict
+}
+
+/** src/index_gate.evaluate 결과 + 한 줄 요약(worker 가 게이트 단계 detail 로 저장) */
+export interface GateVerdict {
+  passed: boolean
+  metrics: { 'recall@5': number; mrr: number; n: number }
+  targets: { 'recall@5': number; mrr: number }
+  failures: { key: string; measured: number; target: number }[]
+  summary: string
 }
 
 export interface PipelineJob {
@@ -36,6 +48,8 @@ export interface PipelineJob {
   target_summary?: string
   /** 대상 건수. targets가 비는 전체 작업(전체 재수집·재적재)은 서버만 안다(백엔드 계약 요청 항목) */
   target_count?: number
+  /** 적재 파라미터(2026-08-18) — 재적재 모달의 청킹 모드가 여기 남는다 */
+  params?: { chunk_mode?: string } | null
   /** 실패가 인덱스에 미친 영향. 없으면 화면이 단언하지 않는다(백엔드 계약 요청 항목) */
   index_impact?: string
 }
@@ -51,6 +65,8 @@ export interface ChangedPage {
 export interface ChangedPagesResponse {
   last_checked_at: string
   items: ChangedPage[]
+  /** [지금 확인]이 실제 감지 잡을 만들었는지(2026-08-18). 다른 잡 진행 중이면 false. GET 은 항상 false */
+  job_queued?: boolean
 }
 
 /** 확인 모달의 대상 건수·예상 소요 */
@@ -129,6 +145,7 @@ export const JOB_TYPE_LABEL: Record<JobType, string> = {
   RECHUNK: '재청킹',
   REEMBED: '재임베딩',
   SMOKE_EVAL: '적재 후 확인 평가',
+  CHANGE_DETECT: '변경 감지',
 }
 
 /** CM-DF-002 06절 job status 5종 */

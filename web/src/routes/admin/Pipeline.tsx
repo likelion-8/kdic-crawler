@@ -10,6 +10,8 @@
  *  - 위험 작업은 확인 모달 → 변경 사유 필수 → (필요 시) 비밀번호 재확인 → 실행 (CM-DF-004 03절)
  *  - 실패는 토스트가 아니라 화면 안에 남긴다(CM-DF-001 07.4절) */
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
+import { cn } from '../../lib/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Layers, RefreshCw } from 'lucide-react'
 import {
@@ -77,8 +79,14 @@ const NO_DOWNTIME = '재색인 중에는 검색 결과가 일시적으로 빌 �
 /** 사유 입력 아래 각주(모달 안 상시 노출) */
 const REASON_NOTE = '※사유는 관리자 활동 로그에 그대로 기록됩니다. 비워두면 실행 버튼이 비활성'
 
-/** 청킹 모드 옵션 집합이 기획서에 없다(이슈 G-22) — 목업 값 all만 넣었다 */
-const CHUNK_MODES = [{ value: 'all', label: 'all' }]
+/** 청킹 모드 4종 — src/crawler/chunking.build_units 의 mode 와 1:1(2026-08-18, 미구현 ④ 해소).
+ * 서버(admin_pipeline.CHUNK_MODES)가 같은 집합으로 검증한다. 운영 기본은 all */
+const CHUNK_MODES = [
+  { value: 'all', label: 'all — FAQ·표 구조 인식(운영 기본)' },
+  { value: 'page', label: 'page — 페이지 통째로 1청크' },
+  { value: 'faq_atomic', label: 'faq_atomic — FAQ만 Q/A 쌍으로' },
+  { value: 'table_row', label: 'table_row — 표만 행 묶음으로' },
+]
 
 const STEP_STATE: Record<JobStep['status'], StepState> = {
   QUEUED: 'waiting',
@@ -140,7 +148,11 @@ export function Pipeline() {
   // 작업이 끝나면 이력 목록을 한 번 갱신해 상태 칩·소요를 맞춘다
   const finishedId = activeJob.data && !isJobActive(activeJob.data) ? activeJob.data.id : undefined
   useEffect(() => {
-    if (finishedId) void queryClient.invalidateQueries({ queryKey: jobsQueryKey })
+    if (!finishedId) return
+    void queryClient.invalidateQueries({ queryKey: jobsQueryKey })
+    // 변경 감지·재수집이 끝나면 변경 페이지 목록도 갱신 — 감지 결과(PENDING 표시)와
+    // 재수집 후 해소된 항목이 카드에 반영되어야 관리자가 새로고침을 누르지 않는다
+    void queryClient.invalidateQueries({ queryKey: changesQueryKey })
   }, [finishedId, queryClient])
 
   const running = activeJob.data ?? activeInList
@@ -214,7 +226,20 @@ export function Pipeline() {
       render: (j) => <span className="nums">{formatMonthDayTime(j.created_at)}</span>,
       width: '128px',
     },
-    { key: 'type', header: '유형', render: (j) => JOB_TYPE_LABEL[j.type], width: '110px' },
+    {
+      key: 'type',
+      header: '유형',
+      width: '130px',
+      render: (j) => (
+        <span>
+          {JOB_TYPE_LABEL[j.type]}
+          {/* 적재 파라미터 — 운영 기본(all)이 아닐 때만 표기해 "어느 청킹으로 돌렸나"를 남긴다 */}
+          {j.params?.chunk_mode && j.params.chunk_mode !== 'all' && (
+            <span className="ml-1 text-xs text-muted-foreground">· {j.params.chunk_mode}</span>
+          )}
+        </span>
+      ),
+    },
     { key: 'target', header: '대상', render: (j) => jobTargetText(j) },
     {
       key: 'status',
@@ -231,6 +256,25 @@ export function Pipeline() {
           </Badge>
         </span>
       ),
+    },
+    // 게이트 판정 — 완료 후에도 남는다. 실행 카드의 판정 줄은 진행 중에만 보여서, 관리자가
+    // 자리를 비운 사이 끝나면 놓친다. 이력 행에서 통과/미달과 수치를 그대로 읽는다(2026-08-18)
+    {
+      key: 'gate',
+      header: '게이트',
+      width: '150px',
+      render: (j) => {
+        const v = j.steps.find((s) => s.name === '게이트')?.detail
+        if (!v) return <span className="text-muted-foreground">—</span>
+        return (
+          <span
+            className={cn('nums text-xs', v.passed ? '' : 'text-destructive')}
+            title={v.summary}
+          >
+            {v.passed ? '통과' : '미달'} · R@5 {v.metrics['recall@5']} · MRR {v.metrics.mrr}
+          </span>
+        )
+      },
     },
     // 진행 중은 소요가 확정되지 않아 '—' (목업 표기 그대로)
     {
@@ -294,6 +338,7 @@ export function Pipeline() {
             <div className="border-y py-3.5">
               <PipelineSteps states={running.steps.map((s) => STEP_STATE[s.status])} />
             </div>
+            <GateVerdictLine job={running} />
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               {/* 실행 중 상태 점 — 카드가 살아있음을 알린다. 색만이 아니라 이 캡션 텍스트와 병기 */}
               <span className="pulse-dot size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
@@ -611,17 +656,40 @@ function ModalImpact({
       <p className="text-xs text-muted-foreground">
         {confirming.kind === 'REINDEX' ? (
           <>
-            재청킹 → 재임베딩 → 임시 색인 → <span className="font-medium text-foreground">홀드아웃 평가</span>{' '}
-            → 통과 시 교체 · 캐시 무효화 (미달 시 자동 중단 · 기존 유지)
+            {/* 실제 순서: 게이트(홀드아웃 평가)가 색인 앞이다 — 미달이면 색인에 들어가지 않는다.
+                임시 색인은 만들지 않고 메모리 채점(src/index_gate.py)한다(2026-08-18 문구 정정) */}
+            청킹 → 검증 → <span className="font-medium text-foreground">게이트(홀드아웃 평가)</span>{' '}
+            → 통과 시에만 색인·반영 · 캐시 무효화 (미달 시 중단 · 기존 색인 유지)
           </>
         ) : (
           <>
-            수집 → 변환 → 청킹 → 검증 → 색인 →{' '}
-            <span className="font-medium text-foreground">홀드아웃 평가</span> → 통과 시 반영(교체 · 캐시
+            수집 → 변환 → 청킹 → 검증 →{' '}
+            <span className="font-medium text-foreground">게이트(홀드아웃 평가)</span> → 통과 시에만 색인·반영(교체 · 캐시
             무효화)
           </>
         )}
       </p>
     </div>
+  )
+}
+
+/**
+ * 게이트 판정 줄 — 실행 카드 안에서 통과/미달과 수치를 그대로 보여준다(2026-08-18).
+ * 판정은 워커가 게이트 단계의 detail 로 남긴다(src/worker.py _gate). 미달이면 "기존 색인을
+ * 그대로 두었습니다"를 명시해 관리자가 서비스 영향을 오해하지 않게 한다. 상세는 AD-006 으로.
+ */
+function GateVerdictLine({ job }: { job: PipelineJob }) {
+  const gate = job.steps.find((s) => s.name === '게이트')
+  const v = gate?.detail
+  if (!v) return null
+  return (
+    <p className={cn('mt-3 text-[13px]', v.passed ? 'text-foreground' : 'text-destructive')}>
+      게이트 {v.passed ? '통과' : '미달'} · {v.summary}
+      {!v.passed && ' — 색인에 들어가지 않아 기존 색인을 그대로 두었습니다'}
+      {' · '}
+      <Link className="underline" to="/admin/evaluation">
+        평가 화면에서 판정 상세 →
+      </Link>
+    </p>
   )
 }

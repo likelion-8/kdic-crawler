@@ -477,6 +477,9 @@ export function GuardrailListCard({ draft, onEditBlocklist, onEditMasking }: Gua
       />
       <p className="mt-3 text-xs text-muted-foreground">
         개인정보 마스킹 규칙 {draft.masking.items.length}규칙
+        {/* 게시된 규칙은 대화 로그·활동 로그 조회 시점에 실제로 적용된다(2026-08-18, api/masking.py).
+            고정 4종(주민번호·전화·카드·이메일)은 게시본과 무관한 바닥이라 항상 걸린다 */}
+        {' · '}고정 4종(주민번호·전화·카드·이메일)은 항상 적용 · 게시한 규칙은 게시 즉시 대화 로그 조회에 적용
       </p>
       <DataTable
         caption="개인정보 마스킹 규칙"

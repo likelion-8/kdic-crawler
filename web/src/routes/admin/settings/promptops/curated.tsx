@@ -5,7 +5,8 @@
  * 매핑해 두면 웰컴 클릭 경로가 100% 적중한다. 유사도 자동 매칭은 하지 않는다(팀 결정 —
  * 역할축 질문에 반대 답변이 서빙될 위험). 출처는 page_id 로 입력하고 서버가 확정한다
  * (출처 없는 답변은 서버가 거절 — 민원 리스크 불변식). */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookmarkCheck } from 'lucide-react'
 import { Button, ConfirmModal, DataTable, EmptyState, Loading, TextField } from '../../../../components/ui'
@@ -13,7 +14,7 @@ import type { Column } from '../../../../components/ui'
 import { Switch } from '../../../../components/shadcn/switch'
 import { Card, EditDialog, SectionError } from './common'
 import type { CuratedAnswer, CuratedAnswerInput } from './api'
-import { fetchCuratedAnswers, opsKeys, saveCuratedAnswers } from './api'
+import { fetchCuratedAnswers, fetchSuggestedQuestions, opsKeys, saveCuratedAnswers } from './api'
 
 /** admin_ops.CURATED_MAX 와 동일 — 전량 교체·전량 스캔 전제의 상한 */
 const REGISTERED_MAX = 50
@@ -39,6 +40,19 @@ export function CuratedAnswersCard({ canEdit }: { canEdit: boolean }) {
   const [removing, setRemoving] = useState<CuratedAnswer | null>(null)
 
   const query = useQuery({ queryKey: opsKeys.curated, queryFn: fetchCuratedAnswers })
+  const suggested = useQuery({ queryKey: opsKeys.suggestions, queryFn: fetchSuggestedQuestions })
+  // ?curated_new={질문} — 대화 로그 [이 질문에 고정 답변 달기]의 목적지. 편집 모달을 질문 프리필로 연다.
+  // 한 번 쓰고 지우되 from(되돌아가기 띠)은 남긴다
+  const [sp, setSp] = useSearchParams()
+  useEffect(() => {
+    const seed = sp.get('curated_new')
+    if (seed === null) return
+    setForm({ id: null, questionsText: seed, answer: '', pageIdsText: '' })
+    const keep = new URLSearchParams()
+    const from = sp.get('from')
+    if (from) keep.set('from', from)
+    setSp(keep, { replace: true })
+  }, [sp, setSp])
   const save = useMutation({
     mutationFn: (input: { items: CuratedAnswerInput[]; reason: string }) =>
       saveCuratedAnswers(input.items, input.reason),
@@ -68,6 +82,12 @@ export function CuratedAnswersCard({ canEdit }: { canEdit: boolean }) {
   }
 
   const items = query.data.items
+  // 미매핑 추천 질문 — 추천 질문은 클릭 시 문구가 그대로 전송되므로 매핑해 두면 첫 화면
+  // 클릭 경로가 100% 적중한다. 여기서 몇 개가 아직 안 걸려 있는지 보여주고, 한 번에 폼을 연다.
+  // 정규화 키는 서버가 계산하므로 화면에서는 문구 정확 일치로만 근사한다(안내용).
+  const mappedPhrases = new Set(items.flatMap((i) => i.questions.map((q) => q.trim())))
+  const unmapped = (suggested.data?.items ?? [])
+    .filter((sq) => sq.active && !mappedPhrases.has(sq.text.trim()))
   const commit = (next: CuratedAnswerInput[], reason: string) =>
     save.mutate({ items: next.map((a, i) => ({ ...a, order: i + 1 })), reason })
 
@@ -166,6 +186,25 @@ export function CuratedAnswersCard({ canEdit }: { canEdit: boolean }) {
         </Button>
       }
     >
+      {unmapped.length > 0 && (
+        <p className="mb-3 flex flex-wrap items-center gap-2 text-[13px]">
+          <span>
+            활성 추천 질문 중 <strong>{unmapped.length}건</strong>이 아직 매핑되지 않았습니다 —
+            매핑하면 첫 화면 클릭에 생성 없이 즉시 답합니다
+          </span>
+          {canEdit && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setForm({ id: null, questionsText: unmapped[0].text, answer: '', pageIdsText: '' })
+                setFormError('')
+              }}
+            >
+              첫 건 매핑 시작
+            </Button>
+          )}
+        </p>
+      )}
       <DataTable
         caption="답변 매핑 목록"
         columns={columns}

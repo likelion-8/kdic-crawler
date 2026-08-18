@@ -8,6 +8,7 @@
  * - 셸(GNB·헤더·설정 서브탭)은 AdminLayout이 그린다. 여기서 다시 그리지 않는다.
  * - ※로 시작하는 빨간 주석은 기획 주석이라 렌더하지 않는다(00-meta NOTATION). */
 import { useState } from 'react'
+import { ReturnBand } from '../ReturnBand'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CARD_COLUMN, CARD_COLUMNS, ConfirmModal, DirtyDot, DraftStatusBar, Loading, Notice, ReadOnlyNotice, useToast,
@@ -164,6 +165,7 @@ export function PromptGuardrail() {
 
   return (
     <div className="flex flex-col gap-4">
+      <ReturnBand />
       {/* 상태 바는 화면 최상단 sticky — 스크롤해도 ①편집→②평가→③게시 한 줄이 남는다 */}
       <div className="sticky top-0 z-20 -mx-6 -mt-6 bg-background px-6 pt-6 pb-1">
         <DraftStatusBar

@@ -103,7 +103,7 @@ _BASELINE_METRICS = {
 }
 
 
-def _record_active_version(conn, doc_count, chunk_count):
+def _record_active_version(conn, doc_count, chunk_count, chunk_mode: str = "all"):
     """지금 적재한 인덱스가 곧 운영본이라는 사실을 search_index_versions 에 남긴다.
 
     유지하는 불변식은 하나다 — **ACTIVE 행 1개 = 지금 운영 중인 인덱스**. 그래서 행이 없으면
@@ -120,7 +120,7 @@ def _record_active_version(conn, doc_count, chunk_count):
         .where(search_index_versions.c.status == "ACTIVE")
     ).scalar()
 
-    values = dict(source_snapshot=snapshot, build_params=_BUILD_PARAMS,
+    values = dict(source_snapshot=snapshot, build_params={**_BUILD_PARAMS, "chunk_mode": chunk_mode},
                   doc_count=doc_count, chunk_count=chunk_count)
     if active_id is None:
         conn.execute(search_index_versions.insert().values(
@@ -131,17 +131,29 @@ def _record_active_version(conn, doc_count, chunk_count):
         ))
         return "생성"
     # metrics 는 덮지 않는다 — 평가가 잰 값이라 적재 스크립트가 건드릴 성질이 아니다.
+    # activated_at 은 올린다(2026-08-18) — 같은 ACTIVE 행을 갱신하는 구조라 id 는 그대로인데,
+    # 이 시각이 안 바뀌면 "색인이 교체됐다"를 아무도 알 수 없다. 질의 캐시 자동 무효화(PRD-03)와
+    # 검색 엔진 재조립이 (id, activated_at) 을 보고 판단한다. 종전에는 이 값이 08-10 에 멈춰
+    # 있어 캐시 무효화가 사실상 죽어 있었다.
     conn.execute(update(search_index_versions)
                  .where(search_index_versions.c.id == active_id)
-                 .values(**values))
+                 .values(activated_at=func.now(), **values))
     return "갱신"
 
 
-def main():
+def main(chunk_mode: str = "all"):
+    """chunk_mode: chunking.build_units 의 mode(2026-08-18 인자화 — 관리자 재적재 모달의 청킹
+    모드가 여기까지 관통한다. 종전 "all" 고정). 버전 기록 build_params 에도 실린다."""
     records = load_records()
     page_text = {r["page_id"]: r["text"] for r in records}
+    # 청크 메타 중 business_function·page_title·source_url 은 **페이지 단위** 값이라 페이지
+    # 레코드에서 직접 뽑는다. 종전에는 chunks_all.jsonl(all 모드 산출물)의 chunk_id 로 조회해서,
+    # 다른 청킹 모드로 돌리면 id 가 안 맞아 .get(uid, {}) 가 빈 dict 를 주고 NULL 이 조용히 들어갔다.
+    page_meta = {r["page_id"]: {"business_function": r.get("business_function"),
+                                "page_title": r.get("page_title"),
+                                "source_url": r.get("source_url")} for r in records}
 
-    uids, texts, u2p = build_units("all")
+    uids, texts, u2p = build_units(chunk_mode)
     dense = DenseRetriever(uids, texts)  # 캐시 있으면 그대로 로드
     chunk_meta = load_chunk_meta()
     validate_business_functions(chunk_meta)
@@ -175,7 +187,7 @@ def main():
         chunk_rows = []
         for i, uid in enumerate(uids):
             pid = u2p[uid]
-            m = chunk_meta.get(uid, {})
+            m = page_meta.get(pid, {})
             suffix = uid.rsplit("#", 1)[1] if "#" in uid else "0"
             chunk_rows.append({
                 "document_id": page_id_to_doc_id[pid],
@@ -227,7 +239,7 @@ def main():
         chunk_count = conn.execute(text("SELECT count(*) FROM document_chunks")).scalar()
 
         # --- 6) 이 인덱스가 운영본임을 기록 (docs/search_index_versioning.md) ---
-        version_action = _record_active_version(conn, doc_count, chunk_count)
+        version_action = _record_active_version(conn, doc_count, chunk_count, chunk_mode)
 
     print(f"적재 완료: documents {doc_count}행, document_chunks {chunk_count}행")
     print(f"  활성 검색 버전 {version_action} (corpus 스냅샷 {len(gzip.compress(CORPUS.read_bytes())) // 1024}KB)")
