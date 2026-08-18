@@ -131,9 +131,13 @@ def _record_active_version(conn, doc_count, chunk_count, chunk_mode: str = "all"
         ))
         return "생성"
     # metrics 는 덮지 않는다 — 평가가 잰 값이라 적재 스크립트가 건드릴 성질이 아니다.
+    # activated_at 은 올린다(2026-08-18) — 같은 ACTIVE 행을 갱신하는 구조라 id 는 그대로인데,
+    # 이 시각이 안 바뀌면 "색인이 교체됐다"를 아무도 알 수 없다. 질의 캐시 자동 무효화(PRD-03)와
+    # 검색 엔진 재조립이 (id, activated_at) 을 보고 판단한다. 종전에는 이 값이 08-10 에 멈춰
+    # 있어 캐시 무효화가 사실상 죽어 있었다.
     conn.execute(update(search_index_versions)
                  .where(search_index_versions.c.id == active_id)
-                 .values(**values))
+                 .values(activated_at=func.now(), **values))
     return "갱신"
 
 
