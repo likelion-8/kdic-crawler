@@ -146,6 +146,8 @@ export interface LogFilters {
   status: '' | LogStatus
   /** '' 전체 · up · down · none(피드백 없음) */
   feedback: '' | FeedbackVote | 'none'
+  /** '' 전체 · OPEN(미처리 = RESOLVED 아님) · RESOLVED. 대시보드 할 일 카드가 OPEN 을 넘긴다 */
+  triage: '' | 'OPEN' | 'RESOLVED'
   q: string
 }
 
@@ -156,6 +158,7 @@ export const DEFAULT_FILTERS: LogFilters = {
   intent: '',
   status: '',
   feedback: '',
+  triage: '',
   q: '',
 }
 
@@ -203,6 +206,7 @@ export function fetchLogs(filters: LogFilters, page: number, size: number) {
   if (filters.status) params.set('status', filters.status)
   if (filters.intent) params.set('intent', filters.intent)
   if (filters.feedback) params.set('feedback', filters.feedback)
+  if (filters.triage) params.set('triage', filters.triage)
   if (filters.q.trim()) params.set('q', filters.q.trim())
   return apiRequest<Page<ConversationLogRow>>(`/api/admin/logs?${params.toString()}`)
 }

@@ -130,7 +130,9 @@ def create_change_request(body: ChangeRequestCreate, db: DbSession, me: CurrentA
         row = db.execute(
             insert(change_requests).values(
                 action=body.action, target_page_id=body.target_page_id,
-                target_title=title, business_function=bf, payload=body.payload,
+                target_title=title, business_function=bf,
+                # page(프론트 계약)를 payload.page 로 접는다 — approve 가 이 자리를 읽어 적재한다
+                payload=({**(body.payload or {}), "page": body.page} if body.page else body.payload),
                 reason=body.reason, requested_by=me.email, status="PENDING",
                 request_id=body.request_id,
             ).returning(*change_requests.c)
@@ -190,11 +192,13 @@ def _get_or_404(db, cr_id):
     return row
 
 
-def _decide(cr_id, new_status, body, request, db, me):
+def _decide(cr_id, new_status, body, request, db, me, *, existing=None):
     """approve/reject 공통 — EDITOR 이상, PENDING 만 전이. 전이는 원자적(where status=PENDING)
-    으로 걸어 동시 확정 경합에서도 하나만 성공한다."""
+    으로 걸어 동시 확정 경합에서도 하나만 성공한다. existing 을 주면 존재 확인 조회를 건너뛴다
+    (approve 가 적재 전에 이미 읽었다 — 두 번 읽지 않는다)."""
     _require_editor(me)
-    _get_or_404(db, cr_id)  # 존재 확인(404) — 아래 update 가 0행이면 '이미 처리됨'과 구분하기 위함
+    if existing is None:
+        _get_or_404(db, cr_id)  # 존재 확인(404) — 아래 update 가 0행이면 '이미 처리됨'과 구분하기 위함
     now = datetime.now(timezone.utc)
     updated = db.execute(
         update(change_requests)
@@ -229,9 +233,36 @@ def _decide(cr_id, new_status, body, request, db, me):
 @router.post("/change-requests/{cr_id}/approve", response_model=ChangeRequest)
 def approve_change_request(cr_id: str, body: ChangeRequestDecision,
                            request: Request, db: DbSession, me: CurrentAdmin):
-    """변경 요청 확정 -> APPROVED. 없으면 404, 이미 처리됐으면 409. ⚠️ 상태만 바꾼다 —
-    실제 적재/삭제(REINDEX 워커)는 별개·미구현."""
-    return _decide(cr_id, "APPROVED", body, request, db, me)
+    """변경 요청 확정 -> APPROVED, 그리고 **실제 적재**(2026-08-18, 미구현 ① 해소).
+
+    ADD 면 URL 을 받아 파싱해 data/corpus.jsonl 과 수집 대상(inventory_extra)에 넣는다 —
+    이어지는 REINDEX 잡이 그걸 읽어 게이트 통과 시 색인한다. DELETE 면 관리자가 추가한
+    페이지를 코퍼스·수집 대상에서 뺀다. 종전에는 상태만 바꿔 승인 후 아무 일도 일어나지 않았다.
+
+    적재 실패(원문을 못 받음·본문 없음)면 상태 전이를 되돌리지 않고 400 으로 알린다 —
+    change_request 는 PENDING 으로 남아 관리자가 다시 시도할 수 있다.
+    """
+    _require_editor(me)
+    cr = _get_or_404(db, cr_id)
+    if cr.status == "PENDING" and cr.action in ("ADD", "DELETE"):
+        import sys
+        from pathlib import Path as _Path
+        src = _Path(__file__).resolve().parent.parent.parent / "src"
+        if str(src) not in sys.path:
+            sys.path.insert(0, str(src))
+        import ingest
+        try:
+            if cr.action == "ADD":
+                page = (cr.payload or {}).get("page") or {}
+                page.setdefault("page_id", cr.target_page_id)
+                page.setdefault("page_title", cr.target_title)
+                page.setdefault("business_function", cr.business_function)
+                ingest.ingest_page(page)
+            else:
+                ingest.remove_page(cr.target_page_id)
+        except Exception as exc:  # noqa: BLE001 — 사용자에게 사유를 그대로 돌려준다
+            raise BadRequestError(f"적재에 실패했습니다: {exc}")
+    return _decide(cr_id, "APPROVED", body, request, db, me, existing=cr)
 
 
 @router.post("/change-requests/{cr_id}/reject", response_model=ChangeRequest)

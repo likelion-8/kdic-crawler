@@ -72,7 +72,7 @@
 		<script type="text/javascript" src="/js/rMateChartH5/JS/rMateChartH5.js"></script>
 		<script type="text/javascript" src="/js/rMateChartH5/Assets/Theme/theme.js"></script>
 		<link rel="stylesheet" type="text/css" href="/js/rMateChartH5/Assets/Css/rMateChartH5.css"/>
-		<script language="javascript" type="text/javascript" src="/js/rMateChartH5/LicenseKey/rMateChartH5License.js?ver=20260713105236"></script>
+		<script language="javascript" type="text/javascript" src="/js/rMateChartH5/LicenseKey/rMateChartH5License.js?ver=20260818150313"></script>
 
 		
 		
@@ -88,8 +88,8 @@
 		<!-- 개발 스크립트 소스 -->
 		<script src="/developerJs/developer.js"></script>
 		<script src="/developerJs/Basic.js"></script>
-		<script src="/developerJs/dev_leb.js?ver=20260713105236"></script>
-		<script src="/developerJs/dev_pjm.js?ver=20260713105236"></script>
+		<script src="/developerJs/dev_leb.js?ver=20260818150313"></script>
+		<script src="/developerJs/dev_pjm.js?ver=20260818150313"></script>
 		<script src="/developerJs/dev_sjd.js"></script>
 		
 
@@ -751,8 +751,19 @@
 				}
 			}
 			
+			//마우스 클릭방지
+			var isMouseDown = false;
+			$(document).on("mousedown", function(){
+				isMouseDown = true;
+			});
+			$(document).on("keydown", function(){
+				isMouseDown = false;
+			});
+			
 			// 탭키이동
 			$(document).on("focus", "#gnb dt a", function(){
+				if(isMouseDown) return;
+				
 				var $target = $(this).closest("dt");
 				
 				$(".gnb .mCustomScrollbar").mCustomScrollbar("scrollTo",$target,
@@ -762,6 +773,8 @@
 						});
 			});
 			$(document).on("focus", "#gnb ul.depth03 li a", function(){
+				if(isMouseDown) return;
+				
 				var $target = $(this).closest("li");
 				
 				$(".gnb .mCustomScrollbar").mCustomScrollbar("scrollTo",$target,
@@ -30617,7 +30630,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">예금보호정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2025-09-01</td>
 
-									<td><span class="mThTxt">조회</span>1571</td>
+									<td><span class="mThTxt">조회</span>1943</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30626,7 +30639,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">예금보호정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2024-04-01</td>
 
-									<td><span class="mThTxt">조회</span>4860</td>
+									<td><span class="mThTxt">조회</span>5318</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30635,7 +30648,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">예금보호정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2024-02-27</td>
 
-									<td><span class="mThTxt">조회</span>3074</td>
+									<td><span class="mThTxt">조회</span>3183</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30644,7 +30657,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">예금보호정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2024-02-27</td>
 
-									<td><span class="mThTxt">조회</span>1320</td>
+									<td><span class="mThTxt">조회</span>1401</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30653,7 +30666,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">예금보호정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2024-02-27</td>
 
-									<td><span class="mThTxt">조회</span>2346</td>
+									<td><span class="mThTxt">조회</span>2490</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30662,7 +30675,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">금융소비자보호실</a></td>
 									<td><span class="mThTxt">등록일</span>2023-02-24</td>
 
-									<td><span class="mThTxt">조회</span>2316</td>
+									<td><span class="mThTxt">조회</span>2399</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30671,7 +30684,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">기금정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2022-01-28</td>
 
-									<td><span class="mThTxt">조회</span>4076</td>
+									<td><span class="mThTxt">조회</span>4404</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30680,7 +30693,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">기금정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2022-01-21</td>
 
-									<td><span class="mThTxt">조회</span>1868</td>
+									<td><span class="mThTxt">조회</span>1932</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30689,7 +30702,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">기금정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2021-11-01</td>
 
-									<td><span class="mThTxt">조회</span>2318</td>
+									<td><span class="mThTxt">조회</span>2737</td>
 		                        </tr>
 							
 		                        <tr>
@@ -30698,7 +30711,7 @@
 									<td><span class="mThTxt">소관부서</span> <a href="javascript:void(0);" title="금융산업분석1부">기금정책부</a></td>
 									<td><span class="mThTxt">등록일</span>2021-09-17</td>
 
-									<td><span class="mThTxt">조회</span>3717</td>
+									<td><span class="mThTxt">조회</span>3768</td>
 		                        </tr>
 							
 						

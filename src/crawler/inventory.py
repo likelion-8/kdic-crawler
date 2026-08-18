@@ -718,6 +718,22 @@ PAGES = [
 ]
 
 
+# 관리자가 AD-003 에서 적재한 페이지(2026-08-18, src/ingest.py 가 쓴다). PAGES 는 코드 상수라
+# 파일로 확장한다 — 이게 없으면 새 URL 을 넣어도 다음 [전체 재수집]·변경 감지에서 빠진다.
+def _admin_added_pages():
+    import json as _json
+    from pathlib import Path as _Path
+    extra = _Path(__file__).resolve().parents[2] / "data" / "inventory_extra.jsonl"
+    if not extra.exists():
+        return []
+    with open(extra, encoding="utf-8") as f:
+        return [_json.loads(l) for l in f if l.strip()]
+
+
+_code_ids = {p["id"] for p in PAGES}
+PAGES = PAGES + [p for p in _admin_added_pages() if p.get("id") not in _code_ids]
+
+
 def pages_for(owner):
     """owner 접미사(hw/yj/dy/jh/jy)로 담당 페이지만 필터링."""
     return [p for p in PAGES if p["owner"] == owner]

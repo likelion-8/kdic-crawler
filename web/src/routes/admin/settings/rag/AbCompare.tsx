@@ -4,6 +4,7 @@
  * 결과를 저장해 두지 않고 그때그때 검색하므로 같은 질문도 점수가 미세하게 다를 수 있다.
  * 게이트 기준·목표값은 CM-DF-004 05절이 정본이라 여기서 고칠 수 없다(§1.6). */
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { BarChart3, FlaskConical } from 'lucide-react'
 import { Button, ColorText, DataTable, InfoHint, Loading } from '../../../../components/ui'
@@ -90,7 +91,9 @@ export interface AbCompareProps {
 }
 
 export function AbCompare({ draft, gate, evaluating, evaluateError }: AbCompareProps) {
-  const [query, setQuery] = useState('')
+  // ?q= 프리필 — 대화 로그 [검색 설정 비교하기]가 그 질문을 들고 온다(바통). 관리자가 실험 질의를 지어내지 않는다
+  const [searchParams] = useSearchParams()
+  const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const search = useMutation({ mutationFn: () => abSearch(query, draft) })
   const quant = gate.quantitative
 

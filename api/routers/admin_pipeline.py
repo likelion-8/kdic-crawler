@@ -61,11 +61,17 @@ router = APIRouter(
 
 # JobType/JobStatus 정본: web/src/lib/codes.ts
 JOB_TYPES = frozenset(
-    {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL"})
+    {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL",
+     "CHANGE_DETECT"})   # CHANGE_DETECT: 변경 감지(2026-08-18) — [지금 확인]이 만든다
 ACTIVE_STATUSES = ("QUEUED", "RUNNING")  # 동시 실행 1개 규칙의 판정 대상
 JOB_STATUSES = frozenset({"QUEUED", "RUNNING", "SUCCESS", "FAILED", "CANCELLED"})
-# 6단계 이름 정본: web/src/lib/constants.ts PIPELINE_STEPS (수집·변환·청킹·검증·색인·반영)
-PIPELINE_STEPS = ("수집", "변환", "청킹", "검증", "색인", "반영")
+# 단계 이름 정본은 src/worker.py STEPS 하나다(2026-08-18 정정). 종전에 여기 6단계를 따로 적어
+# 두어 게이트 단계가 신설된 뒤에도 잡의 steps 에 '게이트'가 없었고, 워커의 _set_step("게이트")가
+# 매칭할 항목이 없어 판정이 통째로 기록되지 않았다(게이트는 돌았는데 화면엔 흔적 없음).
+# 프론트 정본 web/src/lib/constants.ts PIPELINE_STEPS 도 같은 7단계다.
+from worker import STEPS as PIPELINE_STEPS  # noqa: E402
+# 청킹 모드 정본: src/crawler/chunking.build_units 의 mode 4종. 프론트(Pipeline.tsx CHUNK_MODES)와 같아야 한다
+CHUNK_MODES = frozenset({"all", "page", "faq_atomic", "table_row"})
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 SORT_COLUMNS = {"created_at": pipeline_jobs.c.created_at}
@@ -130,6 +136,7 @@ def _row_to_job(row) -> PipelineJob:
         target_count=row.target_count,
         index_impact=row.index_impact,
         metrics=row.metrics,
+        params=getattr(row, "params", None),
     )
 
 
@@ -149,6 +156,9 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
     단계). 동시 실행 1개 규칙: QUEUED/RUNNING 잡이 있으면 409(retryable=false)."""
     if body.type not in JOB_TYPES:
         raise BadRequestError("지원하지 않는 작업 종류입니다.")
+    if body.chunk_mode is not None and body.chunk_mode not in CHUNK_MODES:
+        raise BadRequestError(f"지원하지 않는 청킹 모드입니다: {body.chunk_mode}")
+    params = {"chunk_mode": body.chunk_mode} if body.chunk_mode else None
 
     active = db.execute(
         select(func.count()).select_from(pipeline_jobs)
@@ -164,7 +174,7 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
         insert(pipeline_jobs)
         .values(type=body.type, status="QUEUED", targets=body.targets,
                 reason=body.reason, created_by=me.email, steps=_initial_steps(),
-                target_summary=summary, target_count=count)
+                target_summary=summary, target_count=count, params=params)
         .returning(*pipeline_jobs.c)
     ).first()
     db.commit()
@@ -180,7 +190,8 @@ def create_job(body: JobCreate, request: Request, db: DbSession, me: CurrentAdmi
         # CM-DF-002 07절: 대상은 '사람이 읽는 이름 + (ID)' — ID 단독 노출 금지.
         target=f"{row.target_summary or body.type} ({row.id})",
         reason=body.reason or None,
-        detail={"job_type": body.type, "targets": body.targets or []},
+        detail={"job_type": body.type, "targets": body.targets or [],
+                **({"chunk_mode": body.chunk_mode} if body.chunk_mode else {})},
     )
     return _row_to_job(row)
 
@@ -310,6 +321,9 @@ def _resolve_targets(db, job_type: str, targets: list) -> tuple[str, int]:
     if job_type == "SMOKE_EVAL":
         count = db.execute(select(func.count()).select_from(test_set)).scalar_one()
         return f"평가 {count}문항", count
+    if job_type == "CHANGE_DETECT":
+        count = _active_document_count(db)
+        return f"변경 감지 · 전체 {count}페이지", count
     if targets:
         return f"선택 {len(targets)}페이지", len(targets)
     count = _active_document_count(db)
@@ -388,22 +402,37 @@ def list_changes(db: DbSession):
 
 @router.post("/pipeline/changes/recheck", response_model=ChangedPagesResponse)
 def recheck_changes(request: Request, db: DbSession, me: CurrentAdmin):
-    """[지금 확인] — 재확인을 실행했다는 사실을 남기고 현재 목록을 돌려준다(P3).
+    """[지금 확인] — 변경 감지 잡(CHANGE_DETECT)을 만들어 워커가 실제 비교를 돌리게 한다.
 
-    🔴 실제 재크롤·본문 비교는 여기서 하지 않는다. 그 일은 워커의 몫인데 워커가 아직 없다
-    (POST /jobs 가 잡을 QUEUED 로만 만들고 실행하지 않는 것과 같은 상태다). 그래서 이
-    호출은 index_status 를 바꾸지 않으며, 목록도 직전과 같을 수 있다.
+    2026-08-18 정정(미구현 ②). 종전에는 확인 시각만 기록하고 비교를 하지 않아 관리자가
+    "변경 없음"과 "감지 안 함"을 구분할 수 없었다. 58페이지 GET 은 30초 남짓이라 동기로
+    두면 화면이 잠긴다(AD-006 apply 사고와 같은 패턴) — 워커 잡으로 넘긴다.
+    저장·색인은 하지 않고 index_status=PENDING 표시만 한다(src/change_detect.py).
 
-    그런데도 기록을 남기는 이유는 last_checked_at 의 유일한 원천이라서다 — 이 행이 없으면
-    화면이 '마지막 확인'을 영원히 '—' 로 띄운다. 워커가 붙으면 이 자리에서 비교를 돌리고
-    기록은 그대로 두면 된다.
+    다른 잡이 진행 중이면(동시 실행 1개 규칙) 잡을 만들지 않고 현재 목록만 돌려준다 —
+    409 로 막으면 [지금 확인] 버튼이 오류처럼 보인다. 응답의 job_queued 로 화면이 구분한다.
     """
     if ROLE_RANK.get(me.role, -1) < ROLE_RANK["OPERATOR"]:
         raise ForbiddenError("변경 감지 재확인에는 OPERATOR 이상 권한이 필요합니다.")
 
+    active = db.execute(
+        select(func.count()).select_from(pipeline_jobs)
+        .where(pipeline_jobs.c.status.in_(ACTIVE_STATUSES))).scalar_one()
+    job_queued = False
+    if not active:
+        summary, count = _resolve_targets(db, "CHANGE_DETECT", [])
+        db.execute(insert(pipeline_jobs).values(
+            type="CHANGE_DETECT", status="QUEUED", targets=[], reason="변경 감지 재확인",
+            created_by=me.email, steps=_initial_steps(),
+            target_summary=summary, target_count=count))
+        db.commit()
+        job_queued = True
+
     write_activity_log(db, request, actor=me.email, actor_role=me.role,
-                       action=ACTION_CHANGES_RECHECK, target="지식베이스 전체")
-    return ChangedPagesResponse(last_checked_at=_last_checked_at(db), items=_changed_pages(db))
+                       action=ACTION_CHANGES_RECHECK, target="지식베이스 전체",
+                       detail={"job_queued": job_queued})
+    return ChangedPagesResponse(last_checked_at=_last_checked_at(db), items=_changed_pages(db),
+                                job_queued=job_queued)
 
 
 # ─────────────────────────── 재시도 · 긴급 롤백 ───────────────────────────

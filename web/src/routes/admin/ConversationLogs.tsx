@@ -10,6 +10,7 @@
  *  - VIEWER는 집계만, 그 외 역할은 마스킹된 상세까지(Desc 0)
  *  - 조회·검색·내보내기·재실행·후보 등록·처리 완료는 모두 AD-011에 기록된다 */
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import type { ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download } from 'lucide-react'
@@ -86,6 +87,11 @@ const STATUS_OPTIONS = [
 ]
 
 /** 목업은 '전체'만 보여 나머지 3값은 프론트가 확정했다(11 §L2 제안) */
+const TRIAGE_FILTER_OPTIONS = [
+  { value: '', label: '전체' },
+  { value: 'OPEN', label: '미처리' },
+  { value: 'RESOLVED', label: '처리 완료' },
+]
 const FEEDBACK_OPTIONS = [
   { value: '', label: '전체' },
   { value: 'up', label: '👍 좋아요' },
@@ -102,9 +108,21 @@ export function ConversationLogs() {
   const canEdit = hasRole(session?.role, 'EDITOR') // 테스트셋 보강 후보 등록
   const canExport = hasRole(session?.role, 'ADMIN') // 내보내기
 
-  const [filters, setFilters] = useState<LogFilters>(DEFAULT_FILTERS)
+  // 초기 필터는 URL 을 우선한다 — 대시보드 할 일 카드가 ?feedback=down 처럼 필터를 들고
+  // 넘겨야 "대시보드가 센 건수와 같은 목록"이 열린다(바통). URL 에 없는 키는 기본값.
+  // 종전에는 URL 을 읽지 않아 카드를 눌러도 필터 없는 오늘 목록이 열렸다.
+  const [searchParams] = useSearchParams()
+  const [filters, setFilters] = useState<LogFilters>(() => {
+    const next: Record<string, string> = { ...DEFAULT_FILTERS }
+    for (const key of Object.keys(DEFAULT_FILTERS)) {
+      const v = searchParams.get(key)
+      if (v !== null) next[key] = v
+    }
+    return next as unknown as LogFilters
+  })
   const [page, setPage] = useState(1)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // ?request= 로 특정 행을 바로 연다 — 되돌아가기 띠의 [로그로 돌아가기]가 그 대화를 들고 온다
+  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('request'))
   const [resolving, setResolving] = useState<string | null>(null)
 
   // 필터가 바뀌면 첫 페이지로 돌아가고 선택도 푼다(선택한 행이 결과에서 빠질 수 있다)
@@ -315,6 +333,15 @@ export function ConversationLogs() {
           value={filters.feedback}
           options={FEEDBACK_OPTIONS}
           onChange={(v) => patch({ feedback: v as LogFilters['feedback'] })}
+        />
+        {/* 처리 상태(2026-08-18) — 대시보드 '미처리 나쁨 평가' 카드가 triage=OPEN 을 들고
+            들어온다. 완료 처리하면 이 필터의 목록과 카드 건수가 함께 줄어야 한다 */}
+        <Select
+          layout="stack"
+          label="처리"
+          value={filters.triage}
+          options={TRIAGE_FILTER_OPTIONS}
+          onChange={(v) => patch({ triage: v as LogFilters['triage'] })}
         />
         <div className="min-w-45 flex-[1_1_220px]">
           <TextField
@@ -532,7 +559,7 @@ export function ConversationLogs() {
       {resolving !== null && (
         <ConfirmModal
           open
-          title="이 실패 건을 처리 완료로 표시할까요?"
+          title="이 대화를 처리 완료로 표시할까요?"
           reason="required"
           reasonPlaceholder="예: 원인 확인 후 프롬프트 수정 반영"
           confirmLabel="처리 완료"

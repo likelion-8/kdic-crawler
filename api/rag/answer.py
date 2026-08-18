@@ -440,10 +440,13 @@ def _cache_versions() -> dict:
         snap["params"] = session.execute(
             select(rag_param_versions.c.version)
             .where(rag_param_versions.c.status == "current")).scalar()
-        snap["index"] = str(session.execute(
-            select(search_index_versions.c.id)
+        # id + activated_at — 재적재는 같은 ACTIVE 행을 갱신하므로 id 만으론 색인 교체를 못 본다
+        # (2026-08-18 실측: 색인이 바뀌었는데 캐시가 적중함). 교체 시각까지 스냅샷에 넣는다.
+        row = session.execute(
+            select(search_index_versions.c.id, search_index_versions.c.activated_at)
             .where(search_index_versions.c.status == "ACTIVE")
-            .order_by(search_index_versions.c.created_at.desc()).limit(1)).scalar())
+            .order_by(search_index_versions.c.created_at.desc()).limit(1)).first()
+        snap["index"] = f"{row.id}@{row.activated_at}" if row else "none"
     return snap
 
 

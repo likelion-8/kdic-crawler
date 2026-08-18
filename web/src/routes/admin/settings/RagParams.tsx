@@ -10,6 +10,7 @@
  * 리랭킹·업무 필터는 관리 대상이 아니라 아예 노출하지 않는다(§1.8 각주).
  * 셸(GNB·헤더·설정 서브탭)은 app/AdminLayout.tsx가 그린다 — 여기서 다시 그리지 않는다. */
 import { useEffect, useState } from 'react'
+import { ReturnBand } from '../ReturnBand'
 import type { ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { History, MessageSquareText, Search } from 'lucide-react'
@@ -235,6 +236,9 @@ export function RagParams() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 대화 로그 [다음 조치]로 넘어온 경우의 되돌아가기 띠(2026-08-18). 한 건의 A/B 결과로
+          반영을 결정하지 않는다는 경고를 함께 — 판정은 게이트가 한다 */}
+      <ReturnBand note="이 한 건의 결과로 반영을 결정하지 않습니다 — 판정은 홀드아웃 게이트가 합니다" />
       {/* ---------------- ⓪ 초안 상태 바 — 화면 최상단 sticky ---------------- */}
       {/* 상태 바는 권한과 무관하게 항상 그린다. 통째로 숨기면 VIEWER가 이 화면에서만 다른 세계를
           보게 되고(AD-008은 항상 그리고 사유로 막는다), '왜 못 바꾸나'를 알 길도 사라진다 —

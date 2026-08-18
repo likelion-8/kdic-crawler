@@ -335,3 +335,53 @@ def _summary(db):
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+# ------------------------------------------------ 처리 상태(triage) — 2026-08-18
+#
+# 화면은 오래전부터 PATCH {triage} 를 보내고 있었고 백엔드가 받는 곳이 없어 405 였다.
+# 이 값이 바뀌어야 대시보드 '미처리 나쁨 평가' 할 일 건수가 줄어 시작점이 살아난다.
+
+def _triage_db(before="NONE"):
+    """PATCH 순서: 활동로그 select? → 대상 select → update → (activity write) → 갱신행 select.
+    _FakeDb 는 결과를 순서대로 뱉으므로 write_activity_log 가 쓰는 execute 도 자리를 채워야 한다."""
+    from datetime import datetime, timezone
+    from types import SimpleNamespace as NS
+    row = NS(request_id="req_1", triage=before)
+    fresh = NS(request_id="req_1", created_at=datetime.now(timezone.utc), question="q",
+               intent="informational", status="NORMAL", total_latency_ms=1000,
+               observation=None, triage="RESOLVED", vote="down")
+    return _FakeDb(_Result(rows=[row]), _Result(), _Result(), _Result(rows=[fresh]))
+
+
+def test_patch_triage_resolved_requires_reason():
+    with _client("OPERATOR", _triage_db()) as client:
+        r = client.patch("/api/admin/logs/req_1", json={"triage": "RESOLVED"})
+    assert r.status_code == 400
+    assert "사유" in r.json()["error"]["user_message"] if "error" in r.json() else True
+
+
+def test_patch_triage_rejects_unknown_value():
+    with _client("OPERATOR", _triage_db()) as client:
+        r = client.patch("/api/admin/logs/req_1", json={"triage": "DONE", "reason": "x"})
+    assert r.status_code == 400
+
+
+def test_patch_triage_resolved_returns_updated_row():
+    with _client("OPERATOR", _triage_db()) as client:
+        r = client.patch("/api/admin/logs/req_1", json={"triage": "RESOLVED", "reason": "답변 매핑 등록"})
+    assert r.status_code == 200, r.text
+    assert r.json()["triage"] == "RESOLVED"
+
+
+def test_viewer_cannot_patch_triage():
+    with _client("VIEWER", _triage_db()) as client:
+        r = client.patch("/api/admin/logs/req_1", json={"triage": "RESOLVED", "reason": "x"})
+    assert r.status_code == 403
+
+
+def test_list_accepts_open_triage_filter():
+    """대시보드 카드가 넘기는 triage=OPEN 이 400 이 아니어야 카드를 눌렀을 때 목록이 열린다."""
+    with _client("OPERATOR", _FakeDb(_Result(scalar=0), _Result(rows=[]))) as client:
+        r = client.get("/api/admin/logs?feedback=down&triage=OPEN")
+    assert r.status_code == 200
