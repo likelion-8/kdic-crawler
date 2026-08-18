@@ -656,13 +656,15 @@ function ModalImpact({
       <p className="text-xs text-muted-foreground">
         {confirming.kind === 'REINDEX' ? (
           <>
-            재청킹 → 재임베딩 → 임시 색인 → <span className="font-medium text-foreground">홀드아웃 평가</span>{' '}
-            → 통과 시 교체 · 캐시 무효화 (미달 시 자동 중단 · 기존 유지)
+            {/* 실제 순서: 게이트(홀드아웃 평가)가 색인 앞이다 — 미달이면 색인에 들어가지 않는다.
+                임시 색인은 만들지 않고 메모리 채점(src/index_gate.py)한다(2026-08-18 문구 정정) */}
+            청킹 → 검증 → <span className="font-medium text-foreground">게이트(홀드아웃 평가)</span>{' '}
+            → 통과 시에만 색인·반영 · 캐시 무효화 (미달 시 중단 · 기존 색인 유지)
           </>
         ) : (
           <>
-            수집 → 변환 → 청킹 → 검증 → 색인 →{' '}
-            <span className="font-medium text-foreground">홀드아웃 평가</span> → 통과 시 반영(교체 · 캐시
+            수집 → 변환 → 청킹 → 검증 →{' '}
+            <span className="font-medium text-foreground">게이트(홀드아웃 평가)</span> → 통과 시에만 색인·반영(교체 · 캐시
             무효화)
           </>
         )}

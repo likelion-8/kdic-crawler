@@ -263,6 +263,12 @@ export function NewPageForm({ candidateId = null, onClose }: NewPageFormProps) {
   })
   const job = jobQuery.data ?? null
   const jobRunning = job !== null && (job.status === 'QUEUED' || job.status === 'RUNNING')
+  // 재색인이 끝나면 목록·탭 건수를 다시 읽는다 — 적재 직후 invalidate 는 잡이 돌기 전이라 documents 에
+  // 아직 없어 "적재 페이지 58"이 그대로였다(2026-08-18 브라우저 검증). 완료 시점에 한 번 더
+  const jobFinishedId = job && !jobRunning ? job.id : null
+  useEffect(() => {
+    if (jobFinishedId) void queryClient.invalidateQueries({ queryKey: ['kb-pages'] })
+  }, [jobFinishedId, queryClient])
 
   // 프론트는 URL 형식만 본다. 허용 도메인·중복·차단 판정은 서버가 하고, 실패 문구는 서버가 준다(10 issue G-5)
   const urlValid = /^https?:\/\/\S+$/.test(form.source_url.trim())

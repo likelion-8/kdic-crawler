@@ -427,6 +427,18 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         if active is None:
             raise StageFailed("반영", "색인은 끝났는데 ACTIVE 버전 기록이 없다 — "
                                     "index_document_chunks._record_active_version 확인 필요")
+        # 변경 감지 표시(PENDING) 해제 — 이 잡이 다시 읽어 색인한 페이지는 이제 '최신'이다.
+        # 색인기는 관리자 소유 컬럼(index_status)을 보존하는 UPSERT 라 여기서 지운다(2026-08-18).
+        # 안 지우면 재수집 뒤에도 "바뀐 페이지 7건"이 그대로 남아 관리자가 반영 여부를 의심한다.
+        # 대상: 선택 재수집은 그 targets, 전체 재수집·재적재는 전부(코퍼스 전체를 다시 읽었으므로).
+        from schema import documents as _docs
+        clear = _docs.update().where(_docs.c.index_status == "PENDING").values(index_status=None)
+        if job.targets:
+            clear = clear.where(_docs.c.page_id.in_(list(job.targets)))
+        cleared = session.execute(clear).rowcount
+        session.commit()
+        if cleared:
+            logger.info("반영: 변경 감지 표시 %d건 해제", cleared)
         return 1
 
     if job.rollback_of:
