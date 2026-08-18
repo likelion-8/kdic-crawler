@@ -96,3 +96,24 @@ def test_collected_at_matches_indexer_date_format(tmp_path):
     corpus = tmp_path / "corpus.jsonl"
     ingest.ingest_page(_record(), fetcher=_fetch, corpus_path=corpus, inventory_path=tmp_path / "i.jsonl")
     date.fromisoformat(_read(corpus)[0]["collected_at"])   # 예외 없이 파싱돼야 한다
+
+
+@pytest.mark.parametrize("bad", [
+    "http://www.kdic.or.kr/x.do",             # HTTPS 아님
+    "https://169.254.169.254/latest/meta-data", # 클라우드 메타데이터
+    "https://localhost:8000/api/health",        # 로컬
+    "https://10.0.0.5/admin",                   # 사설 IP
+    "https://evil.example.com/kdic.or.kr",      # 허용 목록 밖
+    "https://user:pw@www.kdic.or.kr/x.do",      # userinfo
+])
+def test_ingest_rejects_urls_outside_the_allowlist(tmp_path, bad):
+    """SSRF 방어 — 승인 URL 도 미리보기와 같은 허용 목록·스킴 검증을 통과해야 한다. 여기서
+    fetcher 는 절대 호출되면 안 된다(호출되면 서버가 임의 주소를 대신 요청한 것)."""
+    called = {"n": 0}
+    def spy(url):
+        called["n"] += 1
+        return SimpleNamespace(html=HTML, url=url)
+    with pytest.raises(Exception):
+        ingest.ingest_page(_record(source_url=bad), fetcher=spy,
+                           corpus_path=tmp_path / "c.jsonl", inventory_path=tmp_path / "i.jsonl")
+    assert called["n"] == 0, f"허용 목록 밖 URL 을 fetch 했다: {bad}"

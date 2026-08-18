@@ -57,12 +57,17 @@ def build_corpus_record(record: dict, *, fetcher: Optional[Callable] = None) -> 
         if str(extra) not in sys.path:
             sys.path.insert(0, str(extra))
     from hashing import content_sha256
-    from preview import fetch_html, parse_document
+    from preview import fetch_html, normalize_preview_url, parse_document
 
+    # 🔒 SSRF 방어 — 미리보기와 **같은 검증**을 통과한 URL 만 받는다: 허용 호스트(kdic.or.kr
+    # 2종)·HTTPS·기본 포트·userinfo 금지. 승인 요청의 URL 은 관리자 입력값이라, 이 검증을
+    # 건너뛰면 내부망 주소(169.254…, localhost, 사설 IP)를 서버가 대신 요청하게 된다.
+    # 실패는 PreviewUrlError 로 올라가 approve 가 400 으로 돌려준다(적재 안 함).
+    safe_url = normalize_preview_url(record["source_url"])
     fetch = fetcher or fetch_html
-    fetched = fetch(record["source_url"])
+    fetched = fetch(safe_url)
     html = fetched.html if hasattr(fetched, "html") else str(fetched)
-    final_url = getattr(fetched, "url", None) or record["source_url"]   # preview.FetchedPage.url = 최종 URL
+    final_url = getattr(fetched, "url", None) or safe_url   # preview.FetchedPage.url = 최종 URL
     parsed = parse_document(html, final_url)
     if not (parsed.text or "").strip():
         raise ValueError("본문을 추출하지 못했습니다 — 빈 페이지는 적재하지 않습니다")
