@@ -52,7 +52,7 @@ export function ReturnBand({ note }: { note?: string }) {
                 처리 완료로 표시
               </Button>
             )}
-            <Link className="text-[13px] underline" to={`/admin/logs?request=${encodeURIComponent(from.requestId)}`}>
+            <Link className="text-[13px] underline" to={`/admin/logs?period=30d&request=${encodeURIComponent(from.requestId)}`}>
               로그로 돌아가기
             </Link>
           </span>

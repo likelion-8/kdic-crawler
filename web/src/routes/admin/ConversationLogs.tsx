@@ -559,7 +559,7 @@ export function ConversationLogs() {
       {resolving !== null && (
         <ConfirmModal
           open
-          title="이 실패 건을 처리 완료로 표시할까요?"
+          title="이 대화를 처리 완료로 표시할까요?"
           reason="required"
           reasonPlaceholder="예: 원인 확인 후 프롬프트 수정 반영"
           confirmLabel="처리 완료"
