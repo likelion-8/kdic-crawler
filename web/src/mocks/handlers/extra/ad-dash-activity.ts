@@ -41,7 +41,7 @@ export const adDashActivityHandlers = [
       // ('없는 것'과 '못 센 것'의 구분). 서버 정본은 admin_dashboard.dashboard_summary.
       todos: [
         { key: 'FEEDBACK_DOWN', label: '나쁨 평가를 받은 답변', count: 3,
-          target: { screen: 'logs', filter: { feedback: 'down' } } },
+          target: { screen: 'logs', filter: { feedback: 'down', period: '30d' } } },
         { key: 'PIPELINE_OPEN', label: '대기·진행·실패한 작업', count: 0,
           target: { screen: 'pipeline', filter: {} } },
         { key: 'GATE_FAILED', label: '최근 평가 게이트 미통과', count: 1,

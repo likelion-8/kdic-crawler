@@ -10,6 +10,7 @@
  *  - VIEWER는 집계만, 그 외 역할은 마스킹된 상세까지(Desc 0)
  *  - 조회·검색·내보내기·재실행·후보 등록·처리 완료는 모두 AD-011에 기록된다 */
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import type { ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download } from 'lucide-react'
@@ -102,7 +103,18 @@ export function ConversationLogs() {
   const canEdit = hasRole(session?.role, 'EDITOR') // 테스트셋 보강 후보 등록
   const canExport = hasRole(session?.role, 'ADMIN') // 내보내기
 
-  const [filters, setFilters] = useState<LogFilters>(DEFAULT_FILTERS)
+  // 초기 필터는 URL 을 우선한다 — 대시보드 할 일 카드가 ?feedback=down 처럼 필터를 들고
+  // 넘겨야 "대시보드가 센 건수와 같은 목록"이 열린다(바통). URL 에 없는 키는 기본값.
+  // 종전에는 URL 을 읽지 않아 카드를 눌러도 필터 없는 오늘 목록이 열렸다.
+  const [searchParams] = useSearchParams()
+  const [filters, setFilters] = useState<LogFilters>(() => {
+    const next: Record<string, string> = { ...DEFAULT_FILTERS }
+    for (const key of Object.keys(DEFAULT_FILTERS)) {
+      const v = searchParams.get(key)
+      if (v !== null) next[key] = v
+    }
+    return next as unknown as LogFilters
+  })
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [resolving, setResolving] = useState<string | null>(null)

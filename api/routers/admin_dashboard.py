@@ -186,9 +186,14 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
     # 하나씩 열어 봐야 한다(AD-DF-000 관리자 작업 흐름 ①). 각 항목은 건수와 함께 **그 건수를
     # 보여줄 화면의 필터**를 같이 내려, 카드를 눌렀을 때 여기서 센 것과 같은 목록이 열리게 한다.
     # 0 건이어도 항목을 지우지 않는다 — 사라지면 '없는 것'과 '못 센 것'이 구분되지 않는다.
+    # 최근 30일로 좁힌다 — 대화 로그 화면의 기간 옵션(오늘·7일·30일·직접≤90일)에 '전체'가
+    # 없어서, 전체 기간을 세면 카드 건수와 열리는 목록의 건수가 어긋난다(카드 3건 → 목록 0건).
+    # 카드가 넘기는 filter 도 같은 30일이라야 "센 것과 같은 목록"이 열린다.
+    since_30d = now - timedelta(days=30)
     feedback_down = db.execute(
         select(func.count()).select_from(feedback_table)
-        .where(feedback_table.c.vote == "down")
+        .where(feedback_table.c.vote == "down",
+               feedback_table.c.created_at >= since_30d)
     ).scalar_one()
     jobs_open = db.execute(
         select(func.count()).select_from(pipeline_jobs)
@@ -205,7 +210,7 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
 
     todos = [
         {"key": "FEEDBACK_DOWN", "label": "나쁨 평가를 받은 답변", "count": feedback_down,
-         "target": {"screen": "logs", "filter": {"feedback": "down"}}},
+         "target": {"screen": "logs", "filter": {"feedback": "down", "period": "30d"}}},
         {"key": "PIPELINE_OPEN", "label": "대기·진행·실패한 작업", "count": jobs_open,
          "target": {"screen": "pipeline", "filter": {}}},
         {"key": "GATE_FAILED", "label": "최근 평가 게이트 미통과", "count": gate_failed,

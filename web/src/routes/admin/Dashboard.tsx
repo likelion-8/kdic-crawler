@@ -122,6 +122,17 @@ function Segmented<T extends string | number>({
 }
 
 /** KPI 한 칸 — 코너 아이콘 없이 라벨 한 줄 + 수치. 숫자가 주인공이다 */
+/** 서버 todos[].target.screen → 라우트. 필터는 그대로 쿼리로 넘겨 대시보드가 센 것과 같은 목록이 열리게 한다 */
+const TODO_ROUTE: Record<DashboardTodo['target']['screen'], string> = {
+  logs: '/admin/logs',
+  pipeline: '/admin/pipeline',
+  evaluations: '/admin/evaluation',
+}
+function todoHref(t: DashboardTodo): string {
+  const q = new URLSearchParams(t.target.filter).toString()
+  return q ? `${TODO_ROUTE[t.target.screen]}?${q}` : TODO_ROUTE[t.target.screen]
+}
+
 function KpiCard({ label, value }: { label: string; value: ReactNode }) {
   return (
     <>
@@ -206,6 +217,31 @@ export function Dashboard() {
 
       {data && (
         <>
+          {/* 할 일 — KPI 보다 위. 대시보드가 지표판이 아니라 시작점이 되게 하는 줄이다
+              (AD-DF-000 관리자 작업 흐름 ①). 0건이어도 항목을 지우지 않는다 — 사라지면
+              '없는 것'과 '못 센 것'이 구분되지 않는다. 건수를 누르면 서버가 그 건수를 센 것과
+              같은 필터의 목록이 열린다(todoHref). */}
+          <ul
+            aria-label="할 일"
+            className="grid grid-cols-1 gap-px overflow-hidden rounded-md border bg-border md:grid-cols-3"
+          >
+            {data.todos.map((t) => (
+              <li key={t.key} className="bg-card">
+                <Link className={KPI_LINK} to={todoHref(t)}>
+                  <KpiCard
+                    label={t.label}
+                    value={
+                      <>
+                        {t.count}
+                        <Unit>건 · 이동 →</Unit>
+                      </>
+                    }
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+
           {/* KPI 4종 — 4장의 카드가 아니라 헤어라인으로 나뉜 한 줄 스펙 시트.
               칸 사이 1px은 gap-px + 바탕 bg-border가 낸다(칸마다 보더를 그리면 모서리가 겹친다) */}
           <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border xl:grid-cols-4">
