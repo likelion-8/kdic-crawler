@@ -1,0 +1,117 @@
+{
+  "testset": "testset_retrieval_eval_v1.jsonl",
+  "n": 66,
+  "prefix_format": "[page_title · business_function] ",
+  "table": {
+    "faq_표 (효과)": {
+      "baseline": {
+        "n": 36,
+        "r5": 1.0,
+        "r20": 1.0,
+        "mrr": 0.8495
+      },
+      "prefix": {
+        "n": 36,
+        "r5": 1.0,
+        "r20": 1.0,
+        "mrr": 0.912
+      }
+    },
+    "일반 (가드)": {
+      "baseline": {
+        "n": 30,
+        "r5": 0.9,
+        "r20": 1.0,
+        "mrr": 0.8373
+      },
+      "prefix": {
+        "n": 30,
+        "r5": 1.0,
+        "r20": 1.0,
+        "mrr": 0.9083
+      }
+    },
+    "전체": {
+      "baseline": {
+        "n": 66,
+        "r5": 0.9545,
+        "r20": 1.0,
+        "mrr": 0.844
+      },
+      "prefix": {
+        "n": 66,
+        "r5": 1.0,
+        "r20": 1.0,
+        "mrr": 0.9104
+      }
+    }
+  },
+  "flips": [
+    {
+      "direction": "새 성공",
+      "test_id": "kmrs_apply_mthd_rev1_1",
+      "question": "착오송금반환지원을 온라인으로 신청할 때와 방문으로 신청할 때 준비물이 각각 어떻게 다른가요?",
+      "question_type": "link_guide",
+      "expected": [
+        "kmrs_apply_mthd"
+      ],
+      "rank_baseline": 13,
+      "rank_prefix": 4,
+      "expected_bf": "착오송금 반환 신청",
+      "prefix_top5": [
+        "faq_msdr_apply",
+        "faq_top10",
+        "sender_docs",
+        "kmrs_apply_mthd",
+        "mtrs_gvbk_proc"
+      ],
+      "top5_업무일치": true
+    },
+    {
+      "direction": "새 성공",
+      "test_id": "mtrs_vst_rcpt_rev1_1",
+      "question": "착오송금반환지원 방문접수의 첫 단계와 마지막 단계는 각각 무엇을 하는 과정인가요?",
+      "question_type": "link_guide",
+      "expected": [
+        "mtrs_vst_rcpt"
+      ],
+      "rank_baseline": 8,
+      "rank_prefix": 2,
+      "expected_bf": "착오송금 반환 신청",
+      "prefix_top5": [
+        "kmrs_proc",
+        "mtrs_vst_rcpt",
+        "mtrs_gvbk_proc",
+        "faq_msdr_apply",
+        "faq_top10"
+      ],
+      "top5_업무일치": true
+    },
+    {
+      "direction": "새 성공",
+      "test_id": "ha_status_agree_rev1_1",
+      "question": "부실책임조사 진행 상황을 조회하려면 제일 먼저 어떤 절차에 동의해야 하나요?",
+      "question_type": "link_guide",
+      "expected": [
+        "ha_status_agree"
+      ],
+      "rank_baseline": 6,
+      "rank_prefix": 1,
+      "expected_bf": "은닉재산 신고",
+      "prefix_top5": [
+        "ha_status_agree",
+        "dp_josa_objc",
+        "dp_josa_law",
+        "ha_faq_dclr",
+        "ha_center"
+      ],
+      "top5_업무일치": true
+    }
+  ],
+  "verdict": {
+    "효과_순증(faq·표)": 0,
+    "일반_새실패": 0,
+    "R@20_하락": false,
+    "판정": "기각 또는 개별 검토"
+  }
+}
