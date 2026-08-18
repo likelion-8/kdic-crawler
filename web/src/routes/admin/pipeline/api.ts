@@ -19,6 +19,18 @@ export interface JobStep {
   elapsed_ms?: number
   /** 단계별 처리 건수 — 서버가 아직 주지 않는다(백엔드 계약 요청 항목) */
   count?: number
+  /** 단계가 남긴 구조화 정보(2026-08-18). 게이트 단계가 판정 요약을 싣는다 — 관리자가
+   * 판정을 보러 AD-006 으로 옮기지 않아도 카드 안에서 읽는다 */
+  detail?: GateVerdict
+}
+
+/** src/index_gate.evaluate 결과 + 한 줄 요약(worker 가 게이트 단계 detail 로 저장) */
+export interface GateVerdict {
+  passed: boolean
+  metrics: { 'recall@5': number; mrr: number; n: number }
+  targets: { 'recall@5': number; mrr: number }
+  failures: { key: string; measured: number; target: number }[]
+  summary: string
 }
 
 export interface PipelineJob {

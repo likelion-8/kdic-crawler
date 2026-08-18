@@ -95,6 +95,13 @@ export function ChangedPagesCard({ onRecrawl, disabledReason, canRun }: ChangedP
           onRefresh={() => recheck.mutate()}
         />
       </header>
+      {/* 감지를 실제로 돌리는 주체가 아직 없다(미구현 ②). [지금 확인]은 확인 시각만 기록하고
+          비교는 하지 않으므로, 이 목록이 "변경 없음"인지 "감지 안 함"인지 관리자가 구분할 수
+          있게 사실을 적는다. 감지 주체가 붙으면 이 줄을 지운다. */}
+      <p className="mt-2 text-xs text-destructive" role="note">
+        자동 감지 미가동 — 이 목록은 저장된 상태값이며 원본과의 비교 결과가 아닙니다. 원본 변경은
+        [전체 재수집] 실행 시 변환 단계에서만 감지됩니다.
+      </p>
 
       {recheck.isError && (
         <div className="mt-3" role="alert">

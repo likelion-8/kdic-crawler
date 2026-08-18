@@ -156,9 +156,6 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
           이 질문에 고정 답변 달기
         </Button>
       </div>
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        굵은 버튼은 근거 상태로 고른 힌트입니다 — 판정이 아니니 다른 갈래도 열려 있습니다
-      </p>
     </div>
   )
 }

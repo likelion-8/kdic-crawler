@@ -10,6 +10,8 @@
  *  - 위험 작업은 확인 모달 → 변경 사유 필수 → (필요 시) 비밀번호 재확인 → 실행 (CM-DF-004 03절)
  *  - 실패는 토스트가 아니라 화면 안에 남긴다(CM-DF-001 07.4절) */
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
+import { cn } from '../../lib/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Layers, RefreshCw } from 'lucide-react'
 import {
@@ -294,6 +296,7 @@ export function Pipeline() {
             <div className="border-y py-3.5">
               <PipelineSteps states={running.steps.map((s) => STEP_STATE[s.status])} />
             </div>
+            <GateVerdictLine job={running} />
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               {/* 실행 중 상태 점 — 카드가 살아있음을 알린다. 색만이 아니라 이 캡션 텍스트와 병기 */}
               <span className="pulse-dot size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
@@ -623,5 +626,26 @@ function ModalImpact({
         )}
       </p>
     </div>
+  )
+}
+
+/**
+ * 게이트 판정 줄 — 실행 카드 안에서 통과/미달과 수치를 그대로 보여준다(2026-08-18).
+ * 판정은 워커가 게이트 단계의 detail 로 남긴다(src/worker.py _gate). 미달이면 "기존 색인을
+ * 그대로 두었습니다"를 명시해 관리자가 서비스 영향을 오해하지 않게 한다. 상세는 AD-006 으로.
+ */
+function GateVerdictLine({ job }: { job: PipelineJob }) {
+  const gate = job.steps.find((s) => s.name === '게이트')
+  const v = gate?.detail
+  if (!v) return null
+  return (
+    <p className={cn('mt-3 text-[13px]', v.passed ? 'text-foreground' : 'text-destructive')}>
+      게이트 {v.passed ? '통과' : '미달'} · {v.summary}
+      {!v.passed && ' — 색인에 들어가지 않아 기존 색인을 그대로 두었습니다'}
+      {' · '}
+      <Link className="underline" to="/admin/evaluation">
+        평가 화면에서 판정 상세 →
+      </Link>
+    </p>
   )
 }

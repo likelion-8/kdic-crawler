@@ -133,8 +133,11 @@ def _write_steps(session, job_id, steps: list) -> None:
 
 
 def _set_step(session, job_id, name: str, status: str, *,
-              elapsed_ms: int = None, count: int = None) -> None:
-    """단계 하나의 상태를 바꿔 통째로 저장한다 — 프론트 3초 폴링이 이 값으로 진행바를 그린다."""
+              elapsed_ms: int = None, count: int = None, detail: dict = None) -> None:
+    """단계 하나의 상태를 바꿔 통째로 저장한다 — 프론트 3초 폴링이 이 값으로 진행바를 그린다.
+
+    detail 은 단계가 화면에 남길 구조화 정보다(2026-08-18). 게이트가 판정 요약(통과 여부·
+    지표·미달 항목·run_id)을 여기 실어, 관리자가 판정을 보러 화면을 옮기지 않아도 된다."""
     steps = _load_steps(session, job_id)
     for s in steps:
         if s.get("name") == name:
@@ -143,6 +146,8 @@ def _set_step(session, job_id, name: str, status: str, *,
                 s["elapsed_ms"] = elapsed_ms
             if count is not None:
                 s["count"] = count
+            if detail is not None:
+                s["detail"] = detail
     _write_steps(session, job_id, steps)
 
 
@@ -390,6 +395,11 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         result = index_gate.evaluate(state["uids"], state["texts"], rows,
                                      k_candidates=pipeline.K_CANDIDATES)
         state["gate"] = result
+        # 판정을 단계 객체에 남긴다 — 화면(AD-004 R3)이 카드 안에서 요약·미달 항목을 그린다.
+        _set_step(session, job.id, "게이트", "RUNNING", detail={
+            "passed": result["passed"], "metrics": result["metrics"],
+            "targets": result["targets"], "failures": result["failures"],
+            "summary": index_gate.describe(result)})
         if not result["passed"]:
             raise StageFailed("게이트", index_gate.describe(result))
         logger.info("게이트 통과: %s", index_gate.describe(result))
