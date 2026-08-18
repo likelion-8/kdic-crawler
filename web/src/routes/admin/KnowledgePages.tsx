@@ -410,6 +410,7 @@ export function KnowledgePages() {
             id={searchId}
             className="h-8 w-52 pl-8"
             value={search}
+            type="search"
             placeholder="제목·URL 검색"
             onChange={(e) => setSearch(e.target.value)}
           />

@@ -57,6 +57,7 @@ from api.deps import (CurrentAdmin, DbSession, SettingsDep, get_current_admin,
                       write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.masking import mask_text
+from api.rag import observation
 from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
                               LogExportRequest, LogExportResponse, LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
@@ -246,6 +247,7 @@ def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
             rag_runs.c.intent,
             rag_runs.c.status,
             rag_runs.c.total_latency_ms,
+            rag_runs.c.observation,
             feedback_table.c.vote,
         )
         .select_from(joined)
@@ -259,8 +261,9 @@ def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
 def _row_to_log(row) -> dict:
     """한 행 -> 화면 계약(ConversationLogRow).
 
-    ⚠️ source_count·triage 는 rag_runs 에 원천이 없다(모듈 주석 참고). 지어내지 않고
-    None/기본값으로 둔다 — 0 을 넣으면 '출처가 하나도 없었다'는 사실처럼 읽힌다.
+    source_count 는 rag_runs.observation 에서 온다(2026-08-14 신설). 관측 이전에 쌓인 행은
+    observation 이 NULL 이라 그대로 None 이다 — 0 을 넣으면 '출처가 하나도 없었다'는 사실처럼
+    읽힌다. triage 는 여전히 원천이 없어 'NONE'(미확인=사실)이다.
     """
     return {
         "request_id": row.request_id or "",
@@ -272,7 +275,7 @@ def _row_to_log(row) -> dict:
         "intent": row.intent,
         "status": _status_out(row.status),
         "feedback": row.vote,
-        "source_count": None,
+        "source_count": observation.summarize(getattr(row, "observation", None))["source_count"],
         "latency_s": round(row.total_latency_ms / 1000, 2) if row.total_latency_ms else None,
         "triage": "NONE",
     }
@@ -398,6 +401,7 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             rag_runs.c.root_cause,
             rag_runs.c.total_latency_ms,
             rag_runs.c.trace_id,
+            rag_runs.c.observation,
             feedback_table.c.vote,
             feedback_table.c.reason_codes,
             feedback_table.c.comment,
@@ -420,12 +424,14 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             # 컬럼은 있지만 웹 경로가 항상 None 을 넘긴다(api/rag/answer.py:260 — "검색 라우팅
             # 내부에서만 쓰고 응답 경로엔 노출되지 않는다"). 2026-08-12 실측 238건 중 91건이 NULL.
             "question_type": row.question_type,
-            # ⚠️ 아래 4개는 rag_runs 에 컬럼이 없다(모듈 주석 참고). 지어내지 않는다.
+            # ⚠️ business_function 은 업무 분류가 코드에서 비활성이라 여전히 원천이 없다.
             "business_function": None,
-            "source_used": None,
-            "marker": None,
-            "normalized": None,
+            # 아래 3개는 rag_runs.observation 에서 온다(2026-08-14). 관측 이전 행은 None 유지.
+            **{k: v for k, v in observation.summarize(row.observation).items()
+               if k in ("source_used", "marker", "normalized")},
         },
+        # 관리자가 '왜 이렇게 답했는지'를 보는 근거 — 하위 질문별 검색 상위 청크와 판정.
+        "observation": row.observation,
         # trace_id + 설정 호스트로 완성 URL 을 만든다(G5). 호스트가 비면 {id, url:null},
         # trace_id 자체가 없으면 langfuse=null. API_LANGFUSE_HOST 로 켠다(api/config.py).
         "langfuse": _langfuse(row.trace_id, settings.langfuse_host),

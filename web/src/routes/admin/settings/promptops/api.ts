@@ -154,6 +154,44 @@ export interface BlockEntry {
   count: number
 }
 
+/**
+ * GET/PUT /api/admin/curated-answers — 답변 매핑(전량 교체 · 추천 질문과 동일 패턴).
+ * 미리 작성한 답변에 질문 문구 여러 개를 매핑한다. 정규화 키가 정확히 일치하는 첫 턴 질문에
+ * LLM 없이 이 답변이 그대로 나간다(질의 캐시보다 우선). 유사도 자동 매칭은 하지 않는다
+ * (2026-08-14 팀 결정 — 역할축 질문 오매칭 위험).
+ * 저장은 source_page_ids 로 보내고, 서버가 제목·URL 을 확정해 sources 로 돌려준다.
+ */
+export interface CuratedSource {
+  page_id: string
+  title: string
+  url: string
+  breadcrumb: string
+}
+
+export interface CuratedAnswer {
+  id: string
+  questions: string[]
+  answer: string
+  sources: CuratedSource[]
+  active: boolean
+  order: number
+}
+
+/** PUT 항목 — sources 대신 page_id 만 보낸다(확정은 서버 몫) */
+export interface CuratedAnswerInput extends Omit<CuratedAnswer, 'sources'> {
+  source_page_ids: string[]
+}
+
+export const fetchCuratedAnswers = () =>
+  apiRequest<{ items: CuratedAnswer[]; total: number }>('/api/admin/curated-answers')
+
+export const saveCuratedAnswers = (items: CuratedAnswerInput[], reason: string) =>
+  apiRequest<{ items: CuratedAnswer[]; total: number }>('/api/admin/curated-answers', {
+    method: 'PUT',
+    body: { items },
+    reason,
+  })
+
 /** GET/PUT /api/admin/suggested-questions — 목록 전체를 통째로 교체한다(handlers/admin.ts) */
 export interface SuggestedQuestion {
   id: string
@@ -177,6 +215,7 @@ export const opsKeys = {
   cache: ['admin', 'cache', 'stats'] as const,
   blocks: ['admin', 'blocks'] as const,
   suggestions: ['admin', 'suggested-questions'] as const,
+  curated: ['admin', 'curated-answers'] as const,
 }
 
 // ---------------------------------------------------------------- 공통

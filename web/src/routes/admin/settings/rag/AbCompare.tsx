@@ -118,6 +118,7 @@ export function AbCompare({ draft, gate, evaluating, evaluateError }: AbCompareP
         </label>
         <Input
           id="ab-query"
+          type="search"
           className="h-9 min-w-0 flex-1 basis-80"
           value={query}
           placeholder="착오송금 수수료 얼마인가요?"

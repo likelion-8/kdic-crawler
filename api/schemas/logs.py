@@ -105,6 +105,30 @@ class FeedbackDetail(BaseModel):
     comment: str                            # mask_text(feedback.comment) — 현재 패스스루
 
 
+class ObservedChunk(BaseModel):
+    """관측에 남긴 검색 상위 청크 하나. rag_runs.observation 의 subs[].top[] 원소."""
+    chunk_id: str
+    page_id: str
+    score: float
+
+
+class ObservedSub(BaseModel):
+    """하위 질문 하나의 관측. 판정 필드가 None 이면 '판정하지 않음'이지 '아니오'가 아니다."""
+    question: str
+    intent: Optional[str] = None
+    top: list[ObservedChunk] = []
+    marker: Optional[bool] = None          # LLM 자기보고 마커
+    used_source: Optional[bool] = None     # 최종 판정(검증이 마커를 오버라이드한 결과)
+    kind: Optional[str] = None             # validate_answer 판정 종류
+    appropriate: Optional[bool] = None     # 질문-답변 적절성
+    normalized: Optional[bool] = None      # 본문이 표준 안내로 교체됐나
+
+
+class RunObservation(BaseModel):
+    """답변 1건의 관측 기록. 모양의 정본은 api/rag/observation.py."""
+    subs: list[ObservedSub] = []
+
+
 class ConversationLogDetail(ConversationLogRow):
     """상세 = 행 + 분류·추적·답변·피드백·오류. api.ts 의 ConversationLogDetail 와 1:1."""
 
@@ -115,6 +139,8 @@ class ConversationLogDetail(ConversationLogRow):
     answer_masked_full: str                     # mask_text(rag_runs.answer) 전체 — 현재 패스스루
     feedback_detail: Optional[FeedbackDetail] = None
     error: Optional[LogErrorDetail] = None       # 실패 건에만
+    # 관리자가 '왜 이렇게 답했는지'를 보는 근거. 2026-08-14 신설이라 그 이전 대화는 null 이다.
+    observation: Optional[RunObservation] = None
 
 
 class ConversationLogList(BaseModel):

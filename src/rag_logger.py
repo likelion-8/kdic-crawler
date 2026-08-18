@@ -45,7 +45,7 @@ STAGE_LLM = "llm"
 def log_rag_run(question, answer, intent, question_type, retrieval_route,
                  total_latency_ms, llm_model=None, embedding_model=None,
                  request_id=None, session_id=None, status=STATUS_NORMAL,
-                 failure_stage=None, root_cause=None, trace_id=None):
+                 failure_stage=None, root_cause=None, trace_id=None, observation=None):
     """질의 1건을 rag_runs 에 남긴다.
 
     status/failure_stage/root_cause 는 전부 기본값이 있다. src/pipeline.py(CLI)가
@@ -57,6 +57,10 @@ def log_rag_run(question, answer, intent, question_type, retrieval_route,
 
     trace_id 는 Langfuse trace 식별자(observability.current_trace_id())다. 관리자 대화 로그
     상세(AD-005)가 API_LANGFUSE_HOST 로 링크를 완성한다. 관측이 꺼져 있으면 None(무해).
+
+    observation 은 답변 1건의 관측 기록(api/rag/observation.build 결과)이다. 검색 상위 청크와
+    검증 판정이 들어 있어 AD-005 상세가 '왜 그렇게 답했는지'를 보여주고 AD-006 문항 후보가
+    정답 출처를 미리 채운다. CLI(pipeline.py)는 안 넘기므로 기본값 None 이다.
     """
     try:
         with get_session() as session:
@@ -69,7 +73,7 @@ def log_rag_run(question, answer, intent, question_type, retrieval_route,
                     "total_latency_ms": round(total_latency_ms),
                     "llm_model": llm_model, "embedding_model": embedding_model,
                     "request_id": request_id, "session_id": session_id,
-                    "trace_id": trace_id,
+                    "trace_id": trace_id, "observation": observation,
                 },
             )
     except Exception as e:

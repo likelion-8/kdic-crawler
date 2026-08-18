@@ -37,6 +37,16 @@ export const adDashActivityHandlers = [
    * 파라미터가 없는 블록은 한 번에 준다 — 화면 진입 시 왕복을 줄인다. */
   http.get('/api/admin/dashboard/summary', () =>
     HttpResponse.json({
+      // 할 일 — 대시보드를 시작점으로 만드는 값. 0건 항목도 지우지 않는 것이 계약이다
+      // ('없는 것'과 '못 센 것'의 구분). 서버 정본은 admin_dashboard.dashboard_summary.
+      todos: [
+        { key: 'FEEDBACK_DOWN', label: '나쁨 평가를 받은 답변', count: 3,
+          target: { screen: 'logs', filter: { feedback: 'down' } } },
+        { key: 'PIPELINE_OPEN', label: '대기·진행·실패한 작업', count: 0,
+          target: { screen: 'pipeline', filter: {} } },
+        { key: 'GATE_FAILED', label: '최근 평가 게이트 미통과', count: 1,
+          target: { screen: 'evaluations', filter: {} } },
+      ],
       generated_at: new Date().toISOString(),
       // level=ERROR면 화면이 경고형 칩으로 교체한다. cause가 [실패 건 보기 →]의 목적지를 정한다
       service: { level: 'OK', error_count: 0, cause: null },

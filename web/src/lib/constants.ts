@@ -25,8 +25,13 @@ export const RATE_BLOCK_MIN = 10
 export const QUERY_CACHE_TTL_H = 24
 export const PIPELINE_CONCURRENCY = 1 // 동시 실행 1개 → 실행 버튼 disabled 조건
 
-/** 파이프라인 6단계 — 이름·순서 고정 (CM-DF-001 진행 스텝) */
-export const PIPELINE_STEPS = ['수집', '변환', '청킹', '검증', '색인', '반영'] as const
+/**
+ * 파이프라인 7단계 — 이름·순서 고정 (CM-DF-001 진행 스텝). src/worker.py 의 STEPS 와 같아야 한다.
+ * '게이트'는 2026-08-14 신설 — 새 청크를 메모리 인덱스로 올려 홀드아웃으로 채점하고,
+ * 미달이면 색인에 들어가지 않아 운영 인덱스가 그대로 남는다(기획서 AD-004 '미달 시 자동 중단·기존 유지').
+ * 롤백 잡에서는 SKIPPED 다 — 직전에 통과했던 스냅샷이라 다시 재는 의미가 없다.
+ */
+export const PIPELINE_STEPS = ['수집', '변환', '청킹', '검증', '게이트', '색인', '반영'] as const
 
 /** 초안 자동 저장 주기 (CM-DF-003 04절) */
 export const DRAFT_AUTOSAVE_MS = 10_000

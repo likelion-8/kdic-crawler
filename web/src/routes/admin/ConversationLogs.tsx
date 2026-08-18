@@ -151,7 +151,14 @@ export function ConversationLogs() {
 
   const candidate = useMutation({
     mutationFn: () => addEvalCandidate(selectedId!),
-    onSuccess: () => showToast('테스트셋 보강 후보로 등록했습니다'),
+    // 정답 출처가 미리 채워졌는지를 알려야 관리자가 AD-006 에서 무엇을 확인할지 안다.
+    // 0건(관측 이전 대화)이면 종전처럼 맨손 등록이라는 사실을 그대로 말한다.
+    onSuccess: (r) =>
+      showToast(
+        r.prefilled_sources > 0
+          ? `테스트셋 보강 후보로 등록했습니다 · 정답 출처 ${r.prefilled_sources}건을 미리 채웠습니다`
+          : '테스트셋 보강 후보로 등록했습니다 · 정답 출처는 직접 입력해야 합니다',
+      ),
   })
 
   const resolve = useMutation({
