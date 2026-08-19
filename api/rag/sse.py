@@ -117,8 +117,8 @@ def _stream_one(prompt):
 
 
 def chat_event_stream(message: str, session_id: str, request_id: str):
-    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 쿼리 플래너(분해+intent) →
-    하위질문마다 (준비 → 토큰 스트리밍, 마커 제거) → done.
+    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 가드레일 → 질의 캐시 → Gate 1
+    → Gate 2 → 쿼리 플래너(분해+intent) → 하위질문마다 (준비 → 토큰 스트리밍, 마커 제거) → done.
 
     sources/attachments 는 별도 이벤트로 보내지 않고 done 에 실린다(사유는 파일 맨 끝 주석).
     실패하면 done 대신 error 가 나가고 스트림이 끝난다."""
@@ -174,7 +174,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     from gate1 import run_gate1
     g1 = run_gate1(message)
     if g1.action == "EXIT":
-        resp = answer.gate1_response(g1, session_id, request_id, _elapsed_ms(started))
+        resp = answer.fixed_gate_response(g1, session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] Gate1 EXIT: %s (%s)", request_id, g1.label, g1.rule_id)
         from observability import record_trace
         record_trace("web_chat", input={"question": message},
@@ -183,6 +183,35 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
                                "latency_ms": resp.latency_ms, "exit_at": "gate1",
                                "gate1_label": g1.label, "gate1_rule_id": g1.rule_id,
                                "gate1_reason": g1.reason})
+        answer.log_run(message, resp, [], resp.latency_ms)
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("answer_delta", {"text": resp.answer})
+        yield _sse("done", resp.model_dump())
+        return
+
+    # 0-5) Gate 2 — 임베딩 유사도 기반 도메인 판정(참조 사전 config/gate2_reference.json +
+    #      data/gate2_cache/*.npy, LLM 없음). Gate 1이 놓친 out-of-domain 중 참조 사전과의
+    #      최댓값 유사도(개별 문장 벡터, centroid 아님)로 '확실하다'고 판단되는 경우만 추가로
+    #      EXIT시킨다(정밀도 우선 — 애매하면 CONTINUE, src/gate2.py 참고). 참조 벡터 캐시가
+    #      없거나 손상됐으면 run_gate2가 항상 CONTINUE를 반환해(서버 크래시 없이) 이 블록은
+    #      조용히 건너뛰어진다. 어떤 카테고리(일상잡담/인접도메인/개인정보상담요청/
+    #      프롬프트인젝션)로 판정됐는지는 절대 사용자 응답에 노출하지 않고 trace 메타데이터
+    #      (내부 관측)에만 남긴다 — 응답 문구는 Gate 1의 resp_out_of_domain을 그대로 재사용
+    #      (fixed_gate_response)하므로 사용자 눈에는 Gate 1 EXIT와 구분되지 않는다.
+    from gate2 import run_gate2
+    g2 = run_gate2(message)
+    if g2.action == "EXIT":
+        resp = answer.fixed_gate_response(g2, session_id, request_id, _elapsed_ms(started))
+        logger.info("[%s] Gate2 EXIT: %s", request_id, g2.reason)
+        from observability import record_trace
+        record_trace("web_chat", input={"question": message},
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
+                     metadata={"request_id": request_id, "session_id": session_id,
+                               "latency_ms": resp.latency_ms, "exit_at": "gate2",
+                               "gate2_s_id": g2.s_id, "gate2_s_ood": g2.s_ood,
+                               "gate2_threshold": g2.threshold,
+                               "gate2_nearest_cluster": g2.nearest_out_cluster_id,
+                               "gate2_nearest_category": g2.nearest_out_category})
         answer.log_run(message, resp, [], resp.latency_ms)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})

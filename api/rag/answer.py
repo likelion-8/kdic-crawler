@@ -439,14 +439,17 @@ def guardrail_refusal(session_id: str, request_id: str, latency_ms: int) -> Chat
         latency_ms=latency_ms, session_id=session_id, request_id=request_id)
 
 
-def gate1_response(g1, session_id: str, request_id: str, latency_ms: int) -> ChatResponse:
-    """Gate 1(결정론적 룰)이 EXIT 로 판정한 질문의 고정 응답을 ChatResponse 로 감싼다.
+def fixed_gate_response(gate_result, session_id: str, request_id: str, latency_ms: int) -> ChatResponse:
+    """Gate 1(결정론적 룰)·Gate 2(임베딩 유사도) 중 하나가 EXIT 로 판정한 질문의 고정 응답을
+    ChatResponse 로 감싼다. 두 게이트 모두 gate_result.response_text 속성(gate1.Gate1Result /
+    gate2.Gate2Result)을 갖는 결과 객체를 받는다 — 둘 다 검색·LLM 을 타지 않고 즉시 종료하므로
+    래핑 로직이 동일해 이 함수 하나를 공유한다.
 
-    Gate 1 은 검색·LLM 을 타지 않으므로 근거·출처가 없다 — out_of_scope=True 로 두어 프론트가
-    출처·서류 섹션을 그리지 않게 한다(인사·정체성·범위 밖 응답과 동일 취급). g1 은
-    gate1.Gate1Result; response_text 가 없으면(설정 누락) 표준 범위외 문구로 폴백한다."""
+    근거·출처가 없으므로 out_of_scope=True 로 두어 프론트가 출처·서류 섹션을 그리지 않게 한다
+    (인사·정체성·범위 밖 응답과 동일 취급). response_text 가 없으면(설정 누락) 표준 범위외
+    문구로 폴백한다."""
     return ChatResponse(
-        answer=(getattr(g1, "response_text", None) or OUT_OF_SCOPE_MESSAGE),
+        answer=(getattr(gate_result, "response_text", None) or OUT_OF_SCOPE_MESSAGE),
         sources=[], attachments=[], out_of_scope=True, sub_answers=[],
         clarification=None, error=None,
         latency_ms=latency_ms, session_id=session_id, request_id=request_id)

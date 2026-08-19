@@ -4,12 +4,12 @@
 OOS 를 많이 잡는 것(recall)이 목표가 아니라, 정상 질문을 잘못 차단하지 않는 것(precision ≈ 100%)이
 유일한 목표다. 그래서 여기서 EXIT(고정 응답으로 즉시 종료)하는 것은 인사·감사·노이즈·정체성
 질문과, 명백한 보안 우회·개인정보 직접조회·타 분야 단일 질문뿐이다. 그 외는 전부 CONTINUE 로
-다음 단계(향후 Gate 2 → 기존 Query Planner)로 흘려보낸다.
+다음 단계(Gate 2 → 기존 Query Planner)로 흘려보낸다.
 
 이 프로젝트의 OOS 판정은 4단계 캐스케이드(Gate 1 룰 → Gate 2 임베딩 → Gate 3 크로스인코더
-점수 → Gate 4 Supervisor LLM)로 설계돼 있고, Gate 1 만 예외적으로 '확실한 것'에 한해 즉시
-종료할 수 있다. 나머지 게이트는 신호만 넘기고 최종 판정은 Gate 4 가 종합한다(이번 구현 범위는
-Gate 1 뿐).
+점수 → Gate 4 Supervisor LLM)로 설계돼 있다. Gate 1·Gate 2는 '확실한 것'에 한해 즉시 종료
+(EXIT)할 수 있고(2026-08-19 Gate 2 도입, src/gate2.py), Gate 3·Gate 4(미구현)는 신호만 넘기고
+최종 판정을 Gate 4가 종합하는 구조로 설계돼 있다.
 
 무엇을 잡을지는 전부 config/gate1_rules.yaml 이 정한다 — 이 모듈은 '판정 순서'(run_gate1)만
 갖는다. 규칙을 켜고 끄거나 단어를 더하는 것은 YAML 수정만으로 된다. langfuse 는 여기서 부르지
