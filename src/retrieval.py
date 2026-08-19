@@ -259,8 +259,26 @@ class HybridRetriever:
         return linear_fuse(b, d, self.alpha)[:k]
 
 
+# 2026-08-19 팀 결정: 질문 유형 라우팅 기본 Off — 전 유형 Dense 통일. 근거는 라우팅 가치
+# 실측(src/eval/eval_routing_value.py → results/routing_value, 819문항·현행 503청크):
+#   - 라우팅의 이론상 최대 이득(오라클 0.8237 vs 전부 Dense 0.8208) = MRR +0.003.
+#   - 유일한 Hybrid 대상이던 link_guide 의 이점 +0.04 MRR 이 CI [-0.033, +0.118]로 유의성
+#     상실(R@5 는 Dense 0.958 > Hybrid 0.932). 프리픽스 색인(chunking.build_units, 2026-08-19)
+#     이 페이지 제목 토큰을 Dense 축에도 넣으면서 BM25 렉시컬 이점이 흡수된 것.
+#   - 반면 오분류로 table_lookup 이 Hybrid 로 가면 -0.058 MRR(유일하게 통계적으로 유의한
+#     손실)인데 분류기 홀드아웃 정확도는 0.6456 — 상방은 노이즈, 하방은 실손인 거래였다.
+# 켜면 종전 동작(link_guide→Hybrid) 그대로 복원된다. 분류기(question_type)는 라우팅에서만
+# 빠지고 rag_runs 로깅용으로는 유지되며, Hybrid·BM25 코드도 평가·재도입 대비 보존한다.
+# 코퍼스·색인이 바뀌어 격차가 다시 벌어질 수 있으므로, 재도입은 eval_routing_value 재실측 후.
+USE_TYPE_ROUTING = False
+
+
 class RoutedRetriever:
     """질문 유형(qtype)별로 Hybrid/Dense 중 하나로 라우팅.
+
+    ⚠️ 2026-08-19부터 기본 비활성(USE_TYPE_ROUTING=False — 위 주석) — search()가 스위치를
+    읽어 꺼져 있으면 분류 없이 전부 Dense 로 간다. 아래 수치·근거는 라우팅을 만들던 당시
+    기록으로 보존한다.
 
     2026-07-28 재검증(bf_score_fusion_eval.py baseline, testset_all 821문항 정리 후 기준)
     — business_function 융합 실험 중 다시 잰 유형별 MRR:
@@ -292,6 +310,12 @@ class RoutedRetriever:
         self.bf_classifier = bf_classifier  # 업무(business_function) 분류 → 검색 범위 필터(현재 미사용)
 
     def search(self, query, k, qtype=None, business_function=None):
+        # 유형 라우팅 스위치(USE_TYPE_ROUTING 주석 참고). 꺼져 있으면 분류기 호출 자체를
+        # 건너뛰고 Dense 로 직행한다 — 질문당 분류 임베딩 1회가 절약되는 부수 효과.
+        # gate_low_relevance 와 같은 이유로 호출 시점에 읽는다(관리자 무중단 반영).
+        from runtime_config import get_param
+        if not get_param("use_type_routing", USE_TYPE_ROUTING):
+            return self.dense.search(query, k, business_function=business_function)
         # qtype/business_function을 직접 주면(예: 평가 시 정답 라벨) 그걸 우선, 없으면 자동 분류.
         if qtype is None and self.classifier is not None:
             qtype = self.classifier.classify(query)
@@ -448,8 +472,12 @@ def route_search_chunks(query, k, *, exclude_self=False):
     운영 경로 동작은 그대로다."""
     e = _build_engines()
     routed = e["routed"]
+    # 유형 라우팅 스위치(USE_TYPE_ROUTING 주석 참고) — 꺼져 있으면 분류를 건너뛰고
+    # qtype=None(→ Dense 경로)으로 간다. RoutedRetriever.search 와 동일 판단.
+    from runtime_config import get_param
+    type_routing = get_param("use_type_routing", USE_TYPE_ROUTING)
     qtype = (routed.classifier.classify(query, exclude_self=exclude_self)
-             if routed.classifier else None)
+             if (type_routing and routed.classifier) else None)
     bf = routed.bf_classifier.classify(query) if routed.bf_classifier else None
 
     bm25_inner, dense_inner = e["bm25"].inner, e["dense"].inner
