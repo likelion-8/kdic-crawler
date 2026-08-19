@@ -45,7 +45,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, insert, select
+from sqlalchemy import func, insert, select, update
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
@@ -520,6 +520,23 @@ def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
     if new_rows:
         db.execute(insert(testset_items), new_rows)
 
+    # 🔗 원본(evaluation_dataset) 역동기화 — 운영 라우팅의 1-NN 참조셋이 이 테이블을 읽는다
+    # (query_classifier.reference_stmt, is_active 필터). 종전에는 화면 제외가 testset_items 에만
+    # 남아 "골든셋에서 뺐다"는 조치가 참조셋·Smoke 문항 선정에 통하지 않았다(2026-08-19).
+    # 새 버전 스냅샷 기준으로 is_active 를 맞춘다. 신규 추가·질문 수정 문항은 임베딩이 없어
+    # 참조셋에 들어가지 못한다 — index_evaluation_sets.py 재실행이 필요하다(별도 과제).
+    active_qs = [r["question"] for r in new_rows if not r["excluded"]]
+    excluded_qs = [r["question"] for r in new_rows if r["excluded"]]
+    # 제외 먼저, 활성 나중 — 같은 질문이 옛 제외 행과 재추가 행에 함께 있으면 재추가가 이긴다.
+    if excluded_qs:
+        db.execute(update(evaluation_dataset)
+                   .where(evaluation_dataset.c.question.in_(excluded_qs))
+                   .values(is_active=False))
+    if active_qs:
+        db.execute(update(evaluation_dataset)
+                   .where(evaluation_dataset.c.question.in_(active_qs))
+                   .values(is_active=True))
+
     # 재측정 run 생성 — 마감(DONE)은 워커의 run_evaluation 이 한다.
     run = db.execute(
         insert(evaluation_runs).values(
@@ -539,6 +556,11 @@ def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
         steps=[{"name": n, "status": "QUEUED"}
                for n in ("수집", "변환", "청킹", "검증", "색인", "반영")]))
     db.commit()
+
+    # 같은 프로세스에 떠 있는 분류기 참조셋을 다음 질의부터 새로 읽게 한다(재시작 불필요).
+    # 워커·다른 프로세스는 각자 기동 시 새로 읽는다.
+    import query_classifier
+    query_classifier.invalidate_classifiers()
 
     logger.info("평가셋 반영 v%s (추가 %s·편집 %s·제외 %s), 재측정 run=%s, 요청자 %s",
                 new_version, len(body.adds), len(edits), len(excludes), run.id, me.email)
