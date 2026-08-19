@@ -82,7 +82,11 @@ SYSTEM_PROMPT = """당신은 예금보험공사(KDIC) 챗봇의 질의 분석기
 [작업2 intent 분류]
 - 각 하위 질문마다 intent를 informational 또는 civil_petition 중 하나로 판단합니다.
 - informational: 제도·개념·정의·사실·수치를 알고 싶어 함 (무엇인가/한도/감면율/대상 상품/처리·지급 기간/포상금 개념 등).
-- civil_petition: 신청·신고·접수·조회·반환·수령 등 절차를 실행하려 함. 필요한 서류·방법·절차·신청 자격·신청 기한을 묻는 것도 포함."""
+- civil_petition: 신청·신고·접수·조회·반환·수령 등 절차를 실행하려 함. 필요한 서류·방법·절차·신청 자격·신청 기한을 묻는 것도 포함.
+
+[예시]
+- "미수령금 수령과 착오송금 반환신청은 뭐가 다른가요?" → should_split=true, items=["미수령금 수령은 무엇인가요?"(informational), "착오송금 반환신청은 무엇인가요?"(informational)] — 비교형은 두 대상의 근거 문서가 달라 반드시 나눕니다.
+- "착오송금 반환까지 얼마나 걸리나요?" → should_split=false — 요구가 하나면 나누지 않습니다."""
 
 _openai = {}
 # 2026-08-04(query_classifier와 동일 처리): 모델마다 temperature 지원이 다르다. gpt-5.4-mini는 0
