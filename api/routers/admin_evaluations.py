@@ -180,6 +180,23 @@ def _validate_item(db, inp: EvalItemInput, current_version: str, seen: Optional[
     return errors
 
 
+def active_questions(db, *, in_scope: bool, limit: int) -> list:
+    """평가메뉴(AD-006) 현행 버전의 활성 문항 질문 목록 — AD-008 초안 평가·게시 Smoke 가
+    쓴다(2026-08-19). 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면에서 추가·수정한
+    문항이 평가에 반영되지 않았다. in_scope 는 기대 출처 유무로 가른다(빈 출처 = 범위외).
+    질문 텍스트 정렬로 결정론적 순서를 보장한다(종전 question_id 정렬과 같은 목적)."""
+    _bootstrap_if_empty(db)
+    current = str(_current_version(db))
+    rows = db.execute(
+        select(testset_items.c.question, testset_items.c.expected_links)
+        .where(testset_items.c.testset_version == current,
+               testset_items.c.excluded.is_(False))
+        .order_by(testset_items.c.question)
+    ).all()
+    return [r.question for r in rows
+            if bool(_all_links(r.expected_links)) == in_scope][:limit]
+
+
 def compute_gate(m: dict) -> dict:
     """측정값(dict) -> 게이트 판정 전문. passed 와 기준별 판정을 **함께** 계산한다(E10).
 

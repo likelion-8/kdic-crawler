@@ -284,23 +284,12 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
 
 
 def _eval_questions(db):
-    """전후 비교용 고정 문항 — 골든셋에서 인스코프 앞 N + 범위외 앞 M (결정론적 순서)."""
-    from sqlalchemy import func as _f
-    from schema import evaluation_dataset
-    # ⚠️ 범위외 문항의 expected_sources 는 NULL 이 아니라 **빈 배열**이다 — is_(None) 으로
-    # 거르면 0건이 나온다(2026-08-12 실측). array_length 가 NULL(빈 배열/NULL 모두)인지로 가른다.
-    in_scope = db.execute(
-        select(evaluation_dataset.c.question)
-        .where(evaluation_dataset.c.is_active.is_(True),
-               _f.array_length(evaluation_dataset.c.expected_sources, 1) >= 1)
-        .order_by(evaluation_dataset.c.question_id).limit(EVAL_IN_SCOPE)
-    ).scalars().all()
-    oos = db.execute(
-        select(evaluation_dataset.c.question)
-        .where(evaluation_dataset.c.is_active.is_(True),
-               _f.array_length(evaluation_dataset.c.expected_sources, 1).is_(None))
-        .order_by(evaluation_dataset.c.question_id).limit(EVAL_OUT_OF_SCOPE)
-    ).scalars().all()
+    """전후 비교용 고정 문항 — 평가메뉴(AD-006) 현행 버전에서 인스코프 앞 N + 범위외 앞 M.
+    2026-08-19 전환: 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면 편집(추가·수정)이
+    반영되지 않았다. 이제 관리자가 보는 평가셋이 곧 평가 문항이다."""
+    from api.routers.admin_evaluations import active_questions
+    in_scope = active_questions(db, in_scope=True, limit=EVAL_IN_SCOPE)
+    oos = active_questions(db, in_scope=False, limit=EVAL_OUT_OF_SCOPE)
     return in_scope, oos
 
 
@@ -425,14 +414,9 @@ def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         logger.warning("프롬프트 게시: %s", gate_warning)
     content = _draft_to_content(db, dict(body.get("draft") or {}))
 
-    from schema import evaluation_dataset
-    questions = db.execute(
-        select(evaluation_dataset.c.question)
-        .where(evaluation_dataset.c.is_active.is_(True),
-               # 빈 배열 제외(_eval_questions 와 같은 사정) — Smoke 는 인스코프만 잰다
-               func.array_length(evaluation_dataset.c.expected_sources, 1) >= 1)
-        .order_by(evaluation_dataset.c.question_id).limit(SMOKE_TOTAL)
-    ).scalars().all()
+    # Smoke 문항도 평가메뉴 현행 버전에서 뽑는다(2026-08-19 전환 — _eval_questions 와 동일).
+    from api.routers.admin_evaluations import active_questions
+    questions = active_questions(db, in_scope=True, limit=SMOKE_TOTAL)
     if len(questions) < SMOKE_TOTAL:
         raise BadRequestError(f"Smoke 문항이 부족합니다({len(questions)}/{SMOKE_TOTAL}).")
 
