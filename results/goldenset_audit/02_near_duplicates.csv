@@ -1,0 +1,18 @@
+﻿유사도,라벨일치,test_id_A,질문_A,라벨_A,test_id_B,질문_B,라벨_B
+0.9924,같음,faq_msdr_apply_q2,보이스피싱으로 인한 피해도 착오송금 반환지원 대상인가요?,faq,faq_top10_q6,보이스피싱 피해도 착오송금 반환지원 대상인가요?,faq
+0.9916,같음,faq_top10_q3,착오송금 반환지원 적용대상이 되는 금융기관에는 어떤 곳이 있나요?,faq,faq_msdr_apply_q9,착오송금 반환지원 적용 대상이 되는 금융기관은 어디인가요?,faq
+0.9901,같음,uc_gudn_q5,개산지급금 정산금이란 무엇인가요?,fact,uc_itgr_aply_q2,개산지급금 정산금이 뭔가요?,fact
+0.9901,같음,ms_expln_q1,가지급금이 뭔가요?,fact,uc_itgr_aply_q5,가지급금이란 무엇인가요?,fact
+0.9878,같음,faq_top10_q1,착오송금 반환지원 신청 접수부터 실제 반환까지 얼마나 걸리나요?,faq,faq_msdr_apply_q7,착오송금 반환지원 신청 후 실제 반환까지 얼마나 걸리나요?,faq
+0.9876,같음,sender_qlfc_check_q2,착오송금 반환지원 자가진단에서 확인하는 날짜와 신청기한 기준은 무엇인가요?,fact,sender_qlfc_check_q6,착오송금 반환지원 자가진단에서 확인하는 신청일 기한 기준은 무엇인가요?,fact
+0.9747,같음,uc_gudn_q8,미수령금 방문신청 시 필요한 구비서류는 어디서 확인하나요?,link_guide,uc_itgr_aply_q3,미수령금을 방문 신청하려는데 구비서류는 어디서 확인하죠?,link_guide
+0.9682,같음,uc_gudn_q9,미수령금 신청 지급대행점은 어디서 조회하나요?,link_guide,uc_itgr_aply_q8,미수령금 방문신청 시 지급대행점은 어디서 조회하나요?,link_guide
+0.9670,같음,kmrs_proc_q7,예금보험공사는 착오송금 수취인의 연락처와 주소를 어디를 통해 확보하나요?,fact,mtrs_gvbk_proc_q2,예금보험공사는 착오송금 수취인의 연락처와 주소를 어디를 통해 확인하나요?,fact
+0.9666,다름,dp_logo_q1,예금보호 로고 색상을 임의로 바꿔도 되나요?,fact,amb_dp_logo_1,예금보호 로고 색깔을 내 맘대로 바꿔서 써도 돼요?,faq
+0.9596,같음,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide,amb_faq_nramt_3,예금보험금을 인터넷으로 신청하려면 어떻게 하면 돼요?,link_guide
+0.9595,다름,faq_msdr_apply_q1,착오송금 반환지원 대상 금액은 얼마까지인가요?,faq,kmrs_aply_trgt_q1,착오송금 반환지원 신청이 가능한 금액 한도는 얼마인가요?,fact
+0.9534,같음,receiver_attention_q7,이체수수료 환급을 팩스로 신청하려면 어디로 보내야 하나요?,fact,amb_receiver_attention_4,이체수수료 환급 신청할 때 팩스나 이메일 어디로 보내요?,fact
+0.9532,같음,sender_attention_q1,착오송금 반환지원의 신청 가능 금액과 신청기한은 어떻게 되나요?,fact,kmrs_aply_trgt_q1,착오송금 반환지원 신청이 가능한 금액 한도는 얼마인가요?,fact
+0.9522,같음,sender_qlfc_check_q6,착오송금 반환지원 자가진단에서 확인하는 신청일 기한 기준은 무엇인가요?,fact,sender_qlfc_check_q9,착오송금 반환지원 자가진단에서 확인하는 착오송금일 기준은 무엇인가요?,fact
+0.9503,같음,sender_qlfc_check_q2,착오송금 반환지원 자가진단에서 확인하는 날짜와 신청기한 기준은 무엇인가요?,fact,sender_qlfc_check_q9,착오송금 반환지원 자가진단에서 확인하는 착오송금일 기준은 무엇인가요?,fact
+0.9502,같음,sender_qlfc_check_q3,착오송금 반환지원 자가진단은 금융회사 반환신청과 법적절차 여부를 어떻게 확인하나요?,fact,sender_qlfc_check_q10,착오송금 반환지원 자가진단에서 금융회사 반환신청과 관련해 무엇을 확인하나요?,fact
