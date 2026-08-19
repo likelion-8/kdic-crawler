@@ -49,6 +49,8 @@ def main():
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--only", default=None,
                     help="1부터 세는 문항 번호를 쉼표로 — 속도제한 등으로 빠진 건 재실행용 (예: 26,27,44)")
+    ap.add_argument("--sleep", type=float, default=0.0,
+                    help="문항 사이 대기(초) — HCX 속도제한 회피용 (2026-08-19 오후 66문항 중 17건 튕김)")
     ap.add_argument("--csv", default=None, help="문항별 기록 저장(놓침 후보 수동 라벨링용)")
     ap.add_argument("--deterministic", action="store_true",
                     help="HCX temperature 0 + seed 고정(재현용). 기본은 운영과 같은 샘플링")
@@ -72,6 +74,8 @@ def main():
     t0 = time.time()
 
     for i, item in enumerate(items, 1):
+        if args.sleep and i > 1:
+            time.sleep(args.sleep)
         q = item["question"]
         if item.get("intent") and item["intent"] != "informational":
             skipped[f"intent={item['intent']}(비교 축 상이)"] += 1

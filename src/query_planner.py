@@ -20,6 +20,7 @@ gpt-5.4-mini/gpt-5.6-luna) 중 최고. 현행(HCX 분해 + luna intent, 질문�
 intent 정의·라벨 기준은 intent_llm_common.py(기존 intent 분류)와 동일하게 유지한다 — 두 라벨
 informational/civil_petition만 쓰며, 분해기가 만든 각 하위 질문에 적용한다.
 """
+import logging
 import os
 from typing import List, Literal
 
@@ -30,6 +31,8 @@ from observability import observe
 from retrieval import ROOT  # .env 위치 재사용(다른 모듈과 동일 경로)
 
 load_dotenv(ROOT / ".env")
+
+logger = logging.getLogger(__name__)
 
 # 2026-08-09: intent 분류 하나만 하던 OpenAI 모델을 '분해+intent'를 함께 하는 플래너로 확장하면서
 # 환경변수 이름을 OPENAI_INTENT_MODEL -> OPENAI_PLANNER_MODEL 로 바꿨다(이름이 실제 역할과 맞게).
@@ -71,6 +74,7 @@ SYSTEM_PROMPT = """당신은 예금보험공사(KDIC) 챗봇의 질의 분석기
 - 서로 다른 정보 요구가 여러 개면 should_split=true, 각 요구를 독립 검색 가능한 하위 질문으로 나눕니다.
 - 요구가 하나면 should_split=false, items에는 원 질문 하나만 담습니다.
 - "방법/절차"처럼 표현만 다르고 실제로 같은 요구는 나누지 않습니다. 원문에 없는 요구를 지어내지 않습니다.
+- 두 대상을 비교하는 질문("A와 B는 뭐가 다른가요?", "A와 B의 차이는?")은 요구가 두 개입니다 — 반드시 should_split=true로 하고 A와 B 각각을 묻는 하위 질문으로 나눕니다. 두 대상의 근거 문서가 서로 달라, 나누지 않으면 한쪽 근거만 검색됩니다.
 - 하위 질문의 문구는 그대로 검색어로 쓰입니다. 원문 구절을 최대한 그대로 잘라 쓰고, 낱말을 바꾸거나 더하지 않습니다.
 - 주어가 없어 문맥 없이 이해되지 않는 하위 질문에만 주어를 채우되, 반드시 원문에 쓰인 낱말로만 채웁니다. 원문에 없는 기관명·제도명·수식어(예: "예금보험공사의", "예금보험제도에서")를 덧붙이지 않습니다.
 - 단, 말투는 정중한 의문문으로 다듬습니다(예: "뭐야?" → "~이란 무엇인가요?", "어떻게 해?" → "어떻게 하나요?"). 낱말과 대상은 그대로 두고 어미만 바꿉니다.
@@ -78,7 +82,11 @@ SYSTEM_PROMPT = """당신은 예금보험공사(KDIC) 챗봇의 질의 분석기
 [작업2 intent 분류]
 - 각 하위 질문마다 intent를 informational 또는 civil_petition 중 하나로 판단합니다.
 - informational: 제도·개념·정의·사실·수치를 알고 싶어 함 (무엇인가/한도/감면율/대상 상품/처리·지급 기간/포상금 개념 등).
-- civil_petition: 신청·신고·접수·조회·반환·수령 등 절차를 실행하려 함. 필요한 서류·방법·절차·신청 자격·신청 기한을 묻는 것도 포함."""
+- civil_petition: 신청·신고·접수·조회·반환·수령 등 절차를 실행하려 함. 필요한 서류·방법·절차·신청 자격·신청 기한을 묻는 것도 포함.
+
+[예시]
+- "미수령금 수령과 착오송금 반환신청은 뭐가 다른가요?" → should_split=true, items=["미수령금 수령은 무엇인가요?"(informational), "착오송금 반환신청은 무엇인가요?"(informational)] — 비교형은 두 대상의 근거 문서가 달라 반드시 나눕니다.
+- "착오송금 반환까지 얼마나 걸리나요?" → should_split=false — 요구가 하나면 나누지 않습니다."""
 
 _openai = {}
 # 2026-08-04(query_classifier와 동일 처리): 모델마다 temperature 지원이 다르다. gpt-5.4-mini는 0
@@ -116,6 +124,16 @@ def _fallback(query):
     return {"should_split": False, "items": [{"question": query, "intent": "informational"}]}
 
 
+# 2026-08-19: 비교형 질문("미수령금 수령과 착오송금 반환신청은 뭐가 다른가요?")이 분해 없이
+# 단일 검색을 타 한쪽(착오송금) 근거만 걷혔고, 생성이 나머지 반쪽을 지어내 사후 판정
+# (ungrounded_claims)으로 본문이 교체되는 실사용 사례가 나왔다. 그런데 같은 질문을 플래너에
+# 직접 넣으면 정상 분해된다 — 즉 프롬프트 문제가 아니라 (a) luna 가 temperature=0 을 거부해
+# 온도 1로 돌면서 분해 판단이 롤마다 흔들리거나 (b) API 실패로 아래 무음 폴백에 떨어진 것.
+# (a)는 위 SYSTEM_PROMPT 의 비교형 명시 규칙으로 눌렀고, (b)는 폴백이 로그를 안 남겨
+# 사후 확인이 불가능했으므로 경고를 남긴다(source_check 의 "조용히 죽지 않도록" 원칙과 동일 —
+# intent 분류기 무음 폴백 전례 방지).
+
+
 @observe()
 def plan_query(query):
     """질문 하나 -> {"should_split": bool, "items": [{"question", "intent"}]}.
@@ -128,12 +146,14 @@ def plan_query(query):
         completion = _parse(_get_client(), _PLANNER_MODEL, messages)
         plan = completion.choices[0].message.parsed
         if plan is None or not plan.items:
+            logger.warning("플래너 응답이 비어 폴백(분해 없음) — 질문: %r", query)
             return _fallback(query)
         return {
             "should_split": bool(plan.should_split),
             "items": [{"question": it.question, "intent": it.intent} for it in plan.items],
         }
     except Exception:
+        logger.warning("플래너 호출 실패 — 폴백(분해 없음)으로 계속. 질문: %r", query, exc_info=True)
         return _fallback(query)
 
 
