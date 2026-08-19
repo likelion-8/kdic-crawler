@@ -26,6 +26,20 @@ load_dotenv(ROOT / ".env")  # OPENAI_API_KEY 등 로드(intent 분류 OpenAI 호
 _LABEL_FIELDS = ("question_type", "business_function")
 
 
+def reference_stmt(label_field):
+    """1-NN 참조셋 조회문. is_active 문항만 — 관리자가 AD-006에서 끈 문항(잘못된 라벨)이
+    평가·화면에서는 빠지는데 운영 라우팅 참조로는 살아남던 구멍을 막는다(2026-08-19).
+    다른 독자들(admin_prompt·admin_evaluations)과 같은 필터다."""
+    from sqlalchemy import func, select
+
+    from schema import evaluation_dataset
+
+    c = evaluation_dataset.c
+    return (select(c.question, c[label_field], c.embedding)
+            .where(func.cardinality(c.expected_sources) > 0,
+                   c.is_active.is_(True)))
+
+
 class QuestionTypeClassifier:
     """새 질문의 유형(qtype)을 예시 질문과의 코사인 유사도로 분류(1-최근접).
 
@@ -44,16 +58,11 @@ class QuestionTypeClassifier:
         # business_function(업무 필터) 분류에 같은 1-NN·같은 evaluation_dataset 임베딩을 쓴다.
         assert label_field in _LABEL_FIELDS, f"알 수 없는 label_field: {label_field}"
         import numpy as np
-        from sqlalchemy import func, select
 
         from db import get_engine
-        from schema import evaluation_dataset
 
-        c = evaluation_dataset.c
-        stmt = (select(c.question, c[label_field], c.embedding)
-                .where(func.cardinality(c.expected_sources) > 0))
         with get_engine().connect() as conn:
-            rows = conn.execute(stmt).all()
+            rows = conn.execute(reference_stmt(label_field)).all()
 
         self.questions = [r[0] for r in rows]  # trace에서 "어떤 예시가 끌어당겼는지" 보여주기 위해 보존
         self.types = [r[1] for r in rows]
@@ -119,6 +128,12 @@ def _get_classifier(label_field):
     if label_field not in _classifiers:
         _classifiers[label_field] = QuestionTypeClassifier(label_field=label_field)
     return _classifiers[label_field]
+
+
+def invalidate_classifiers():
+    """참조셋 캐시 무효화 — 평가셋 반영(admin_evaluations.apply_changes)이 부른다.
+    다음 classify 때 evaluation_dataset을 다시 읽는다(임베딩은 저장값 재사용이라 수백 ms)."""
+    _classifiers.clear()
 
 
 def classify_query_type(query):

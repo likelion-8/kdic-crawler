@@ -127,16 +127,14 @@ export function RagParams() {
   const stale = gate.draft_signature !== null &&
     (evaluated === null || changedParams(server.params, draft, evaluated).length > 0)
   const gateReady = gate.passed && !stale
-  const gateReason = stale
-    ? '초안이 바뀌어 평가가 무효화되었습니다. [초안 평가]를 다시 실행해 주세요'
-    : (gate.blocked_reason ?? '최신 평가가 게이트를 통과해야 반영할 수 있습니다. 먼저 [초안 평가]를 실행해 주세요')
-  /** [운영 반영]을 막는 조건. AD-008 publishBlocked와 같은 형태로 둔다 —
-   *  같은 상태 바를 쓰는 두 화면이 같은 상태에서 같게 행동해야 한다 */
+  /** 게이트·평가 상태는 반영을 막지 않고 경고로만 알린다(2026-08-19 정책 변경).
+   *  AD-008 publishBlocked와 같은 형태 — 두 화면이 같은 상태에서 같게 행동해야 한다 */
+  const gateWarning = stale
+    ? '초안이 바뀌어 평가가 무효화되었습니다 — 재평가 없이 반영하면 결과를 보증할 수 없습니다'
+    : (gate.blocked_reason ? `${gate.blocked_reason} — 이 상태로도 반영은 가능합니다` : undefined)
   const applyBlocked = !canEdit
     ? '편집자(EDITOR) 이상만 운영에 반영할 수 있습니다'
-    : !gateReady
-      ? gateReason
-      : undefined
+    : undefined
 
   function set(key: string, value: ParamValue) {
     setDraft((prev) => ({ ...(prev ?? {}), [key]: value }))
@@ -238,7 +236,7 @@ export function RagParams() {
     <div className="flex flex-col gap-4">
       {/* 대화 로그 [다음 조치]로 넘어온 경우의 되돌아가기 띠(2026-08-18). 한 건의 A/B 결과로
           반영을 결정하지 않는다는 경고를 함께 — 판정은 게이트가 한다 */}
-      <ReturnBand note="이 한 건의 결과로 반영을 결정하지 않습니다 — 판정은 홀드아웃 게이트가 합니다" />
+      <ReturnBand note="이 한 건의 결과로 반영을 결정하지 않습니다 — 홀드아웃 게이트 판정은 경고로 함께 표시됩니다" />
       {/* ---------------- ⓪ 초안 상태 바 — 화면 최상단 sticky ---------------- */}
       {/* 상태 바는 권한과 무관하게 항상 그린다. 통째로 숨기면 VIEWER가 이 화면에서만 다른 세계를
           보게 되고(AD-008은 항상 그리고 사유로 막는다), '왜 못 바꾸나'를 알 길도 사라진다 —
@@ -262,7 +260,7 @@ export function RagParams() {
                 )}
               </>
             }
-            hint="① 편집 → ② 초안 평가 → ③ 운영 반영 순서로 진행합니다. 최신 평가가 게이트를 통과해야 [운영 반영]이 활성화됩니다."
+            hint="① 편집 → ② 초안 평가 → ③ 운영 반영 순서로 진행합니다. 게이트 미달·미평가는 경고로만 표시되며 반영을 막지 않습니다."
             primaryLabel={`운영 반영 (${changed.length})`}
             pending={apply.isPending}
             // 눌러 봐야 사유가 뜨는 방식을 버리고 AD-008과 같이 선언형으로 막는다 —
@@ -281,11 +279,11 @@ export function RagParams() {
           상태바(sticky)는 -mt-6로 위를 덮으므로 반드시 그 **아래**에 둔다(실측: 문구 절반이 잘렸다) */}
       {!canEdit && <ReadOnlyNotice need="편집자(EDITOR) 이상" action="파라미터를 바꾸려면" />}
 
-      {/* 다음에 무엇을 해야 하는지는 화면 안에도 남긴다 — AD-008과 같은 자리·같은 톤.
-          게시를 막는 조건이라 옅은 색면 인셋(block)으로 세운다 */}
-      {canEdit && changed.length > 0 && !gateReady && (
+      {/* 경고는 반영을 막지 않는다(2026-08-19) — 인지용 색면 인셋으로만 세운다.
+          AD-008과 같은 자리·같은 톤 */}
+      {canEdit && changed.length > 0 && !gateReady && gateWarning && (
         <Notice tone="warning" variant="block">
-          {gateReason}
+          {gateWarning}
         </Notice>
       )}
 
@@ -343,11 +341,17 @@ export function RagParams() {
         open={applyOpen}
         title="이 설정을 운영에 반영할까요?"
         impact={
-          <p>
-            변경 {changed.length}건 · 무중단 {seamless}
-            {reindex > 0 && ` · 재적재 필요 ${reindex}`} — 반영은 전부 무중단 즉시 적용이며 실패 시 이전 버전을
-            유지합니다.
-          </p>
+          <>
+            <p>
+              변경 {changed.length}건 · 무중단 {seamless}
+              {reindex > 0 && ` · 재적재 필요 ${reindex}`} — 반영은 전부 무중단 즉시 적용이며 실패 시 이전 버전을
+              유지합니다.
+            </p>
+            {/* 마지막 인지 지점 — 경고 상태로 반영하려는 참이면 모달 안에서 한 번 더 알린다(2026-08-19) */}
+            {!gateReady && gateWarning && (
+              <p className="mt-1 font-medium"><ColorText tone="orange">⚠ {gateWarning}</ColorText></p>
+            )}
+          </>
         }
         diff={
           <>

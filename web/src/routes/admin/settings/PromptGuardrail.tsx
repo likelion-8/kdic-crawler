@@ -132,13 +132,11 @@ export function PromptGuardrail() {
   const draft = deriveDraft(draftQuery.data, local.content, evaluation)
   const gatePassed = draft.evaluation?.gate.passed === true
   const editable = canEdit
-  /** [게시]를 막는 조건. 조용한 no-op 대신 버튼을 비활성으로 두고 사유를 붙인다(§2.2 ③).
-   *  요청/승인 2단계를 없앤 뒤로는 권한과 회귀 게이트 둘뿐이다(팀 결정 2026-08-04) */
+  /** [게시]를 막는 조건은 권한뿐이다(2026-08-19 정책 변경) — 회귀 게이트는 경고로만
+   *  알린다. 요청/승인 2단계를 없앤 팀 결정(2026-08-04)에 이어 게이트 차단도 해제했다 */
   const publishBlocked = !canEdit
     ? '편집자(EDITOR) 이상만 게시할 수 있습니다'
-    : !gatePassed
-      ? '회귀 게이트를 통과해야 게시할 수 있습니다'
-      : undefined
+    : undefined
 
   const tabs: { key: TabKey; label: string; dirty: boolean }[] = [
     { key: 'prompt', label: '시스템 프롬프트', dirty: draft.dirty.prompt },
@@ -170,7 +168,7 @@ export function PromptGuardrail() {
       <div className="sticky top-0 z-20 -mx-6 -mt-6 bg-background px-6 pt-6 pb-1">
         <DraftStatusBar
           changeCount={draft.change_count}
-          hint="수정한 영역에 빨간 점이 붙습니다. ① 편집 → ② 초안 평가 → ③ 게시 순서로 진행하며, 회귀 게이트를 통과해야 [게시]가 활성화됩니다."
+          hint="수정한 영역에 빨간 점이 붙습니다. ① 편집 → ② 초안 평가 → ③ 게시 순서를 권장하며, 회귀 게이트 미통과는 경고로만 표시되고 게시를 막지 않습니다."
           // 요청/승인 2단계를 없애 라벨이 하나다(팀 결정 2026-08-04) — 권한별로 갈리지 않는다
           primaryLabel={`게시 (${draft.change_count})`}
           pending={publish.isPending}
@@ -207,11 +205,11 @@ export function PromptGuardrail() {
         </Notice>
       )}
 
-      {/* 비활성 사유는 버튼에도 붙지만(툴팁), 다음에 무엇을 해야 하는지는 화면 안에도 남긴다 */}
+      {/* 게이트는 게시를 막지 않는다(2026-08-19) — 인지용 경고 인셋만 세운다 */}
       {draft.change_count > 0 && !gatePassed && (
-        // 게시를 막는 조건이라 옅은 색면 인셋(block)으로 세운다
         <Notice tone="warning" variant="block">
-          회귀 게이트를 통과해야 게시할 수 있습니다. 먼저 [초안 평가]를 실행해 주세요
+          회귀 게이트를 통과하지 않은 초안입니다 — 이대로도 게시는 가능하지만 [초안 평가]로 회귀 여부를 먼저
+          확인하는 것을 권장합니다
         </Notice>
       )}
 
@@ -337,7 +335,7 @@ export function PromptGuardrail() {
         title="이 초안을 게시할까요?"
         // 문항 수를 쓰지 않는다 — 게시 '전'이라 결과가 없고, 프론트가 박아 둔 숫자는 서버가
         // Smoke 세트를 바꾸는 순간 거짓이 된다(판정 기준은 서버 몫 · handoff §6 E4)
-        impact={`게시하면 Smoke 검사가 실행된 뒤 ${draft.draft_version}으로 전환됩니다. 실패하면 직전 버전으로 롤백합니다.`}
+        impact={`게시하면 Smoke 검사가 실행된 뒤 ${draft.draft_version}으로 전환됩니다. Smoke 미달은 경고로 기록되며 전환을 막지 않습니다.${gatePassed ? '' : ' ⚠ 회귀 게이트를 통과하지 않은 초안입니다.'}`}
         diff={<PublishDiff draft={draft} />}
         reason="required"
         error={modalError(publish.error)}
