@@ -57,6 +57,9 @@ def build(sub_plans: list) -> Optional[dict]:
             "kind": getattr(sp, "obs_kind", None),
             "appropriate": getattr(sp, "obs_appropriate", None),
             "normalized": getattr(sp, "obs_normalized", None),
+            # 프리체크 섀도 판정(exp/source-precheck-v1) — 소급 실험 표본용. None = 미계산.
+            "precheck": getattr(sp, "obs_precheck", None),
+            "precheck_missing": getattr(sp, "obs_precheck_missing", None),
         })
     return {"subs": subs}
 

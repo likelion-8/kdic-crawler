@@ -30,6 +30,7 @@ from prompt_builder import (_strip_no_source_marker, build_civil_petition_prompt
                             build_informational_prompt)
 from runtime_config import get_param
 from source_check import validate_answer
+from source_precheck import classify as precheck_classify
 
 from api.errors import DEFAULT_FALLBACK_SOURCES
 from api.schemas.chat import Attachment, ChatResponse, SourceItem, SubAnswer
@@ -87,6 +88,11 @@ class SubPlan:
     obs_kind: Optional[str] = None           # validate_answer 의 판정 종류
     obs_appropriate: Optional[bool] = None   # 질문-답변 적절성
     obs_normalized: Optional[bool] = None    # 본문이 표준 안내로 교체됐나
+    # 프리체크 섀도 판정(exp/source-precheck-v1, 2026-08-19). 기록만 하고 동작엔 안 쓴다 —
+    # 소급 실험(eval_source_precheck_retro.py)의 표본이 여기서 쌓인다. 채택 결정 전까지
+    # 이 값으로 분기하면 안 된다.
+    obs_precheck: Optional[str] = None            # source_precheck.classify 사유(clean/의심 사유)
+    obs_precheck_missing: Optional[list] = None   # number_mismatch 일 때 근거에 없던 수치 토큰
 
 
 def plan(query: str) -> list:
@@ -204,6 +210,15 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = marker_used_source
     sp.obs_marker = marker_used_source
+    # 프리체크 섀도 기록(exp/source-precheck-v1): 판정만 남기고 동작은 바꾸지 않는다.
+    # luna 와 같은 입력(생성 원문 body + 같은 evidence)으로 판정해야 교차표가 성립하므로
+    # 재생성·본문 교체보다 앞에서 적는다. 다중 하위질문·civil 도 여기서는 실제 evidence 로
+    # 판정돼, 소급 분석이 못 재던 로그의 69%가 표본이 된다. 실패해도 답변을 막지 않는다.
+    try:
+        pc = precheck_classify(body, sp.evidence, marker_used_source)
+        sp.obs_precheck, sp.obs_precheck_missing = pc.reason, (pc.missing or None)
+    except Exception:
+        logger.warning("프리체크 섀도 판정 실패 — 기록 없이 계속", exc_info=True)
     if get_param("use_source_recheck", USE_SOURCE_RECHECK):
         # 단일 검증 1콜 — 3표 다수결은 2026-08-14 팀 결정으로 폐지(모든 경로 1콜 통일).
         v = validate_answer(sp.question, body, sp.evidence)
