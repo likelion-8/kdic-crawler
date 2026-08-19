@@ -81,8 +81,15 @@ def v_relabel(text):
     return _FAQ_RE.sub(lambda m: f"관련 질문 예시: {m.group(1)}\n답변: ", text)
 
 
+def v_combo(text):
+    """B+C 결합 — 1차 실험(2026-08-19)에서 B·C 만 효과(Q3 거절→정답, D 는 전패)라
+    결합을 후속 검증한다. 프리펜드가 열기 존재를 조건으로 보므로 프리펜드 → 열기제거 순."""
+    return v_artifact(v_prepend(text))
+
+
 VARIANTS = [("A.현행", v_current), ("B.프리펜드", v_prepend),
-            ("C.열기제거", v_artifact), ("D.재라벨링", v_relabel)]
+            ("C.열기제거", v_artifact), ("D.재라벨링", v_relabel),
+            ("E.B+C결합", v_combo)]
 
 
 def call_with_retry(prompt, *, deterministic, sleep):
@@ -112,12 +119,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--samples", type=int, default=2, help="변형당 운영 샘플링(temp 0.2) 횟수")
     ap.add_argument("--sleep", type=float, default=3.0)
+    ap.add_argument("--variants", default=None,
+                    help="쉼표로 변형 이름 접두 필터 (예: E 또는 A,E) — 쿼터 절약용")
     args = ap.parse_args()
+    variants = ([v for v in VARIANTS if any(v[0].startswith(p) for p in args.variants.split(","))]
+                if args.variants else VARIANTS)
 
     for q, must in QUESTIONS:
         top = gate_low_relevance(top_k_cut(route_search_chunks(q, k=20), k=5))
         print(f"\n{'=' * 70}\n질문: {q}\n근거 top3: {[(c, round(s, 3)) for c, s, _ in top[:3]]}")
-        for name, fn in VARIANTS:
+        for name, fn in variants:
             chunks = [(cid, s, fn(t)) for cid, s, t in top]
             prompt = build_informational_prompt(q, chunks)
             time.sleep(args.sleep)
