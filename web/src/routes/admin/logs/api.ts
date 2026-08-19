@@ -55,11 +55,17 @@ export interface LangfuseTrace {
 }
 
 export interface LogErrorDetail {
-  code: ErrorCode
-  meaning: string
-  user_message: string
-  auto_retry: string
-  fallback: string
+  /**
+   * 사용자에게 실제로 나간 오류 코드. 아래 4행은 서버가 이 코드 하나에서 파생한다
+   * (api/rag/answer.ERROR_CATALOG). rag_runs.error_code 를 적기 시작한 2026-08-19 이전
+   * 실패에는 분류 기록이 없어 **전부 null** 이다 — 그때는 4행 대신 '기록 없음'을 말한다.
+   */
+  code: ErrorCode | null
+  meaning: string | null
+  user_message: string | null
+  /** 서버가 스스로 재시도했는지. 재시도는 구현하지 않기로 확정해 현재 전부 '없음' */
+  auto_retry: string | null
+  fallback: string | null
   /** rag_runs.failure_stage — 어느 단계에서 멈췄나. 단계별 소요는 Langfuse가 갖는다 */
   failure_stage: string | null
   /** rag_runs.root_cause */

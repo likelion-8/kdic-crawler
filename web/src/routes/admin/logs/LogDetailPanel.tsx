@@ -116,10 +116,13 @@ function EvidencePanel({ observation }: { observation: RunObservation }) {
 }
 
 /**
- * [다음 조치] — 근거 구획이 가른 세 갈래를 **누를 수 있게** 만든다(2026-08-18).
+ * [다음 조치] — 근거 구획이 가른 갈래를 **누를 수 있게** 만든다(2026-08-18).
  *
  * 관측(observation)이 판정한 상태로 하나만 primary 로 강조한다. 강조는 힌트지 판정이
- * 아니다 — 세 버튼을 다 남긴다. 감추면 강조가 틀렸을 때 관리자가 갇힌다.
+ * 아니다 — 남은 버튼을 다 보여준다. 감추면 강조가 틀렸을 때 관리자가 갇힌다.
+ * [지식베이스에서 찾아보기]는 2026-08-19 제거했다 — 질문 문구로 페이지를 훑는 것뿐이라
+ * 검색·프롬프트 조치처럼 원인을 좁혀 주지 못했다. 근거가 비어 hint 가 'data' 인 경우엔
+ * 아무 버튼도 강조되지 않는데, 남은 둘 중 어느 쪽도 답이 아니므로 그게 맞다.
  * 목적지에는 ?from=log:{request_id} 와 프리필 값을 넘긴다. 목적지 상단 되돌아가기 띠에서
  * [처리 완료]를 눌러도 이 로그의 처리 상태가 바뀌어 루프가 닫힌다(돌아오지 않아도 된다).
  */
@@ -137,9 +140,6 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
     <div className="mt-3">
       <SectionTitle>다음 조치</SectionTitle>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant={v('data')} onClick={() => navigate(`/admin/knowledge/pages?q=${q}&${from}`)}>
-          지식베이스에서 찾아보기
-        </Button>
         <Button size="sm" variant={v('search')} onClick={() => navigate(`/admin/settings/rag?q=${q}&${from}`)}>
           검색 설정 비교하기
         </Button>
@@ -150,6 +150,15 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
     </div>
   )
 }
+
+/** rag_runs.failure_stage 는 파이프라인 내부 식별자다 — 화면에는 사람이 읽는 단계명으로 적는다.
+ *  모르는 값은 지어내지 않고 원본을 그대로 보여준다(단계가 늘어나도 화면이 거짓말하지 않는다). */
+const STAGE_LABEL: Record<string, string> = {
+  retrieval: '검색',
+  llm: '답변 생성',
+}
+const stageLabel = (stage: string | null) =>
+  stage === null ? '확인할 수 없음' : (STAGE_LABEL[stage] ?? stage)
 
 /** 처리 상태 꼬리 — 미처리면 [처리 완료 표시], 처리했으면 그때 남긴 조치 사유.
  *
@@ -284,17 +293,27 @@ function TracePanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
 /** [4] 실패 건(붉은 행) 선택 시 : 오류 상세 패널 */
 function ErrorPanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
   const error = detail.error!
-  const rows: [string, string, boolean][] = [
-    ['오류 코드', `${error.code} · ${error.meaning}`, true],
-    ['사용자 노출 문구', `"${error.user_message}"`, false],
-    ['서버 자동 재시도', error.auto_retry, false],
-    ['대체 출처', error.fallback, false],
-  ]
+  // 4행은 서버가 error_code 하나에서 파생한다. 그 컬럼(2026-08-19) 이전 실패는 전부 null 이라
+  // 행을 그리지 않는다 — 종전에는 빈 문자열을 그려 '오류 코드 ·' 같은 껍데기가 보였다.
+  const rows: [string, string, boolean][] =
+    error.code === null
+      ? []
+      : [
+          ['오류 코드', `${error.code} · ${error.meaning}`, true],
+          ['사용자 노출 문구', `"${error.user_message}"`, false],
+          ['서버 자동 재시도', error.auto_retry ?? '—', false],
+          ['대체 출처', error.fallback ?? '—', false],
+        ]
 
   return (
     <section aria-label="오류 상세">
       <div>
         <SectionTitle>오류 정보</SectionTitle>
+        {rows.length === 0 && (
+          <p className="text-[13px] text-muted-foreground">
+            이 실행에는 오류 분류 기록이 없습니다 — 아래 실패 지점으로 확인합니다
+          </p>
+        )}
         <dl className="space-y-1.5">
           {rows.map(([label, value, strong]) => (
             <div className="grid grid-cols-[120px_1fr] gap-2.5 text-[13px]" key={label}>
@@ -316,7 +335,7 @@ function ErrorPanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
             {/* 기호만으로 알리지 않도록 상태 단어를 함께 읽힌다(CM-DF-004 09절) */}
             <dd className="font-semibold text-danger-fg">
               <span aria-hidden="true">✗</span>
-              <span className="sr-only">실패</span> {error.failure_stage ?? '확인할 수 없음'}
+              <span className="sr-only">실패</span> {stageLabel(error.failure_stage)}
             </dd>
           </div>
           {error.root_cause !== null && (

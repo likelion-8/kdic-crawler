@@ -71,13 +71,17 @@ class LangfuseTrace(BaseModel):
 
 class LogErrorDetail(BaseModel):
     """오류 상세. code→(meaning·user_message·auto_retry·fallback)은 정적 표에서 채운다
-    (codes.ts ERROR_CODES 대응). 단계·원인은 rag_runs 에서 온다."""
+    (api/rag/answer.ERROR_CATALOG · codes.ts ErrorCode 대응). 단계·원인은 rag_runs 에서 온다.
 
-    code: str
-    meaning: str
-    user_message: str
-    auto_retry: str
-    fallback: str
+    앞 4행은 **전부 nullable** 이다 — rag_runs.error_code 를 적기 시작한 건 2026-08-19 라
+    그 이전 실패에는 분류 기록이 없다. 빈 문자열로 내리면 화면이 '오류 코드 ·' 같은 껍데기를
+    그리게 되므로, 모르는 것은 null 로 내려 화면이 '기록 없음'이라 말하게 한다."""
+
+    code: Optional[str] = None
+    meaning: Optional[str] = None
+    user_message: Optional[str] = None
+    auto_retry: Optional[str] = None
+    fallback: Optional[str] = None
     failure_stage: Optional[str] = None     # rag_runs.failure_stage — 어느 단계에서 멈췄나
     root_cause: Optional[str] = None        # rag_runs.root_cause
 

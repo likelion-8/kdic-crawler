@@ -178,6 +178,11 @@ rag_runs = Table(
     Column("status", String),
     Column("failure_stage", String),
     Column("root_cause", Text),
+    # 사용자에게 실제로 나간 오류 코드 5종(CM-DF-002 04절 · codes.ts ErrorCode). 2026-08-19 추가.
+    # 실패 순간 error_from_exception 이 이 값을 계산해 사용자에게 보내고는 버렸다 — 그래서
+    # AD-005 오류 상세가 '오류 코드·사용자 노출 문구·재시도·대체 출처' 4행을 빈 문자열로만
+    # 내보냈다. 코드 하나만 있으면 나머지 3행은 api/rag/answer.ERROR_CATALOG 에서 파생된다.
+    Column("error_code", String),
     Column("total_latency_ms", Integer),
     Column("llm_model", String),
     Column("embedding_model", String),
@@ -508,6 +513,8 @@ def main():
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_at timestamptz"))
         # 조치 사유(2026-08-19) — 이전에 처리한 행은 NULL 이라 화면이 '기록되지 않았습니다'로 읽는다.
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triage_reason text"))
+        # 오류 코드(2026-08-19) — 이전 실패 행은 NULL 이라 화면이 '분류 기록 없음'으로 읽는다.
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS error_code text"))
         conn.execute(text("ALTER TABLE pipeline_jobs ADD COLUMN IF NOT EXISTS params jsonb"))
         # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
         # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.

@@ -373,6 +373,9 @@ def log_failed_run(question: str, exc: Exception, phase: str, request_id: str, s
         # 사용자 문구(ApiError.user_message)가 아니라 내부 원문이다. 사용자 문구는 5종뿐이라
         # 원인 구분이 안 되고, 조사에 필요한 것은 어떤 예외가 어디서 났는지다.
         root_cause=f"{type(exc).__name__}: {exc}",
+        # 사용자에게 실제로 나간 코드. 응답 조립(error_from_exception)과 같은 판정을 쓰므로
+        # 화면의 오류 코드와 로그의 오류 코드가 갈리지 않는다.
+        error_code=classify_error(exc, phase),
     )
 
 
@@ -542,32 +545,74 @@ def cache_put(question: str, resp: ChatResponse) -> None:
         logger.exception("cache_put 실패 — 저장만 포기")
 
 
-def error_from_exception(exc: Exception, phase: str = "llm", request_id: str = "") -> ApiError:
-    """예외를 프론트가 분기하는 대문자 5종 code 로 매핑한다(codes.ts ErrorCode). timeout/rate 는
-    어느 단계든 우선 감지하고, 그 외에는 단계(retrieval/llm)로 가른다. 사용자 문구는 담되 내부
-    원문은 로그로만 남긴다.
+# 오류 코드 5종의 정적 표(CM-DF-002 04절 · codes.ts ErrorCode). **한 곳에서만 정의한다** —
+# 사용자에게 나가는 문구와 관리자 화면(AD-005 오류 정보 4행)이 같은 표를 읽어야 둘이 갈리지
+# 않는다. 종전에는 문구가 error_from_exception 안에만 있어서, 관리자 화면은 채울 원천이 없어
+# 4행을 통째로 빈 문자열로 내보내고 있었다(2026-08-19 해소).
+#
+# ⚠️ retryable 과 auto_retry 는 다른 값이다. retryable 은 **사용자가 다시 물어봐도 되는가**(응답
+# 봉투에 실려 챗봇 화면의 [다시 시도] 노출을 가른다). auto_retry 는 **서버가 스스로 재시도했는가**
+# 로, AD-005 관리자 화면의 '서버 자동 재시도' 행이다. 하나로 묶으면 화면이 하지도 않은 재시도를
+# 했다고 말한다.
+#
+# auto_retry 는 전부 '없음'이다 — 기획서 04절은 LLM_TIMEOUT·LLM_ERROR 에 'BE 재시도 1회'로
+# 적혀 있었으나 코드 어디에도 재시도가 없었고, 재시도는 하지 않기로 확정했다(2026-08-19 결정).
+# 기획서 04절도 '없음'으로 맞췄다. 나중에 재시도를 넣으면 이 값과 실제 구현을 함께 바꾼다.
+ERROR_CATALOG = {
+    "LLM_TIMEOUT": {
+        "meaning": "답변 생성 시간 초과",
+        "user_message": "답변 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
+        "retryable": True, "has_fallback": True, "auto_retry": "없음",
+    },
+    "LLM_RATE_LIMIT": {
+        "meaning": "요청 한도 초과(429)",
+        "user_message": "요청이 많아 잠시 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
+        "retryable": True, "has_fallback": True, "auto_retry": "없음",
+    },
+    "LLM_ERROR": {
+        "meaning": "답변 생성 실패(5xx·응답 파싱)",
+        "user_message": "답변 생성 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.",
+        "retryable": True, "has_fallback": True, "auto_retry": "없음",
+    },
+    "RETRIEVAL_ERROR": {
+        "meaning": "검색 실패 — 근거 자체가 없음",
+        "user_message": "관련 자료를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+        "retryable": True, "has_fallback": False, "auto_retry": "없음",
+    },
+    "INTERNAL": {
+        "meaning": "그 외 내부 오류",
+        "user_message": "일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요.",
+        "retryable": False, "has_fallback": False, "auto_retry": "없음",
+    },
+}
 
-    fallback_sources 는 codes.ts 의 ERROR_HAS_FALLBACK 표를 그대로 따른다 — LLM_* 3종만 폴백
-    출처를 싣고 RETRIEVAL_ERROR·INTERNAL 은 싣지 않는다(프론트가 그 표로 렌더를 가른다).
-    request_id 는 항상 채운다 — 비면 화면의 문의용 요청 ID 줄이 사라진다(핸드오프 §6 B11).
-    """
+
+def classify_error(exc: Exception, phase: str = "llm") -> str:
+    """예외 -> 대문자 5종 code(codes.ts ErrorCode). timeout/rate 는 어느 단계든 우선 감지하고,
+    그 외에는 단계(retrieval/llm)로 가른다. 코드만 돌려주므로 응답 조립(error_from_exception)과
+    실패 로깅(log_failure)이 같은 판정을 공유한다."""
     msg = f"{type(exc).__name__} {exc}".lower()
     if isinstance(exc, TimeoutError) or "timeout" in msg or "timed out" in msg:
-        return ApiError(code="LLM_TIMEOUT", retryable=True, fallback_sources=_FALLBACK_SOURCES,
-                        request_id=request_id,
-                        user_message="답변 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.")
+        return "LLM_TIMEOUT"
     if "rate" in msg or "429" in msg or "too many" in msg or "quota" in msg:
-        return ApiError(code="LLM_RATE_LIMIT", retryable=True, fallback_sources=_FALLBACK_SOURCES,
-                        request_id=request_id,
-                        user_message="요청이 많아 잠시 지연되고 있어요. 잠시 후 다시 시도해 주세요.")
+        return "LLM_RATE_LIMIT"
     if phase == "retrieval":
-        return ApiError(code="RETRIEVAL_ERROR", retryable=True, fallback_sources=[],
-                        request_id=request_id,
-                        user_message="관련 자료를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.")
+        return "RETRIEVAL_ERROR"
     if phase == "llm":
-        return ApiError(code="LLM_ERROR", retryable=True, fallback_sources=_FALLBACK_SOURCES,
-                        request_id=request_id,
-                        user_message="답변 생성 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.")
-    return ApiError(code="INTERNAL", retryable=False, fallback_sources=[],
-                    request_id=request_id,
-                    user_message="일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요.")
+        return "LLM_ERROR"
+    return "INTERNAL"
+
+
+def error_from_exception(exc: Exception, phase: str = "llm", request_id: str = "") -> ApiError:
+    """예외를 프론트가 분기하는 ApiError 로 감싼다. 판정은 classify_error, 문구·폴백 여부는
+    ERROR_CATALOG 가 정본이다. 사용자 문구는 담되 내부 원문은 로그로만 남긴다.
+
+    fallback_sources 는 codes.ts 의 ERROR_HAS_FALLBACK 표와 같다 — LLM_* 3종만 폴백 출처를
+    싣고 RETRIEVAL_ERROR·INTERNAL 은 싣지 않는다(프론트가 그 표로 렌더를 가른다).
+    request_id 는 항상 채운다 — 비면 화면의 문의용 요청 ID 줄이 사라진다(핸드오프 §6 B11).
+    """
+    code = classify_error(exc, phase)
+    spec = ERROR_CATALOG[code]
+    return ApiError(code=code, retryable=spec["retryable"],
+                    fallback_sources=_FALLBACK_SOURCES if spec["has_fallback"] else [],
+                    request_id=request_id, user_message=spec["user_message"])

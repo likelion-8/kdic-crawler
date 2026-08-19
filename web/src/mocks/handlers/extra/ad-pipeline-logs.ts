@@ -145,13 +145,16 @@ export interface LangfuseTrace {
 }
 
 export interface LogErrorDetail {
-  code: ErrorCode
+  /** 앞 4행은 서버가 rag_runs.error_code 하나에서 파생한다(api/rag/answer.ERROR_CATALOG).
+   *  그 컬럼(2026-08-19) 이전 실패에는 분류 기록이 없어 전부 null 로 온다 */
+  code: ErrorCode | null
   /** 코드 + 뜻 병기용 뒷부분 */
-  meaning: string
+  meaning: string | null
   /** 사용자에게 실제로 나갔던 문구 */
-  user_message: string
-  auto_retry: string
-  fallback: string
+  user_message: string | null
+  /** 서버가 스스로 재시도했는지. 재시도는 구현하지 않기로 확정해 현재 전부 '없음' */
+  auto_retry: string | null
+  fallback: string | null
   /** rag_runs.failure_stage — 단계별 소요가 아니라 '어디서 멈췄나' 한 값 */
   failure_stage: string | null
   /** rag_runs.root_cause */
@@ -291,14 +294,17 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
     answer_masked_preview: '',
     answer_masked_full: '',
     feedback_detail: null,
+    // 🔴 서버는 ERROR_CATALOG 의 문구를 그대로 내려주고 failure_stage 는 **원시 식별자**다
+    // (화면이 STAGE_LABEL 로 '답변 생성'으로 옮겨 적는다). 목이 이미 다듬은 값을 주면
+    // 라벨 매핑이 목 모드에서 검증되지 않는다. 자동 재시도는 없다(2026-08-19 확정).
     error: {
       code: 'LLM_TIMEOUT',
-      meaning: '답변 생성 시간 초과(30초)',
-      user_message: '답변 생성이 지연되어 중단되었어요. 다시 시도해 주세요.',
-      auto_retry: '1회 재시도 → 재실패, 사용자에게 오류 안내됨',
-      fallback: '제공됨 · 검색은 성공해 관련 자료 2건을 대신 안내 (챗봇 Case 4)',
-      failure_stage: '답변 생성',
-      root_cause: '시간 초과(30초) — 여기서 중단',
+      meaning: '답변 생성 시간 초과',
+      user_message: '답변 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.',
+      auto_retry: '없음',
+      fallback: '제공됨',
+      failure_stage: 'llm',
+      root_cause: 'TimeoutError: 답변 생성 시간 초과(30초)',
     },
   },
 }

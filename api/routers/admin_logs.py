@@ -394,6 +394,27 @@ def _langfuse(trace_id: Optional[str], host: str) -> Optional[dict]:
     return {"id": trace_id, "url": f"{host.rstrip('/')}/trace/{trace_id}"}
 
 
+def _error_detail(row) -> dict:
+    """rag_runs 한 행 -> AD-005 오류 상세. 4행은 error_code 에서만 파생한다.
+
+    문구·재시도·폴백 여부의 정본은 api/rag/answer.ERROR_CATALOG 다 — 사용자에게 나간 문구와
+    관리자 화면이 같은 표를 읽어야 둘이 갈리지 않는다. auto_retry 는 응답 봉투의 retryable
+    (사용자가 다시 시도해도 되는가)과 **다른 값**이라 표에 따로 적혀 있다. 서버 재시도는
+    구현하지 않기로 확정해 현재 전부 '없음'이다(2026-08-19).
+    """
+    from api.rag.answer import ERROR_CATALOG
+    spec = ERROR_CATALOG.get(row.error_code)
+    return {
+        "code": row.error_code,
+        "meaning": spec["meaning"] if spec else None,
+        "user_message": spec["user_message"] if spec else None,
+        "auto_retry": spec["auto_retry"] if spec else None,
+        "fallback": ("제공됨" if spec["has_fallback"] else "없음") if spec else None,
+        "failure_stage": row.failure_stage,
+        "root_cause": row.root_cause,
+    }
+
+
 @router.get("/{request_id}", response_model=ConversationLogDetail)
 def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSession,
             settings: SettingsDep):
@@ -419,6 +440,7 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             rag_runs.c.status,
             rag_runs.c.failure_stage,
             rag_runs.c.root_cause,
+            rag_runs.c.error_code,
             rag_runs.c.total_latency_ms,
             rag_runs.c.trace_id,
             rag_runs.c.observation,
@@ -471,17 +493,11 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             # 자유 의견은 개인정보가 가장 잘 섞이는 자유 텍스트다 — 질문·답변과 같은 마스킹을 거친다
             "comment": mask_text(row.comment) or "",
         },
-        # 실패 건에만 싣는다. code·meaning·user_message·auto_retry·fallback 은 rag_runs 에
-        # 원천이 없어 비워 둔다 — 처리 방침은 별도 조사에서 정한다(모듈 주석).
-        "error": None if _status_out(row.status) != "FAILED" else {
-            "code": "",
-            "meaning": "",
-            "user_message": "",
-            "auto_retry": "",
-            "fallback": "",
-            "failure_stage": row.failure_stage,
-            "root_cause": row.root_cause,
-        },
+        # 실패 건에만 싣는다. 4행(코드·문구·재시도·대체 출처)은 rag_runs.error_code 하나에서
+        # ERROR_CATALOG 로 파생한다(2026-08-19). 그 컬럼이 생기기 전 실패는 code=None 이라
+        # 화면이 4행 대신 '분류 기록 없음'을 말한다 — 빈 문자열을 그려 '오류 코드 ·' 같은
+        # 껍데기를 보여주던 것이 종전 동작이었다.
+        "error": None if _status_out(row.status) != "FAILED" else _error_detail(row),
         # 조치 내역(2026-08-19). 사유는 활동 로그(AD-011)에도 남지만, 조치를 한 화면에서
         # 바로 읽히지 않으면 관리자가 '무슨 사유로 닫았더라'를 찾아 원장을 뒤져야 했다.
         # 2026-08-19 이전에 처리한 행은 triage_reason 이 NULL 이다(화면이 '기록되지 않았습니다').

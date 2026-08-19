@@ -222,7 +222,7 @@ def test_choosing_normal_also_finds_legacy_rows():
 # 질의가 rag_runs 에 행 자체가 없어서 아래 failed 는 무엇을 넣든 0 이었다.
 
 def _insert_run(db, prefix, *, status, request_id_suffix, intent="informational",
-                failure_stage=None, root_cause=None):
+                failure_stage=None, root_cause=None, error_code=None):
     """행을 직접 넣는다. rag_logger.log_rag_run 을 쓰지 않는 이유는 그 함수가 모든 예외를
     삼켜서(실패-안전) 삽입이 실패해도 테스트가 조용히 통과해 버리기 때문이다."""
     from schema import rag_runs
@@ -233,6 +233,7 @@ def _insert_run(db, prefix, *, status, request_id_suffix, intent="informational"
         "status": status,
         "failure_stage": failure_stage,
         "root_cause": root_cause,
+        "error_code": error_code,
         "total_latency_ms": 1234,
         "request_id": f"{prefix}{request_id_suffix}",
         "session_id": f"{prefix}sess",
@@ -303,6 +304,50 @@ def test_a_failed_run_keeps_its_stage_and_cause_in_the_detail(db_session, test_p
     assert body["status"] == "FAILED"
     assert body["error"]["failure_stage"] == "llm"
     assert body["error"]["root_cause"].startswith("TimeoutError")
+
+
+def test_error_rows_come_from_the_catalog(db_session, test_prefix, db_cleanup):
+    """오류 정보 4행은 error_code 하나에서 파생된다. 종전에는 원천이 없어 전부 빈 문자열이라
+    화면에 '오류 코드 ·' 같은 껍데기가 떴다(2026-08-19 해소).
+
+    auto_retry 가 '없음'인 것이 요점이다 — 응답 봉투의 retryable(=사용자가 다시 시도해도 됨)은
+    LLM_ERROR 에서 True 지만 서버는 재시도하지 않는다. 둘을 묶으면 화면이 하지도 않은 재시도를
+    했다고 말한다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="FAILED", request_id_suffix="coded",
+                failure_stage="llm", root_cause="RuntimeError: 응답 파싱 실패",
+                error_code="LLM_ERROR")
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        err = client.get(f"/api/admin/logs/{test_prefix}coded").json()["error"]
+
+    assert err["code"] == "LLM_ERROR"
+    assert err["meaning"] == "답변 생성 실패(5xx·응답 파싱)"
+    assert err["user_message"].startswith("답변 생성 중 문제가")
+    assert err["auto_retry"] == "없음", "서버는 재시도하지 않는다 — retryable 과 섞지 말 것"
+    assert err["fallback"] == "제공됨"
+
+
+def test_a_failed_run_without_an_error_code_says_so(db_session, test_prefix, db_cleanup):
+    """error_code 컬럼(2026-08-19) 이전 실패는 분류 기록이 없다. 빈 문자열로 내리면 화면이
+    껍데기를 그리므로 null 로 내려 '기록 없음'이라 말하게 한다 — 단계·원인은 그대로 남는다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="FAILED", request_id_suffix="nocode",
+                failure_stage="retrieval", root_cause="RuntimeError: 색인 불일치")
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        err = client.get(f"/api/admin/logs/{test_prefix}nocode").json()["error"]
+
+    assert err["code"] is None
+    assert (err["meaning"], err["user_message"], err["auto_retry"], err["fallback"]) == (None,) * 4
+    assert err["failure_stage"] == "retrieval"
+    assert err["root_cause"].startswith("RuntimeError")
 
 
 def test_a_failed_run_without_an_intent_still_renders(db_session, test_prefix, db_cleanup):
