@@ -41,7 +41,7 @@ export interface MaskingRule {
   name: string
   pattern: string
   replacement: string
-  /** 패턴을 고치면 false. 샘플 검증을 통과해야 저장할 수 있다(§2.6) */
+  /** 패턴을 고치면 false. 미검증은 경고로만 표시하고 저장은 막지 않는다(2026-08-19 정책 변경) */
   validated: boolean
   sample_count: number
   active: boolean

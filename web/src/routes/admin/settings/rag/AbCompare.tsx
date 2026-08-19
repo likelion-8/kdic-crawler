@@ -161,7 +161,7 @@ export function AbCompare({ draft, gate, evaluating, evaluateError }: AbCompareP
               'A → B (+0.0xx)'와 게이트 판정이 밀린다. 소제목 옆으로 접는다 */}
           {quant && <InfoHint label="정량 비교 기준 설명" size="sm">{quant.basis}</InfoHint>}
         </h3>
-        {evaluating && <Loading text="홀드아웃 89문항을 평가하는 중…" detail="평가에는 시간이 걸립니다" />}
+        {evaluating && <Loading text="홀드아웃 문항을 평가하는 중…" detail="평가에는 시간이 걸립니다" />}
         <SectionError error={evaluateError} />
         {!evaluating && !quant && (
           <p className="text-sm text-muted-foreground">

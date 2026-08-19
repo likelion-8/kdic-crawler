@@ -124,7 +124,7 @@ export function fetchParams() {
   return apiRequest<RagParamsResponse>(BASE)
 }
 
-/** [초안 평가] — 홀드아웃 89문항 + A/B를 현재 인덱스에서 즉시 실행 (Desc 0 ②) */
+/** [초안 평가] — 평가셋(홀드아웃 계열, 편집 반영) + A/B를 현재 인덱스에서 즉시 실행 (Desc 0 ②) */
 export function evaluateDraft(draft: Record<string, ParamValue>) {
   return apiRequest<RagGate>(`${BASE}/evaluate`, { method: 'POST', body: { draft } })
 }
