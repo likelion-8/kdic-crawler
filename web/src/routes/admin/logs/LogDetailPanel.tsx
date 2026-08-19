@@ -166,12 +166,14 @@ function TriageFooter({ detail, canRun, onResolve }: LogDetailPanelProps) {
             {/* 관측 이전에 처리한 건은 사유가 남아 있지 않다 — 없다고 말하지 지어내지 않는다 */}
             <dd className="break-keep">{detail.triage_reason ?? '기록되지 않았습니다'}</dd>
           </div>
-          {detail.triaged_by !== null && (
+          {/* null 만 막으면 부족하다 — 서버가 이 필드를 아직 안 내려주는 배포에서는 undefined 가
+              와서 '처리 · —' 같은 빈 행이 그려진다. 값이 있을 때만 그린다 */}
+          {detail.triaged_by && (
             <div className="grid grid-cols-[120px_1fr] gap-2.5">
               <dt className="text-muted-foreground">처리</dt>
               <dd>
                 {detail.triaged_by}
-                {detail.triaged_at === null ? '' : ` · ${formatMonthDayTime(detail.triaged_at)}`}
+                {detail.triaged_at ? ` · ${formatMonthDayTime(detail.triaged_at)}` : ''}
               </dd>
             </div>
           )}
