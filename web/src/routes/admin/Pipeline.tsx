@@ -656,16 +656,16 @@ function ModalImpact({
       <p className="text-xs text-muted-foreground">
         {confirming.kind === 'REINDEX' ? (
           <>
-            {/* 실제 순서: 게이트(홀드아웃 평가)가 색인 앞이다 — 미달이면 색인에 들어가지 않는다.
-                임시 색인은 만들지 않고 메모리 채점(src/index_gate.py)한다(2026-08-18 문구 정정) */}
+            {/* 게이트는 색인을 막지 않는다(2026-08-19 정책 변경) — 판정은 경고로만 남는다.
+                임시 색인은 만들지 않고 메모리 채점(src/index_gate.py)한다 */}
             청킹 → 검증 → <span className="font-medium text-foreground">게이트(홀드아웃 평가)</span>{' '}
-            → 통과 시에만 색인·반영 · 캐시 무효화 (미달 시 중단 · 기존 색인 유지)
+            → 색인·반영 · 캐시 무효화 (게이트 미달은 경고로만 표시)
           </>
         ) : (
           <>
             수집 → 변환 → 청킹 → 검증 →{' '}
-            <span className="font-medium text-foreground">게이트(홀드아웃 평가)</span> → 통과 시에만 색인·반영(교체 · 캐시
-            무효화)
+            <span className="font-medium text-foreground">게이트(홀드아웃 평가)</span> → 색인·반영(교체 · 캐시
+            무효화 · 게이트 미달은 경고로만 표시)
           </>
         )}
       </p>
@@ -675,8 +675,8 @@ function ModalImpact({
 
 /**
  * 게이트 판정 줄 — 실행 카드 안에서 통과/미달과 수치를 그대로 보여준다(2026-08-18).
- * 판정은 워커가 게이트 단계의 detail 로 남긴다(src/worker.py _gate). 미달이면 "기존 색인을
- * 그대로 두었습니다"를 명시해 관리자가 서비스 영향을 오해하지 않게 한다. 상세는 AD-006 으로.
+ * 판정은 워커가 게이트 단계의 detail 로 남긴다(src/worker.py _gate). 미달이어도 색인은
+ * 진행된다(2026-08-19 정책 변경) — 경고를 명시해 회귀 가능성을 인지시킨다. 상세는 AD-006 으로.
  */
 function GateVerdictLine({ job }: { job: PipelineJob }) {
   const gate = job.steps.find((s) => s.name === '게이트')
@@ -685,7 +685,7 @@ function GateVerdictLine({ job }: { job: PipelineJob }) {
   return (
     <p className={cn('mt-3 text-[13px]', v.passed ? 'text-foreground' : 'text-destructive')}>
       게이트 {v.passed ? '통과' : '미달'} · {v.summary}
-      {!v.passed && ' — 색인에 들어가지 않아 기존 색인을 그대로 두었습니다'}
+      {!v.passed && ' — ⚠ 미달 상태로 색인이 반영되었습니다. 회귀 여부를 확인하세요'}
       {' · '}
       <Link className="underline" to="/admin/evaluation">
         평가 화면에서 판정 상세 →

@@ -24,7 +24,7 @@ PARAM 목록의 key·label·control·범위를 서버가 내려주고 화면은 
 
 ## 평가는 검색 축 실측이다
 
-held-out(test_set)의 expected_sources 로 **현행(A)과 초안(B)을 둘 다** 재서
+평가메뉴 현행 버전(testset_items — 홀드아웃 89 씨딩)의 기대 출처로 **현행(A)과 초안(B)을 둘 다** 재서
 hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 Smoke 는 이 화면의
 파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — smoke 0/0 + warning 으로 명시하고,
 게이트 판정은 검색 두 축(정확도 0.92↑ · MRR 0.80↑)으로만 한다. 지어내지 않는다.
@@ -33,8 +33,8 @@ hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 S
 
 ## 반영·롤백과 runtime_config
 
-apply 는 저장된 초안 평가가 게이트를 통과했고 **보낸 초안 == 평가된 초안**(지문 대조)일
-때만 승격한다. 반영 즉시 runtime_config.invalidate("params") — 같은 프로세스는 즉시,
+apply 는 게이트 판정을 **막지 않고 경고로만** 남긴다(2026-08-19 정책 변경 — 종전에는
+게이트 통과 + 지문 일치일 때만 승격했다). 반영 즉시 runtime_config.invalidate("params") — 같은 프로세스는 즉시,
 CLI 는 TTL(60초) 내 반영. history 의 rollback 은 **초안 복원만** 한다(화면 계약 §1.7 —
 실제 적용은 [운영 반영]이 다시 게이트를 거친다).
 """
@@ -55,7 +55,7 @@ import candidate_ranking
 import pipeline
 import query_planner
 import runtime_config
-from schema import documents, test_set
+from schema import documents
 from schema_admin import evaluation_runs, rag_param_versions
 
 logger = logging.getLogger(__name__)
@@ -262,18 +262,13 @@ def _stored_gate(db) -> dict:
 # ──────────────────────────────── 검색 실측 ─────────────────────────────────
 
 def _holdout_rows(db):
-    # ⚠️ expected_sources 는 범위외 문항에서 **빈 배열**이다(NULL 아님). isnot(None) 만 걸면
-    # 정답이 없는 문항이 '무조건 miss'로 섞여 정확도가 부당하게 깎인다(2026-08-12 실측 —
-    # 0.786 vs 기준선 0.922 의 원인 중 하나). 원소가 1개 이상인 답변형 문항만 잰다
-    # (eval_pipeline_retrieval 의 "expected_sources 있는 행만"과 동일).
-    rows = db.execute(
-        select(test_set.c.question, test_set.c.expected_sources)
-        .where(test_set.c.is_active.is_(True),
-               func.array_length(test_set.c.expected_sources, 1) >= 1)
-        .order_by(test_set.c.question_id)
-    ).all()
+    # 2026-08-19 전환: 문항 정본은 평가메뉴 현행 버전(testset_items) — admin_evaluations.
+    # holdout_rows 에 위임한다(in_scope_only=True 가 종전의 "빈 정답 문항 제외"와 동일:
+    # 범위외가 섞이면 정확도가 부당하게 깎인다. 2026-08-12 실측).
+    from api.routers.admin_evaluations import holdout_rows
+    rows = holdout_rows(db, in_scope_only=True)
     if not rows:
-        raise BadRequestError("평가할 held-out 문항이 없습니다(test_set 비어 있음).")
+        raise BadRequestError("평가할 문항이 없습니다(평가셋 비어 있음).")
     return rows
 
 
@@ -307,8 +302,8 @@ def _measure(rows, params: dict) -> dict:
     hits = 0
     rr_sum = 0.0
     for r in rows:
-        gold = set(r.expected_sources or [])
-        ranked5 = _search_pages(r.question, params, for_scoring=True)[:5]
+        gold = set(r["expected_sources"] or [])
+        ranked5 = _search_pages(r["question"], params, for_scoring=True)[:5]
         if gold & set(ranked5):
             hits += 1
         for i, page in enumerate(ranked5, 1):
@@ -403,10 +398,9 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
 
     # 정답 표시(✓): 이 질문이 평가셋에 있으면 그 expected_sources 를 쓴다. 임의 질문이면
     # 정답을 알 수 없으므로 표시하지 않는다 — 지어내지 않는다.
-    gold_row = db.execute(
-        select(test_set.c.expected_sources).where(test_set.c.question == query)
-    ).first()
-    gold = set(gold_row.expected_sources or []) if gold_row else set()
+    from api.routers.admin_evaluations import holdout_rows
+    gold = next((set(r["expected_sources"]) for r in holdout_rows(db)
+                 if r["question"] == query), set())
 
     titles = dict(db.execute(select(documents.c.page_id, documents.c.page_title)).all())
 
@@ -431,11 +425,29 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
             "b": _column("B. 초안 (편집 중)", merged, changed)}
 
 
+def compute_gate_warnings(db, draft, body: dict) -> list:
+    """게이트·평가 상태를 경고 목록으로 계산한다(2026-08-19 정책 변경 — 차단하지 않는다).
+    apply 가 활동 로그 detail.gate_warnings 에 그대로 싣는다."""
+    warnings = []
+    if draft.evaluation_run_id is None:
+        return ["초안 평가 없이 반영"]
+    sent = validate_params(dict(body.get("draft") or {})) if body.get("draft") else None
+    if sent is not None and draft_signature(sent) != draft.draft_signature:
+        warnings.append("평가 이후 초안 수정됨(재평가 없이 반영)")
+    run = db.execute(
+        select(evaluation_runs.c.gate).where(evaluation_runs.c.id == draft.evaluation_run_id)
+    ).first()
+    if not run or not run.gate or not run.gate.get("passed"):
+        warnings.append("게이트 미달 상태로 반영")
+    return warnings
+
+
 @router.post("/apply")
 def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """[운영 반영] — 저장된 초안 평가가 게이트 통과 + 보낸 초안이 평가된 초안과 동일(지문)
-    할 때만 승격한다. 실패는 409 + 현재 적용값(extra.current)으로, 화면이 '이전 버전 유지'
-    를 다시 그린다. 성공 응답은 반영 후 전체 상태(RagParamsResponse)."""
+    """[운영 반영] — 저장된 초안을 승격한다. 게이트·평가 상태는 **막지 않고 경고로만**
+    남긴다(2026-08-19 정책 변경) — 미평가·지문 불일치·게이트 미달은 활동 로그
+    detail.gate_warnings 에 기록된다. 초안 자체가 없을 때만 409(extra.current).
+    성공 응답은 반영 후 전체 상태(RagParamsResponse)."""
     _require_editor(me, "RAG 파라미터 반영")
     if not str(body.get("request_id") or "").strip():
         raise BadRequestError("request_id가 필요합니다.")
@@ -447,16 +459,13 @@ def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         return ParamsConflictError(msg, extra={"current": _effective_params(db)})
 
     draft = _row(db, "draft")
-    if draft is None or draft.evaluation_run_id is None:
-        raise _conflict("평가된 초안이 없습니다. [초안 평가]를 먼저 실행해 주세요.")
-    sent = validate_params(dict(body.get("draft") or {})) if body.get("draft") else None
-    if sent is not None and draft_signature(sent) != draft.draft_signature:
-        raise _conflict("평가 이후 초안이 수정되었습니다. 다시 평가해 주세요.")
-    run = db.execute(
-        select(evaluation_runs.c.gate).where(evaluation_runs.c.id == draft.evaluation_run_id)
-    ).first()
-    if not run or not run.gate or not run.gate.get("passed"):
-        raise _conflict("게이트를 통과하지 못한 초안은 반영할 수 없습니다.")
+    if draft is None:
+        # 반영할 초안 자체가 없다 — 검토 판정이 아니라 대상 부재라 그대로 막는다.
+        raise _conflict("저장된 초안이 없습니다. 초안을 먼저 저장해 주세요.")
+    # 2026-08-19 정책 변경: 평가·게이트는 반영을 막지 않는다 — 경고로만 남긴다.
+    # 화면이 같은 상태(gate)를 이미 보고 있으므로 사용자 인지는 화면 경고가, 사후 추적은
+    # 활동 로그(detail.gate_warnings)가 맡는다.
+    gate_warnings = compute_gate_warnings(db, draft, body)
 
     now = datetime.now(timezone.utc)
     before = _effective_params(db)
@@ -476,7 +485,8 @@ def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         target=f"RAG 파라미터 v{draft.version}", reason=reason,
         before_value=json.dumps(before, ensure_ascii=False, sort_keys=True),
         after_value=json.dumps(_effective_params(db), ensure_ascii=False, sort_keys=True),
-        detail={"version": draft.version, "draft_signature": draft.draft_signature},
+        detail={"version": draft.version, "draft_signature": draft.draft_signature,
+                **({"gate_warnings": gate_warnings} if gate_warnings else {})},
     )
     return _full_response(db)
 

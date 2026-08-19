@@ -363,9 +363,7 @@ export const adPromptOpsHandlers = [
       draft.dirty.guardrail = true
     }
     if (body.masking) {
-      // 샘플 검증을 통과하지 않은 패턴은 저장하지 않는다(§2.6 "샘플 검증 통과 전 저장 불가")
-      const invalid = body.masking.items.find((m) => !m.validated)
-      if (invalid) return fail(400, `'${invalid.name}' 패턴이 샘플 검증을 통과하지 않았습니다.`)
+      // 2026-08-19 정책 변경: 샘플 검증 미통과 패턴도 저장을 막지 않는다 — 화면 경고로만 인지시킨다
       draft.masking = body.masking
       draft.dirty.guardrail = true
     }
@@ -427,7 +425,9 @@ export const adPromptOpsHandlers = [
     const bad = missingWriteFields(body)
     if (bad) return bad
     const target = versions.find((v) => v.version === params.version)
-    if (!target || !target.emergency_candidate) return fail(409, '긴급 롤백할 수 있는 버전이 아닙니다.')
+    if (!target) return fail(404, '해당 버전을 찾을 수 없습니다.')
+    if (target.status === '현행') return fail(400, '이미 현행 버전입니다.')
+    // 2026-08-19 정책 변경: Smoke 미달 버전도 롤백을 막지 않는다 — 경고 표시는 화면 몫
     for (const v of versions) v.status = v.version === target.version ? '현행' : '보관'
     target.emergency_candidate = false
     return HttpResponse.json(target)
@@ -435,7 +435,7 @@ export const adPromptOpsHandlers = [
 
   /** 게시 — 즉시 Smoke 30문항 실행 후 전환.
    *  요청/승인 2단계는 없앴다(팀 결정 2026-08-04). 편집 권한자(EDITOR 이상)가 바로 게시한다 —
-   *  사전 차단은 회귀 게이트(`gate_passed`)가, 사후 추적은 활동 로그와 긴급 롤백이 맡는다.
+   *  회귀 게이트는 경고로만 인지시키고(2026-08-19 정책 변경), 사후 추적은 활동 로그와 긴급 롤백이 맡는다.
    *  ⚠ 백엔드도 이 권한으로 맞춰야 한다(구 계약은 ADMIN 전용 + publish-requests 승인 경로였다) */
   http.post('/api/admin/prompt/publish', async ({ request }) => {
     const no = denied(request, 'EDITOR')
@@ -444,8 +444,7 @@ export const adPromptOpsHandlers = [
     const bad = missingWriteFields(body)
     if (bad) return bad
     if (!body.draft) return fail(400, '게시할 초안 내용이 필요합니다.')
-    // 평가가 일시적이라 서버에 남은 판정이 없다. 요청이 실어 온 게이트 결과로 막는다
-    if (!body.gate_passed) return fail(409, '회귀 게이트를 통과해야 게시할 수 있습니다.')
+    // 2026-08-19 정책 변경: 회귀 게이트는 게시를 막지 않는다 — 미통과는 화면 경고로만 인지시킨다
     await delay(800)
     const published = draft.draft_version
     for (const v of versions) v.status = '보관'
@@ -461,7 +460,7 @@ export const adPromptOpsHandlers = [
     return HttpResponse.json({ version: published, smoke: { passed: SMOKE_SET_SIZE, total: SMOKE_SET_SIZE } })
   }),
 
-  /** 마스킹 패턴 샘플 검증 — 통과해야 저장할 수 있다(§2.11) */
+  /** 마스킹 패턴 샘플 검증 — 판정은 경고 표시용이며 저장을 막지 않는다(2026-08-19 정책 변경, §2.11) */
   http.post('/api/admin/guardrails/masking/validate', async ({ request }) => {
     const no = denied(request, 'EDITOR')
     if (no) return no

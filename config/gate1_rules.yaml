@@ -1,0 +1,180 @@
+# Gate 1 — 결정론적 룰 기반 입력 필터 설정(LLM 없음).
+#
+# 이 파일 하나로 Gate 1 의 동작을 바꾼다: 단어를 더하거나 빼고, enabled 를 false 로 내려
+# 규칙을 끄고, 응답 문구를 고친다. 코드(src/gate1.py)는 판정 '순서'만 갖고, '무엇을 잡을지'는
+# 전부 여기서 읽는다. 판정 순서(설계 프롬프트 2-5)는 고정이다:
+#   빈입력/NOISE → SECURITY_BLOCK → GREETING/THANKS → BOT_INTRO/HELP → CAPABILITY
+#   → (보호단어 있으면 CONTINUE) → OUT_OF_DOMAIN → CONTINUE
+#
+# 매칭은 전부 casefold(대소문자 무시) 후 부분일치/전체일치다. Gate 1 의 목표는 recall 이 아니라
+# precision ≈ 100% — '확실한 것만' 즉시 처리하고 조금이라도 애매하면 CONTINUE 로 흘린다.
+
+# ── 정규화용 wrapper (src/normalizer.py 가 rule_text 만들 때 앞/뒤에서 제거) ──
+normalization:
+  wrapper_prefixes: [혹시, 저기요, 저기, 실례지만, 죄송하지만, 안녕하세요, 안녕하십니까]
+  wrapper_suffixes: [알려주세요, 설명해주세요, 답변해주세요, 알려줘, 설명해줘, 궁금합니다, 문의드립니다, 부탁드립니다]
+
+# ── 보호 단어장(설계 프롬프트 2-3) ──
+# 질문에 이 중 하나라도 있으면 Gate 1 은 OOS 로 종료하지 않고 CONTINUE 한다(in-scope 확정이
+# 아니라, hard block 권한을 스스로 포기하고 뒤 게이트로 미루는 것). SECURITY/CAPABILITY 는
+# 이 검사보다 먼저 실행되므로 보호 단어가 있어도 차단된다(판정 순서 참고).
+protected_words:
+  - 예금
+  - 예금자보호
+  - 예금보험
+  - 보호한도
+  - 예금보험금
+  - 금융회사
+  - 은행
+  - 저축은행
+  - 신협
+  - 새마을금고
+  - 파산재단
+  - 미수령금
+  - 착오송금
+  - 채무조정
+  - 채무정보
+  - 부채증명
+  - 은닉재산
+  - 금융안정계정
+  - 예금보험공사
+  - 예보
+  - KDIC
+  - 예솜24
+
+rules:
+  # ── 인사/감사 — wrapper 제거 후 남은 전체가 목록과 일치할 때만 ──
+  - rule_id: greeting_01
+    label: FIXED_GREETING
+    match_type: exact_after_wrapper_strip
+    words: [안녕, 안녕하세요, 안녕하십니까, 반가워, 반갑습니다, 하이, hello, hi]
+    response_id: resp_greeting
+    enabled: true
+    priority: 50
+    description: 순수 인사만 있는 경우
+    counterexamples:
+      - 안녕하세요 예금보호 한도 알려주세요
+      - 안녕 보호한도가 뭐야
+      - 설명해주세요   # wrapper(정중 표현)만 있고 인사말 자체가 없으면 인사로 안 잡는다(2026-08-14 수정)
+
+  - rule_id: thanks_01
+    label: FIXED_THANKS
+    match_type: exact_after_wrapper_strip
+    words: [고마워, 고맙습니다, 감사합니다, 감사해, 감사해요, 땡큐, thanks, thank you]
+    response_id: resp_thanks
+    enabled: true
+    priority: 50
+    description: 순수 감사만 있는 경우
+
+  # ── 노이즈 — 질문 전체가 ㅋㅎㅠㅜ·자모·문장부호로만 구성(정규식은 코드의 NOISE_PATTERN) ──
+  - rule_id: noise_01
+    label: FIXED_NOISE
+    match_type: noise_only
+    response_id: resp_noise
+    enabled: true
+    priority: 60
+    description: 의미 없는 입력(빈 입력 포함)
+    counterexamples:
+      - 예금보호 한도가 얼마야ㅋㅋ
+
+  # ── 봇 정체성/도움 — 전체 문장(wrapper 유지)이 정형 표현과 일치 ──
+  - rule_id: bot_intro_01
+    label: FIXED_BOT_INTRO
+    match_type: exact_phrase
+    phrases: [너 누구야, 너는 누구야, 넌 누구야, 누구세요, 정체가 뭐야, 뭐 하는 챗봇이야, 무슨 서비스야]
+    response_id: resp_bot_intro
+    enabled: true
+    priority: 40
+    description: 챗봇 정체성 질문
+    counterexamples:
+      - 파산재단 관재인은 누구야
+
+  - rule_id: bot_help_01
+    label: FIXED_BOT_HELP
+    match_type: exact_phrase
+    phrases: [어떤 도움을 줄 수 있어, 뭘 물어볼 수 있어, 사용 방법 알려줘, 무엇을 물어볼 수 있어, 뭐 물어봐도 돼]
+    response_id: resp_bot_help
+    enabled: true
+    priority: 40
+    description: 사용 방법 질문
+
+  # ── 보안 — (보호대상 ∩ 공개행동) ∪ 우회표현. OUT_OF_DOMAIN 이 아니라 별도 라벨 ──
+  - rule_id: security_01
+    label: SECURITY_BLOCK
+    match_type: keyword_combo
+    protected_targets: [시스템 프롬프트, 개발자 메시지, 숨겨진 지침, 내부 프롬프트, 비공개 명령]
+    disclosure_actions: [보여줘, 출력해, 공개해, 원문으로 알려줘, 그대로 복사해]
+    bypass_phrases: [이전 지시를 무시, 앞의 지침을 무시, 기존 명령을 잊어]
+    response_id: resp_security
+    enabled: true
+    priority: 10
+    description: 프롬프트 인젝션 시도 차단
+    counterexamples:
+      - 시스템 점검 일정 알려줘
+
+  # ── 역량 밖 — 개인지칭 ∩ 개인데이터 ∩ 직접접근행동 '세 종류 전부' ──
+  - rule_id: capability_01
+    label: CAPABILITY_UNAVAILABLE
+    match_type: triple_combo
+    personal_refs: [내, 제, 본인]
+    personal_data: [계좌 잔액, 거래 내역, 개인 채무 내역, 예금 잔액, 미수령금 잔액]
+    direct_access_actions: [직접 조회, 실시간 조회, 로그인해서 확인, 계좌에 접속, 내역을 열어]
+    response_id: resp_capability
+    enabled: true
+    priority: 20
+    description: 개인 계좌·데이터 직접 조회 요청(불가 안내)
+    counterexamples:
+      - 내 계좌를 찾는 방법을 알려줘
+
+  # ── 타 분야 — 주제어 ∩ 행동어, 보호 단어 없음, 짧은 단일 목적 ──
+  - rule_id: oos_01
+    label: OUT_OF_DOMAIN_RULE
+    match_type: topic_action
+    max_words: 15   # 이보다 길면 '짧은 단일 목적'이 아니라고 보고 OOS 판정하지 않는다(CONTINUE)
+    categories:
+      날씨:
+        topics: [날씨, 기온, 강수확률, 미세먼지]
+        # ⚠️ '예보'는 넣지 않는다 — protected_words 의 '예보'(예금보험공사 약칭)와 문자열이
+        # 겹쳐 8단계(보호 단어) 검사가 이 규칙(9단계)보다 먼저 걸려 항상 CONTINUE 로 빠진다.
+        # 즉 여기 넣어도 절대 도달하지 못하는 죽은 항목이라 혼동을 막기 위해 뺐다(2026-08-14).
+        actions: [알려줘, 알려주세요, 어때, 몇 도]
+      음식:
+        topics: [맛집, 메뉴, 요리, 레시피]
+        actions: [추천해줘, 추천해주세요, 만드는 법]
+      엔터테인먼트:
+        topics: [영화, 드라마, 게임, 노래]
+        actions: [추천해줘, 추천해주세요, 순위, 뭐 볼까]
+      스포츠:
+        topics: [축구, 야구, 농구, 경기]
+        actions: [점수, 결과, 순위, 일정]
+      운세:
+        topics: [사주, 운세, 궁합, 로또 번호]
+        actions: [봐줘, 봐주세요, 알려줘, 알려주세요, 추천해줘, 추천해주세요]
+    response_id: resp_out_of_domain
+    enabled: true
+    priority: 30
+    description: 명백한 타 분야 단일 질문(보호 단어 없을 때만)
+    counterexamples:
+      - 비트코인은 예금자보호 대상인가요
+      - 내일 날씨 예보 알려줘   # '예보'가 보호단어와 겹쳐 protected_word 로 먼저 빠진다(의도된 동작)
+      - 오늘 날씨 때문에 은행이 영업하지 않으면 어떻게 해
+
+# ── 고정 응답 문구(response_id -> 변형 목록). 코드는 목록의 첫 번째를 결정론적으로 쓴다 ──
+responses:
+  resp_greeting:
+    - "안녕하세요! 예금자보호 관련 궁금한 점을 물어보세요."
+    - "반갑습니다. 예금보험과 관련해 무엇을 도와드릴까요?"
+  resp_thanks:
+    - "도움이 되었다니 다행입니다. 예금보험과 관련해 더 궁금한 점이 있으면 말씀해 주세요."
+  resp_noise:
+    - "질문을 이해하지 못했어요. 예금자보호 관련 궁금한 점을 문장으로 입력해 주세요."
+  resp_bot_intro:
+    - "저는 예금보험공사(KDIC)의 예금자보호 안내 챗봇입니다. 예금자보호제도, 착오송금 반환지원 등 공사 업무를 안내해 드려요."
+  resp_bot_help:
+    - "예금자보호 한도, 보호 대상 금융회사, 착오송금 반환지원, 미수령금 조회 등 예금보험공사 업무에 대해 물어보실 수 있어요."
+  resp_security:
+    - "죄송합니다. 해당 요청은 처리할 수 없습니다. 예금보험공사 업무에 대한 질문을 해주세요."
+  resp_capability:
+    - "죄송합니다. 저는 개인 계좌·거래 내역 등 개인정보에 직접 접근하거나 실시간 조회를 할 수 없습니다. 예금자보호제도나 관련 절차 안내를 도와드릴게요."
+  resp_out_of_domain:
+    - "문의하신 내용은 예금보험공사가 안내하는 범위를 벗어난 주제예요. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 물어봐 주세요."

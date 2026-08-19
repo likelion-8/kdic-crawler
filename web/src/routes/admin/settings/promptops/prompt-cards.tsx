@@ -342,11 +342,15 @@ export function VersionHistoryCard({
                   >
                     롤백
                   </Button>
-                  {/* 긴급 롤백은 직전 정상 버전 하나에만 — 게이트 예외(REQ-OPS-003) */}
-                  {v.emergency_candidate && canAdmin && (
+                  {/* 2026-08-19 정책 변경: Smoke 미달 버전도 막지 않는다 — 권장 후보(직전
+                      정상본)가 아니면 경고 배지로만 인지시킨다(REQ-OPS-003) */}
+                  {canAdmin && (
                     <Button size="sm" onClick={() => onEmergencyRollback(v)}>
                       긴급 롤백
                     </Button>
+                  )}
+                  {canAdmin && !v.emergency_candidate && (
+                    <Badge tone="orange" kind="warning">권장 후보 아님</Badge>
                   )}
                 </div>
               )
@@ -715,7 +719,7 @@ export function MaskingDialog({ open, items, canEdit, onSave, onClose }: Masking
   const [removing, setRemoving] = useState<MaskingRule | null>(null)
 
   function patch(id: string, next: Partial<MaskingRule>) {
-    // 패턴·대체 형식을 고치면 검증이 풀린다 — 통과 전에는 저장할 수 없다(§2.11)
+    // 패턴·대체 형식을 고치면 검증이 풀린다 — 미검증은 경고로만 표시하고 저장은 막지 않는다(2026-08-19)
     setRows(rows.map((r) => (r.id === id ? { ...r, ...next, validated: false } : r)))
   }
 
@@ -834,15 +838,17 @@ export function MaskingDialog({ open, items, canEdit, onSave, onClose }: Masking
       }
       footer={
         <>
+          {/* 저장을 막지 않는 대신 마지막 인지 지점을 남긴다(2026-08-19) */}
+          {unvalidated.length > 0 && (
+            <ColorText tone="orange">⚠ 샘플 검증을 통과하지 않은 패턴 {unvalidated.length}건이 함께 저장됩니다</ColorText>
+          )}
           <Button variant="secondary" onClick={onClose}>
             취소
           </Button>
           <Button
             variant="primary"
-            disabled={!canEdit || unvalidated.length > 0}
-            disabledReason={
-              unvalidated.length > 0 ? '패턴이 샘플 검증을 통과해야 저장할 수 있습니다' : undefined
-            }
+            disabled={!canEdit}
+            disabledReason={canEdit ? undefined : '편집자(EDITOR) 이상만 저장할 수 있습니다'}
             onClick={() => onSave(rows)}
           >
             저장

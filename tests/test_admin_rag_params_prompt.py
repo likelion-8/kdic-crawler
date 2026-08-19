@@ -129,16 +129,22 @@ def test_apply_without_draft_is_409_with_current_values():
     assert db.commits == 0                          # 거절 경로에서 아무것도 쓰지 않는다
 
 
-def test_apply_with_stale_signature_is_409():
+def test_apply_with_stale_signature_warns_instead_of_blocking():
+    """2026-08-19 정책 변경 — 지문 불일치·게이트 미달은 반영을 막지 않고 경고로만 남는다."""
     draft = SimpleNamespace(id="d1", version=3, params={"k_final": 4},
                             draft_signature=draft_signature({"k_final": 4}),
                             evaluation_run_id="run-1")
-    db = _FakeDb([_Result(draft), _Result(None)])   # draft -> current(_effective, 409 본문용)
-    with pytest.raises(ParamsConflictError):
-        admin_rag_params.apply_draft(
-            {"request_id": "r1", "reason": "x", "draft": {"k_final": 5}},   # 평가본과 다른 초안
-            None, _admin("EDITOR"), db)
-    assert db.commits == 0
+    db = _FakeDb([_Result(None)])                   # evaluation_runs.gate 조회(판정 없음)
+    warnings = admin_rag_params.compute_gate_warnings(
+        db, draft, {"draft": {"k_final": 5}})       # 평가본과 다른 초안
+    assert "평가 이후 초안 수정됨(재평가 없이 반영)" in warnings
+    assert "게이트 미달 상태로 반영" in warnings
+
+
+def test_apply_without_evaluation_warns_instead_of_blocking():
+    draft = SimpleNamespace(id="d1", version=3, params={"k_final": 4},
+                            draft_signature=None, evaluation_run_id=None)
+    assert admin_rag_params.compute_gate_warnings(_FakeDb([]), draft, {}) == ["초안 평가 없이 반영"]
 
 
 def test_apply_requires_editor_and_reason():

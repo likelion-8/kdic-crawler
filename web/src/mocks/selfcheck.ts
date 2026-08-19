@@ -195,9 +195,6 @@ async function collectSse(message: string) {
   assert.equal(stillBase.evaluation, null, '평가가 서버 초안을 만들면 안 된다')
   assert.equal(stillBase.principles[0].text, base.principles[0].text, '게시 전에는 편집이 서버에 없다')
 
-  // 게시 게이트는 요청이 실어 온 판정으로 막는다(서버에 평가 결과가 남지 않으므로)
-  const blocked = await post('/api/admin/prompt/publish', { request_id: 'p1', reason: '게이트 미통과', draft, gate_passed: false })
-  assert.equal(blocked.status, 409)
   assert.equal((await post('/api/admin/prompt/publish', { request_id: 'p2', reason: '초안 없음' })).status, 400)
 
   const published = await (await post('/api/admin/prompt/publish', { request_id: 'p3', reason: '원칙 문구 수정', draft, gate_passed: true })).json()
@@ -206,6 +203,10 @@ async function collectSse(message: string) {
   assert.equal(promoted.base_version, base.draft_version, '게시본이 새 기준값이 된다')
   assert.equal(promoted.principles[0].text, '수정한 원칙', '게시 시점에 비로소 서버가 편집 내용을 갖는다')
   assert.equal(promoted.change_count, 0)
+
+  // 2026-08-19 정책 변경 — 게이트 미통과는 경고일 뿐 게시를 막지 않는다
+  const warned = await post('/api/admin/prompt/publish', { request_id: 'p4', reason: '게이트 미통과 게시', draft, gate_passed: false })
+  assert.equal(warned.status, 200)
 }
 
 // 14) 답변 본문에 URL·전화번호가 없다

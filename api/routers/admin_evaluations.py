@@ -55,7 +55,7 @@ from api.schemas.evaluations import (CandidateResult, CorpusSearchResult,
                                      GateDetail)
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다). 서비스 vs 관리자 스키마 분리.
 from api.rag import observation
-from schema import documents, evaluation_dataset, pipeline_jobs, rag_runs
+from schema import documents, pipeline_jobs, rag_runs, test_set
 from schema_admin import evaluation_results, evaluation_runs, testset_items
 
 logger = logging.getLogger(__name__)
@@ -118,26 +118,27 @@ def _current_version(db) -> int:
 
 
 def _bootstrap_if_empty(db) -> None:
-    """testset_items 가 비어 있으면 골든셋(schema.py evaluation_dataset)을 **버전 1** 로 씨딩한다.
+    """testset_items 가 비어 있으면 홀드아웃(schema.py test_set, 89문항)을 **버전 1** 로 씨딩한다.
 
-    편집용 사본(testset_items)은 신설이라 비어 있는데, 그대로 두면 문항 목록이 빈 채로 뜨고
-    첫 apply 가 '기존 평가셋 없는 버전 2'를 만든다. 기존 골든셋을 편집 대상으로 끌어오는
-    다리다 — is_active 문항만, expected_sources(→expected_links)·업무·기준답변·라벨 2종
-    (question_type·intent, 2026-08-13 컬럼 추가)을 옮긴다.
+    2026-08-19 전환(팀 결정): 종전에는 골든셋(evaluation_dataset, 851)을 씨딩해 평가메뉴가
+    골든셋 사본을 관리했다. 골든셋은 운영 라우팅의 1-NN 참조 전용으로 떼어내고, 평가·재측정·
+    Smoke·게이트는 전부 이 화면이 관리하는 홀드아웃 계열 하나로 통일한다 — 851 로 재면
+    참조셋과 겹쳐 자기참조 누수가 있던 문제도 함께 사라진다.
     비었을 때 한 번만 도는 지연 씨딩이라 조회/반영 진입에서 함께 부른다.
     """
     if db.execute(select(func.count()).select_from(testset_items)).scalar_one():
         return
-    golden = db.execute(
-        select(evaluation_dataset.c.question, evaluation_dataset.c.expected_sources,
-               evaluation_dataset.c.expected_links, evaluation_dataset.c.business_function,
-               evaluation_dataset.c.question_type, evaluation_dataset.c.intent,
-               evaluation_dataset.c.reference_answer)
-        .where(evaluation_dataset.c.is_active.is_(True))
+    holdout = db.execute(
+        select(test_set.c.question, test_set.c.expected_sources,
+               test_set.c.expected_links, test_set.c.business_function,
+               test_set.c.question_type, test_set.c.intent,
+               test_set.c.reference_answer)
+        .where(test_set.c.is_active.is_(True))
+        .order_by(test_set.c.question_id)
     ).all()
-    if not golden:
+    if not holdout:
         return
-    for g in golden:
+    for g in holdout:
         links = list(g.expected_links or g.expected_sources or []) or None
         db.execute(insert(testset_items).values(
             testset_version="1", question=g.question, expected_links=links,
@@ -145,7 +146,7 @@ def _bootstrap_if_empty(db) -> None:
             question_type=g.question_type, intent=g.intent,
             excluded=False, created_by="system(bootstrap)"))
     db.commit()
-    logger.info("testset_items 부트스트랩: evaluation_dataset %s문항 -> 버전 1", len(golden))
+    logger.info("testset_items 부트스트랩: test_set %s문항 -> 버전 1", len(holdout))
 
 
 def _validate_item(db, inp: EvalItemInput, current_version: str, seen: Optional[set] = None) -> list:
@@ -178,6 +179,41 @@ def _validate_item(db, inp: EvalItemInput, current_version: str, seen: Optional[
                         .where(documents.c.page_id == doc_id)).scalar_one():
         errors.append({"field": "expected_source", "message": "코퍼스에 없는 출처입니다."})
     return errors
+
+
+def holdout_rows(db, *, in_scope_only: bool = False) -> list:
+    """게이트(worker)·AD-007 평가가 쓰는 문항 — 평가메뉴 현행 버전(testset_items)이 정본이다
+    (2026-08-19 전환). 화면의 추가·수정·제외가 별도 동기화 없이 그대로 반영된다.
+    in_scope_only=True 면 기대 출처가 있는 문항만(범위외 제외 — AD-007 은 빈 정답이 섞이면
+    정확도가 부당하게 깎인다. 2026-08-12 실측). 반환: [{"question", "expected_sources"}]."""
+    _bootstrap_if_empty(db)
+    current = str(_current_version(db))
+    rows = db.execute(
+        select(testset_items.c.question, testset_items.c.expected_links)
+        .where(testset_items.c.testset_version == current,
+               testset_items.c.excluded.is_(False))
+        .order_by(testset_items.c.question)
+    ).all()
+    out = [{"question": r.question, "expected_sources": _all_links(r.expected_links)}
+           for r in rows]
+    return [r for r in out if r["expected_sources"]] if in_scope_only else out
+
+
+def active_questions(db, *, in_scope: bool, limit: int) -> list:
+    """평가메뉴(AD-006) 현행 버전의 활성 문항 질문 목록 — AD-008 초안 평가·게시 Smoke 가
+    쓴다(2026-08-19). 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면에서 추가·수정한
+    문항이 평가에 반영되지 않았다. in_scope 는 기대 출처 유무로 가른다(빈 출처 = 범위외).
+    질문 텍스트 정렬로 결정론적 순서를 보장한다(종전 question_id 정렬과 같은 목적)."""
+    _bootstrap_if_empty(db)
+    current = str(_current_version(db))
+    rows = db.execute(
+        select(testset_items.c.question, testset_items.c.expected_links)
+        .where(testset_items.c.testset_version == current,
+               testset_items.c.excluded.is_(False))
+        .order_by(testset_items.c.question)
+    ).all()
+    return [r.question for r in rows
+            if bool(_all_links(r.expected_links)) == in_scope][:limit]
 
 
 def compute_gate(m: dict) -> dict:
@@ -383,7 +419,7 @@ def list_items(
     size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
 ):
     """현재 버전의 편집 가능한 문항 -> Page<EvalItem>. 제외된 문항·후보는 뺀다.
-    비어 있으면 골든셋(evaluation_dataset)을 버전 1 로 씨딩해 빈 화면을 막는다."""
+    비어 있으면 홀드아웃(test_set, 89문항)을 버전 1 로 씨딩해 빈 화면을 막는다(2026-08-19 전환)."""
     _bootstrap_if_empty(db)
     current = str(_current_version(db))
     where = (testset_items.c.testset_version == current,
@@ -519,6 +555,7 @@ def apply_changes(body: EvalApplyRequest, db: DbSession, me: CurrentAdmin):
     # 화면이 수십 초 잠김). executemany 한 번으로 보낸다 — 컬럼 구성이 모든 행 동일해 안전하다.
     if new_rows:
         db.execute(insert(testset_items), new_rows)
+
 
     # 재측정 run 생성 — 마감(DONE)은 워커의 run_evaluation 이 한다.
     run = db.execute(

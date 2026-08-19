@@ -152,9 +152,6 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
         <Button size="sm" variant={v('prompt')} onClick={() => navigate(`/admin/settings/prompt?${from}`)}>
           답변 규칙 고치기
         </Button>
-        <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/settings/ops?curated_new=${q}&${from}`)}>
-          이 질문에 고정 답변 달기
-        </Button>
       </div>
     </div>
   )

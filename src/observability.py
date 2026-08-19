@@ -69,6 +69,54 @@ def update_current_span(**kwargs):
         pass
 
 
+def record_gate1_span(canonical_text, rule_text, result):
+    """Gate 1(결정론적 룰) 판정을 현재 trace 의 자식 span(gate1_rulebase)으로 남긴다.
+
+    CLI·평가 경로(@observe 로 ambient trace 가 열려 있는 pipeline.rag_answer 안)에서 부르면
+    start_observation 이 현재 컨텍스트 아래에 이 span 을 끼운다. 웹 SSE 경로는 스레드풀
+    소비라 ambient 컨텍스트가 없어 이 방식이 안 되므로 거긴 record_trace 메타데이터로 Gate 1
+    결과를 남긴다(그쪽은 이 함수를 부르지 않는다).
+
+    관측 실패·비활성은 조용히 무시한다(다른 관측 함수와 같은 원칙 — 챗봇 응답을 막지 않는다).
+    result 는 gate1.Gate1Result(action/label/rule_id/reason 필드)."""
+    if not _AVAILABLE:
+        return
+    try:
+        span = get_client().start_observation(
+            name="gate1_rulebase", as_type="span",
+            input={"canonical_text": canonical_text, "rule_text": rule_text})
+        span.update(output={
+            "action": result.action, "label": result.label,
+            "rule_id": result.rule_id, "reason": result.reason})
+        span.end()
+    except Exception:
+        pass
+
+
+def record_gate2_span(query, result):
+    """Gate 2(임베딩 유사도 도메인 판정) 결과를 현재 trace 의 자식 span(gate2_embedding)으로
+    남긴다. record_gate1_span 과 같은 이유로 CLI·평가 경로 전용이다(웹 SSE 는 ambient
+    컨텍스트가 없어 record_trace 메타데이터로 대신 남긴다 — api/rag/sse.py 참고).
+
+    nearest_out_category(내부 판정 카테고리, 예: 프롬프트인젝션)는 trace에는 남기지만 이
+    값이 사용자에게 노출되는 것은 아니다 — 사용자 응답은 fixed_gate_response의 고정 문구뿐.
+    result 는 gate2.Gate2Result(action/s_id/s_ood/threshold/reason 등 필드)."""
+    if not _AVAILABLE:
+        return
+    try:
+        span = get_client().start_observation(
+            name="gate2_embedding", as_type="span", input={"query": query})
+        span.update(output={
+            "action": result.action, "s_id": result.s_id, "s_ood": result.s_ood,
+            "threshold": result.threshold,
+            "nearest_out_cluster_id": result.nearest_out_cluster_id,
+            "nearest_out_category": result.nearest_out_category,
+            "reason": result.reason})
+        span.end()
+    except Exception:
+        pass
+
+
 def record_trace(name, *, input=None, output=None, metadata=None):
     """단일 root trace 를 **사후에 한 번에** 기록하고 trace_id 를 돌려준다 — 웹 SSE 경로용.
 
