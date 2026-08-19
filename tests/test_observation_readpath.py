@@ -83,6 +83,7 @@ def _log_row(observation):
         intent="informational", question_type="fact", status="NORMAL",
         failure_stage=None, root_cause=None, total_latency_ms=5200,
         trace_id=None, observation=observation,
+        triage="NONE", triage_reason=None, triaged_by=None, triaged_at=None,
         vote=None, reason_codes=None, comment=None, feedback_at=None)
 
 
@@ -111,32 +112,6 @@ def test_detail_of_pre_observation_run_stays_null():
     assert body["observation"] is None
     c = body["classification"]
     assert c["source_used"] is None and c["marker"] is None and c["normalized"] is None
-
-
-# ─────────────────────── AD-006 후보 자동 채움 ───────────────────────
-
-def test_candidate_prefills_expected_sources():
-    """AD-005 → AD-006 인계의 알맹이. 정답 출처가 비면 관리자가 맨손으로 찾아야 한다."""
-    run = SimpleNamespace(question="예금자보호 한도가 얼마인가요?", intent="informational",
-                          question_type="fact", observation=OBSERVATION)
-    db = _FakeDb(_Result(row=run), _Result(row=SimpleNamespace(id="cand-1")))
-    with _client(db, role="EDITOR") as client:
-        response = client.post("/api/admin/evaluations/candidates",
-                               json={"source_request_id": "req_obs"})
-
-    assert response.status_code == 201, response.text
-    assert response.json()["prefilled_sources"] == 2
-
-
-def test_candidate_without_observation_reports_zero():
-    """관측 이전 대화는 0건 — 화면이 '직접 입력해야 합니다'로 정직하게 안내할 수 있어야 한다."""
-    run = SimpleNamespace(question="q", intent=None, question_type=None, observation=None)
-    db = _FakeDb(_Result(row=run), _Result(row=SimpleNamespace(id="cand-2")))
-    with _client(db, role="EDITOR") as client:
-        response = client.post("/api/admin/evaluations/candidates",
-                               json={"source_request_id": "req_obs"})
-
-    assert response.json()["prefilled_sources"] == 0
 
 
 if __name__ == "__main__":

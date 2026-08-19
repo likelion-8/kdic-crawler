@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # 코드 값 정본은 web/src/lib/codes.ts · logs/api.ts 다. change_request.py/activity.py 와 같은
 # 방침으로 enum 을 Literal 로 복제하지 않고 str 로 받는다(어휘가 늘어도 스키마를 안 고침).
 # 관련 폐집합: LogStatus 'NORMAL'|'OUT_OF_SCOPE'|'FAILED' · FeedbackVote 'up'|'down' ·
-# Intent · QuestionType · BusinessFunction · TriageStatus 'NONE'|'IN_REVIEW'|'RESOLVED' · ErrorCode.
+# Intent · QuestionType · BusinessFunction · TriageStatus 'NONE'|'RESOLVED' · ErrorCode.
 
 
 class ConversationLogRow(BaseModel):
@@ -141,6 +141,11 @@ class ConversationLogDetail(ConversationLogRow):
     error: Optional[LogErrorDetail] = None       # 실패 건에만
     # 관리자가 '왜 이렇게 답했는지'를 보는 근거. 2026-08-14 신설이라 그 이전 대화는 null 이다.
     observation: Optional[RunObservation] = None
+    # 조치 내역(2026-08-19). [처리 완료 표시] 때 받은 사유·처리자·시각. 미처리면 전부 null,
+    # 이 컬럼이 생기기 전에 처리한 행은 사유만 null 이다.
+    triage_reason: Optional[str] = None
+    triaged_by: Optional[str] = None
+    triaged_at: Optional[str] = None
 
 
 class ConversationLogList(BaseModel):

@@ -120,6 +120,15 @@ export interface ConversationLogDetail extends ConversationLogRow {
     comment: string
   } | null
   error: LogErrorDetail | null
+  /**
+   * [처리 완료 표시] 때 입력한 조치 사유(rag_runs.triage_reason). 미처리면 null.
+   * 사유는 활동 로그(AD-011)에도 남지만 거기까지 찾아가야 보였다 — 조치한 화면에서
+   * 바로 읽히도록 상세에도 싣는다.
+   */
+  triage_reason: string | null
+  /** 처리한 사람·시각(rag_runs.triaged_by/at). 미처리면 null */
+  triaged_by: string | null
+  triaged_at: string | null
 }
 
 // ---------------------------------------------------------------- 필터
@@ -219,10 +228,6 @@ export function fetchLogDetail(requestId: string) {
   return apiRequest<ConversationLogDetail>(`/api/admin/logs/${requestId}`)
 }
 
-export function rerunLog(requestId: string) {
-  return apiRequest<ConversationLogRow>(`/api/admin/logs/${requestId}/rerun`, { method: 'POST' })
-}
-
 /** [처리 완료 표시] — 조치 사유 필수 (Desc 4) */
 export function resolveLog(requestId: string, reason: string) {
   return apiRequest<ConversationLogRow>(`/api/admin/logs/${requestId}`, {
@@ -230,19 +235,6 @@ export function resolveLog(requestId: string, reason: string) {
     body: { triage: 'RESOLVED' },
     reason,
   })
-}
-
-/**
- * [테스트셋 보강 후보로 등록] — request_id 만 넘기면 서버가 관측(rag_runs.observation)에서
- * 그 답변이 실제로 근거로 쓴 페이지를 정답 출처 초안으로 채운다. prefilled_sources 가 그 건수라
- * 화면이 "출처 N건을 미리 채웠습니다"로 안내한다(빈손 등록과 구분).
- */
-export function addEvalCandidate(requestId: string) {
-  return apiRequest<{ candidate_id: string; status: string; prefilled_sources: number }>(
-    '/api/admin/evaluations/candidates', {
-      method: 'POST',
-      body: { source_request_id: requestId },
-    })
 }
 
 /** 내보내기 — 사실 자체가 활동 로그(AD-011)에 남는다 */
@@ -277,10 +269,9 @@ export const LOG_STATUS_TONE: Record<LogStatus, 'green' | 'orange' | 'red'> = {
   FAILED: 'red',
 }
 
-/** CM-DF-002 06절 triage_status 3종 */
+/** CM-DF-002 06절 triage_status — 미처리/처리 완료 2값(2026-08-19 '확인 중' 폐기) */
 export const TRIAGE_LABEL: Record<TriageStatus, string> = {
   NONE: '미확인',
-  IN_REVIEW: '확인 중',
   RESOLVED: '처리 완료',
 }
 

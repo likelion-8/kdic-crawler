@@ -17,15 +17,9 @@ import { formatTime } from '../../../lib/format'
 
 export interface LogDetailPanelProps {
   detail: ConversationLogDetail
-  /** OPERATOR 이상 — 재실행·처리 완료 */
+  /** OPERATOR 이상 — 처리 완료 */
   canRun: boolean
-  /** EDITOR 이상 — 테스트셋 보강 후보 등록 */
-  canEdit: boolean
-  onRerun: () => void
   onResolve: () => void
-  onAddCandidate: () => void
-  rerunPending: boolean
-  candidatePending: boolean
 }
 
 /** 모달 헤더용 제목·부제 — 화면과 상세가 같은 문구를 쓰도록 여기서 만든다 */
@@ -157,8 +151,47 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
   )
 }
 
+/** 처리 상태 꼬리 — 미처리면 [처리 완료 표시], 처리했으면 그때 남긴 조치 사유.
+ *
+ * 사유는 활동 로그(AD-011)에도 쌓이지만 거기까지 찾아가야 보였다. 조치를 한 화면에서
+ * 바로 읽히는 게 맞다. 정상 건과 실패 건이 같은 꼬리를 쓴다. */
+function TriageFooter({ detail, canRun, onResolve }: LogDetailPanelProps) {
+  if (detail.triage === 'RESOLVED') {
+    return (
+      <div className="mt-4 rounded-md border border-border p-3">
+        <SectionTitle>조치 내역</SectionTitle>
+        <dl className="space-y-1 text-[13px]">
+          <div className="grid grid-cols-[120px_1fr] gap-2.5">
+            <dt className="text-muted-foreground">조치 사유</dt>
+            {/* 관측 이전에 처리한 건은 사유가 남아 있지 않다 — 없다고 말하지 지어내지 않는다 */}
+            <dd className="break-keep">{detail.triage_reason ?? '기록되지 않았습니다'}</dd>
+          </div>
+          {detail.triaged_by !== null && (
+            <div className="grid grid-cols-[120px_1fr] gap-2.5">
+              <dt className="text-muted-foreground">처리</dt>
+              <dd>
+                {detail.triaged_by}
+                {detail.triaged_at === null ? '' : ` · ${formatMonthDayTime(detail.triaged_at)}`}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </div>
+    )
+  }
+  if (!canRun) return null
+  return (
+    <div className="mt-4">
+      <Button size="sm" onClick={onResolve}>
+        처리 완료 표시
+      </Button>
+    </div>
+  )
+}
+
+
 /** [2][3] 단계별 처리 추적 */
-function TracePanel({ detail, canEdit, canRun, onAddCandidate, onResolve, candidatePending }: LogDetailPanelProps) {
+function TracePanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
   const [expanded, setExpanded] = useState(false)
   const { classification: c } = detail
   return (
@@ -235,48 +268,19 @@ function TracePanel({ detail, canEdit, canRun, onAddCandidate, onResolve, candid
           <p className="text-[13px]">
             사유 : {detail.feedback_detail.reason_label} · “{detail.feedback_detail.comment}”
           </p>
-          {canEdit && (
-            <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
-              테스트셋 보강 후보로 등록
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* 후보 등록은 실패·피드백 건 전용이 아니다 — 좋은 답변도 평가셋 보강 대상(CM-DF-002 07절) */}
-      {canEdit && !detail.feedback_detail && (
-        <div className="mt-4">
-          <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
-            테스트셋 보강 후보로 등록
-          </Button>
         </div>
       )}
 
       {/* 처리 완료 — 실패 건 전용이던 것을 전체 건으로(2026-08-18). 나쁨 평가 대응은 정상 건이
           대부분이라, 여기 없으면 조치를 끝내고도 대시보드 할 일 건수가 영원히 안 줄어든다 */}
-      {canRun && detail.triage !== 'RESOLVED' && (
-        <div className="mt-4">
-          <Button size="sm" onClick={onResolve}>
-            처리 완료 표시
-          </Button>
-        </div>
-      )}
+      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} />
     </section>
   )
 }
 
 
 /** [4] 실패 건(붉은 행) 선택 시 : 오류 상세 패널 */
-function ErrorPanel({
-  detail,
-  canRun,
-  canEdit,
-  onRerun,
-  onResolve,
-  onAddCandidate,
-  rerunPending,
-  candidatePending,
-}: LogDetailPanelProps) {
+function ErrorPanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
   const error = detail.error!
   const rows: [string, string, boolean][] = [
     ['오류 코드', `${error.code} · ${error.meaning}`, true],
@@ -323,23 +327,7 @@ function ErrorPanel({
         <TraceLink trace={detail.langfuse} />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {canRun && (
-          <Button variant="primary" size="sm" onClick={onRerun} loading={rerunPending}>
-            동일 질문 재실행
-          </Button>
-        )}
-        {canEdit && (
-          <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
-            테스트셋 보강 후보 등록
-          </Button>
-        )}
-        {canRun && (
-          <Button size="sm" onClick={onResolve}>
-            처리 완료 표시
-          </Button>
-        )}
-      </div>
+      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} />
     </section>
   )
 }

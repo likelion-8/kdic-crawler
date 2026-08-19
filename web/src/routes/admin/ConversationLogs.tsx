@@ -8,7 +8,7 @@
  *  - 진입 시 행을 자동 선택하지 않는다. 로그 정독이 목적이다(Desc 2)
  *  - 실패 행은 추적 패널 대신 오류 상세를 연다(Desc 2)
  *  - VIEWER는 집계만, 그 외 역할은 마스킹된 상세까지(Desc 0)
- *  - 조회·검색·내보내기·재실행·후보 등록·처리 완료는 모두 AD-011에 기록된다 */
+ *  - 조회·검색·내보내기·처리 완료는 모두 AD-011에 기록된다 */
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import type { ReactNode } from 'react'
@@ -44,7 +44,6 @@ import {
   MAX_CUSTOM_DAYS,
   PERIOD_OPTIONS,
   TRIAGE_LABEL,
-  addEvalCandidate,
   dash,
   daysBetween,
   exportLogs,
@@ -53,7 +52,6 @@ import {
   fetchSummary,
   kstToday,
   logsQueryKey,
-  rerunLog,
   resolveLog,
 } from './logs/api'
 import type { ConversationLogRow, LogFilters } from './logs/api'
@@ -105,7 +103,6 @@ export function ConversationLogs() {
   const queryClient = useQueryClient()
 
   const canViewDetail = hasRole(session?.role, 'OPERATOR') // VIEWER는 집계만
-  const canEdit = hasRole(session?.role, 'EDITOR') // 테스트셋 보강 후보 등록
   const canExport = hasRole(session?.role, 'ADMIN') // 내보내기
 
   // 초기 필터는 URL 을 우선한다 — 대시보드 할 일 카드가 ?feedback=down 처럼 필터를 들고
@@ -155,30 +152,6 @@ export function ConversationLogs() {
     enabled: selectedId !== null && canViewDetail,
   })
 
-  const rerun = useMutation({
-    mutationFn: () => rerunLog(selectedId!),
-    onSuccess: (created) => {
-      void queryClient.invalidateQueries({ queryKey: logsQueryKey })
-      // 필터·정렬 때문에 새 행이 목록 맨 위에 없을 수 있어 [결과 보기]로 직접 연다(11 §M6 제안)
-      showToast('동일 질문을 재실행했습니다', {
-        label: '결과 보기',
-        onClick: () => setSelectedId(created.request_id),
-      })
-    },
-  })
-
-  const candidate = useMutation({
-    mutationFn: () => addEvalCandidate(selectedId!),
-    // 정답 출처가 미리 채워졌는지를 알려야 관리자가 AD-006 에서 무엇을 확인할지 안다.
-    // 0건(관측 이전 대화)이면 종전처럼 맨손 등록이라는 사실을 그대로 말한다.
-    onSuccess: (r) =>
-      showToast(
-        r.prefilled_sources > 0
-          ? `테스트셋 보강 후보로 등록했습니다 · 정답 출처 ${r.prefilled_sources}건을 미리 채웠습니다`
-          : '테스트셋 보강 후보로 등록했습니다 · 정답 출처는 직접 입력해야 합니다',
-      ),
-  })
-
   const resolve = useMutation({
     mutationFn: ({ reason }: { reason?: string }) => resolveLog(resolving!, reason ?? ''),
     onSuccess: () => {
@@ -192,15 +165,6 @@ export function ConversationLogs() {
     mutationFn: () => exportLogs(filters),
     onSuccess: () => showToast('내보내기를 시작했습니다'),
   })
-
-  // 조치 실패는 토스트가 아니라 패널 안에 남긴다(07.4절). 문구는 서버 user_message 그대로
-  const actionFailure = rerun.error ?? candidate.error
-  const actionError =
-    actionFailure === null
-      ? null
-      : isApiRequestError(actionFailure)
-        ? actionFailure.error.user_message
-        : '조치를 처리하지 못했습니다.'
 
   const columns: Column<ConversationLogRow>[] = [
     {
@@ -544,15 +508,9 @@ export function ConversationLogs() {
           <LogDetailPanel
             detail={detail.data}
             canRun={canViewDetail}
-            canEdit={canEdit}
-            rerunPending={rerun.isPending}
-            candidatePending={candidate.isPending}
-            onRerun={() => rerun.mutate()}
-            onAddCandidate={() => candidate.mutate()}
             onResolve={() => setResolving(selectedId)}
           />
         ) : null}
-        {actionError !== null && <ErrorNote>{actionError}</ErrorNote>}
       </DetailModal>
 
 

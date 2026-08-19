@@ -186,12 +186,17 @@ rag_runs = Table(
     # 가릴 수 없고(source_count·source_used·marker·normalized 가 전부 null), AD-006 문항
     # 후보도 정답 없는 껍데기로만 등록된다. 모양은 api/rag/observation.py 가 정본이다.
     Column("observation", JSONB),
-    # 관리자 처리 상태(AD-005). CM-DF-002 06절 triage_status 3종 — NONE(미확인) / IN_REVIEW /
-    # RESOLVED. 이게 없으면 대시보드 '나쁨 평가' 할 일 건수가 조치해도 줄지 않아, 시작점이
-    # 3일이면 무의미해진다(관리자 유저플로우 설계 2026-08-18 · 미구현 6건 중 1순위).
+    # 관리자 처리 상태(AD-005). CM-DF-002 06절 triage_status — NONE(미확인) / RESOLVED.
+    # 이게 없으면 대시보드 '나쁨 평가' 할 일 건수가 조치해도 줄지 않아, 시작점이 3일이면
+    # 무의미해진다(관리자 유저플로우 설계 2026-08-18 · 미구현 6건 중 1순위).
+    # 종전 3값의 IN_REVIEW('확인 중')는 2026-08-19 폐기했다 — 설정하는 화면이 끝내 없었고
+    # 목록 필터도 미처리/처리 완료 2분법이라, 아무도 쓰지 않는 값이 스키마에만 남아 있었다.
     Column("triage", String, nullable=False, server_default=text("'NONE'")),
     Column("triaged_by", String),
     Column("triaged_at", DateTime(timezone=True)),
+    # 처리 완료로 표시할 때 받은 조치 사유(2026-08-19). 활동 로그(AD-011)에도 남지만 거기까지
+    # 찾아가야 보여서, 조치한 화면(AD-005 상세)에서 바로 읽히도록 여기에도 둔다.
+    Column("triage_reason", Text),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
@@ -501,6 +506,8 @@ def main():
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triage text NOT NULL DEFAULT 'NONE'"))
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_by text"))
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_at timestamptz"))
+        # 조치 사유(2026-08-19) — 이전에 처리한 행은 NULL 이라 화면이 '기록되지 않았습니다'로 읽는다.
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triage_reason text"))
         conn.execute(text("ALTER TABLE pipeline_jobs ADD COLUMN IF NOT EXISTS params jsonb"))
         # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
         # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.

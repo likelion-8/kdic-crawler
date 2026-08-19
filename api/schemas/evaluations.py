@@ -176,17 +176,10 @@ class EvalApplyResult(BaseModel):
     rerun_id: str
 
 
-# ──────────────────────────── 코퍼스·후보 (GET /corpus · POST /candidates) ──
+# ──────────────────────────────── 코퍼스 (GET /corpus) ─────────────────────
 
 class CorpusSearchResult(BaseModel):
     """기대 출처 자동완성 결과 — {items:[ExpectedSource]}."""
     items: list[ExpectedSource] = Field(default_factory=list)
 
 
-class CandidateResult(BaseModel):
-    """대화 로그 → 문항 후보 등록 결과(AD-005 연동). api.ts addEvalCandidate 응답."""
-    candidate_id: str
-    status: str
-    # 서버가 관측(rag_runs.observation)에서 정답 출처를 미리 채운 건수. 0 이면 관측 이전 대화라
-    # 관리자가 직접 입력해야 한다 — 화면이 그 둘을 다르게 안내한다(ConversationLogs 토스트).
-    prefilled_sources: int = 0

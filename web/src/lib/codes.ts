@@ -77,7 +77,7 @@ export type KbListState = '적용 대기' | '변경 감지' | '최신'
 // --- 06. 작업 · 권한 ---
 export type JobType = 'FULL_RECRAWL' | 'SELECTED_RECRAWL' | 'REINDEX' | 'RECHUNK' | 'REEMBED' | 'SMOKE_EVAL' | 'CHANGE_DETECT'
 export type JobStatus = 'QUEUED' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'CANCELLED'
-export type TriageStatus = 'NONE' | 'IN_REVIEW' | 'RESOLVED'
+export type TriageStatus = 'NONE' | 'RESOLVED'
 
 /** 누적형 — 상위 역할은 하위 권한을 포함한다 */
 export type Role = 'VIEWER' | 'OPERATOR' | 'EDITOR' | 'ADMIN'

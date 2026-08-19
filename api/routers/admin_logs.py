@@ -3,12 +3,17 @@
 `rag_runs` 에 질의 기록이, `feedback` 에 그 답변에 대한 좋아요·싫어요가 쌓여 있는데
 읽는 API 가 없어 화면이 목 데이터로만 돌고 있었다. 이 파일이 그 구멍을 메운다.
 
-## 읽기 전용이다
+## 쓰기는 처리 상태 하나뿐이다
 
-수정·삭제 엔드포인트를 만들지 않는다. 재실행(`/rerun`)·분류(`PATCH {triage}`)는 프론트 계약
-(G1)의 7종 중 2종인데 이번 주 범위에서 뺐다(팀 결정) — 화면이 그 버튼을 그리고 있으면 프론트에
-숨김을 요청한다(사유·조치: docs/conversation_logs_field_sources.md §8). 나머지 평가 후보 등록은
-`POST /api/admin/evaluations/candidates`로 평가 라우터(admin_evaluations.py)에 구현했다.
+수정·삭제 엔드포인트를 만들지 않는다. 유일한 쓰기는 `PATCH {triage, reason}` 이고, 사유는
+활동 로그(AD-011)와 `rag_runs.triage_reason` 양쪽에 남는다 — 원장은 감사용, 컬럼은 조치를
+한 화면에서 바로 읽히게 하는 용도다.
+
+종전 계약에 있던 재실행(`POST /{id}/rerun`)과 평가 후보 등록(`POST /evaluations/candidates`)
+은 **2026-08-19 폐기했다.** 재실행은 챗봇 화면에서 같은 질문을 직접 물어보는 편이 직관적이고
+워커 층을 새로 세울 이유가 없었다. 후보 등록은 요구사항(project_context.md)에 없던 흐름인데,
+등록해도 sentinel 버전('candidate')에 갇혀 어느 화면에도 뜨지 않아 '됐다고만 말하는 버튼'
+이었다. 프론트의 호출부·버튼·목도 같은 커밋에서 지웠다.
 
 ## 권한이 활동 로그와 반대다
 
@@ -95,7 +100,7 @@ EXPORT_ROLES = frozenset({"ADMIN"})
 STATUSES = frozenset({"NORMAL", "OUT_OF_SCOPE", "FAILED"})   # logs/api.ts LogStatus
 INTENTS = frozenset({"informational", "civil_petition"})     # query_planner.PlanItem.intent
 FEEDBACKS = frozenset({"up", "down", "none"})                # logs/api.ts LogFilters.feedback
-TRIAGES = frozenset({"NONE", "IN_REVIEW", "RESOLVED"})       # codes.ts TriageStatus (CM-DF-002 06절)
+TRIAGES = frozenset({"NONE", "RESOLVED"})                    # codes.ts TriageStatus (CM-DF-002 06절)
 
 # 2026-08-12 실측: 기존 238행이 **전부** status="success" 다. rag_logger 의 기본값이 그 문자열
 # 하나뿐이었고 다른 값을 넘기는 호출부가 없었기 때문이다(실패 기록 자체가 없었다).
@@ -234,7 +239,7 @@ def build_log_queries(*, q: str, status: str, intent: str, feedback: str,
             raise BadRequestError("지원하지 않는 intent 값입니다.")
         filters.append(rag_runs.c.intent == intent)
     if triage:
-        # 처리 상태(2026-08-18). 'OPEN' 은 RESOLVED 가 아닌 것(NONE·IN_REVIEW) — 화면의
+        # 처리 상태(2026-08-18). 'OPEN' 은 RESOLVED 가 아닌 것(=NONE) — 화면의
         # '미처리' 선택지이자 대시보드 할 일 카드가 넘기는 값이다. 카드 건수와 같은 조건이라야
         # 눌렀을 때 같은 목록이 열린다.
         if triage == "OPEN":
@@ -418,6 +423,9 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             rag_runs.c.trace_id,
             rag_runs.c.observation,
             rag_runs.c.triage,
+            rag_runs.c.triage_reason,
+            rag_runs.c.triaged_by,
+            rag_runs.c.triaged_at,
             feedback_table.c.vote,
             feedback_table.c.reason_codes,
             feedback_table.c.comment,
@@ -474,6 +482,12 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
             "failure_stage": row.failure_stage,
             "root_cause": row.root_cause,
         },
+        # 조치 내역(2026-08-19). 사유는 활동 로그(AD-011)에도 남지만, 조치를 한 화면에서
+        # 바로 읽히지 않으면 관리자가 '무슨 사유로 닫았더라'를 찾아 원장을 뒤져야 했다.
+        # 2026-08-19 이전에 처리한 행은 triage_reason 이 NULL 이다(화면이 '기록되지 않았습니다').
+        "triage_reason": row.triage_reason,
+        "triaged_by": row.triaged_by,
+        "triaged_at": _to_kst_iso(row.triaged_at),
     }
 
 
@@ -490,7 +504,7 @@ def patch_log(request_id: str, body: dict, request: Request, admin: CurrentAdmin
     _require(admin, READ_ROLES, "대화 로그 처리 상태 변경")
     triage = str(body.get("triage") or "").strip()
     if triage not in TRIAGES:
-        raise BadRequestError("triage 값이 올바르지 않습니다(NONE·IN_REVIEW·RESOLVED).")
+        raise BadRequestError("triage 값이 올바르지 않습니다(NONE·RESOLVED).")
     reason = str(body.get("reason") or "").strip()
     if triage == "RESOLVED" and not reason:
         raise BadRequestError("처리 완료에는 사유가 필요합니다.")
@@ -505,7 +519,9 @@ def patch_log(request_id: str, body: dict, request: Request, admin: CurrentAdmin
     db.execute(update(rag_runs).where(rag_runs.c.request_id == request_id).values(
         triage=triage,
         triaged_by=admin.email if triage != "NONE" else None,
-        triaged_at=now if triage != "NONE" else None))
+        triaged_at=now if triage != "NONE" else None,
+        # 되돌리기(→NONE)면 사유도 지운다. 남겨 두면 '미처리인데 조치 사유가 있는' 행이 된다
+        triage_reason=reason if triage != "NONE" else None))
     db.commit()
     write_activity_log(db, request, actor=admin.email, actor_role=admin.role,
                        action="대화 로그 처리 상태 변경", target=f"대화 ({request_id})",

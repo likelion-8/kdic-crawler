@@ -11,7 +11,6 @@ src/schema.py(documents·rag_runs).
     POST /items/validate        필드별 오류 [{field, message}]       — 검증(무상태)
     POST /apply                 {adds,edits,excludes}+reason        — EDITOR↑(위험 작업)
     GET  /corpus?q=             기대 출처 자동완성                   — 읽기
-    POST /candidates            대화 로그 → 문항 후보(AD-005 연동)    — 쓰기
 
 ## 실행 로직은 새로 짜지 않는다 (감싸기만)
 검색·생성 채점은 src/eval/eval_pipeline_retrieval.py · eval_pipeline_generation.py 에 이미
@@ -35,7 +34,7 @@ compute_gate 가 함께 계산해 evaluation_runs.gate(JSONB)에 담고, 목록�
 
 ## ⚠️ testset_items 에 없는 필드(intent·question_type)
 편집용 testset_items 에는 두 컬럼이 없다(원본 evaluation_dataset 에만 있다). GET /items 는
-null 로 내보내고, apply/candidates 는 그 값을 저장하지 못한다 — 처리 방침·제안은
+null 로 내보내고, apply 는 그 값을 저장하지 못한다 — 처리 방침·제안은
 docs/evaluation_api_notes.md 에 있다(로그 화면의 원천 없는 필드와 같은 원칙: 지어내지 않는다).
 """
 import logging
@@ -49,7 +48,7 @@ from sqlalchemy import func, insert, select
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
-from api.schemas.evaluations import (CandidateResult, CorpusSearchResult,
+from api.schemas.evaluations import (CorpusSearchResult,
                                      EvalApplyRequest, EvalApplyResult, EvaluationRunList,
                                      EvalItemInput, EvalItemList, EvalItemValidation,
                                      GateDetail)
@@ -72,9 +71,6 @@ MAX_PAGE_SIZE = 100
 MIN_CORPUS_QUERY = 2                         # 2자 미만 자동완성은 부르지 않는다(H6)
 # 역할 계층 정본: web/src/lib/codes.ts ROLE_RANK. apply(위험 작업+사유)는 EDITOR 이상.
 ROLE_RANK = {"VIEWER": 0, "OPERATOR": 1, "EDITOR": 2, "ADMIN": 3}
-# 후보 문항이 사는 가상 버전. 숫자 버전(운영 평가셋)과 섞이지 않게 sentinel 로 분리한다.
-CANDIDATE_VERSION = "candidate"
-
 # 🔴 게이트 목표값 정본(E4). (label, target 표기, 판정 op, 임계값, 포맷터). 서버만 이 값을 안다.
 _SCORE = lambda v: f"{v:.3f}" if v is not None else "—"
 _PCT = lambda v: f"{v * 100:.1f}%" if v is not None else "—"
@@ -642,46 +638,6 @@ def search_corpus(db: DbSession, q: str = ""):
 
 
 # ──────────────────────────────── 후보 등록 ─────────────────────────────────
-
-@router.post("/candidates", response_model=CandidateResult, status_code=201)
-def add_candidate(body: dict, db: DbSession, me: CurrentAdmin):
-    """대화 로그 1건 -> 문항 후보(AD-005 연동). 마스킹된 질문만 옮긴다.
-
-    후보는 숫자 버전과 섞이지 않게 sentinel 버전('candidate')으로 저장한다 — apply 로 정식
-    버전에 편입되기 전까지 GET /items 에 노출되지 않는다.
-
-    **정답 출처를 미리 채운다(2026-08-14).** 종전에는 질문만 옮기고 expected_links·업무·
-    기준답변이 전부 None 이라, 관리자가 "이 질문의 정답 출처가 뭐였더라"를 맨손으로 찾아야 했다.
-    실제로 그 답변이 어떤 페이지를 근거로 삼았는지는 rag_runs.observation 에 있으므로 그걸
-    초안으로 넣는다 — 관리자는 **확인·수정만** 하면 된다. 이게 AD-005 → AD-006 인계의 알맹이다.
-    관측 이전에 쌓인 행은 observation 이 NULL 이라 종전처럼 빈 후보가 된다.
-    intent·question_type 도 함께 옮긴다(2026-08-13 컬럼 추가로 가능해졌다).
-    """
-    request_id = str(body.get("source_request_id") or "").strip()
-    if not request_id:
-        raise BadRequestError("source_request_id가 필요합니다.")
-
-    run = db.execute(
-        select(rag_runs.c.question, rag_runs.c.intent, rag_runs.c.question_type,
-               rag_runs.c.observation)
-        .where(rag_runs.c.request_id == request_id)).first()
-    if run is None:
-        raise NotFoundError("대화 기록을 찾을 수 없습니다.")
-
-    pages = observation.expected_pages(run.observation)
-    row = db.execute(
-        insert(testset_items).values(
-            testset_version=CANDIDATE_VERSION, question=run.question,
-            expected_links=pages or None, business_function=None, reference_answer=None,
-            question_type=run.question_type, intent=run.intent,
-            excluded=False, created_by=me.email)
-        .returning(testset_items.c.id)
-    ).first()
-    db.commit()
-    # prefilled_sources 로 화면이 "출처 N건을 미리 채웠습니다"를 안내한다(빈손 등록과 구분).
-    return {"candidate_id": str(row.id), "status": "REGISTERED",
-            "prefilled_sources": len(pages)}
-
 
 # ──────────────────────── 측정 실행(워커/CLI 전용) ──────────────────────────
 
