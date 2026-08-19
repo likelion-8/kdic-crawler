@@ -161,9 +161,8 @@ def test_ops_routes_are_exactly_the_requested_endpoints():
         ("GET", "/api/admin/suggested-questions"),
         ("PUT", "/api/admin/suggested-questions"),
         ("POST", "/api/admin/suggested-questions/validate"),
-        # 2026-08-14 추가: 답변 매핑(AD-009) — 추천 질문과 같은 전량 교체 계약(9종 -> 11종)
-        ("GET", "/api/admin/curated-answers"),
-        ("PUT", "/api/admin/curated-answers"),
+        # 답변 매핑(AD-009)은 2026-08-14 추가됐다가 2026-08-19 Gate 1 이식과 함께 서빙 경로
+        # (curated_get)를 파이프라인에서 없애면서 이 CRUD 도 함께 걷어냈다(9종 유지).
     }
 
 
