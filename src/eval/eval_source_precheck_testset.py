@@ -47,6 +47,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--testset", default=str(DEFAULT_TESTSET))
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--only", default=None,
+                    help="1부터 세는 문항 번호를 쉼표로 — 속도제한 등으로 빠진 건 재실행용 (예: 26,27,44)")
     ap.add_argument("--csv", default=None, help="문항별 기록 저장(놓침 후보 수동 라벨링용)")
     ap.add_argument("--deterministic", action="store_true",
                     help="HCX temperature 0 + seed 고정(재현용). 기본은 운영과 같은 샘플링")
@@ -57,6 +59,9 @@ def main():
     runtime_config.override("params", {})
 
     items = load_testset(args.testset)
+    if args.only:
+        picked = {int(n) for n in args.only.split(",")}
+        items = [it for i, it in enumerate(items, 1) if i in picked]
     if args.limit:
         items = items[: args.limit]
 
