@@ -1,0 +1,10 @@
+﻿run_id,question,precheck,missing_numbers,marker,used_source,kind,appropriate,luna_flagged,status
+d71e2856-3673-46a0-9c35-c048eb8e33df,예금자보호 한도가 얼마인가요?,clean,,True,True,grounded,True,False,NORMAL
+e08270b3-9dc3-4834-a875-0e7268e10dea,반환지원 대상이 아닌 경우는 어떤 경우인가요?,marker_no_source,,False,True,refusal,True,False,NORMAL
+c1ddd844-3741-4b1d-ba22-5599537646b6,반환지원 대상이 아닌 경우는 어떤 경우인가요?,marker_no_source,,False,True,refusal,True,False,NORMAL
+97611b7a-3e41-4b2d-8101-61d6b90a308a,반환지원 대상이 아닌 경우는 어떤 경우인가요?,marker_no_source,,False,True,refusal,True,False,NORMAL
+09f797c2-a7be-4339-b44c-8875aed4b0c2,반환지원 대상이 아닌 경우는 어떤 경우인가요?,marker_no_source,,False,True,refusal,True,False,NORMAL
+ee643cee-223c-4046-84e1-6ca2f61be4d6,반환지원 대상이 아닌 경우는 어떤 경우인가요?,no_numbers,,True,True,grounded,True,False,NORMAL
+929a9f53-bbc1-4111-8039-27218ea81a0a,안녕하세요!,marker_no_source,,False,False,greeting_or_smalltalk,True,False,OUT_OF_SCOPE
+cda2724e-51c7-420e-9bb5-4568a1164a95,예금자보호 한도는 얼마인가요?,clean,,True,True,grounded,True,False,NORMAL
+9049be7d-1e3f-43bd-8568-86104ab41742,착오송금 반환지원 대상 금액은 얼마까지인가요,clean,,True,True,grounded,True,False,NORMAL
