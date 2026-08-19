@@ -126,17 +126,6 @@ const allJobs = () => [...[...liveJobs.values()].map(progressed), ...MOCK_JOBS]
 
 const changeRequests: ChangeRequest[] = [...MOCK_CHANGE_REQUESTS]
 let suggestedQuestions: SuggestedQuestion[] = [...MOCK_SUGGESTED_QUESTIONS]
-
-/** 답변 매핑 목 저장소 — 빈 상태 시작이 계약(2026-08-14 팀 결정) */
-interface CuratedAnswerRow {
-  id: string
-  questions: string[]
-  answer: string
-  sources: { page_id: string; title: string; url: string; breadcrumb: string }[]
-  active: boolean
-  order: number
-}
-let curatedAnswers: CuratedAnswerRow[] = []
 const drafts: Record<string, { saved_at: string; version: number; body: unknown }> = {}
 
 // ---------------------------------------------------------------- 핸들러
@@ -487,46 +476,6 @@ export const adminHandlers = [
     if (items.filter((i) => i.active).length > 10) return fail(400, '활성 추천 질문은 최대 10개까지입니다.')
     suggestedQuestions = items
     return HttpResponse.json({ items: suggestedQuestions, total: suggestedQuestions.length, page: 1, size: suggestedQuestions.length })
-  }),
-
-
-  // ---- 답변 매핑 (AD-009 · 2026-08-14 신설) — 추천 질문과 같은 전량 교체 계약 ----
-  // 서버는 source_page_ids 를 받아 제목·URL 을 확정해 sources 로 돌려준다(admin_ops.py).
-  // 목은 지식베이스 목업 페이지명으로 같은 모양을 흉내 낸다. 빈 상태 시작이 계약이다.
-  http.get('/api/admin/curated-answers', () =>
-    HttpResponse.json({ items: curatedAnswers, total: curatedAnswers.length })),
-
-  http.put('/api/admin/curated-answers', async ({ request }) => {
-    const no = denied(request, 'EDITOR')
-    if (no) return no
-    const body = (await request.json()) as WriteBody & {
-      items?: (Omit<CuratedAnswerRow, 'sources'> & { source_page_ids?: string[] })[]
-    }
-    const bad = missingWriteFields(body)
-    if (bad) return bad
-    const items = body.items ?? []
-    for (const item of items) {
-      if (!item.questions?.length) return fail(400, '질문 문구가 최소 1개 필요합니다.')
-      if (!item.answer?.trim()) return fail(400, '답변이 필요합니다.')
-      if (!item.source_page_ids?.length) return fail(400, '출처 page_id가 최소 1개 필요합니다(출처 없는 답변 금지).')
-    }
-    // 항목 간 문구 중복 — 서버와 같은 규칙(어느 답이 나갈지 비결정이 되므로 거절)
-    const seen = new Map<string, string>()
-    for (const item of items)
-      for (const q of item.questions) {
-        const key = q.trim()
-        const owner = seen.get(key)
-        if (owner && owner !== item.id) return fail(400, `질문 문구가 다른 답변과 겹칩니다: '${q}' (매핑 ${owner})`)
-        seen.set(key, item.id)
-      }
-    curatedAnswers = items.map((item) => ({
-      id: item.id, questions: item.questions, answer: item.answer, active: item.active,
-      order: item.order,
-      sources: (item.source_page_ids ?? []).map((pid) => ({
-        page_id: pid, title: `${pid} 페이지`, url: `https://www.kdic.or.kr/${pid}`, breadcrumb: '지식베이스',
-      })),
-    }))
-    return HttpResponse.json({ items: curatedAnswers, total: curatedAnswers.length })
   }),
 
   http.get('/api/admin/suggested-questions', ({ request }) =>
