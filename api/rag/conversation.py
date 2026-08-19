@@ -58,6 +58,28 @@ def _next_seq(session, session_id):
     return (current or 0) + 1
 
 
+def recent_messages(session_id: str, limit: int = 6) -> list:
+    """세션의 최근 메시지 [(role, text), ...] 를 과거→최근 순으로. 멀티턴 재작성
+    (src/query_rewriter.py)의 컨텍스트용이다 — 이번 턴 질문을 저장하기 **전에** 불러야
+    이전 턴만 담긴다(sse 의 호출 순서가 그 규약을 지킨다).
+
+    실패·기록 없음은 빈 리스트 — 재작성이 무산될 뿐 답변을 막지 않는다(저장 실패와
+    같은 원칙). 경고는 남긴다."""
+    try:
+        with get_session() as s:
+            rows = s.execute(
+                select(chat_messages.c.role, chat_messages.c.text)
+                .where(chat_messages.c.session_id == session_id)
+                .order_by(chat_messages.c.seq.desc())
+                .limit(limit)
+            ).all()
+        return [(r.role, r.text) for r in reversed(rows)]
+    except Exception:
+        logger.warning("대화 이력 조회 실패 session=%s — 재작성 없이 계속한다",
+                       session_id, exc_info=True)
+        return []
+
+
 def save_user_message(session_id: str, text: str) -> None:
     """사용자 질문을 저장한다. 스트리밍 시작 전에 부른다."""
     try:
