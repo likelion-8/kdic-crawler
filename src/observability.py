@@ -69,6 +69,30 @@ def update_current_span(**kwargs):
         pass
 
 
+def record_gate1_span(canonical_text, rule_text, result):
+    """Gate 1(결정론적 룰) 판정을 현재 trace 의 자식 span(gate1_rulebase)으로 남긴다.
+
+    CLI·평가 경로(@observe 로 ambient trace 가 열려 있는 pipeline.rag_answer 안)에서 부르면
+    start_observation 이 현재 컨텍스트 아래에 이 span 을 끼운다. 웹 SSE 경로는 스레드풀
+    소비라 ambient 컨텍스트가 없어 이 방식이 안 되므로 거긴 record_trace 메타데이터로 Gate 1
+    결과를 남긴다(그쪽은 이 함수를 부르지 않는다).
+
+    관측 실패·비활성은 조용히 무시한다(다른 관측 함수와 같은 원칙 — 챗봇 응답을 막지 않는다).
+    result 는 gate1.Gate1Result(action/label/rule_id/reason 필드)."""
+    if not _AVAILABLE:
+        return
+    try:
+        span = get_client().start_observation(
+            name="gate1_rulebase", as_type="span",
+            input={"canonical_text": canonical_text, "rule_text": rule_text})
+        span.update(output={
+            "action": result.action, "label": result.label,
+            "rule_id": result.rule_id, "reason": result.reason})
+        span.end()
+    except Exception:
+        pass
+
+
 def record_trace(name, *, input=None, output=None, metadata=None):
     """단일 root trace 를 **사후에 한 번에** 기록하고 trace_id 를 돌려준다 — 웹 SSE 경로용.
 

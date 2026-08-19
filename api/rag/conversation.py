@@ -58,23 +58,6 @@ def _next_seq(session, session_id):
     return (current or 0) + 1
 
 
-def turn_count(session_id: str) -> int:
-    """이 세션에 쌓인 메시지 수. 질의 캐시의 '단일 턴' 적격 판정용(sse.py) —
-    질문 저장 전에 불러야 0 == 첫 턴이 성립한다. 실패하면 캐시만 포기하면 되므로
-    예외를 올리지 않고 -1(부적격)을 돌려준다."""
-    try:
-        from db import get_session
-        from schema import chat_messages
-        from sqlalchemy import func, select
-        with get_session() as session:
-            return session.execute(
-                select(func.count()).select_from(chat_messages)
-                .where(chat_messages.c.session_id == session_id)).scalar_one()
-    except Exception:  # noqa: BLE001
-        logger.exception("turn_count 실패 — 캐시 부적격으로 처리")
-        return -1
-
-
 def save_user_message(session_id: str, text: str) -> None:
     """사용자 질문을 저장한다. 스트리밍 시작 전에 부른다."""
     try:

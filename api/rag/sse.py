@@ -130,8 +130,6 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
     # 0-1) 질문을 먼저 저장한다(대화 복원용). 답변 뒤에 저장하면 LLM 이 실패한 턴의 질문이
     #      기록에 안 남아, 사용자는 분명 물어봤는데 복원하면 없는 상태가 된다.
-    #      first_turn 은 저장 **전에** 재야 0 == 첫 턴이 성립한다(질의 캐시 '단일 턴' 적격).
-    first_turn = conversation.turn_count(session_id) == 0
     conversation.save_user_message(session_id, message)
 
     # 0-2) 가드레일 — AD-008 게시본 금칙어를 질문에 적용한다(질문·답변 양방향의 앞쪽 절반).
@@ -146,24 +144,50 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
-    # 0-3) 질의 캐시 — 첫 턴이면 조회한다(적격 = 단일 턴 · 정보성 · 성공, PRD-03 AD-009).
+    # 0-3) 질의 캐시 — 2026-08-19 팀 결정: 턴 수 제한 없이 모든 질문에 대해 조회한다(가드레일
+    #      → 캐시 → Gate 1 순서로 재편하면서, '단일 턴(첫 턴)' 적격 제한을 없앴다). 예전에는
+    #      대화 맥락에 따라 뜻이 달라질 수 있는 후속 질문에 캐시를 잘못 돌려줄 위험 때문에
+    #      첫 턴에서만 봤지만, 이제는 그 위험을 감수하고 모든 턴에서 캐시를 먼저 본다.
+    #      관리자 답변 매핑(curated_get, AD-009)은 이 개편과 함께 서빙 경로에서 제거했다
+    #      (admin_ops.py 상단 주석 참고 — 관리자 CRUD 자체는 그대로 남아 있다).
     #      적중 시 검색·생성을 통째로 건너뛴다. 캐시 실패는 미스로 취급되어 답변을 막지 않는다.
-    if first_turn:
-        # 답변 매핑(관리자 작성 영구 답변)이 캐시보다 먼저다 — 같은 반환 모양이라 소비부 공유.
-        curated = answer.curated_get(message)
-        cached = curated if curated is not None else answer.cache_get(message)
-        if cached is not None:
-            resp_dict = {**cached, "session_id": session_id, "request_id": request_id,
-                         "latency_ms": _elapsed_ms(started)}
-            from api.schemas.chat import ChatResponse
-            resp = ChatResponse.model_validate(resp_dict)
-            logger.info("[%s] %s 적중", request_id,
-                        "답변 매핑" if curated is not None else "질의 캐시")
-            answer.log_run(message, resp, [], resp.latency_ms)
-            conversation.save_assistant_message(session_id, request_id, resp)
-            yield _sse("answer_delta", {"text": resp.answer})
-            yield _sse("done", resp.model_dump())
-            return
+    cached = answer.cache_get(message)
+    if cached is not None:
+        resp_dict = {**cached, "session_id": session_id, "request_id": request_id,
+                     "latency_ms": _elapsed_ms(started)}
+        from api.schemas.chat import ChatResponse
+        resp = ChatResponse.model_validate(resp_dict)
+        logger.info("[%s] 질의 캐시 적중", request_id)
+        answer.log_run(message, resp, [], resp.latency_ms)
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("answer_delta", {"text": resp.answer})
+        yield _sse("done", resp.model_dump())
+        return
+
+    # 0-4) Gate 1 — 파이프라인의 결정론적 룰 필터(정규화 + 고정 규칙, LLM 없음). 2026-08-19
+    #      가드레일·캐시 다음 순서로 이식됐다(팀 결정 — 캐시가 먼저 보고, 캐시에도 없는
+    #      질문만 Gate 1 이 본다). 인사·감사·노이즈·정체성·보안우회·개인정보 직접조회·명백한
+    #      타 분야 단일 질문만 '확실할 때' EXIT 로 즉시 고정 응답한다(precision ≈ 100% 목표 —
+    #      애매하면 CONTINUE). EXIT 처리는 가드레일 거절과 같은 골격이다(질문은 위에서 저장
+    #      완료 → 고정 응답 저장 → answer_delta·done). 웹 경로는 ambient trace 가 없어
+    #      (record_trace docstring) Gate 1 결과를 record_trace 메타데이터로 남긴다.
+    from gate1 import run_gate1
+    g1 = run_gate1(message)
+    if g1.action == "EXIT":
+        resp = answer.gate1_response(g1, session_id, request_id, _elapsed_ms(started))
+        logger.info("[%s] Gate1 EXIT: %s (%s)", request_id, g1.label, g1.rule_id)
+        from observability import record_trace
+        record_trace("web_chat", input={"question": message},
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
+                     metadata={"request_id": request_id, "session_id": session_id,
+                               "latency_ms": resp.latency_ms, "exit_at": "gate1",
+                               "gate1_label": g1.label, "gate1_rule_id": g1.rule_id,
+                               "gate1_reason": g1.reason})
+        answer.log_run(message, resp, [], resp.latency_ms)
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("answer_delta", {"text": resp.answer})
+        yield _sse("done", resp.model_dump())
+        return
 
     # 1) 쿼리 플래너: 멀티쿼리 분해 + 하위질문별 intent를 한 콜(structured output)로 판단한다.
     #    LLM 호출이라 실패할 수 있다(내부에서 안전 폴백하지만 예외도 방어).
@@ -271,6 +295,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
         metadata={"request_id": request_id, "session_id": session_id,
                   "latency_ms": latency_ms, "composite": composite,
+                  "gate1_label": g1.label, "gate1_reason": g1.reason,  # CONTINUE 도 기록(오탐 모니터링)
                   "sub_questions": [sp.question for sp in sub_plans]})
 
     # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에
@@ -281,10 +306,12 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     # 답변을 저장한다(대화 복원용). 출처·범위외 판정이 확정된 뒤여야 하므로 여기가 맞다.
     conversation.save_assistant_message(session_id, request_id, resp)
 
-    # 5-2) 질의 캐시 적재 — 적격: 단일 턴 · 단일 질문(비복합) · 정보성 · 성공 · 범위 내 ·
-    #      되묻기 아님(PRD-03 AD-009). 역할·개인 맥락 판정기는 없으므로 intent=informational
-    #      로 갈음한다(civil_petition 은 역할축 위험이 있어 캐시하지 않는다).
-    if (first_turn and not composite and resp.error is None and resp.clarification is None
+    # 5-2) 질의 캐시 적재 — 적격: 단일 질문(비복합) · 정보성 · 성공 · 범위 내 · 되묻기 아님
+    #      (PRD-03 AD-009). 2026-08-19: '단일 턴'(첫 턴만) 조건은 뺐다 — 0-3 에서 캐시를 턴
+    #      제한 없이 조회하는 것과 짝을 맞췄다(가드레일 → 캐시 → Gate 1 재편과 함께). 역할·개인
+    #      맥락 판정기는 없으므로 intent=informational 로 갈음한다(civil_petition 은 역할축
+    #      위험이 있어 캐시하지 않는다).
+    if (not composite and resp.error is None and resp.clarification is None
             and not resp.out_of_scope
             and sub_plans and getattr(sub_plans[0], "intent", None) == "informational"):
         answer.cache_put(message, resp)
