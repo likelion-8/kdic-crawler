@@ -54,6 +54,7 @@ from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
 import candidate_ranking
 import pipeline
 import query_planner
+import retrieval
 import runtime_config
 from schema import documents
 from schema_admin import evaluation_runs, rag_param_versions
@@ -106,6 +107,11 @@ def _param_meta() -> list:
          "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_RERANKER,
          "note": "CPU 문항당 96초 실측으로 기본 Off — GPU 확보 시 재검증(README 2.4)"},
+        {"key": "use_type_routing", "label": "질문 유형 라우팅(link_guide→Hybrid)",
+         "group": "retrieval", "control": "toggle", "apply_timing": "무중단",
+         "default": retrieval.USE_TYPE_ROUTING,
+         "note": "기본 Off = 전 유형 Dense 통일 — 라우팅 이론상 이득 MRR 0.003, link_guide "
+                 "이점 유의성 상실, table_lookup 오분류 시 -0.058 유의 (results/routing_value 실측)"},
         {"key": "use_query_planner", "label": "쿼리 플래너(분해+intent 한 콜)", "group": "retrieval",
          "control": "toggle", "apply_timing": "무중단",
          "default": query_planner.USE_QUERY_PLANNER,

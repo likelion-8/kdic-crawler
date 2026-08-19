@@ -128,7 +128,12 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #    한다(핸드오프 §6 B3). 그래서 여기서 새로 만들지 않고 라우터가 준 값을 그대로 쓴다.
     yield _sse("accepted", {"request_id": request_id, "session_id": session_id})
 
-    # 0-1) 질문을 먼저 저장한다(대화 복원용). 답변 뒤에 저장하면 LLM 이 실패한 턴의 질문이
+    # 0-1) 멀티턴 컨텍스트 — 이전 턴 이력을 **이번 질문을 저장하기 전에** 읽는다(저장 후에
+    #      읽으면 방금 질문이 이력에 섞여 재작성기가 자기 자신을 맥락으로 본다). 첫 턴이면
+    #      빈 리스트라 아래 재작성(0-2.5)이 통째로 건너뛰어진다 — 단일 턴 비용·동작 불변.
+    history = conversation.recent_messages(session_id)
+
+    #      질문을 먼저 저장한다(대화 복원용). 답변 뒤에 저장하면 LLM 이 실패한 턴의 질문이
     #      기록에 안 남아, 사용자는 분명 물어봤는데 복원하면 없는 상태가 된다.
     conversation.save_user_message(session_id, message)
 
@@ -144,6 +149,22 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
+    # 0-2.5) 멀티턴 재작성(2026-08-19, src/query_rewriter.py) — 이전 턴이 있으면 후속 질문을
+    #      독립 질문으로 편다("그거 신청 기한은?" → "착오송금 반환지원 신청 기한은 언제인가요?").
+    #      가드레일(원문 금칙어) **뒤**, 캐시·게이트 **앞**이 자리다: 이후 전 단계(캐시 키·
+    #      Gate 1/2 판정·분해·검색·캐시 적재)가 독립 질문 기준으로 일관되게 돈다 — 특히
+    #      Gate 2 는 도메인 신호 없는 파편 문장("그거는요?")을 범위외로 오차단할 수 있어,
+    #      재작성 없이는 멀티턴이 게이트에 막힌다. 실패·무이력은 원문 그대로(fail-open).
+    #      저장(위 0-1)·rag_runs 로그는 사용자가 실제 쓴 원문(message)을 유지하고, 재작성문은
+    #      검색·판정에만 쓴다 — 하위 질문(sub_plans[].question)으로 관측에 남는다.
+    query = message
+    if history:
+        from query_rewriter import rewrite_followup
+        rewritten = rewrite_followup(message, history)
+        if rewritten and rewritten != message:
+            query = rewritten
+            logger.info("[%s] 멀티턴 재작성: %r -> %r", request_id, message, query)
+
     # 0-3) 질의 캐시 — 2026-08-19 팀 결정: 턴 수 제한 없이 모든 질문에 대해 조회한다(가드레일
     #      → 캐시 → Gate 1 순서로 재편하면서, '단일 턴(첫 턴)' 적격 제한을 없앴다). 예전에는
     #      대화 맥락에 따라 뜻이 달라질 수 있는 후속 질문에 캐시를 잘못 돌려줄 위험 때문에
@@ -151,7 +172,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      관리자 답변 매핑(curated_get, AD-009)은 이 개편과 함께 서빙 경로에서 제거했다
     #      (admin_ops.py 상단 주석 참고 — 관리자 CRUD 자체는 그대로 남아 있다).
     #      적중 시 검색·생성을 통째로 건너뛴다. 캐시 실패는 미스로 취급되어 답변을 막지 않는다.
-    cached = answer.cache_get(message)
+    cached = answer.cache_get(query)
     if cached is not None:
         resp_dict = {**cached, "session_id": session_id, "request_id": request_id,
                      "latency_ms": _elapsed_ms(started)}
@@ -172,7 +193,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      완료 → 고정 응답 저장 → answer_delta·done). 웹 경로는 ambient trace 가 없어
     #      (record_trace docstring) Gate 1 결과를 record_trace 메타데이터로 남긴다.
     from gate1 import run_gate1
-    g1 = run_gate1(message)
+    g1 = run_gate1(query)
     if g1.action == "EXIT":
         resp = answer.fixed_gate_response(g1, session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] Gate1 EXIT: %s (%s)", request_id, g1.label, g1.rule_id)
@@ -199,7 +220,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      (내부 관측)에만 남긴다 — 응답 문구는 Gate 1의 resp_out_of_domain을 그대로 재사용
     #      (fixed_gate_response)하므로 사용자 눈에는 Gate 1 EXIT와 구분되지 않는다.
     from gate2 import run_gate2
-    g2 = run_gate2(message)
+    g2 = run_gate2(query)
     if g2.action == "EXIT":
         resp = answer.fixed_gate_response(g2, session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] Gate2 EXIT: %s", request_id, g2.reason)
@@ -221,7 +242,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     # 1) 쿼리 플래너: 멀티쿼리 분해 + 하위질문별 intent를 한 콜(structured output)로 판단한다.
     #    LLM 호출이라 실패할 수 있다(내부에서 안전 폴백하지만 예외도 방어).
     try:
-        plan_items = answer.plan(message)   # [(하위질문, intent|None), ...]
+        plan_items = answer.plan(query)   # [(하위질문, intent|None), ...] — 재작성문 기준
     except Exception as e:  # noqa: BLE001
         logger.exception("[%s] plan 실패", request_id)
         # 기록을 yield 앞에 두는 이유는 아래 세 실패 경로 모두 같다 — yield 뒤에 두면 프론트가
@@ -343,7 +364,8 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     if (not composite and resp.error is None and resp.clarification is None
             and not resp.out_of_scope
             and sub_plans and getattr(sub_plans[0], "intent", None) == "informational"):
-        answer.cache_put(message, resp)
+        # 캐시 키는 조회(0-3)와 같은 재작성문 — 원문(파편 문장)으로 적재하면 적중이 안 된다.
+        answer.cache_put(query, resp)
 
     # sources/attachments 이벤트는 보내지 않는다(프론트 합의 2026-08-05).
     # 출처는 근거 사용 여부(source_check)가 확정돼야 정해지는데 그 판정이 스트리밍이 끝난 뒤라,
