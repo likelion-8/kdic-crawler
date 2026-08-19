@@ -24,7 +24,7 @@ PARAM 목록의 key·label·control·범위를 서버가 내려주고 화면은 
 
 ## 평가는 검색 축 실측이다
 
-held-out(test_set)의 expected_sources 로 **현행(A)과 초안(B)을 둘 다** 재서
+평가메뉴 현행 버전(testset_items — 홀드아웃 89 씨딩)의 기대 출처로 **현행(A)과 초안(B)을 둘 다** 재서
 hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 Smoke 는 이 화면의
 파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — smoke 0/0 + warning 으로 명시하고,
 게이트 판정은 검색 두 축(정확도 0.92↑ · MRR 0.80↑)으로만 한다. 지어내지 않는다.
@@ -55,7 +55,7 @@ import candidate_ranking
 import pipeline
 import query_planner
 import runtime_config
-from schema import documents, test_set
+from schema import documents
 from schema_admin import evaluation_runs, rag_param_versions
 
 logger = logging.getLogger(__name__)
@@ -262,18 +262,13 @@ def _stored_gate(db) -> dict:
 # ──────────────────────────────── 검색 실측 ─────────────────────────────────
 
 def _holdout_rows(db):
-    # ⚠️ expected_sources 는 범위외 문항에서 **빈 배열**이다(NULL 아님). isnot(None) 만 걸면
-    # 정답이 없는 문항이 '무조건 miss'로 섞여 정확도가 부당하게 깎인다(2026-08-12 실측 —
-    # 0.786 vs 기준선 0.922 의 원인 중 하나). 원소가 1개 이상인 답변형 문항만 잰다
-    # (eval_pipeline_retrieval 의 "expected_sources 있는 행만"과 동일).
-    rows = db.execute(
-        select(test_set.c.question, test_set.c.expected_sources)
-        .where(test_set.c.is_active.is_(True),
-               func.array_length(test_set.c.expected_sources, 1) >= 1)
-        .order_by(test_set.c.question_id)
-    ).all()
+    # 2026-08-19 전환: 문항 정본은 평가메뉴 현행 버전(testset_items) — admin_evaluations.
+    # holdout_rows 에 위임한다(in_scope_only=True 가 종전의 "빈 정답 문항 제외"와 동일:
+    # 범위외가 섞이면 정확도가 부당하게 깎인다. 2026-08-12 실측).
+    from api.routers.admin_evaluations import holdout_rows
+    rows = holdout_rows(db, in_scope_only=True)
     if not rows:
-        raise BadRequestError("평가할 held-out 문항이 없습니다(test_set 비어 있음).")
+        raise BadRequestError("평가할 문항이 없습니다(평가셋 비어 있음).")
     return rows
 
 
@@ -307,8 +302,8 @@ def _measure(rows, params: dict) -> dict:
     hits = 0
     rr_sum = 0.0
     for r in rows:
-        gold = set(r.expected_sources or [])
-        ranked5 = _search_pages(r.question, params, for_scoring=True)[:5]
+        gold = set(r["expected_sources"] or [])
+        ranked5 = _search_pages(r["question"], params, for_scoring=True)[:5]
         if gold & set(ranked5):
             hits += 1
         for i, page in enumerate(ranked5, 1):
@@ -403,10 +398,9 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
 
     # 정답 표시(✓): 이 질문이 평가셋에 있으면 그 expected_sources 를 쓴다. 임의 질문이면
     # 정답을 알 수 없으므로 표시하지 않는다 — 지어내지 않는다.
-    gold_row = db.execute(
-        select(test_set.c.expected_sources).where(test_set.c.question == query)
-    ).first()
-    gold = set(gold_row.expected_sources or []) if gold_row else set()
+    from api.routers.admin_evaluations import holdout_rows
+    gold = next((set(r["expected_sources"]) for r in holdout_rows(db)
+                 if r["question"] == query), set())
 
     titles = dict(db.execute(select(documents.c.page_id, documents.c.page_title)).all())
 

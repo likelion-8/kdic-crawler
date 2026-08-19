@@ -85,7 +85,7 @@ for p in (str(ROOT), str(ROOT / "src")):
 from sqlalchemy import select, text, update  # noqa: E402
 
 from db import get_engine, get_session  # noqa: E402
-from schema import pipeline_jobs, search_index_versions, test_set  # noqa: E402
+from schema import pipeline_jobs, search_index_versions  # noqa: E402
 
 logger = logging.getLogger("worker")
 
@@ -394,10 +394,10 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         if job.rollback_of:
             raise _GateSkipped("롤백은 직전 통과 스냅샷으로 되돌리는 것이라 게이트를 건너뛴다")
 
-        rows = [{"question": q, "expected_sources": list(src or [])}
-                for q, src in session.execute(
-                    select(test_set.c.question, test_set.c.expected_sources)
-                    .where(test_set.c.is_active.is_(True))).all()]
+        # 2026-08-19 전환: 문항 정본은 평가메뉴 현행 버전(testset_items)이다 — 화면의
+        # 추가·수정·제외가 게이트에 그대로 반영된다(씨딩 원천은 test_set 홀드아웃 89).
+        from api.routers.admin_evaluations import holdout_rows
+        rows = holdout_rows(session)
         result = index_gate.evaluate(state["uids"], state["texts"], rows,
                                      k_candidates=pipeline.K_CANDIDATES)
         state["gate"] = result
