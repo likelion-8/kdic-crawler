@@ -322,7 +322,8 @@ testset_items = Table(
 # ── 12. rag_param_versions — RAG 파라미터 버전 (current 1 · draft 1 · history N) ──
 # 지금 파라미터는 전부 파이썬 상수다(pipeline.K_CANDIDATES=20 · K_FINAL=5 · USE_RERANKER ·
 # USE_QUERY_DECOMPOSITION · USE_SOURCE_RECHECK, query_planner.USE_QUERY_PLANNER,
-# candidate_ranking.MIN_TOP1_SCORE=0.35, retrieval.HYBRID_LINEAR_ALPHA=0.4).
+# candidate_ranking.MIN_TOP1_SCORE=0.35, retrieval.HYBRID_LINEAR_ALPHA=0.4 ·
+# retrieval.USE_TYPE_ROUTING=False).
 #
 # ⚠️ 이 테이블이 비어 있어도 파이프라인은 **오늘과 똑같이** 돌아야 한다. 읽는 쪽
 # (src/runtime_config.py)이 값이 없으면 코드 상수로 떨어지는 폴백 구조라, 여기 행이 없다는 것은

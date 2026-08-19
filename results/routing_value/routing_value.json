@@ -1,17 +1,17 @@
 {
   "청크수": 503,
-  "채점문항": 819,
+  "채점문항": 817,
   "유형별": {
     "fact": {
-      "dense_mrr": 0.7983,
-      "hybrid_mrr": 0.8199,
-      "dense_r5": 0.9507,
-      "hybrid_r5": 0.9737,
-      "n": 442,
-      "hybrid_minus_dense_mrr": 0.0216,
+      "dense_mrr": 0.797,
+      "hybrid_mrr": 0.818,
+      "dense_r5": 0.9499,
+      "hybrid_r5": 0.9739,
+      "n": 445,
+      "hybrid_minus_dense_mrr": 0.0209,
       "ci95": [
-        -0.0025,
-        0.0448
+        -0.0028,
+        0.0441
       ],
       "유의": false
     },
@@ -29,56 +29,56 @@
       "유의": false
     },
     "link_guide": {
-      "dense_mrr": 0.6919,
-      "hybrid_mrr": 0.7319,
-      "dense_r5": 0.9576,
-      "hybrid_r5": 0.9322,
-      "n": 59,
-      "hybrid_minus_dense_mrr": 0.04,
+      "dense_mrr": 0.6828,
+      "hybrid_mrr": 0.7309,
+      "dense_r5": 0.9643,
+      "hybrid_r5": 0.9286,
+      "n": 56,
+      "hybrid_minus_dense_mrr": 0.0481,
       "ci95": [
-        -0.0328,
-        0.1175
+        -0.0198,
+        0.1217
       ],
       "유의": false
     },
     "table_lookup": {
-      "dense_mrr": 0.9049,
-      "hybrid_mrr": 0.8466,
+      "dense_mrr": 0.9051,
+      "hybrid_mrr": 0.8459,
       "dense_r5": 0.9728,
       "hybrid_r5": 0.9798,
       "n": 114,
-      "hybrid_minus_dense_mrr": -0.0582,
+      "hybrid_minus_dense_mrr": -0.0592,
       "ci95": [
-        -0.1082,
-        -0.008
+        -0.1089,
+        -0.0092
       ],
       "유의": true
     },
     "faq": {
-      "dense_mrr": 0.8396,
-      "hybrid_mrr": 0.836,
-      "dense_r5": 0.8996,
-      "hybrid_r5": 0.8896,
-      "n": 175,
-      "hybrid_minus_dense_mrr": -0.0037,
+      "dense_mrr": 0.8448,
+      "hybrid_mrr": 0.8408,
+      "dense_r5": 0.9042,
+      "hybrid_r5": 0.8941,
+      "n": 173,
+      "hybrid_minus_dense_mrr": -0.004,
       "ci95": [
-        -0.0331,
-        0.0243
+        -0.0343,
+        0.0248
       ],
       "유의": false
     }
   },
-  "전부_Dense_MRR": 0.8208,
-  "오라클_MRR": 0.8237,
-  "라우팅_이론상_최대이득": 0.0029,
-  "link_guide_1건_이득": 0.04,
+  "전부_Dense_MRR": 0.821,
+  "오라클_MRR": 0.8243,
+  "라우팅_이론상_최대이득": 0.0033,
+  "link_guide_1건_이득": 0.0481,
   "손익분기_오판건수": {
-    "file_download": 68.4,
-    "table_lookup": 40.5,
-    "faq": 637.8
+    "file_download": 78.1,
+    "table_lookup": 45.5,
+    "faq": 673.4
   },
   "규칙_유효": true,
   "유형별최적_Hybrid대상": [],
-  "유형별최적_MRR": 0.8208,
-  "유형별최적_대비_현행규칙_손실": -0.0029
+  "유형별최적_MRR": 0.821,
+  "유형별최적_대비_현행규칙_손실": -0.0033
 }
