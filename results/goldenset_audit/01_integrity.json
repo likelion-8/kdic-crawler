@@ -1,0 +1,13 @@
+{
+  "총_문항": 849,
+  "test_id_중복": [],
+  "질문_원문_완전중복": [],
+  "빈_질문": [],
+  "question_type_빈값": [],
+  "허용외_question_type": [],
+  "out_of_scope인데_기대출처_있음": [],
+  "기대출처_없는데_out_of_scope_아님": [],
+  "link_guide인데_expected_links_없음": [],
+  "expected_links_URL형식_이상": [],
+  "expected_links있는데_링크유형_아님": []
+}
