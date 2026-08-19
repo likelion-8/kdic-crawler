@@ -126,9 +126,9 @@ def build_units(mode):
 # 거절 0/4 로 반전 + 원문 유출 0. D 재라벨링은 전패 폐기). 검색 순위는 pgvector(기존 임베딩)
 # 기준이라 재적재 전에는 생성 전달 텍스트에만 반영된다 — 색인까지 반영하려면 재적재
 # (인덱스 게이트 통과) 필요.
-# ⚠️ '열기' 제거는 _selftest 의 라인 보존 불변식과 충돌한다(원문의 '열기' 라인이 청크에서
-# 사라짐). '열기'는 아코디언 크롤링 아티팩트라 유실이 아니라 정제다 — 정식 재적재 때
-# _selftest 에 아티팩트 예외 목록을 함께 넣을 것.
+# '열기'는 아코디언 크롤링 아티팩트라 지우는 것이 유실이 아니라 정제다 — _selftest 의
+# 라인 보존 불변식에는 ARTIFACT_LINES 예외로 등록돼 있다(불변식 자체는 유지 — 85줄
+# 유실 사고 재발 방지 장치이므로 없애지 않는다).
 _FAQ_QA_RE = re.compile(r"질문\n(?:\d+\.\s*)?.+?\n열기\n답변\n", re.DOTALL)
 _FAQ_FRAMING = "아래는 이 주제에 대해 자주 묻는 질문과 그 답변입니다.\n"
 
@@ -169,6 +169,12 @@ def _selftest():
     # 유실 0 불변식(2026-08-14): 어떤 모드에서도 원문의 비어있지 않은 라인은 반드시 어느
     # 청크엔가 그대로 존재한다. 구버전 split_table은 all 기준 15페이지 85줄을 색인에서
     # 잃었다(표 사이 제목·표 아래 주석 — ha_center 42줄). 이 검사가 재발을 막는다.
+    #
+    # 아티팩트 예외(2026-08-19): 크롤링 잔재로 확인된 라인은 '유실'이 아니라 '정제'이므로
+    # 면제한다. 현재 '열기' 하나 — 아코디언 버튼 텍스트가 본문에 섞인 것으로, FAQ 청크
+    # B+C 포맷(_faq_format)이 의도적으로 지운다. 예외는 정확히 아는 아티팩트만 하나씩
+    # 추가한다 — 목록을 넓게 잡거나 검사를 없애면 85줄 유실 사고가 재발해도 못 잡는다.
+    ARTIFACT_LINES = {"열기"}
     originals = {d["page_id"]: d["text"] for d in load_records()}
     for mode in ("page", "faq_atomic", "table_row", "all"):
         uids_m, texts_m, u2p_m = build_units(mode)
@@ -177,7 +183,8 @@ def _selftest():
             per_page.setdefault(u2p_m[u], []).append(t)
         for pid, orig in originals.items():
             joined = "\n".join(per_page[pid])
-            lost = [l for l in orig.split("\n") if l.strip() and l not in joined]
+            lost = [l for l in orig.split("\n")
+                    if l.strip() and l.strip() not in ARTIFACT_LINES and l not in joined]
             assert not lost, f"[{mode}] {pid} 원문 라인 {len(lost)}줄 유실: {lost[:2]}"
 
     ids_a, _, _ = build_units("all")
