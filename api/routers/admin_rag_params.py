@@ -33,8 +33,8 @@ hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 S
 
 ## 반영·롤백과 runtime_config
 
-apply 는 저장된 초안 평가가 게이트를 통과했고 **보낸 초안 == 평가된 초안**(지문 대조)일
-때만 승격한다. 반영 즉시 runtime_config.invalidate("params") — 같은 프로세스는 즉시,
+apply 는 게이트 판정을 **막지 않고 경고로만** 남긴다(2026-08-19 정책 변경 — 종전에는
+게이트 통과 + 지문 일치일 때만 승격했다). 반영 즉시 runtime_config.invalidate("params") — 같은 프로세스는 즉시,
 CLI 는 TTL(60초) 내 반영. history 의 rollback 은 **초안 복원만** 한다(화면 계약 §1.7 —
 실제 적용은 [운영 반영]이 다시 게이트를 거친다).
 """
@@ -431,11 +431,29 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
             "b": _column("B. 초안 (편집 중)", merged, changed)}
 
 
+def compute_gate_warnings(db, draft, body: dict) -> list:
+    """게이트·평가 상태를 경고 목록으로 계산한다(2026-08-19 정책 변경 — 차단하지 않는다).
+    apply 가 활동 로그 detail.gate_warnings 에 그대로 싣는다."""
+    warnings = []
+    if draft.evaluation_run_id is None:
+        return ["초안 평가 없이 반영"]
+    sent = validate_params(dict(body.get("draft") or {})) if body.get("draft") else None
+    if sent is not None and draft_signature(sent) != draft.draft_signature:
+        warnings.append("평가 이후 초안 수정됨(재평가 없이 반영)")
+    run = db.execute(
+        select(evaluation_runs.c.gate).where(evaluation_runs.c.id == draft.evaluation_run_id)
+    ).first()
+    if not run or not run.gate or not run.gate.get("passed"):
+        warnings.append("게이트 미달 상태로 반영")
+    return warnings
+
+
 @router.post("/apply")
 def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """[운영 반영] — 저장된 초안 평가가 게이트 통과 + 보낸 초안이 평가된 초안과 동일(지문)
-    할 때만 승격한다. 실패는 409 + 현재 적용값(extra.current)으로, 화면이 '이전 버전 유지'
-    를 다시 그린다. 성공 응답은 반영 후 전체 상태(RagParamsResponse)."""
+    """[운영 반영] — 저장된 초안을 승격한다. 게이트·평가 상태는 **막지 않고 경고로만**
+    남긴다(2026-08-19 정책 변경) — 미평가·지문 불일치·게이트 미달은 활동 로그
+    detail.gate_warnings 에 기록된다. 초안 자체가 없을 때만 409(extra.current).
+    성공 응답은 반영 후 전체 상태(RagParamsResponse)."""
     _require_editor(me, "RAG 파라미터 반영")
     if not str(body.get("request_id") or "").strip():
         raise BadRequestError("request_id가 필요합니다.")
@@ -447,16 +465,13 @@ def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         return ParamsConflictError(msg, extra={"current": _effective_params(db)})
 
     draft = _row(db, "draft")
-    if draft is None or draft.evaluation_run_id is None:
-        raise _conflict("평가된 초안이 없습니다. [초안 평가]를 먼저 실행해 주세요.")
-    sent = validate_params(dict(body.get("draft") or {})) if body.get("draft") else None
-    if sent is not None and draft_signature(sent) != draft.draft_signature:
-        raise _conflict("평가 이후 초안이 수정되었습니다. 다시 평가해 주세요.")
-    run = db.execute(
-        select(evaluation_runs.c.gate).where(evaluation_runs.c.id == draft.evaluation_run_id)
-    ).first()
-    if not run or not run.gate or not run.gate.get("passed"):
-        raise _conflict("게이트를 통과하지 못한 초안은 반영할 수 없습니다.")
+    if draft is None:
+        # 반영할 초안 자체가 없다 — 검토 판정이 아니라 대상 부재라 그대로 막는다.
+        raise _conflict("저장된 초안이 없습니다. 초안을 먼저 저장해 주세요.")
+    # 2026-08-19 정책 변경: 평가·게이트는 반영을 막지 않는다 — 경고로만 남긴다.
+    # 화면이 같은 상태(gate)를 이미 보고 있으므로 사용자 인지는 화면 경고가, 사후 추적은
+    # 활동 로그(detail.gate_warnings)가 맡는다.
+    gate_warnings = compute_gate_warnings(db, draft, body)
 
     now = datetime.now(timezone.utc)
     before = _effective_params(db)
@@ -476,7 +491,8 @@ def apply_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         target=f"RAG 파라미터 v{draft.version}", reason=reason,
         before_value=json.dumps(before, ensure_ascii=False, sort_keys=True),
         after_value=json.dumps(_effective_params(db), ensure_ascii=False, sort_keys=True),
-        detail={"version": draft.version, "draft_signature": draft.draft_signature},
+        detail={"version": draft.version, "draft_signature": draft.draft_signature,
+                **({"gate_warnings": gate_warnings} if gate_warnings else {})},
     )
     return _full_response(db)
 

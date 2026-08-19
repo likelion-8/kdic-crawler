@@ -20,7 +20,7 @@
 | 타입 | 실행 | 내용 |
 |---|---|---|
 | FULL_RECRAWL · SELECTED_RECRAWL | ✅ 실제 실행 | 수집(inventory.PAGES 기준 실제 재크롤, expect 판본 검증 + 재시도) -> 변환(파싱 + 코퍼스 재조립, **content_sha256 비교로 바뀐 페이지만 갱신 집계**) -> 이하 재적재와 동일 |
-| REINDEX · RECHUNK · REEMBED | ✅ 실제 실행 | 코퍼스(data/corpus.jsonl) -> 청킹 -> 검증 -> **게이트(홀드아웃 평가)** -> 색인(UPSERT) -> 버전 기록. 게이트 미달이면 색인에 들어가지 않아 운영 인덱스가 그대로 남는다(src/index_gate.py) |
+| REINDEX · RECHUNK · REEMBED | ✅ 실제 실행 | 코퍼스(data/corpus.jsonl) -> 청킹 -> 검증 -> **게이트(홀드아웃 평가, 경고만)** -> 색인(UPSERT) -> 버전 기록. 게이트 미달이어도 색인은 진행하고 판정은 경고로만 남긴다(2026-08-19 정책, src/index_gate.py) |
 | 롤백 잡(rollback_of 있음)   | ✅ 실제 실행 | search_index_versions 의 직전 스냅샷으로 corpus.jsonl 을 되돌린 뒤 위와 동일 재적재. **게이트는 SKIPPED** — 직전에 통과했던 스냅샷이라 다시 재는 의미가 없고, 장애 복구를 게이트가 막으면 안 된다 |
 | SMOKE_EVAL                  | ✅ 실제 실행 | admin_evaluations.run_evaluation 위임(문항 수만큼 OpenAI·HCX — 수 분) |
 | CHANGE_DETECT               | ✅ 실제 실행 | change_detect.run — 정적 페이지 재수집 후 본문 해시 대조, 바뀐 것만 index_status=PENDING 표시(저장·색인 안 함). AD-004 [지금 확인]·주기 배치가 만든다(2026-08-18, 미구현 ② 해소) |
@@ -381,9 +381,9 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         return 0   # 발견한 문제 수 — 0 이 정상이다
 
     def _gate():
-        """새 청크를 메모리 인덱스로 올려 홀드아웃으로 채점한다. 미달이면 여기서 멈추므로
-        **색인 단계에 들어가지 않는다** — 운영 인덱스를 손대기 전이라 '실패하면 롤백'이 아니라
-        '통과해야 반영'이 그대로 성립한다(docs/search_index_versioning.md 의 원칙).
+        """새 청크를 메모리 인덱스로 올려 홀드아웃으로 채점한다. 판정은 **차단이 아니라
+        경고다**(2026-08-19 정책 변경) — 미달이어도 색인은 진행하고, 관리자는 단계 detail 의
+        판정·수치로 회귀 여부를 인지한다.
 
         임시 색인을 만들지 않는 이유와 홀드아웃을 쓰는 이유는 src/index_gate.py 참고.
         롤백 잡은 게이트를 건너뛴다 — 직전에 통과했던 스냅샷으로 되돌리는 것이라 다시 재는
@@ -406,9 +406,12 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
             "passed": result["passed"], "metrics": result["metrics"],
             "targets": result["targets"], "failures": result["failures"],
             "summary": index_gate.describe(result)})
+        # 2026-08-19 정책 변경: 게이트는 차단하지 않는다 — 미달이어도 경고만 남기고
+        # 색인을 진행한다(판정·수치는 detail 로 남아 화면이 경고를 그린다).
         if not result["passed"]:
-            raise StageFailed("게이트", index_gate.describe(result))
-        logger.info("게이트 통과: %s", index_gate.describe(result))
+            logger.warning("게이트 미달(경고, 색인은 진행): %s", index_gate.describe(result))
+        else:
+            logger.info("게이트 통과: %s", index_gate.describe(result))
         return result["metrics"]["n"]
 
     def _index():

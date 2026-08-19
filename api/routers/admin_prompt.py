@@ -37,7 +37,7 @@ evaluate: 골든셋에서 인스코프 4문항 + 범위외 2문항을 뽑아, �
 전{양호}→후{불량}이 REGRESSED 다. **서버에 아무것도 저장하지 않는다**(계약: 일시 평가).
 
 publish: 초안 프롬프트로 Smoke 30문항을 실제 생성해(HCX 30콜, 동기 ~1-2분) 전건 통과면
-새 버전을 현행으로 활성화하고, 미달이면 **버전은 '실패'로 기록하되 현행을 유지**한다.
+새 버전을 현행으로 활성화한다. Smoke 미달이어도 활성화하며 **경고로만 기록**한다(2026-08-19).
 gate_passed(클라이언트가 보낸 직전 평가 결과)는 진입 조건일 뿐 최종 판정은 Smoke 다.
 
 ## 폴백
@@ -56,7 +56,7 @@ from sqlalchemy import func, insert, select, update
 
 from api.deps import (CurrentAdmin, DbSession, ReauthedAdmin, get_current_admin,
                       write_activity_log)
-from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
+from api.errors import BadRequestError, ForbiddenError, NotFoundError
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다).
 import prompt_builder
 import runtime_config
@@ -96,11 +96,6 @@ PROTECTED_SAMPLES = [
     "https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do",
 ]
 MASKING_MUST_MATCH_HINT = "010-1234-5678"
-
-
-class PromptConflictError(ApiError):
-    status_code = 409
-    retryable = False
 
 
 # ──────────────────────── 프롬프트 ⇄ 원칙 변환 ────────────────────────
@@ -228,10 +223,12 @@ def _draft_to_content(db, draft: dict) -> dict:
                 if str(f.get("question") or "").strip() and str(f.get("answer") or "").strip()]
     guardrails = {"blocklist": draft.get("blocklist") or {"active": False, "items": []},
                   "masking": draft.get("masking") or {"active": False, "items": []}}
-    # 미통과 마스킹 규칙이 섞이면 400 — 검증(validated)은 저장 전 서버 판정이 정본이다.
-    for item in guardrails["masking"].get("items") or []:
-        if isinstance(item, dict) and item.get("validated") is False:
-            raise BadRequestError("검증을 통과하지 못한 마스킹 규칙이 있습니다. 먼저 검증해 주세요.")
+    # 2026-08-19 정책 변경: 미통과 마스킹 규칙도 저장을 막지 않는다 — 경고 로그만 남긴다
+    # (화면이 규칙별 검증 상태를 그대로 보여주므로 인지는 화면 몫).
+    unvalidated = [str(item.get("pattern") or "") for item in guardrails["masking"].get("items") or []
+                   if isinstance(item, dict) and item.get("validated") is False]
+    if unvalidated:
+        logger.warning("검증 미통과 마스킹 규칙 포함 저장: %s", ", ".join(unvalidated))
     return {"system_instruction": assemble_instruction(header, principles, locked),
             "few_shot": fewshots or base["few_shot"], "guardrails": guardrails}
 
@@ -414,15 +411,18 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
 @router.post("/prompt/publish")
 def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
     """[게시] — 이 시점에 비로소 초안이 서버에 저장된다. Smoke 30문항을 새 프롬프트로 실측해
-    전건 통과면 현행으로 활성화, 미달이면 '실패' 버전으로 기록하고 **현행을 유지**한다.
+    결과와 무관하게 현행으로 활성화한다(2026-08-19 정책 변경 — 게이트·Smoke 는 경고로만
+    남긴다. 종전에는 미달 시 '실패' 버전으로 기록하고 현행을 유지했다).
     ⚠️ HCX 30콜, 동기 ~1-2분."""
     _require_editor(me, "프롬프트 게시")
     _require_request_id(body)
     reason = str(body.get("reason") or "").strip()
     if not reason:
         raise BadRequestError("게시 사유를 입력해 주세요.")
-    if not body.get("gate_passed"):
-        raise PromptConflictError("직전 [초안 평가]의 게이트를 통과해야 게시할 수 있습니다.")
+    # 2026-08-19 정책 변경: 회귀 게이트는 게시를 막지 않는다 — 경고로만 남긴다(활동 로그 detail).
+    gate_warning = None if body.get("gate_passed") else "회귀 게이트 미통과(또는 미평가) 상태로 게시"
+    if gate_warning:
+        logger.warning("프롬프트 게시: %s", gate_warning)
     content = _draft_to_content(db, dict(body.get("draft") or {}))
 
     from schema import evaluation_dataset
@@ -455,11 +455,13 @@ def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         if _smoke_ok(q) or _smoke_ok(q, seed=EVAL_SEED + 1):
             passed += 1
 
-    activate = passed == SMOKE_TOTAL
+    smoke_ok = passed == SMOKE_TOTAL
+    # 2026-08-19 정책 변경: Smoke 미달도 게시를 막지 않는다 — 항상 현행으로 활성화하고
+    # 미달 여부는 경고(활동 로그·응답 smoke 수치)로만 남긴다. 종전에는 미달 시 현행 유지였다.
+    activate = True
     new_version = (db.execute(select(func.max(prompt_versions.c.version))).scalar_one() or 0) + 1
-    if activate:
-        db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
-                   .values(is_current=False))
+    db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
+               .values(is_current=False))
     db.execute(insert(prompt_versions).values(
         version=new_version, is_current=activate,
         system_instruction=content["system_instruction"],
@@ -475,10 +477,13 @@ def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
 
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_PUBLISH,
-        target=f"프롬프트 {_vstr(new_version)}" + ("" if activate else " (Smoke 미달 — 현행 유지)"),
+        target=f"프롬프트 {_vstr(new_version)}" + ("" if smoke_ok else " (Smoke 미달 — 경고, 활성화됨)"),
         reason=reason,
         detail={"version": new_version, "smoke": {"passed": passed, "total": SMOKE_TOTAL},
-                "activated": activate},
+                "activated": activate,
+                **({"gate_warnings": [w for w in [gate_warning,
+                    None if smoke_ok else f"Smoke {passed}/{SMOKE_TOTAL} 미달 상태로 활성화"] if w]}
+                   if (gate_warning or not smoke_ok) else {})},
     )
     return {"version": _vstr(new_version), "smoke": {"passed": passed, "total": SMOKE_TOTAL}}
 
@@ -550,7 +555,8 @@ def emergency_rollback(version: str, body: dict, request: Request,
     if row.is_current:
         raise BadRequestError("이미 현행 버전입니다.")
     if (row.smoke_passed or 0) < (row.smoke_total or 0):
-        raise PromptConflictError("Smoke 미달로 기록된 버전은 긴급 롤백 대상이 아닙니다.")
+        # 2026-08-19 정책 변경: Smoke 미달 버전도 롤백을 막지 않는다 — 경고만 남긴다.
+        logger.warning("Smoke 미달 버전으로 긴급 롤백: %s", _vstr(n))
 
     before = db.execute(
         select(prompt_versions.c.version).where(prompt_versions.c.is_current)

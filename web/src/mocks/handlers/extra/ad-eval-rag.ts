@@ -584,7 +584,7 @@ export const adEvalRagHandlers = [
     }
     if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
     if (!body.reason?.trim()) return fail(400, '변경 사유를 입력해 주세요.')
-    if (!gate.passed) return fail(409, '최신 초안 평가가 게이트를 통과해야 반영할 수 있습니다.')
+    // 2026-08-19 정책 변경: 게이트는 반영을 막지 않는다 — 미달·미평가는 화면 경고로만 인지시킨다
     await delay(500)
     const changed = RAG_PARAMS.filter((p) => String(body.draft[p.key]) !== String(currentValues[p.key]))
     const entry: RagHistoryEntry = {
