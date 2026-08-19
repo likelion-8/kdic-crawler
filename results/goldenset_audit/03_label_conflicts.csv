@@ -1,0 +1,272 @@
+﻿라우팅영향,유사도,test_id,질문,정답라벨,LOO예측,끌어당긴_이웃_test_id,끌어당긴_이웃_질문,이웃라벨
+★,0.9284,kmrs_apply_mthd_q1,착오송금 반환지원을 온라인으로 신청하려면 어느 사이트로 가야 하나요?,link_guide,faq,faq_msdr_apply_q6,착오송금 반환지원은 온라인으로만 신청 가능한가요?,faq
+★,0.9284,faq_msdr_apply_q6,착오송금 반환지원은 온라인으로만 신청 가능한가요?,faq,link_guide,kmrs_apply_mthd_q1,착오송금 반환지원을 온라인으로 신청하려면 어느 사이트로 가야 하나요?,link_guide
+★,0.9263,kmrs_apply_mthd_q2,착오송금 반환지원을 방문 신청하려면 어디로 가야 하나요?,link_guide,faq,faq_top10_q5,착오송금 반환지원은 방문으로도 신청할 수 있나요?,faq
+★,0.9263,faq_top10_q5,착오송금 반환지원은 방문으로도 신청할 수 있나요?,faq,link_guide,kmrs_apply_mthd_q2,착오송금 반환지원을 방문 신청하려면 어디로 가야 하나요?,link_guide
+★,0.9204,uc_tel_qust_q10,파산절차 관련 의견을 온라인으로 제출하는 페이지는 어디인가요?,link_guide,faq,amb_uc_tel_qust_4,파산절차 관련해서 건의사항 있으면 온라인으로 남길 수 있는 데 어디예요?,faq
+★,0.9204,amb_uc_tel_qust_4,파산절차 관련해서 건의사항 있으면 온라인으로 남길 수 있는 데 어디예요?,faq,link_guide,uc_tel_qust_q10,파산절차 관련 의견을 온라인으로 제출하는 페이지는 어디인가요?,link_guide
+★,0.8983,ms_trgt_fnst_q3,파산한 금융회사가 검색이 안 되는데 어디서 더 찾아요?,fact,link_guide,uc_gudn_q2,파산한 금융회사 정보는 어디서 검색할 수 있어요?,link_guide
+★,0.8983,uc_gudn_q2,파산한 금융회사 정보는 어디서 검색할 수 있어요?,link_guide,fact,ms_trgt_fnst_q3,파산한 금융회사가 검색이 안 되는데 어디서 더 찾아요?,fact
+★,0.8983,receiver_attention_q2,착오송금 수취인이 이체수수료 환급을 신청하려면 어디로 가야 하나요?,link_guide,fact,mtrs_stut_chc_q8,착오송금수취인이 이체수수료 환급을 신청하는 메뉴는 무엇인가요?,fact
+★,0.8983,mtrs_stut_chc_q8,착오송금수취인이 이체수수료 환급을 신청하는 메뉴는 무엇인가요?,fact,link_guide,receiver_attention_q2,착오송금 수취인이 이체수수료 환급을 신청하려면 어디로 가야 하나요?,link_guide
+★,0.8934,receiver_attention_q1,착오송금 수취인이 이의제기를 하려면 어디서 할 수 있나요?,link_guide,fact,receiver_docs_q3,착오송금 수취인이 이의제기서를 신청할 수 있는 기한은 언제까지인가요?,fact
+★,0.8934,receiver_docs_q3,착오송금 수취인이 이의제기서를 신청할 수 있는 기한은 언제까지인가요?,fact,link_guide,receiver_attention_q1,착오송금 수취인이 이의제기를 하려면 어디서 할 수 있나요?,link_guide
+★,0.8927,mtrs_vst_rcpt_q3,착오송금 반환지원 방문접수 센터의 주소는 어디인가요?,fact,link_guide,kmrs_apply_mthd_q2,착오송금 반환지원을 방문 신청하려면 어디로 가야 하나요?,link_guide
+★,0.8868,uc_tel_qust_q3,파산절차 관련 건의사항은 어디로 보내면 되나요?,link_guide,fact,uc_tel_qust_q9,파산절차 관련 건의사항을 보낼 수 있는 웹메일 주소는 무엇인가요?,fact
+★,0.8868,uc_tel_qust_q9,파산절차 관련 건의사항을 보낼 수 있는 웹메일 주소는 무엇인가요?,fact,link_guide,uc_tel_qust_q3,파산절차 관련 건의사항은 어디로 보내면 되나요?,link_guide
+★,0.8598,uc_gudn_q3,미수령금은 정해진 지급대행점에서만 신청해야 하나요?,fact,link_guide,uc_gudn_q9,미수령금 신청 지급대행점은 어디서 조회하나요?,link_guide
+★,0.8106,amb_sender_docs_1,착오송금 되찾기 신청할 때 쓰는 신청서 양식 어디서 받아요?,file_download,link_guide,receiver_docs_q8,착오송금인용 구비서류 안내는 어디서 볼 수 있나요?,link_guide
+★,0.7832,amb_dp_gudn_data_1,예금자보호제도 안내책자 PDF 어디서 받을 수 있어요?,file_download,link_guide,mtrs_rel_law_q9,예금자보호법 원문은 어디서 확인할 수 있나요?,link_guide
+★,0.7789,dp_josa_law_q3,부보금융기관 조사 관련 규정 원문은 어디에서 확인할 수 있나요?,link_guide,fact,dp_josa_law_q8,부보금융기관 조사와 공동검사에 관한 내부 규정의 명칭은 무엇인가요?,fact
+★,0.7789,dp_josa_law_q8,부보금융기관 조사와 공동검사에 관한 내부 규정의 명칭은 무엇인가요?,fact,link_guide,dp_josa_law_q3,부보금융기관 조사 관련 규정 원문은 어디에서 확인할 수 있나요?,link_guide
+★,0.7764,amb_dr_info_aply_1,제가 망한 금융회사에 빚이 있는지 인터넷으로 확인해볼 수 있나요?,faq,link_guide,amb_uc_gudn_5,내가 예전에 거래한 그 망한 금융회사 자세한 정보는 어디서 찾아봐요?,link_guide
+★,0.7470,kmrs_apply_mthd_q9,방문 신청 장소의 정확한 주소는 어떻게 되나요?,link_guide,faq,amb_mtrs_vst_rcpt_4,방문 신청하면 대상 되는지 결과는 어떻게 알려줘요?,faq
+★,0.7470,amb_mtrs_vst_rcpt_4,방문 신청하면 대상 되는지 결과는 어떻게 알려줘요?,faq,link_guide,kmrs_apply_mthd_q9,방문 신청 장소의 정확한 주소는 어떻게 되나요?,link_guide
+★,0.7430,ha_faq_dclr_q6,"제가 신고하려는 은닉재산에 대해 이미 다른 사람이 동일한 내용으로 먼저 신고를 한 상태라면, 제 신고는 어떻게 처리되나요?",faq,link_guide,amb_ha_center_3,은닉재산 신고한 거 어떻게 진행되는지 확인하는 데로 좀 들어가게 해줘,link_guide
+★,0.7430,amb_ha_center_3,은닉재산 신고한 거 어떻게 진행되는지 확인하는 데로 좀 들어가게 해줘,link_guide,faq,ha_faq_dclr_q6,"제가 신고하려는 은닉재산에 대해 이미 다른 사람이 동일한 내용으로 먼저 신고를 한 상태라면, 제 신고는 어떻게 처리되나요?",faq
+★,0.7389,ms_expln_q8,공사 홈페이지를 통한 인터넷 예금보험금 신청이 불가능한 경우는 언제인가요?,fact,link_guide,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide
+★,0.7310,amb_ms_expln_3,미성년자 자녀 예금도 홈페이지에서 인터넷으로 신청할 수 있나요?,faq,link_guide,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide
+★,0.7248,ha_center_q3,금융부실관련자의 은닉재산 정보를 직접 인터넷으로 신고하고 진행상황을 조회하기 위해 접속해야 하는 신고 바로가기 페이지 주소는 무엇인가요?,link_guide,fact,ha_center_q9,은닉재산 신고센터 안내자료에서 정의하는 '금융부실관련자'란 구체적으로 누구를 의미하나요?,fact
+★,0.7248,ha_center_q9,은닉재산 신고센터 안내자료에서 정의하는 '금융부실관련자'란 구체적으로 누구를 의미하나요?,fact,link_guide,ha_center_q3,금융부실관련자의 은닉재산 정보를 직접 인터넷으로 신고하고 진행상황을 조회하기 위해 접속해야 하는 신고 바로가기 페이지 주소는 무엇인가요?,link_guide
+★,0.7160,dr_credit_sprt_q2,개인신용회복지원을 직접 신청하고자 할 때 금융회사가 아닌 신용회복위원회 공식 웹사이트에 접속해 진행해야 합니다. 위원회 주소는 무엇인가요?,link_guide,fact,dr_credit_sprt_q10,"개인신용회복지원 신청은 개별 파산금융회사에 직접 신청하면 되나요, 아니면 별도의 기관에 신청해야 하나요?",fact
+★,0.7160,dr_credit_sprt_q10,"개인신용회복지원 신청은 개별 파산금융회사에 직접 신청하면 되나요, 아니면 별도의 기관에 신청해야 하나요?",fact,link_guide,dr_credit_sprt_q2,개인신용회복지원을 직접 신청하고자 할 때 금융회사가 아닌 신용회복위원회 공식 웹사이트에 접속해 진행해야 합니다. 위원회 주소는 무엇인가요?,link_guide
+★,0.7131,amb_uc_bkrp_mng_1,공적자금 들어간 망한 금융회사들 주소나 연락처 검색하는 데 좀 열어줘,link_guide,fact,ms_trgt_fnst_q3,파산한 금융회사가 검색이 안 되는데 어디서 더 찾아요?,fact
+★,0.7068,amb_mtrs_stut_chc_3,채무 잔액이랑 반환됐는지 확인은 어디서 해요?,link_guide,fact,mtrs_stut_chc_q7,착오송금수취인이 채무 잔액을 확인하는 메뉴는 무엇인가요?,fact
+★,0.6973,amb_uc_hrpe_hist_2,사망한 부모님 금융거래 한번에 조회하려면 어디 가서 접수하면 돼요? 은행에서도 되나요?,fact,link_guide,amb_uc_hrpe_hist_5,사망한 가족 금융재산이랑 빚 한번에 조회하는 서비스 좀 들어가게 해줘,link_guide
+★,0.6973,amb_uc_hrpe_hist_5,사망한 가족 금융재산이랑 빚 한번에 조회하는 서비스 좀 들어가게 해줘,link_guide,fact,amb_uc_hrpe_hist_2,사망한 부모님 금융거래 한번에 조회하려면 어디 가서 접수하면 돼요? 은행에서도 되나요?,fact
+★,0.6964,amb_dp_josa_objc_1,조사 받은 내용에 억울한 게 있으면 어떻게 이의제기해요?,faq,link_guide,amb_dp_josa_objc_2,조사 이의제기를 인터넷으로 하려면 어디로 들어가요?,link_guide
+★,0.6964,amb_dp_josa_objc_2,조사 이의제기를 인터넷으로 하려면 어디로 들어가요?,link_guide,faq,amb_dp_josa_objc_1,조사 받은 내용에 억울한 게 있으면 어떻게 이의제기해요?,faq
+★,0.6888,amb_ms_expln_5,저축은행 망한 지 한참 됐는데 아직 안 찾아간 보험금 지금도 받을 수 있어요?,fact,link_guide,amb_ms_trgt_fnst_1,내가 예금 넣어둔 저축은행이 보험금 받을 수 있는 곳인지 찾아보는 페이지 좀 열어줘,link_guide
+★,0.6810,amb_uc_gudn_4,돈 찾으려면 원래 거래하던 그 망한 은행 담당 지점 찾아가야되나요 아무데나 가도 됨?,faq,link_guide,amb_uc_gudn_5,내가 예전에 거래한 그 망한 금융회사 자세한 정보는 어디서 찾아봐요?,link_guide
+★,0.6746,amb_mtrs_gvbk_proc_1,예툰이 예솜이 나오는 착오송금 절차 설명 그거 보고 싶어요,faq,link_guide,amb_kmrs_apply_mthd_2,온라인으로 착오송금 신청하는 사이트 좀 들어가게 해줘,link_guide
+★,0.6628,amb_dr_info_aply_4,내 채무정보 조회하는 페이지로 좀 들어가게 해줘요,link_guide,fact,dr_info_aply_q9,채무정보 조회 및 상담 신청 절차 중 가장 첫 단계로 채무자가 해야 할 일은 무엇인가요?,fact
+★,0.6388,dr_info_aply_q1,예금보험공사 홈페이지에서 본인인증을 통해 파산금융회사 및 KR&C 채무가 있는지 직접 온라인으로 확인해 볼 수 있는 메뉴의 웹사이트 링크는 어떻게 되나요?,link_guide,faq,amb_dr_info_aply_1,제가 망한 금융회사에 빚이 있는지 인터넷으로 확인해볼 수 있나요?,faq
+★,0.6375,faq_nramt_q4,예금담보대출은 어느 은행에서 받을 수 있나요?,faq,link_guide,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide
+★,0.6298,dr_debt_cert_q1,"파산금융회사의 파산절차가 이미 법적으로 완전히 종결된 경우, 채무자가 신청 가능한 발급 서식은 무엇인가요?",fact,link_guide,uc_tel_qust_q3,파산절차 관련 건의사항은 어디로 보내면 되나요?,link_guide
+★,0.6295,uc_tel_qust_q4,예금보험공사 IT서비스 데스크 전화번호와 운영시간은 어떻게 되나요?,fact,link_guide,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide
+★,0.6207,mtrs_rel_law_q10,관련법령 및 규정 페이지에서 확인할 수 있는 법령·규정은 무엇인가요?,fact,link_guide,dp_josa_law_q9,조사 관련 규정뿐 아니라 시행세칙도 법령정보시스템에서 확인할 수 있나요?,link_guide
+★,0.6207,dp_josa_law_q9,조사 관련 규정뿐 아니라 시행세칙도 법령정보시스템에서 확인할 수 있나요?,link_guide,fact,mtrs_rel_law_q10,관련법령 및 규정 페이지에서 확인할 수 있는 법령·규정은 무엇인가요?,fact
+★,0.6134,uc_itgr_aply_q9,지급대행점 방문신청은 부실금융회사별로 구분해서 해야 하나요?,fact,link_guide,uc_itgr_aply_q8,미수령금 방문신청 시 지급대행점은 어디서 조회하나요?,link_guide
+★,0.5981,ms_trgt_fnst_q7,진흥저축은행 연락처가 어떻게 되나요?,table_lookup,link_guide,amb_dp_fnst_srch_3,저축은행 목록이랑 주소 연락처 조회하는 화면 띄워줘,link_guide
+★,0.5753,amb_mtrs_vst_rcpt_2,예보 고객센터 지하철로 어떻게 가는지 알려줘,link_guide,faq,amb_kmrs_aply_trgt_4,"예보에 바로 신청하면 되나요, 아니면 먼저 뭐부터 해야 돼요?",faq
+★,0.5638,ms_expln_q9,정상 영업 중인 은행·보험·우체국의 휴면계좌는 어디서 조회하나요?,link_guide,faq,faq_nramt_q3,영업정지된 저축은행의 예금은 언제 찾을 수 있나요?,faq
+★,0.5608,amb_kmrs_itrd_3,이 제도 소개하는 영상 있으면 보고 싶어요,faq,link_guide,kmrs_itrd_q2,착오송금반환지원 제도를 소개하는 안내영상은 어디서 볼 수 있나요?,link_guide
+,0.9666,dp_logo_q1,예금보호 로고 색상을 임의로 바꿔도 되나요?,fact,faq,amb_dp_logo_1,예금보호 로고 색깔을 내 맘대로 바꿔서 써도 돼요?,faq
+,0.9666,amb_dp_logo_1,예금보호 로고 색깔을 내 맘대로 바꿔서 써도 돼요?,faq,fact,dp_logo_q1,예금보호 로고 색상을 임의로 바꿔도 되나요?,fact
+,0.9595,faq_msdr_apply_q1,착오송금 반환지원 대상 금액은 얼마까지인가요?,faq,fact,kmrs_aply_trgt_q1,착오송금 반환지원 신청이 가능한 금액 한도는 얼마인가요?,fact
+,0.9595,kmrs_aply_trgt_q1,착오송금 반환지원 신청이 가능한 금액 한도는 얼마인가요?,fact,faq,faq_msdr_apply_q1,착오송금 반환지원 대상 금액은 얼마까지인가요?,faq
+,0.9420,dp_svbk_hist_q2,HK저축은행은 현재 어떤 이름인가요?,table_lookup,fact,amb_dp_svbk_hist_2,HK저축은행 지금 무슨 이름으로 바뀐 거예요?,fact
+,0.9420,amb_dp_svbk_hist_2,HK저축은행 지금 무슨 이름으로 바뀐 거예요?,fact,table_lookup,dp_svbk_hist_q2,HK저축은행은 현재 어떤 이름인가요?,table_lookup
+,0.9300,faq_msdr_apply_q4,착오송금 반환지원 대상에서 제외되는 경우는 무엇인가요?,faq,fact,sender_attention_q4,착오송금 수취인과 관련된 반환지원 제외 사유에는 어떤 것이 있나요?,fact
+,0.9300,sender_attention_q4,착오송금 수취인과 관련된 반환지원 제외 사유에는 어떤 것이 있나요?,fact,faq,faq_msdr_apply_q4,착오송금 반환지원 대상에서 제외되는 경우는 무엇인가요?,faq
+,0.9284,ms_expln_q2,개산지급금이 뭔가요?,fact,faq,faq_nramt_q7,개산지급금 제도는 무엇인가요?,faq
+,0.9284,faq_nramt_q7,개산지급금 제도는 무엇인가요?,faq,fact,ms_expln_q2,개산지급금이 뭔가요?,fact
+,0.9254,sender_attention_q5,착오송금 수취계좌가 어떤 경우에 반환지원 대상에서 제외되나요?,fact,faq,faq_msdr_apply_q4,착오송금 반환지원 대상에서 제외되는 경우는 무엇인가요?,faq
+,0.9209,faq_top10_q2,상속인금융거래조회 결과는 얼마나 조회할 수 있나요?,faq,fact,amb_faq_top10_1,상속인 금융거래 조회한 결과는 며칠이나 볼 수 있어요?,fact
+,0.9209,amb_faq_top10_1,상속인 금융거래 조회한 결과는 며칠이나 볼 수 있어요?,fact,faq,faq_top10_q2,상속인금융거래조회 결과는 얼마나 조회할 수 있나요?,faq
+,0.9164,kmrs_itrd_q3,잘못 보낸 돈 되찾기 서비스는 누구를 위한 서비스인가요?,fact,faq,amb_kmrs_itrd_1,잘못 보낸 돈 되찾게 도와주는 서비스 그게 뭐하는 거예요?,faq
+,0.9164,amb_kmrs_itrd_1,잘못 보낸 돈 되찾게 도와주는 서비스 그게 뭐하는 거예요?,faq,fact,kmrs_itrd_q3,잘못 보낸 돈 되찾기 서비스는 누구를 위한 서비스인가요?,fact
+,0.9125,dp_protlmts_q5,법인 명의로 된 예금도 1억원까지 보호되나요?,fact,faq,dp_faq_page_q5,법인의 예금도 개인처럼 1억원까지 보호되나요?,faq
+,0.9125,dp_faq_page_q5,법인의 예금도 개인처럼 1억원까지 보호되나요?,faq,fact,dp_protlmts_q5,법인 명의로 된 예금도 1억원까지 보호되나요?,fact
+,0.9089,uc_bkrp_fndt_q9,파산재단 현황 통계는 언제 기준인가요?,table_lookup,fact,amb_uc_bkrp_fndt_5,이 파산재단 통계는 언제 기준 자료예요?,fact
+,0.9089,amb_uc_bkrp_fndt_5,이 파산재단 통계는 언제 기준 자료예요?,fact,table_lookup,uc_bkrp_fndt_q9,파산재단 현황 통계는 언제 기준인가요?,table_lookup
+,0.9011,faq_nramt_q2,계열 저축은행 여러 곳에 나눠 예금하면 각각 보호되나요?,faq,fact,amb_faq_nramt_1,계열 저축은행 여러 군데에 나눠서 넣으면 각각 1억씩 보호돼요?,fact
+,0.9011,amb_faq_nramt_1,계열 저축은행 여러 군데에 나눠서 넣으면 각각 1억씩 보호돼요?,fact,faq,faq_nramt_q2,계열 저축은행 여러 곳에 나눠 예금하면 각각 보호되나요?,faq
+,0.8910,mtrs_rel_law_q1,착오송금 반환지원과 관련해 안내되는 법률과 시행령은 무엇인가요?,fact,faq,amb_mtrs_rel_law_1,착오송금 반환지원이 무슨 법에 근거한 거예요?,faq
+,0.8910,amb_mtrs_rel_law_1,착오송금 반환지원이 무슨 법에 근거한 거예요?,faq,fact,mtrs_rel_law_q1,착오송금 반환지원과 관련해 안내되는 법률과 시행령은 무엇인가요?,fact
+,0.8903,faq_top10_q8,착오송금이 발생하면 언제까지 신청해야 하나요?,faq,fact,kmrs_aply_trgt_q2,착오송금 반환지원은 언제까지 신청해야 하나요?,fact
+,0.8871,amb_uc_tel_qust_1,제가 이름을 바꿨는데 옛날 이름으로 된 미수령금 그냥 신청하면 되나요?,faq,fact,uc_tel_qust_q8,개명 등으로 이름이 바뀐 명의로 미수령금을 신청하면 어떻게 되나요?,fact
+,0.8817,uc_bkrp_spcl_ast_q7,특별자산에는 어떤 유형이 있나요? 골프장 외에 다른 것도 있나요?,fact,faq,amb_uc_bkrp_spcl_ast_2,특별자산이라는 거에 골프장이나 외제차 이런 것도 들어가요?,faq
+,0.8817,amb_uc_bkrp_spcl_ast_2,특별자산이라는 거에 골프장이나 외제차 이런 것도 들어가요?,faq,fact,uc_bkrp_spcl_ast_q7,특별자산에는 어떤 유형이 있나요? 골프장 외에 다른 것도 있나요?,fact
+,0.8813,ha_center_q4,"은닉재산 신고센터에 전화나 이메일로 상담을 요청하고 싶은데, 상담전화 번호와 이메일 주소는 무엇인가요?",fact,faq,ha_faq_dclr_q10,은닉재산 신고 외에 기타 자세한 사항이 궁금할 때 이용할 수 있는 상담전화 번호는 무엇인가요?,faq
+,0.8813,ha_faq_dclr_q10,은닉재산 신고 외에 기타 자세한 사항이 궁금할 때 이용할 수 있는 상담전화 번호는 무엇인가요?,faq,fact,ha_center_q4,"은닉재산 신고센터에 전화나 이메일로 상담을 요청하고 싶은데, 상담전화 번호와 이메일 주소는 무엇인가요?",fact
+,0.8712,dp_gudn_faq_q7,법인 고객도 설명·확인제도의 적용을 받나요?,faq,fact,amb_dp_gudn_faq_5,법인 고객도 이 설명·확인을 받아야 하는 대상이에요?,fact
+,0.8712,amb_dp_gudn_faq_5,법인 고객도 이 설명·확인을 받아야 하는 대상이에요?,fact,faq,dp_gudn_faq_q7,법인 고객도 설명·확인제도의 적용을 받나요?,faq
+,0.8681,dr_debt_cert_q4,"부채증명원/금융거래정보는 원칙적으로 어떤 방식으로 신청해야 하며, 직접 내방하여 신청할 수 있는 장소는 어디인가요?",fact,table_lookup,dr_debt_cert_q6,부채증명원/금융거래정보를 본인이 직접 방문하여 신청할 때 준비해야 하는 서류는 무엇인가요?,table_lookup
+,0.8681,dr_debt_cert_q6,부채증명원/금융거래정보를 본인이 직접 방문하여 신청할 때 준비해야 하는 서류는 무엇인가요?,table_lookup,fact,dr_debt_cert_q4,"부채증명원/금융거래정보는 원칙적으로 어떤 방식으로 신청해야 하며, 직접 내방하여 신청할 수 있는 장소는 어디인가요?",fact
+,0.8618,faq_nramt_q6,계열 저축은행 여러 곳에 예금한 경우 보호한도는 계열 전체를 합쳐 1억원인가요?,faq,fact,amb_faq_nramt_1,계열 저축은행 여러 군데에 나눠서 넣으면 각각 1억씩 보호돼요?,fact
+,0.8613,dp_prdct_srch_q7,변액보험 상품은 이 보호금융상품 목록에 포함되어 있나요?,fact,faq,amb_dp_prdct_srch_4,변액보험은 이 보호상품 목록에 왜 안 나와요?,faq
+,0.8613,amb_dp_prdct_srch_4,변액보험은 이 보호상품 목록에 왜 안 나와요?,faq,fact,dp_prdct_srch_q7,변액보험 상품은 이 보호금융상품 목록에 포함되어 있나요?,fact
+,0.8599,amb_ms_aply_proc_1,인터넷으로 예금보험금 신청하면 돈은 언제쯤 통장에 들어와요?,faq,fact,ms_aply_proc_q1,예금보험금 신청하면 언제 입금되나요?,fact
+,0.8542,uc_tel_qust_q5,미수령금 관련 고객 문의 대표번호는 무엇인가요?,fact,faq,amb_uc_tel_qust_2,미수령금 관련해서 사람이랑 직접 통화하고 싶은데 어디로 전화하면 돼요?,faq
+,0.8542,amb_uc_tel_qust_2,미수령금 관련해서 사람이랑 직접 통화하고 싶은데 어디로 전화하면 돼요?,faq,fact,uc_tel_qust_q5,미수령금 관련 고객 문의 대표번호는 무엇인가요?,fact
+,0.8534,uc_bkrp_spcl_ast_q8,고가의 외제차량도 특별자산에 해당하나요?,fact,faq,amb_uc_bkrp_spcl_ast_2,특별자산이라는 거에 골프장이나 외제차 이런 것도 들어가요?,faq
+,0.8443,dp_protlmts_q1,예금자보호 한도는 얼마인가요?,fact,table_lookup,dp_ovrs_q1,미국의 예금보호한도는 얼마인가요?,table_lookup
+,0.8433,uc_bkrp_spcl_mng_q5,골프장·선박·미술품 같은 유사 성격의 특별자산은 어떻게 관리하나요?,fact,faq,amb_uc_bkrp_spcl_mng_3,"골프장이나 선박, 미술품 같은 비슷한 자산들은 묶어서 관리하나요?",faq
+,0.8433,amb_uc_bkrp_spcl_mng_3,"골프장이나 선박, 미술품 같은 비슷한 자산들은 묶어서 관리하나요?",faq,fact,uc_bkrp_spcl_mng_q5,골프장·선박·미술품 같은 유사 성격의 특별자산은 어떻게 관리하나요?,fact
+,0.8426,receiver_docs_q2,착오송금액반환 관련 이체수수료 환급신청을 온라인으로 할 때 제출해야 하는 서류는 무엇인가요?,table_lookup,fact,kmrs_apply_mthd_q4,착오송금 반환지원을 온라인으로 신청할 때 준비물은 무엇인가요?,fact
+,0.8413,uc_bkrp_trst_psta_q8,신탁부동산 유형에 골프장도 포함되나요?,fact,faq,amb_uc_bkrp_trst_psta_3,"신탁부동산에 아파트 사업부지나 상가, 골프장 이런 것도 있어요?",faq
+,0.8413,amb_uc_bkrp_trst_psta_3,"신탁부동산에 아파트 사업부지나 상가, 골프장 이런 것도 있어요?",faq,fact,uc_bkrp_trst_psta_q8,신탁부동산 유형에 골프장도 포함되나요?,fact
+,0.8397,uc_hrpe_hist_q5,상속인 금융거래 조회 결과로는 어떤 정보가 제공되나요?,fact,faq,faq_top10_q2,상속인금융거래조회 결과는 얼마나 조회할 수 있나요?,faq
+,0.8352,dp_gudn_q1,표시·설명·확인 제도는 왜 운영하나요?,fact,faq,amb_dp_gudn_3,이런 표시·설명 제도는 대체 왜 있는 거예요?,faq
+,0.8352,amb_dp_gudn_3,이런 표시·설명 제도는 대체 왜 있는 거예요?,faq,fact,dp_gudn_q1,표시·설명·확인 제도는 왜 운영하나요?,fact
+,0.8333,amb_dp_prdct_3,증권사 CMA 통장에 있는 돈은 보호돼요?,faq,table_lookup,dp_prdct_q2,증권사 CMA는 예금자보호를 받을 수 있나요?,table_lookup
+,0.8266,dr_debt_cert_q5,부채증명원/금융거래정보를 인터넷으로 신청할 때 필요한 구비서류는 무엇인가요?,table_lookup,fact,amb_dr_debt_cert_2,인터넷으로 부채증명원 신청하려면 뭐 있어야 돼요? 공인인증서 그런거요?,fact
+,0.8266,amb_dr_debt_cert_2,인터넷으로 부채증명원 신청하려면 뭐 있어야 돼요? 공인인증서 그런거요?,fact,table_lookup,dr_debt_cert_q5,부채증명원/금융거래정보를 인터넷으로 신청할 때 필요한 구비서류는 무엇인가요?,table_lookup
+,0.8260,receiver_docs_q4,이체수수료 환급신청을 방문으로 할 때 필요한 서류는 무엇인가요?,table_lookup,fact,amb_receiver_attention_4,이체수수료 환급 신청할 때 팩스나 이메일 어디로 보내요?,fact
+,0.8253,sender_docs_q3,착오송금 반환지원 신청 후 대리인을 변경하려면 온라인으로 처리할 수 있나요?,fact,faq,faq_msdr_apply_q6,착오송금 반환지원은 온라인으로만 신청 가능한가요?,faq
+,0.8241,sender_docs_q8,반환금을 착오송금 계좌가 아닌 다른 계좌로 받으려면 어떻게 해야 하나요?,fact,faq,amb_sender_docs_5,반환금 받을 계좌를 딴 걸로 바꾸고 싶은데 어떻게 해요?,faq
+,0.8241,amb_sender_docs_5,반환금 받을 계좌를 딴 걸로 바꾸고 싶은데 어떻게 해요?,faq,fact,sender_docs_q8,반환금을 착오송금 계좌가 아닌 다른 계좌로 받으려면 어떻게 해야 하나요?,fact
+,0.8229,amb_sender_qlfc_check_2,착오송금이 2021년 7월 6일보다 전에 일어난 거면 신청 안 되는 거죠?,fact,faq,faq_top10_q8,착오송금이 발생하면 언제까지 신청해야 하나요?,faq
+,0.8228,dp_fnst_q1,예금보험공사의 보호대상 금융회사에는 어떤 종류가 있나요?,fact,table_lookup,amb_dp_fnst_3,지금 예금보험 보호되는 금융회사가 전부 몇 군데예요?,table_lookup
+,0.8228,amb_dp_fnst_3,지금 예금보험 보호되는 금융회사가 전부 몇 군데예요?,table_lookup,fact,dp_fnst_q1,예금보험공사의 보호대상 금융회사에는 어떤 종류가 있나요?,fact
+,0.8226,amb_dp_faq_page_1,예금 1억까지 보호되는 걸로 바뀐 게 언제부터예요?,fact,faq,dp_faq_page_q1,예금보호한도 1억원은 언제부터 적용됐나요?,faq
+,0.8202,uc_bkrp_trst_mng_q10,신탁부동산 전담관리그룹에서 여신전문은 누가 담당하나요?,fact,faq,amb_uc_bkrp_trst_mng_3,신탁부동산 관리팀에서 여신 실무는 누가 맡아요?,faq
+,0.8202,amb_uc_bkrp_trst_mng_3,신탁부동산 관리팀에서 여신 실무는 누가 맡아요?,faq,fact,uc_bkrp_trst_mng_q10,신탁부동산 전담관리그룹에서 여신전문은 누가 담당하나요?,fact
+,0.8202,dp_logo_q2,예금보호 로고는 어디에 사용할 수 있나요?,fact,file_download,amb_dp_logo_2,예금보호 로고 이미지 다운받는 데 어디예요?,file_download
+,0.8202,amb_dp_logo_2,예금보호 로고 이미지 다운받는 데 어디예요?,file_download,fact,dp_logo_q2,예금보호 로고는 어디에 사용할 수 있나요?,fact
+,0.8184,amb_kmrs_aply_trgt_2,잘못 보낸 돈 얼마부터 얼마까지 신청 받아줘요?,table_lookup,faq,amb_kmrs_aply_trgt_3,돈 잘못 보낸 지 얼마나 지나면 신청 못 해요?,faq
+,0.8184,amb_kmrs_aply_trgt_3,돈 잘못 보낸 지 얼마나 지나면 신청 못 해요?,faq,table_lookup,amb_kmrs_aply_trgt_2,잘못 보낸 돈 얼마부터 얼마까지 신청 받아줘요?,table_lookup
+,0.8177,amb_mtrs_stut_chc_1,돈 잘못 보낸 사람이랑 잘못 받은 사람 중에 뭘 눌러야 신청해요?,faq,table_lookup,amb_kmrs_aply_trgt_2,잘못 보낸 돈 얼마부터 얼마까지 신청 받아줘요?,table_lookup
+,0.8177,dp_gudn_data_q7,예금보호 로고 사용 안내 자료는 언제 등록되었나요?,file_download,fact,dp_logo_q2,예금보호 로고는 어디에 사용할 수 있나요?,fact
+,0.8164,dp_protlmts_q7,예금보호한도 1억원에는 원금만 포함되나요?,fact,faq,dp_faq_page_q1,예금보호한도 1억원은 언제부터 적용됐나요?,faq
+,0.8149,uc_bkrp_trst_psta_q9,신탁부동산 유형에 상가도 포함되나요?,fact,faq,amb_uc_bkrp_trst_psta_3,"신탁부동산에 아파트 사업부지나 상가, 골프장 이런 것도 있어요?",faq
+,0.8149,amb_uc_bkrp_trst_mng_2,신탁부동산 관리하는 팀에 외부 전문가도 들어가나요?,faq,fact,uc_bkrp_trst_mng_q6,신탁부동산 전담관리그룹에서 외부전문 역할은 누가 담당하나요?,fact
+,0.8121,dr_psn_rg_q6,개인회생을 신청할 때 신청서에 붙여야 하는 정부수입인지 비용은 얼마인가요?,fact,table_lookup,amb_dr_psn_rg_3,개인회생 신청할때 법원에 내는 돈 얼마에요?,table_lookup
+,0.8121,amb_dr_psn_rg_3,개인회생 신청할때 법원에 내는 돈 얼마에요?,table_lookup,fact,dr_psn_rg_q6,개인회생을 신청할 때 신청서에 붙여야 하는 정부수입인지 비용은 얼마인가요?,fact
+,0.8085,uc_bkrp_spcl_mng_q4,예금보험공사는 특별자산 전담부서를 언제부터 운영하고 있나요?,fact,faq,amb_uc_bkrp_spcl_mng_2,이런 특별자산 관리하는 전담부서는 언제부터 운영했어요?,faq
+,0.8085,amb_uc_bkrp_spcl_mng_2,이런 특별자산 관리하는 전담부서는 언제부터 운영했어요?,faq,fact,uc_bkrp_spcl_mng_q4,예금보험공사는 특별자산 전담부서를 언제부터 운영하고 있나요?,fact
+,0.8078,ms_aply_proc_q9,예금보험금을 방문신청하면 인터넷신청보다 빨리 입금되나요?,fact,faq,amb_ms_aply_proc_1,인터넷으로 예금보험금 신청하면 돈은 언제쯤 통장에 들어와요?,faq
+,0.8057,kmrs_apply_mthd_q3,온라인 신청은 모바일에서도 가능한가요?,fact,faq,amb_kmrs_apply_mthd_5,온라인 말고 직접 가서 신청하는 것도 되나요?,faq
+,0.8057,amb_kmrs_apply_mthd_5,온라인 말고 직접 가서 신청하는 것도 되나요?,faq,fact,kmrs_apply_mthd_q3,온라인 신청은 모바일에서도 가능한가요?,fact
+,0.8026,amb_dp_ovrs_2,일본은 예금보호한도가 얼마예요?,table_lookup,fact,dp_protlmts_q1,예금자보호 한도는 얼마인가요?,fact
+,0.7990,dp_prdct_srch_q3,확정급여형(DB) 퇴직연금에 편입된 상품은 보호되나요?,fact,faq,dp_gudn_faq_q5,확정급여형(DB)과 확정기여형(DC) 퇴직연금의 예금자보호 여부는 어떻게 다른가요?,faq
+,0.7990,dp_gudn_faq_q5,확정급여형(DB)과 확정기여형(DC) 퇴직연금의 예금자보호 여부는 어떻게 다른가요?,faq,fact,dp_prdct_srch_q3,확정급여형(DB) 퇴직연금에 편입된 상품은 보호되나요?,fact
+,0.7939,dp_faq_page_q2,외화예금도 1억원까지 보호되나요?,faq,fact,amb_dp_prdct_4,달러로 넣은 외화예금도 원화 예금처럼 보호받나요?,fact
+,0.7939,amb_dp_prdct_4,달러로 넣은 외화예금도 원화 예금처럼 보호받나요?,fact,faq,dp_faq_page_q2,외화예금도 1억원까지 보호되나요?,faq
+,0.7909,receiver_docs_q1,착오송금 수취인용 이의제기서 양식은 어떤 파일 형식으로 받을 수 있나요?,file_download,fact,receiver_docs_q3,착오송금 수취인이 이의제기서를 신청할 수 있는 기한은 언제까지인가요?,fact
+,0.7903,uc_hrpe_hist_q1,돌아가신 아버지 명의의 미수령금을 확인할 수 있나요?,fact,faq,amb_uc_hrpe_hist_1,돌아가신 아버지 앞으로 안 찾아간 돈 있는지 자식이 대신 조회할 수 있나요?,faq
+,0.7903,amb_uc_hrpe_hist_1,돌아가신 아버지 앞으로 안 찾아간 돈 있는지 자식이 대신 조회할 수 있나요?,faq,fact,uc_hrpe_hist_q1,돌아가신 아버지 명의의 미수령금을 확인할 수 있나요?,fact
+,0.7895,dp_fnst_q2,농협 지역조합과 새마을금고도 예금보험공사가 보호하나요?,fact,faq,amb_dp_fnst_1,우리 동네 새마을금고에 넣은 돈도 예금보험공사가 지켜주는 거 맞죠?,faq
+,0.7895,amb_dp_fnst_1,우리 동네 새마을금고에 넣은 돈도 예금보험공사가 지켜주는 거 맞죠?,faq,fact,dp_fnst_q2,농협 지역조합과 새마을금고도 예금보험공사가 보호하나요?,fact
+,0.7858,amb_faq_nramt_5,가지급금은 보통 얼마까지 미리 주는 거예요?,table_lookup,fact,ms_expln_q1,가지급금이 뭔가요?,fact
+,0.7835,amb_receiver_docs_5,수수료 환급은 온라인으로도 되고 방문으로도 돼요?,faq,fact,receiver_docs_q10,이체수수료 환급 신청은 온라인으로만 가능한가요?,fact
+,0.7835,sender_attention_q3,착오송금액별 회수 관련 비용률 예시는 어떻게 되나요?,fact,table_lookup,amb_sender_attention_2,"1,000만원짜리 착오송금이면 비용률이 얼마예요?",table_lookup
+,0.7835,amb_sender_attention_2,"1,000만원짜리 착오송금이면 비용률이 얼마예요?",table_lookup,fact,sender_attention_q3,착오송금액별 회수 관련 비용률 예시는 어떻게 되나요?,fact
+,0.7816,dr_faq_inq_q1,"모바일 기기(휴대폰이나 태블릿 등) 환경에서도 채무정보 조회가 가능한지, 그리고 가능하다면 모바일에서 거쳐야 하는 본인확인 절차는 무엇인가요?",faq,fact,dr_info_aply_q7,채무정보 조회 시 본인확인을 위해 거쳐야 하는 인증 절차는 어떤 방식인가요?,fact
+,0.7798,mtrs_gvbk_proc_q8,반환지원을 신청하면 바로 돈을 돌려받을 수 있나요?,fact,faq,amb_faq_msdr_apply_1,신청하면 실제로 돈 돌려받기까지 얼마나 걸려요?,faq
+,0.7798,amb_faq_msdr_apply_1,신청하면 실제로 돈 돌려받기까지 얼마나 걸려요?,faq,fact,mtrs_gvbk_proc_q8,반환지원을 신청하면 바로 돈을 돌려받을 수 있나요?,fact
+,0.7795,dp_prdct_q3,종합금융회사의 어음관리계좌(CMA)는 보호되나요?,table_lookup,faq,amb_dp_prdct_3,증권사 CMA 통장에 있는 돈은 보호돼요?,faq
+,0.7763,amb_kmrs_apply_mthd_3,온라인으로 신청하려면 뭐 준비해야 돼요?,faq,fact,kmrs_apply_mthd_q3,온라인 신청은 모바일에서도 가능한가요?,fact
+,0.7721,amb_mtrs_gvbk_proc_3,신청하면 심사도 없이 바로 돈 돌려받는 거예요?,fact,faq,amb_faq_msdr_apply_1,신청하면 실제로 돈 돌려받기까지 얼마나 걸려요?,faq
+,0.7696,kmrs_apply_mthd_q6,방문 신청 관련 문의는 어느 번호로 하나요?,fact,faq,amb_kmrs_apply_mthd_4,직접 찾아가서 신청하려면 어디로 가요? 전화번호도 알려줘요,faq
+,0.7677,ha_status_agree_q1,"부실책임조사 진행현황 조회 시, 개인정보 수집 및 이용 동의서상에 명시된 개인정보의 보유 및 이용 기간은 총 몇 년인가요?",fact,table_lookup,ha_status_agree_q4,부실책임조사 진행현황 조회를 위한 개인정보 동의서상 필수항목으로 수집되는 개인정보 항목은 구체적으로 무엇인가요?,table_lookup
+,0.7671,ha_status_agree_q8,"개인정보 동의서에서 선택항목인 주소, 전화번호, 팩스번호를 제공하지 않아도 부실책임조사 진행현황 조회 서비스를 이용할 수 있나요?",fact,table_lookup,ha_status_agree_q2,"부실책임조사 업무용 개인정보 동의 화면에서 주소, 전화번호, 팩스번호는 필수 항목으로 수집되나요, 아니면 선택 항목인가요?",table_lookup
+,0.7664,amb_dp_ovrs_3,우리나라 예금보호한도가 소득 수준 대비로 보면 다른 나라보다 낮은 편이에요?,fact,table_lookup,dp_ovrs_q3,한국의 예금보호한도는 1인당 GDP의 몇 배인가요?,table_lookup
+,0.7662,amb_dr_credit_sprt_2,신용회복 신청하는데 돈 내야된다던데 얼마에요?,table_lookup,fact,amb_dr_credit_sprt_4,신용회복 지원 받으려면 빚이 얼마 이하여야 되나요?,fact
+,0.7662,amb_dr_credit_sprt_4,신용회복 지원 받으려면 빚이 얼마 이하여야 되나요?,fact,table_lookup,amb_dr_credit_sprt_2,신용회복 신청하는데 돈 내야된다던데 얼마에요?,table_lookup
+,0.7650,amb_uc_bkrp_trst_psta_2,공사가 관리하는 신탁부동산 규모가 얼마나 돼요?,table_lookup,fact,uc_bkrp_trst_psta_q1,예금보험공사가 관리하는 신탁부동산 규모는 얼마나 되나요?,fact
+,0.7634,dp_syst_q9,예금 지급불능 사태를 예방하기 위해 우리나라가 제정한 법은 무엇인가요?,fact,faq,amb_dp_syst_5,예금 못 돌려받는 사태 막으려고 만든 법이 따로 있어요?,faq
+,0.7634,amb_dp_syst_5,예금 못 돌려받는 사태 막으려고 만든 법이 따로 있어요?,faq,fact,dp_syst_q9,예금 지급불능 사태를 예방하기 위해 우리나라가 제정한 법은 무엇인가요?,fact
+,0.7576,amb_faq_msdr_apply_5,어떤 은행이나 페이로 보낸 착오송금까지 되찾아줘요?,faq,fact,kmrs_itrd_q4,착오송금반환지원 서비스의 다른 이름은 무엇인가요?,fact
+,0.7558,amb_faq_top10_4,며칠 전에 잘못 송금했는데 신청기한 1년이면 송금한 날도 포함해서 세요?,fact,faq,amb_kmrs_aply_trgt_3,돈 잘못 보낸 지 얼마나 지나면 신청 못 해요?,faq
+,0.7530,amb_dp_protlmts_5,회사 명의로 만든 법인 통장에 있는 돈도 보호가 돼요?,faq,fact,dp_protlmts_q5,법인 명의로 된 예금도 1억원까지 보호되나요?,fact
+,0.7529,sender_attention_q10,회수 관련 비용은 모든 신청자에게 동일하게 적용되나요?,fact,faq,amb_sender_attention_4,회수한 돈에서 비용 떼고 준다는데 사람마다 비용이 달라요?,faq
+,0.7514,amb_mtrs_rel_law_3,반환지원 규정이랑 시행세칙은 어디서 봐요?,faq,fact,mtrs_rel_law_q3,착오송금반환지원 규정과 시행세칙은 각각 어떤 내용을 정하나요?,fact
+,0.7463,dp_faq_page_q7,부보금융회사가 합병되면 예금보호한도는 어떻게 적용되나요?,faq,fact,amb_dp_faq_page_5,은행 두 곳이 서로 합쳐지면 내 예금 보호한도는 어떻게 돼요?,fact
+,0.7457,amb_dr_info_aply_2,빚 있는걸로 나오면 상담은 어떻게 진행돼요? 제가 전화해야 하나요?,faq,fact,amb_dr_info_aply_5,조회했는데 빚 있으면 그자리에서 바로 온라인으로 상담신청도 되나요?,fact
+,0.7457,amb_dr_info_aply_5,조회했는데 빚 있으면 그자리에서 바로 온라인으로 상담신청도 되나요?,fact,faq,amb_dr_info_aply_2,빚 있는걸로 나오면 상담은 어떻게 진행돼요? 제가 전화해야 하나요?,faq
+,0.7422,amb_dp_gudn_data_2,영업점에 비치할 예금보호 안내자료 다운받을 수 있나요?,faq,file_download,amb_dp_logo_2,예금보호 로고 이미지 다운받는 데 어디예요?,file_download
+,0.7407,amb_mtrs_vst_rcpt_1,방문 신청 몇 시부터 몇 시까지 받아요? 점심시간도 알려줘요,faq,fact,kmrs_apply_mthd_q6,방문 신청 관련 문의는 어느 번호로 하나요?,fact
+,0.7389,amb_dp_fnst_5,외국계 은행 서울지점에 맡긴 것도 보호받을 수 있어요?,faq,fact,dp_fnst_q6,외국은행의 국내지점도 예금보험공사 보호대상인가요?,fact
+,0.7365,amb_sender_docs_3,대리인이 신청하려면 인감증명서도 내야 돼요?,faq,fact,sender_docs_q6,해외거주자를 대리하는데 인감증명서를 제출할 수 없으면 어떻게 하나요?,fact
+,0.7350,amb_dr_kruc_4,케이알앤씨 빚 조정 신청할때 빚 면제 각서같은거 써야된다던데 그거 어디서 받아요?,file_download,table_lookup,dr_kruc_q4,케이알앤씨에 채무조정을 본인이 직접 신청할 때 제출해야 하는 서류는 무엇인가요?,table_lookup
+,0.7350,receiver_docs_q5,이의제기를 방문으로 신청할 때 필요한 서류는 무엇인가요?,table_lookup,faq,amb_receiver_docs_4,이의제기 할 때 뭘 같이 내야 돼요?,faq
+,0.7350,amb_receiver_docs_4,이의제기 할 때 뭘 같이 내야 돼요?,faq,table_lookup,receiver_docs_q5,이의제기를 방문으로 신청할 때 필요한 서류는 무엇인가요?,table_lookup
+,0.7334,amb_dr_faq_inq_1,핸드폰으로도 내 빚 조회 되나요?,faq,fact,amb_dr_info_aply_5,조회했는데 빚 있으면 그자리에서 바로 온라인으로 상담신청도 되나요?,fact
+,0.7305,dp_faq_page_q9,일반 예금과 별도로 각각 1억원까지 보호되는 상품 세 가지는 무엇인가요?,faq,fact,dp_protlmts_q5,법인 명의로 된 예금도 1억원까지 보호되나요?,fact
+,0.7300,ms_poss_dcmnt_q3,예금보험금 위임장 양식은 어디서 다운로드 받나요?,file_download,fact,ms_poss_dcmnt_q8,예금보험금 신청 구비서류 페이지에서 다운로드할 수 있는 서식에는 어떤 것들이 있나요?,fact
+,0.7300,ms_poss_dcmnt_q8,예금보험금 신청 구비서류 페이지에서 다운로드할 수 있는 서식에는 어떤 것들이 있나요?,fact,file_download,ms_poss_dcmnt_q3,예금보험금 위임장 양식은 어디서 다운로드 받나요?,file_download
+,0.7283,amb_dr_system_2,제가 기초수급자인데요 망한 저축은행 빚은 원금 몇 퍼센트까지 감면 받을수 있나요?,table_lookup,fact,amb_dr_system_1,동네 저축은행이 망했는데 거기 대출 남은거 나라에서 원금 좀 깎아준다던데 최대 몇프로까지 깎아줘요?,fact
+,0.7267,amb_dp_syst_1,은행 망했을 때 나 대신 돈 물어주는 그 돈은 대체 어디서 나오는 거예요?,faq,fact,amb_uc_itgr_aply_5,은행이 망해서 예금 못 돌려줄 때 공사가 대신 물어주는 돈 이름이 뭐예요?,fact
+,0.7267,amb_uc_itgr_aply_5,은행이 망해서 예금 못 돌려줄 때 공사가 대신 물어주는 돈 이름이 뭐예요?,fact,faq,amb_dp_syst_1,은행 망했을 때 나 대신 돈 물어주는 그 돈은 대체 어디서 나오는 거예요?,faq
+,0.7266,amb_dp_syst_2,은행 망하면 결국 우리 세금으로 물어주는 거 아니에요?,fact,faq,amb_dp_syst_1,은행 망했을 때 나 대신 돈 물어주는 그 돈은 대체 어디서 나오는 거예요?,faq
+,0.7248,amb_dp_syst_3,이 예금 보호라는 게 무슨 보험 같은 원리라던데 어떻게 돌아가는 거예요?,faq,fact,dp_syst_q1,예금보험제도는 어떤 원리로 운영되나요?,fact
+,0.7230,amb_dr_psn_rg_2,개인회생 하려면 빚이 얼마 이하여야 돼요? 담보 있는거랑 없는거랑 다른가요?,table_lookup,fact,dr_psn_rg_q2,개인회생제도를 정식 신청하기 위해 법적으로 정해져 있는 채무총액 한도는 담보부 채무와 무담보 채무 각각 최대 얼마 이하인가요?,fact
+,0.7216,kmrs_apply_mthd_q7,본인이 아닌 대리인이 신청할 경우 추가로 확인해야 할 것이 있나요?,fact,faq,amb_sender_docs_3,대리인이 신청하려면 인감증명서도 내야 돼요?,faq
+,0.7215,uc_bkrp_spcl_ast_q9,정상적으로 영업 중인 저축은행의 자산도 특별자산인가요?,fact,faq,amb_uc_bkrp_spcl_ast_5,이 특별자산 관리는 언제 영업정지된 저축은행부터 대상이에요?,faq
+,0.7215,amb_uc_bkrp_spcl_ast_5,이 특별자산 관리는 언제 영업정지된 저축은행부터 대상이에요?,faq,fact,uc_bkrp_spcl_ast_q9,정상적으로 영업 중인 저축은행의 자산도 특별자산인가요?,fact
+,0.7161,kmrs_itrd_q8,실수로 돈을 잘못 보냈을 때 예금보험공사가 도와주는 서비스가 있나요?,fact,faq,amb_kmrs_itrd_1,잘못 보낸 돈 되찾게 도와주는 서비스 그게 뭐하는 거예요?,faq
+,0.7118,amb_sender_qlfc_check_5,자가진단에서 체크하는 금액 조건이 정확히 얼마 구간이에요?,table_lookup,fact,sender_qlfc_check_q1,착오송금 반환지원 자가진단에서 확인하는 금액 기준은 무엇인가요?,fact
+,0.7117,kmrs_apply_mthd_q8,온라인 신청 시 공동인증서 외에 추가로 필요한 서류가 있나요?,fact,faq,faq_msdr_apply_q3,공동인증서가 보이지 않을 경우 어떻게 해야 하나요?,faq
+,0.7100,ha_faq_dclr_q3,은닉재산 신고 접수 시 신고자가 취득한 은닉재산 정보의 경위나 출처까지 반드시 의무적으로 신고센터에 알려주어야 하나요?,faq,fact,ha_center_q6,"은닉재산 신고센터에 우편이나 방문으로 신고서를 제출하려고 하는데, 정확한 주소가 어떻게 되나요?",fact
+,0.7063,amb_dp_fnst_srch_2,예금보험 대상인 금융권역이 뭐뭐 있어요?,faq,table_lookup,amb_dp_fnst_3,지금 예금보험 보호되는 금융회사가 전부 몇 군데예요?,table_lookup
+,0.7054,amb_dr_psn_rg_5,개인회생 무료로 신청 도와주는 데 있나요?,fact,table_lookup,amb_dr_psn_rg_3,개인회생 신청할때 법원에 내는 돈 얼마에요?,table_lookup
+,0.7023,amb_dp_josa_itrd_2,그 조사는 어떤 순서로 진행되는 거예요?,fact,faq,amb_dp_josa_itrd_3,어떤 경우에 그런 조사를 받게 되는 거예요?,faq
+,0.7023,amb_dp_josa_itrd_3,어떤 경우에 그런 조사를 받게 되는 거예요?,faq,fact,amb_dp_josa_itrd_2,그 조사는 어떤 순서로 진행되는 거예요?,fact
+,0.7013,ha_center_q1,은닉재산 신고센터에 정보를 제보하여 재산 회수가 완료되면 포상금의 최고한도는 얼마인가요?,fact,table_lookup,ha_center_q2,"은닉재산 신고센터의 포상금 기준표에 따르면, 회수기여금액이 5억원 이하일 때 포상금 산정 비율은 어떻게 되나요?",table_lookup
+,0.7013,ha_center_q2,"은닉재산 신고센터의 포상금 기준표에 따르면, 회수기여금액이 5억원 이하일 때 포상금 산정 비율은 어떻게 되나요?",table_lookup,fact,ha_center_q1,은닉재산 신고센터에 정보를 제보하여 재산 회수가 완료되면 포상금의 최고한도는 얼마인가요?,fact
+,0.6986,kmrs_aply_trgt_q9,금융회사를 통해 반환받지 못한 경우에만 예금보험공사에 신청할 수 있나요?,fact,faq,amb_sender_qlfc_check_4,은행에 반환 신청했는데 못 받았다고 통보 받았어요. 이제 예보에 신청되나요?,faq
+,0.6979,amb_ha_faq_dclr_3,얼마 이상 돼야 신고 받아주는 거예요? 소액이면 안되나?,fact,faq,ha_faq_dclr_q7,제가 알고 있는 은닉재산의 가치가 크지 않은 소액이어도 신고가 가능한가요?,faq
+,0.6972,dp_protlmts_q4,DC형 퇴직연금이나 연금저축도 일반 예금과 합산해서 1억원 한도가 적용되나요?,fact,table_lookup,amb_dp_protlmts_2,퇴직연금이랑 연금저축에 넣은 것도 일반 예금이랑 따로따로 1억씩 쳐주는 거예요?,table_lookup
+,0.6972,amb_dp_protlmts_2,퇴직연금이랑 연금저축에 넣은 것도 일반 예금이랑 따로따로 1억씩 쳐주는 거예요?,table_lookup,fact,dp_protlmts_q4,DC형 퇴직연금이나 연금저축도 일반 예금과 합산해서 1억원 한도가 적용되나요?,fact
+,0.6968,dr_psn_br_q2,"법원에서 공식적으로 파산이 선고되면, 공무원이나 부동산중개업자 등과 관련해 법률상으로 어떠한 제약을 받게 되나요?",fact,faq,amb_dr_psn_br_2,파산선고 받으면 직장에서 잘리거나 못하게 되는 직업 생기나요?,faq
+,0.6968,amb_dr_psn_br_2,파산선고 받으면 직장에서 잘리거나 못하게 되는 직업 생기나요?,faq,fact,dr_psn_br_q2,"법원에서 공식적으로 파산이 선고되면, 공무원이나 부동산중개업자 등과 관련해 법률상으로 어떠한 제약을 받게 되나요?",fact
+,0.6961,amb_dp_prdct_5,주택청약 넣은 것도 예금보호 되는 거죠?,faq,table_lookup,dp_prdct_q7,증권사의 청약자예수금은 보호대상인가요?,table_lookup
+,0.6946,amb_dp_protlmts_3,한 은행에 예금도 있고 대출도 있는데 거기 망하면 이걸 어떻게 계산해서 줘요?,faq,fact,amb_ms_expln_1,은행 하나 망하면 원금이랑 이자 합쳐서 최대 얼마까지 나라에서 돌려줘요?,fact
+,0.6900,amb_ms_aply_proc_5,제가 그 망한 저축은행 임원 친척인데 예금은 언제쯤 받을 수 있나요?,fact,faq,faq_nramt_q3,영업정지된 저축은행의 예금은 언제 찾을 수 있나요?,faq
+,0.6900,faq_nramt_q9,가지급금을 수령하면 예금의 약정이율이 변경되나요?,faq,fact,ms_expln_q1,가지급금이 뭔가요?,fact
+,0.6875,mtrs_vst_rcpt_q6,방문접수에서 신청서를 접수하면 무엇을 발급받나요?,fact,faq,amb_mtrs_vst_rcpt_4,방문 신청하면 대상 되는지 결과는 어떻게 알려줘요?,faq
+,0.6855,amb_kmrs_aply_trgt_1,26년 초에 옆동네 사람 계좌로 실수로 300만원 보냈는데 이거 나라에서 되찾아주는 신청 되나요? 금액 조건 있어요?,fact,faq,amb_kmrs_itrd_2,실수로 엉뚱한 사람한테 돈 보냈는데 이거 나라에서 되찾게 해준다는 게 이 제도 맞나요?,faq
+,0.6855,amb_faq_msdr_apply_4,국내에 지점 없는 외국은행 계좌로 잘못 보냈는데 신청 돼요?,fact,faq,amb_kmrs_aply_trgt_3,돈 잘못 보낸 지 얼마나 지나면 신청 못 해요?,faq
+,0.6803,amb_ms_trgt_fnst_5,검색해봤더니 그 회사가 파산상태라고 뜨는데 이러면 어떻게 되는 거예요?,faq,fact,ms_trgt_fnst_q3,파산한 금융회사가 검색이 안 되는데 어디서 더 찾아요?,fact
+,0.6802,amb_receiver_attention_5,돌려주긴 할 건데 이의가 있으면 어디에 제기해요?,faq,fact,amb_receiver_attention_2,기한 안에 안 돌려주면 어떻게 돼요? 법적으로 뭐 진행되나요?,fact
+,0.6799,amb_uc_gudn_1,예전에 망한 저축은행에 돈 넣어놨었는데 안 찾아간 그런 돈도 나라에서 관리해줘요?,faq,fact,amb_ms_expln_5,저축은행 망한 지 한참 됐는데 아직 안 찾아간 보험금 지금도 받을 수 있어요?,fact
+,0.6751,dp_gudn_faq_q9,TM(텔레마케팅)에서 예금보험관계 설명과 확인을 반드시 순서대로 진행해야 하나요?,faq,fact,dp_gudn_q2,금융정보취약계층에게는 예금보험관계를 어떻게 설명해야 하나요?,fact
+,0.6737,amb_mtrs_gvbk_proc_2,상대가 법원 지급명령도 씹으면 최후엔 어떻게 돈을 받아내요?,faq,fact,mtrs_gvbk_proc_q6,법원 지급명령에도 착오송금 수취인이 돈을 돌려주지 않으면 최후의 방법은 무엇인가요?,fact
+,0.6725,dp_faq_page_q4,"예금보험금은 세전 기준으로 지급되나요, 세후 기준으로 지급되나요?",faq,fact,ms_aply_proc_q5,예금보험금 지급 사실은 어떤 방법으로 안내받나요?,fact
+,0.6722,amb_dr_credit_sprt_3,신용회복으로 빚 나눠갚으면 최대 몇년까지 갚을수 있어요? 소득 낮으면 더 길게 되나요?,table_lookup,fact,amb_dr_credit_sprt_4,신용회복 지원 받으려면 빚이 얼마 이하여야 되나요?,fact
+,0.6713,faq_nramt_q1,영업정지 저축은행이 발행한 후순위채권도 예금자보호를 받을 수 있나요?,faq,fact,dp_fnst_q4,상호저축은행은 예금보험공사의 보호대상 금융회사에 포함되나요?,fact
+,0.6696,amb_dr_debt_cert_1,빚이 얼마 남았는지 증명하는 서류 떼야 되는데 꼭 찾아가야 되나요 인터넷으로는 안돼요?,faq,fact,amb_dr_info_aply_5,조회했는데 빚 있으면 그자리에서 바로 온라인으로 상담신청도 되나요?,fact
+,0.6689,uc_bkrp_spcl_mng_q3,특별자산 매각에 외부 전문가도 참여하나요?,fact,faq,amb_uc_bkrp_trst_mng_2,신탁부동산 관리하는 팀에 외부 전문가도 들어가나요?,faq
+,0.6660,faq_msdr_apply_q5,매입계약 체결 이후에도 계약이 해제될 수 있나요?,faq,fact,sender_attention_q8,부당이득반환채권 매입계약이 해제되는 경우는 어떤 때인가요?,fact
+,0.6632,ms_expln_q6,보험사고가 발생하면 은행·저축은행·종합금융업에 적용되는 이자율은 어떻게 정해지나요?,fact,faq,dp_faq_page_q6,"예금 1억5천만원, 대출 3천만원이 있는 금융회사에 보험사고가 발생하면 얼마를 받나요?",faq
+,0.6632,dp_faq_page_q6,"예금 1억5천만원, 대출 3천만원이 있는 금융회사에 보험사고가 발생하면 얼마를 받나요?",faq,fact,ms_expln_q6,보험사고가 발생하면 은행·저축은행·종합금융업에 적용되는 이자율은 어떻게 정해지나요?,fact
+,0.6627,amb_dr_credit_sprt_1,망한 금융회사 빚인데 신용회복 신청은 그 회사한테 하는거에요 아니면 딴데다 하는거에요?,fact,table_lookup,amb_dr_credit_sprt_2,신용회복 신청하는데 돈 내야된다던데 얼마에요?,table_lookup
+,0.6605,amb_receiver_docs_1,모르는 돈이 들어왔는데 반환 요구가 부당하다고 이의 넣는 서류 어디서 받아요?,file_download,fact,mtrs_stut_chc_q6,모르는 돈을 받았을 때 이의를 제기하는 메뉴가 있나요?,fact
+,0.6580,amb_mtrs_vst_rcpt_5,직접 방문할 때 뭐 챙겨가야 돼요?,fact,faq,amb_kmrs_apply_mthd_4,직접 찾아가서 신청하려면 어디로 가요? 전화번호도 알려줘요,faq
+,0.6562,amb_mtrs_gvbk_proc_4,수취인한테 보낸다는 양도 통지문이 뭐예요?,faq,file_download,sender_docs_q10,채권양도 통지 위임장 양식은 어디서 받을 수 있나요?,file_download
+,0.6556,amb_dp_gudn_4,은행이 이 설명을 안 해주면 어떻게 되는 거예요?,fact,faq,amb_dp_gudn_1,은행이 상품 팔 때 이게 보호되는지 안 되는지 꼭 알려줘야 하는 거예요?,faq
+,0.6532,amb_ms_aply_proc_4,저축은행 망하면 나한테 어떻게 알려주나요? 문자도 오나요?,faq,fact,amb_ms_aply_proc_5,제가 그 망한 저축은행 임원 친척인데 예금은 언제쯤 받을 수 있나요?,fact
+,0.6514,amb_ha_ilgl_intro_5,여기는 무슨 신고를 받는 데예요?,fact,faq,amb_ha_center_4,이런 거 제보하려면 어디로 전화하면 돼요?,faq
+,0.6513,amb_receiver_attention_3,지급명령 확정되고도 안 갚으면 재산 압류당하나요?,faq,fact,receiver_attention_q5,지급명령이 확정된 후에도 착오송금액을 반환하지 않으면 어떻게 되나요?,fact
+,0.6512,amb_ha_faq_dclr_2,저 지금 외국 사는데 저도 이거 신고 가능해요?,faq,fact,amb_ha_ilgl_intro_5,여기는 무슨 신고를 받는 데예요?,fact
+,0.6440,amb_ms_trgt_fnst_4,여기서 검색해도 안 나오면 어디 가서 더 알아봐야 해요?,faq,fact,ms_trgt_fnst_q3,파산한 금융회사가 검색이 안 되는데 어디서 더 찾아요?,fact
+,0.6434,amb_faq_top10_5,되찾기 되는 금액 상한이 정확히 얼마죠?,table_lookup,fact,kmrs_aply_trgt_q1,착오송금 반환지원 신청이 가능한 금액 한도는 얼마인가요?,fact
+,0.6376,ha_status_agree_q7,부실책임조사 진행현황 조회 서비스 가입 절차는 STEP1부터 STEP4까지 각각 어떤 단계로 구성되어 있나요?,fact,table_lookup,ha_status_agree_q4,부실책임조사 진행현황 조회를 위한 개인정보 동의서상 필수항목으로 수집되는 개인정보 항목은 구체적으로 무엇인가요?,table_lookup
+,0.6363,amb_ms_poss_dcmnt_5,미성년자인 조카를 대리인으로 세워서 대신 받게 해도 돼요?,faq,fact,ms_poss_dcmnt_q1,대리인이 예금보험금을 대신 수령하려면 어떤 서류가 필요한가요?,fact
+,0.6325,amb_dr_psn_rg_4,개인회생이랑 파산이랑 뭐가 달라요? 재산 다 팔아야 되는건 어느쪽이에요?,fact,table_lookup,amb_dr_psn_rg_2,개인회생 하려면 빚이 얼마 이하여야 돼요? 담보 있는거랑 없는거랑 다른가요?,table_lookup
+,0.6295,amb_dp_prdct_srch_5,요새 새로 나온 상품은 여기서 검색해도 안 나올 수 있어요?,fact,faq,amb_ms_trgt_fnst_4,여기서 검색해도 안 나오면 어디 가서 더 알아봐야 해요?,faq
+,0.6284,dp_prdct_q6,보험회사의 변액보험계약 주계약은 보호되나요?,table_lookup,faq,amb_dp_prdct_srch_4,변액보험은 이 보호상품 목록에 왜 안 나와요?,faq
+,0.6230,dr_psn_rg_q1,개인회생과 개인파산 두 제도를 '청산가치 보장의 원칙'과 '일정한 수입 조건' 여부를 기준으로 표에 근거하여 비교 설명해 주세요.,table_lookup,fact,amb_dr_psn_rg_4,개인회생이랑 파산이랑 뭐가 달라요? 재산 다 팔아야 되는건 어느쪽이에요?,fact
+,0.6203,amb_dp_fnst_4,농협에 넣은 돈은 보호돼요 안 돼요? 헷갈리네요.,fact,faq,amb_dp_prdct_5,주택청약 넣은 것도 예금보호 되는 거죠?,faq
+,0.6194,amb_ha_center_5,지금까지 이 제보로 실제로 돈 얼마나 회수했대요?,fact,faq,amb_faq_msdr_apply_1,신청하면 실제로 돈 돌려받기까지 얼마나 걸려요?,faq
+,0.6173,faq_nramt_q5,예금과 대출을 모두 보유한 경우 1억원 초과 여부는 어떻게 판단하나요?,faq,fact,dp_protlmts_q5,법인 명의로 된 예금도 1억원까지 보호되나요?,fact
+,0.6171,amb_ha_status_agree_3,개인정보 제공 동의 안하면 못써요?,faq,fact,ha_status_agree_q6,"개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있다고 하는데, 필수 항목까지 동의를 거부하면 어떤 불이익이 있나요?",fact
+,0.6171,amb_dp_josa_law_1,저축은행이 어떤 상태면 부실우려로 조사 대상이 되는 거예요?,fact,faq,amb_faq_nramt_2,저축은행이 영업정지되면 예금은 언제부터 찾을 수 있어요?,faq
+,0.6140,amb_dr_kruc_3,고금리로 빌린건데 이자율도 낮춰준다던데 어느 정도까지 내려가요?,faq,fact,dr_kruc_q3,"케이알앤씨 대출채권의 고금리 채무자가 이자율조정 제도를 신청할 경우, 금리는 보통 어느 수준까지 인하하여 조정받을 수 있나요?",fact
+,0.6115,amb_dp_protlmts_4,1억 넘게 넣어놨으면 그 넘는 돈은 그냥 다 날리는 거예요?,fact,faq,faq_nramt_q5,예금과 대출을 모두 보유한 경우 1억원 초과 여부는 어떻게 판단하나요?,faq
+,0.6094,amb_ms_expln_2,저축은행 사고 나면 이자는 어떻게 쳐주나요?,table_lookup,faq,amb_ms_aply_proc_4,저축은행 망하면 나한테 어떻게 알려주나요? 문자도 오나요?,faq
+,0.6058,amb_dp_faq_page_4,1억 보호되는 거 세금 떼기 전 기준이에요 뗀 후 기준이에요?,table_lookup,fact,amb_dp_faq_page_1,예금 1억까지 보호되는 걸로 바뀐 게 언제부터예요?,fact
+,0.6003,uc_tel_qust_q6,예금명의자 본인이 아닌 사람이 전화로 문의하면 어떻게 되나요?,fact,faq,amb_dr_info_aply_2,빚 있는걸로 나오면 상담은 어떻게 진행돼요? 제가 전화해야 하나요?,faq
+,0.5991,ha_faq_dclr_q9,신고하려는 대상자가 실제로 부실관련자가 맞는지 사전에 어떻게 확인할 수 있나요?,faq,fact,ha_center_q9,은닉재산 신고센터 안내자료에서 정의하는 '금융부실관련자'란 구체적으로 누구를 의미하나요?,fact
+,0.5980,dp_prdct_q5,은행의 원본이 보전되는 금전신탁도 보호되나요?,table_lookup,fact,dp_protlmts_q5,법인 명의로 된 예금도 1억원까지 보호되나요?,fact
+,0.5968,amb_dp_josa_itrd_1,예보가 저축은행 같은 데 조사도 나가요? 무슨 근거로요?,faq,fact,amb_dp_josa_law_1,저축은행이 어떤 상태면 부실우려로 조사 대상이 되는 거예요?,fact
+,0.5953,amb_dr_info_aply_3,본인확인은 그냥 간편인증 같은걸로 되는거죠?,faq,fact,dr_info_aply_q7,채무정보 조회 시 본인확인을 위해 거쳐야 하는 인증 절차는 어떤 방식인가요?,fact
+,0.5919,amb_dp_fnst_srch_4,이 회사 목록은 언제 기준으로 정리된 거예요?,table_lookup,faq,amb_dp_fnst_srch_5,여기서 회사 이름으로도 찾을 수 있어요?,faq
+,0.5909,dp_josa_itrd_q7,조사 내용에 동의하지 않을 때 활용할 수 있는 권익보호 절차는 무엇인가요?,fact,faq,amb_dp_josa_objc_1,조사 받은 내용에 억울한 게 있으면 어떻게 이의제기해요?,faq
+,0.5875,amb_dp_gudn_5,설명 들었다는 확인은 어떤 방식으로 받아요?,faq,fact,amb_dp_gudn_faq_5,법인 고객도 이 설명·확인을 받아야 하는 대상이에요?,fact
+,0.5823,amb_ha_status_agree_2,여기 입력한 내 개인정보는 얼마나 갖고 있는 거예요?,fact,faq,amb_ha_status_agree_3,개인정보 제공 동의 안하면 못써요?,faq
+,0.5805,dp_gudn_data_q5,[보호금융상품등록부] 작성 서식 변경 안내는 어느 부서 소관인가요?,file_download,fact,dp_gudn_q4,부보금융회사가 취급하는 보호금융상품에 관해 작성·제출·비치해야 하는 서류는 무엇인가요?,fact
+,0.5773,amb_ms_poss_dcmnt_4,상속받을 돈이 얼마 안 되는데 상속인 한 명만 가서 간단하게 받을 수 있어요? 얼마까지 되나요?,table_lookup,fact,ms_poss_dcmnt_q2,상속받을 예금이 300만원 이하면 상속인 전원이 안 가도 되나요?,fact
+,0.5756,amb_uc_bkrp_mng_4,저축은행이랑 상호신용금고랑 금고는 검색할 때 같은 분류로 봐야 되나요?,faq,fact,dp_fnst_q4,상호저축은행은 예금보험공사의 보호대상 금융회사에 포함되나요?,fact
+,0.5737,amb_ha_status_agree_4,주소나 전화번호는 꼭 안적어도 되나요?,fact,faq,amb_ha_ilgl_intro_4,메일로도 제보 넣을 수 있나요? 주소 좀,faq
+,0.5729,ha_center_q10,2025년 12월말 기준으로 은닉재산 신고센터에 접수된 제보건수와 발견재산은 각각 얼마인가요?,table_lookup,fact,ha_center_q1,은닉재산 신고센터에 정보를 제보하여 재산 회수가 완료되면 포상금의 최고한도는 얼마인가요?,fact
+,0.5545,amb_dr_psn_rg_1,매달 월급 받고 있는데 빚 갚으면서 몇년 버티면 나머지 없애준다던데 그거 조건이 뭐에요?,fact,table_lookup,amb_dr_credit_sprt_3,신용회복으로 빚 나눠갚으면 최대 몇년까지 갚을수 있어요? 소득 낮으면 더 길게 되나요?,table_lookup
+,0.5500,amb_ha_status_agree_1,진행현황 조회하려는데 뭐뭐 입력해야 돼요? 필수로?,fact,table_lookup,ha_status_agree_q4,부실책임조사 진행현황 조회를 위한 개인정보 동의서상 필수항목으로 수집되는 개인정보 항목은 구체적으로 무엇인가요?,table_lookup
+,0.5465,amb_dr_system_3,빚이 천만원도 안되는 소액인데 서류 간단하게 빨리 처리해주는 그런것도 있어요?,faq,fact,dr_system_q7,"원금 1,000만원 미만의 연체채무자를 위해 마련된 신속채무조정제도(Fast-Track)는 어떤 장점이 있나요?",fact
+,0.5422,dp_fnst_srch_q8,AIG 손해보험주식회사는 어떤 금융권역으로 등록되어 있나요?,table_lookup,faq,amb_dp_fnst_srch_2,예금보험 대상인 금융권역이 뭐뭐 있어요?,faq
+,0.5410,receiver_docs_q9,PDF 첨부파일 내용이 안 보이면 어떻게 해야 하나요?,fact,faq,faq_msdr_apply_q3,공동인증서가 보이지 않을 경우 어떻게 해야 하나요?,faq
+,0.5378,dp_gudn_data_q4,'취약계층에 대한 우선 설명확인 의무 안내' 자료는 언제 등록되었나요?,file_download,fact,dp_gudn_q7,금융정보취약계층에게 예금보험관계는 다른 정보보다 나중에 설명해도 되나요?,fact
+,0.5228,sender_attention_q6,자금이체 금융회사등에는 어떤 기관이 포함되나요?,fact,faq,faq_top10_q3,착오송금 반환지원 적용대상이 되는 금융기관에는 어떤 곳이 있나요?,faq
+,0.5087,ms_aply_proc_q4,1종 보험사고와 2종 보험사고는 어떻게 다른가요?,fact,table_lookup,ms_trgt_fnst_q9,토마토저축은행과 토마토2저축은행의 보험사고일은 각각 언제인가요?,table_lookup

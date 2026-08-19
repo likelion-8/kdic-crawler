@@ -1,0 +1,38 @@
+﻿판정,유사도,test_id,질문,라벨,링크보유,정답페이지_링크수,이웃_test_id,이웃_질문,이웃라벨,이웃_링크보유
+검토 — expected_links 누락 가능,0.9204,uc_tel_qust_q10,파산절차 관련 의견을 온라인으로 제출하는 페이지는 어디인가요?,link_guide,O,1,amb_uc_tel_qust_4,파산절차 관련해서 건의사항 있으면 온라인으로 남길 수 있는 데 어디예요?,faq,X
+검토 — expected_links 누락 가능,0.8983,receiver_attention_q2,착오송금 수취인이 이체수수료 환급을 신청하려면 어디로 가야 하나요?,link_guide,O,4,mtrs_stut_chc_q8,착오송금수취인이 이체수수료 환급을 신청하는 메뉴는 무엇인가요?,fact,X
+검토 — expected_links 누락 가능,0.8934,receiver_attention_q1,착오송금 수취인이 이의제기를 하려면 어디서 할 수 있나요?,link_guide,O,4,receiver_docs_q3,착오송금 수취인이 이의제기서를 신청할 수 있는 기한은 언제까지인가요?,fact,X
+검토 — expected_links 누락 가능,0.8927,mtrs_vst_rcpt_q3,착오송금 반환지원 방문접수 센터의 주소는 어디인가요?,fact,X,3,kmrs_apply_mthd_q2,착오송금 반환지원을 방문 신청하려면 어디로 가야 하나요?,link_guide,O
+검토 — expected_links 누락 가능,0.8868,uc_tel_qust_q3,파산절차 관련 건의사항은 어디로 보내면 되나요?,link_guide,O,1,uc_tel_qust_q9,파산절차 관련 건의사항을 보낼 수 있는 웹메일 주소는 무엇인가요?,fact,X
+검토 — expected_links 누락 가능,0.8598,uc_gudn_q3,미수령금은 정해진 지급대행점에서만 신청해야 하나요?,fact,X,4,uc_gudn_q9,미수령금 신청 지급대행점은 어디서 조회하나요?,link_guide,O
+검토 — expected_links 누락 가능,0.8106,amb_sender_docs_1,착오송금 되찾기 신청할 때 쓰는 신청서 양식 어디서 받아요?,file_download,X,2,receiver_docs_q8,착오송금인용 구비서류 안내는 어디서 볼 수 있나요?,link_guide,O
+검토 — expected_links 누락 가능,0.7789,dp_josa_law_q3,부보금융기관 조사 관련 규정 원문은 어디에서 확인할 수 있나요?,link_guide,O,1,dp_josa_law_q8,부보금융기관 조사와 공동검사에 관한 내부 규정의 명칭은 무엇인가요?,fact,X
+검토 — expected_links 누락 가능,0.7764,amb_dr_info_aply_1,제가 망한 금융회사에 빚이 있는지 인터넷으로 확인해볼 수 있나요?,faq,X,1,amb_uc_gudn_5,내가 예전에 거래한 그 망한 금융회사 자세한 정보는 어디서 찾아봐요?,link_guide,O
+검토 — expected_links 누락 가능,0.7470,kmrs_apply_mthd_q9,방문 신청 장소의 정확한 주소는 어떻게 되나요?,link_guide,O,2,amb_mtrs_vst_rcpt_4,방문 신청하면 대상 되는지 결과는 어떻게 알려줘요?,faq,X
+검토 — expected_links 누락 가능,0.7389,ms_expln_q8,공사 홈페이지를 통한 인터넷 예금보험금 신청이 불가능한 경우는 언제인가요?,fact,X,1,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide,O
+검토 — expected_links 누락 가능,0.7310,amb_ms_expln_3,미성년자 자녀 예금도 홈페이지에서 인터넷으로 신청할 수 있나요?,faq,X,1,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide,O
+검토 — expected_links 누락 가능,0.7248,ha_center_q3,금융부실관련자의 은닉재산 정보를 직접 인터넷으로 신고하고 진행상황을 조회하기 위해 접속해야 하는 신고 바로가기 페이지 주소는 무엇인가요?,link_guide,O,1,ha_center_q9,은닉재산 신고센터 안내자료에서 정의하는 '금융부실관련자'란 구체적으로 누구를 의미하나요?,fact,X
+검토 — expected_links 누락 가능,0.7160,dr_credit_sprt_q2,개인신용회복지원을 직접 신청하고자 할 때 금융회사가 아닌 신용회복위원회 공식 웹사이트에 접속해 진행해야 합니다. 위원회 주소는 무엇인가요?,link_guide,O,1,dr_credit_sprt_q10,"개인신용회복지원 신청은 개별 파산금융회사에 직접 신청하면 되나요, 아니면 별도의 기관에 신청해야 하나요?",fact,X
+검토 — expected_links 누락 가능,0.7068,amb_mtrs_stut_chc_3,채무 잔액이랑 반환됐는지 확인은 어디서 해요?,link_guide,O,6,mtrs_stut_chc_q7,착오송금수취인이 채무 잔액을 확인하는 메뉴는 무엇인가요?,fact,X
+검토 — expected_links 누락 가능,0.6973,amb_uc_hrpe_hist_2,사망한 부모님 금융거래 한번에 조회하려면 어디 가서 접수하면 돼요? 은행에서도 되나요?,fact,X,1,amb_uc_hrpe_hist_5,사망한 가족 금융재산이랑 빚 한번에 조회하는 서비스 좀 들어가게 해줘,link_guide,O
+검토 — expected_links 누락 가능,0.6964,amb_dp_josa_objc_1,조사 받은 내용에 억울한 게 있으면 어떻게 이의제기해요?,faq,X,1,amb_dp_josa_objc_2,조사 이의제기를 인터넷으로 하려면 어디로 들어가요?,link_guide,O
+검토 — expected_links 누락 가능,0.6888,amb_ms_expln_5,저축은행 망한 지 한참 됐는데 아직 안 찾아간 보험금 지금도 받을 수 있어요?,fact,X,1,amb_ms_trgt_fnst_1,내가 예금 넣어둔 저축은행이 보험금 받을 수 있는 곳인지 찾아보는 페이지 좀 열어줘,link_guide,O
+검토 — expected_links 누락 가능,0.6810,amb_uc_gudn_4,돈 찾으려면 원래 거래하던 그 망한 은행 담당 지점 찾아가야되나요 아무데나 가도 됨?,faq,X,4,amb_uc_gudn_5,내가 예전에 거래한 그 망한 금융회사 자세한 정보는 어디서 찾아봐요?,link_guide,O
+검토 — expected_links 누락 가능,0.6628,amb_dr_info_aply_4,내 채무정보 조회하는 페이지로 좀 들어가게 해줘요,link_guide,O,1,dr_info_aply_q9,채무정보 조회 및 상담 신청 절차 중 가장 첫 단계로 채무자가 해야 할 일은 무엇인가요?,fact,X
+검토 — expected_links 누락 가능,0.6388,dr_info_aply_q1,예금보험공사 홈페이지에서 본인인증을 통해 파산금융회사 및 KR&C 채무가 있는지 직접 온라인으로 확인해 볼 수 있는 메뉴의 웹사이트 링크는 어떻게 되나요?,link_guide,O,1,amb_dr_info_aply_1,제가 망한 금융회사에 빚이 있는지 인터넷으로 확인해볼 수 있나요?,faq,X
+검토 — expected_links 누락 가능,0.6298,dr_debt_cert_q1,"파산금융회사의 파산절차가 이미 법적으로 완전히 종결된 경우, 채무자가 신청 가능한 발급 서식은 무엇인가요?",fact,X,1,uc_tel_qust_q3,파산절차 관련 건의사항은 어디로 보내면 되나요?,link_guide,O
+검토 — expected_links 누락 가능,0.6295,uc_tel_qust_q4,예금보험공사 IT서비스 데스크 전화번호와 운영시간은 어떻게 되나요?,fact,X,1,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide,O
+검토 — expected_links 누락 가능,0.6207,mtrs_rel_law_q10,관련법령 및 규정 페이지에서 확인할 수 있는 법령·규정은 무엇인가요?,fact,X,2,dp_josa_law_q9,조사 관련 규정뿐 아니라 시행세칙도 법령정보시스템에서 확인할 수 있나요?,link_guide,O
+검토 — expected_links 누락 가능,0.6134,uc_itgr_aply_q9,지급대행점 방문신청은 부실금융회사별로 구분해서 해야 하나요?,fact,X,3,uc_itgr_aply_q8,미수령금 방문신청 시 지급대행점은 어디서 조회하나요?,link_guide,O
+검토 — 파일 다운로드 vs 페이지 안내,0.7832,amb_dp_gudn_data_1,예금자보호제도 안내책자 PDF 어디서 받을 수 있어요?,file_download,O,0,mtrs_rel_law_q9,예금자보호법 원문은 어디서 확인할 수 있나요?,link_guide,O
+한계 — 링크로 답할 수 없음,0.9284,kmrs_apply_mthd_q1,착오송금 반환지원을 온라인으로 신청하려면 어느 사이트로 가야 하나요?,link_guide,O,2,faq_msdr_apply_q6,착오송금 반환지원은 온라인으로만 신청 가능한가요?,faq,X
+한계 — 링크로 답할 수 없음,0.9263,kmrs_apply_mthd_q2,착오송금 반환지원을 방문 신청하려면 어디로 가야 하나요?,link_guide,O,2,faq_top10_q5,착오송금 반환지원은 방문으로도 신청할 수 있나요?,faq,X
+한계 — 링크로 답할 수 없음,0.8983,ms_trgt_fnst_q3,파산한 금융회사가 검색이 안 되는데 어디서 더 찾아요?,fact,X,0,uc_gudn_q2,파산한 금융회사 정보는 어디서 검색할 수 있어요?,link_guide,O
+한계 — 링크로 답할 수 없음,0.7430,ha_faq_dclr_q6,"제가 신고하려는 은닉재산에 대해 이미 다른 사람이 동일한 내용으로 먼저 신고를 한 상태라면, 제 신고는 어떻게 처리되나요?",faq,X,0,amb_ha_center_3,은닉재산 신고한 거 어떻게 진행되는지 확인하는 데로 좀 들어가게 해줘,link_guide,O
+한계 — 링크로 답할 수 없음,0.7131,amb_uc_bkrp_mng_1,공적자금 들어간 망한 금융회사들 주소나 연락처 검색하는 데 좀 열어줘,link_guide,O,0,ms_trgt_fnst_q3,파산한 금융회사가 검색이 안 되는데 어디서 더 찾아요?,fact,X
+한계 — 링크로 답할 수 없음,0.6746,amb_mtrs_gvbk_proc_1,예툰이 예솜이 나오는 착오송금 절차 설명 그거 보고 싶어요,faq,X,0,amb_kmrs_apply_mthd_2,온라인으로 착오송금 신청하는 사이트 좀 들어가게 해줘,link_guide,O
+한계 — 링크로 답할 수 없음,0.6375,faq_nramt_q4,예금담보대출은 어느 은행에서 받을 수 있나요?,faq,X,0,ms_aply_proc_q2,예금보험금을 인터넷으로 신청할 수 있는 곳이 어디예요?,link_guide,O
+한계 — 링크로 답할 수 없음,0.5981,ms_trgt_fnst_q7,진흥저축은행 연락처가 어떻게 되나요?,table_lookup,X,0,amb_dp_fnst_srch_3,저축은행 목록이랑 주소 연락처 조회하는 화면 띄워줘,link_guide,O
+한계 — 링크로 답할 수 없음,0.5753,amb_mtrs_vst_rcpt_2,예보 고객센터 지하철로 어떻게 가는지 알려줘,link_guide,O,3,amb_kmrs_aply_trgt_4,"예보에 바로 신청하면 되나요, 아니면 먼저 뭐부터 해야 돼요?",faq,X
+한계 — 링크로 답할 수 없음,0.5638,ms_expln_q9,정상 영업 중인 은행·보험·우체국의 휴면계좌는 어디서 조회하나요?,link_guide,O,1,faq_nramt_q3,영업정지된 저축은행의 예금은 언제 찾을 수 있나요?,faq,X
+한계 — 링크로 답할 수 없음,0.5608,amb_kmrs_itrd_3,이 제도 소개하는 영상 있으면 보고 싶어요,faq,X,0,kmrs_itrd_q2,착오송금반환지원 제도를 소개하는 안내영상은 어디서 볼 수 있나요?,link_guide,O
