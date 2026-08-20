@@ -107,3 +107,35 @@ def test_grounded_and_appropriate_touches_nothing(wire):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+# ─────────────── 마커 없는 응답의 관측 (2026-08-20) ───────────────
+#
+# PR #174 가 마커 지시를 프롬프트에서 뺐다. 그런데 파싱이 "마커 없음"을 True 로 돌려주는
+# 바람에 관측에 있지도 않은 마커가 박혔고, AD-005 상세가 `마커 [[SOURCE_USED]]` 를
+# 그렸다 — 심지어 출처 판정이 '미사용'인 줄에서. 모르는 것을 기본값으로 적지 않는다.
+
+def test_absent_marker_is_recorded_as_unknown(wire):
+    """마커가 없으면 관측에 None 이 남아야 한다 — True 로 적으면 화면이 없는 값을 그린다."""
+    wire["verdict"] = _verdict(used_source=True, kind="grounded", appropriate=True)
+    sp = _sp()
+    finalize_sub(sp, "본문", marker_used_source=None)
+    assert sp.obs_marker is None, "마커가 없었는데 관측에 값이 박혔다"
+
+
+def test_present_marker_is_recorded_as_is(wire):
+    """옛 게시본(AD-008)이 마커를 요구하면 그 값은 그대로 남는다 — 하위호환."""
+    wire["verdict"] = _verdict(used_source=True, kind="grounded", appropriate=True)
+    for marker in (True, False):
+        sp = _sp()
+        finalize_sub(sp, "본문", marker_used_source=marker)
+        assert sp.obs_marker is marker
+
+
+def test_absent_marker_does_not_poison_the_precheck_shadow(wire):
+    """None 을 그대로 precheck 에 넘기면 falsy 라 전 건이 marker_no_source 로 세어진다.
+    근거가 있으면 그 분기로 가지 않아야 섀도 통계가 살아난다."""
+    wire["verdict"] = _verdict(used_source=True, kind="grounded", appropriate=True)
+    sp = _sp()
+    finalize_sub(sp, "본문에 숫자 없음", marker_used_source=None)
+    assert sp.obs_precheck != "marker_no_source"

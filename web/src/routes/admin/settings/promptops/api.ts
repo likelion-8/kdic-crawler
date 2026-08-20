@@ -89,7 +89,9 @@ export interface PromptDraft extends PromptDraftContent {
   base_updated_at: string
   change_count: number
   /** 편집 불가 시스템 원칙 — 항상 마지막 행(§2.4) */
-  locked_principle: string
+  /** 편집 불가 원칙 전문. 2026-08-20 마커 규칙이 프롬프트에서 빠지면서 잠긴 원칙이
+   *  없는 게 정상이 됐다 — 그때 null 이다(있다고 거짓말하지 않는다) */
+  locked_principle: string | null
   char_count: number
   /** 탭·카드 제목 오른쪽 위 빨간 점 */
   dirty: { prompt: boolean; fewshot: boolean; guardrail: boolean }

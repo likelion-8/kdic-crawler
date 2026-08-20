@@ -186,7 +186,9 @@ def build_draft_response(db, *, base: dict = None) -> dict:
         "base_version": _vstr(base["version"]),
         "base_updated_at": _kst(base.get("updated_at")),
         "change_count": 0,
-        "locked_principle": LOCKED_LABEL,
+        # 마커 규칙이 프롬프트에서 빠졌으면(2026-08-20) 잠긴 원칙이 없다 — 라벨만 남기면
+        # AD-008 이 "편집 불가 원칙이 있다"고 거짓말한다. 실제로 잠긴 게 있을 때만 준다.
+        "locked_principle": LOCKED_LABEL if locked else None,
         "char_count": len(base["system_instruction"]),
         "dirty": {"prompt": False, "fewshot": False, "guardrail": False},
         "evaluation": None,
@@ -268,7 +270,11 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
     human = (f"{examples}\n\n--- 아래는 실제 질문입니다 ---\n\n"
              f"근거 자료:\n{context}\n\n질문: {question}\n답변:")
     raw = call_hyperclova([("system", si), ("human", human)], deterministic=True, seed=seed)
-    body, marker_used = prompt_builder._strip_no_source_marker(raw)
+    body, marker = prompt_builder.parse_marker(raw)
+    # 🔴 근거가 비었으면(게이트가 걷어냄) 쓸 출처가 애초에 없다 — "근거를 썼다"가 될 수 없다.
+    # 종전에는 마커 없는 응답이 True 로 들어와, 범위외 문항의 회귀 판정(not marker)이
+    # 전건 실패했다(2026-08-20 수정). 마커가 실제로 있으면 그 값을 존중한다.
+    marker_used = (True if marker is None else marker) if top else False
     if top:
         import pipeline as _pipeline
         import runtime_config as _rc

@@ -229,8 +229,9 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
             {c.marker === null ? '' : ` · 마커 [${c.marker}]`}
           </span>
         </p>
-        {/* 마커가 어긋나 정규화로 보정한 건은 '표기 보정'으로 기록된다(Desc 2) */}
-        {c.normalized && <p className="mt-1.5 text-xs text-muted-foreground">표기 보정</p>}
+        {/* 사후검증이 환각·동문서답을 잡아 본문을 표준 안내로 갈아끼운 건.
+            2026-08-20 마커 폐지 전에는 '표기 보정'(마커 어긋남)이라 불렀는데 이제 뜻이 다르다 */}
+        {c.normalized && <p className="mt-1.5 text-xs text-muted-foreground">본문 교체</p>}
       </div>
 
       {detail.observation && (

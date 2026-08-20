@@ -59,9 +59,17 @@ def test_marker_parsing():
     text, src = _strip_no_source_marker("[SOURCE_USED]:\n안내드립니다.")
     assert src is True and text == "안내드립니다.", "마커 뒤 콜론이 본문에 남음"
 
-    # 마커가 아예 없으면 안전한 쪽(출처 미첨부)으로. 본문은 원문 그대로 둔다.
+    # 2026-08-20(PR #174) 마커 지시를 프롬프트에서 뺐다 — 이제 마커가 없는 게 정상이다.
+    # parse_marker 는 '모름'을 None 으로 구분하고, 하위호환 래퍼는 True 로 가정한다.
+    # (판정 주체는 마커가 아니라 검색 게이트 + 사후검증이다.)
     text, src = _strip_no_source_marker("마커 없는 답변입니다.")
-    assert src is False and text == "마커 없는 답변입니다."
+    assert src is True and text == "마커 없는 답변입니다."
+
+    from prompt_builder import parse_marker
+    text, marker = parse_marker("마커 없는 답변입니다.")
+    assert marker is None and text == "마커 없는 답변입니다.", "'마커 없음'이 True 로 뭉개졌다"
+    assert parse_marker("[NO_SOURCE]\n본문")[1] is False
+    assert parse_marker("[SOURCE_USED]\n본문")[1] is True
 
 
 def test_assemble():
