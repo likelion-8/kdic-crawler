@@ -153,6 +153,9 @@ def test_ops_routes_are_exactly_the_requested_endpoints():
         ("GET", "/api/admin/ops-policy"),
         ("PUT", "/api/admin/ops-policy"),
         ("GET", "/api/admin/cache/stats"),
+        # 2026-08-20 추가: 화면이 비울 항목을 목록에서 고른다(AD-009 §4). 종전에는 질의를
+        # 손으로 받아쓰게 해서, 캐시에 실제로 있는 질의인지 확인할 방법이 없었다.
+        ("GET", "/api/admin/cache/entries"),
         ("POST", "/api/admin/cache/purge"),
         ("GET", "/api/admin/blocks"),
         ("POST", "/api/admin/blocks/{block_id}/release"),
@@ -236,6 +239,62 @@ def test_query_cache_purge_commits_before_audit_and_uses_normalized_hash(monkeyp
     assert response["removed"] == 1
     assert response["hit_rate"] == 0.6
     assert captured["action"] == admin_ops.ACTION_CACHE_PURGE
+
+
+def test_cache_entries_lists_active_rows_with_page_envelope():
+    row = SimpleNamespace(
+        cache_key="a" * 64,
+        question="착오송금 반환은 얼마나 걸리나요?",
+        hit_count=12,
+        created_at=datetime(2026, 8, 19, 1, 0, tzinfo=timezone.utc),
+        expires_at=datetime(2026, 8, 20, 1, 0, tzinfo=timezone.utc),
+    )
+    db = FakeDb([Result(7), Result([row])])
+
+    response = admin_ops.list_cache_entries(_admin(role="VIEWER"), db, 1, 20)
+
+    assert response["total"] == 7
+    assert response["page"] == 1
+    assert response["items"] == [{
+        "cache_key": "a" * 64,
+        "question": "착오송금 반환은 얼마나 걸리나요?",
+        "hit_count": 12,
+        "created_at": "2026-08-19T10:00:00+09:00",
+        "expires_at": "2026-08-20T10:00:00+09:00",
+    }]
+    # 만료된 행은 stats의 '캐시 항목'에서 빠지므로 목록에서도 빠져야 한다 — 두 수치가 갈리면 안 된다
+    compiled = str(db.executed[1][0].compile(dialect=postgresql.dialect()))
+    assert "expires_at IS NULL OR query_cache.expires_at >" in compiled
+
+
+def test_query_cache_purge_accepts_selected_cache_keys(monkeypatch):
+    keys = ["a" * 64, "b" * 64]
+    selected = [SimpleNamespace(cache_key=keys[0], question="착오송금 반환은?"),
+                SimpleNamespace(cache_key=keys[1], question="예금보험 한도는?")]
+    aggregate = SimpleNamespace(entries=0, hits=0)
+    db = FakeDb([Result(selected), Result(rowcount=2), Result(aggregate), Result(None)])
+    captured = {}
+
+    monkeypatch.setattr(admin_ops, "write_activity_log",
+                        lambda log_db, log_request, **values: captured.update(values))
+    response = admin_ops.purge_cache(
+        {"cache_keys": keys, "reason": "선택 정리", "request_id": "test_req_multi"},
+        _request(), _admin(role="OPERATOR"), db, "query",
+    )
+
+    assert response["removed"] == 2
+    # 감사 로그가 키 해시만 남기면 나중에 무엇을 지웠는지 읽을 수 없다 — 질의 원문을 남긴다
+    assert captured["target"] == "착오송금 반환은? 외 1건"
+    assert captured["detail"]["cache_keys"] == keys
+
+
+def test_query_cache_purge_rejects_unknown_cache_keys():
+    db = FakeDb([Result([])])
+    with pytest.raises(BadRequestError):
+        admin_ops.purge_cache(
+            {"cache_keys": ["c" * 64], "reason": "없는 키", "request_id": "test_req_gone"},
+            _request(), _admin(role="OPERATOR"), db, "query",
+        )
 
 
 # ---------------------------------------------------------------- Blocks
