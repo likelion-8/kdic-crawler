@@ -147,9 +147,14 @@ def _answer_one(query, timings, intent=None):
         else:
             evidence = "\n\n".join(text for _, _, text in top)
 
-        def _recheck(body, marker_used, _q=query, _ev=evidence):
+        # ⚠️ 2026-08-20 실험(exp/hcx007-no-marker-v1): marker_used는 이제 신뢰할 자기보고가
+        # 아니라 기본 True다(prompt_builder._strip_no_source_marker 참고). `and bool(top)`을
+        # 추가해 근거 자체가 비었으면(검색 관련성 게이트가 이미 걸렀으면) 검증이 뭐라고 답하든
+        # 항상 False로 떨어지게 한다 — api/rag/answer.py finalize_sub와 동일한 안전장치.
+        def _recheck(body, marker_used, _q=query, _ev=evidence, _top=top):
             v = validate_answer(_q, body, _ev)
-            return v.used_source if v is not None else marker_used
+            used = v.used_source if v is not None else marker_used
+            return used and bool(_top)
 
         recheck = (_recheck if get_param("use_source_recheck", USE_SOURCE_RECHECK) else None)
 

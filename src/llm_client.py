@@ -23,17 +23,27 @@ _client = {}
 EVAL_SEED = 20260813
 
 
+def _thinking_kwargs(model_name):
+    """HCX-007은 하이브리드 추론 모델이라 thinking을 안 주면 기본값이 암묵적 추론이라
+    실측 ~17초까지 걸린다(reasoning_tokens 수백 개). effort=none을 명시하면 비추론 모드로
+    3초대까지 떨어진다(2026-08-20 실측, docs 비교 참고). DASH-002 등 다른 모델은 이 필드
+    자체가 없어 무조건 넘기면 거부당할 수 있으므로 HCX-007일 때만 조건부로 넣는다."""
+    return {"thinking": {"effort": "none"}} if model_name == "HCX-007" else {}
+
+
 def _get_eval_client(seed):
     key = f"eval:{seed}"
     if key not in _client:
         from langchain_naver import ChatClovaX
+        model_name = os.environ["CLOVA_MODEL"]
         # ChatClovaX 는 BaseChatOpenAI 상속이라 seed 필드가 요청 페이로드로 그대로 실린다
         _client[key] = ChatClovaX(
-            model_name=os.environ["CLOVA_MODEL"],
+            model_name=model_name,
             api_key=os.environ["CLOVA_STUDIO_API_KEY"],
             temperature=0.0,
             seed=seed,
             max_tokens=2048,
+            **_thinking_kwargs(model_name),
         )
     return _client[key]
 
@@ -58,11 +68,13 @@ def _get_client():
         #
         # 온도를 실제로 바꾸게 되면, 기존 문서의 측정치(응답시간·분해 안정성·마커 관련 수치)는
         # 전부 0.2 기준이므로 같은 온도에서 재측정해야 비교가 성립한다.
+        model_name = os.environ["CLOVA_MODEL"]
         _client["model"] = ChatClovaX(
-            model_name=os.environ["CLOVA_MODEL"],
+            model_name=model_name,
             api_key=os.environ["CLOVA_STUDIO_API_KEY"],
             temperature=0.2,
             max_tokens=2048,
+            **_thinking_kwargs(model_name),
         )
     return _client["model"]
 
