@@ -116,7 +116,8 @@ export interface ConversationLogRow {
   occurred_at: string
   /** 마스킹된 저장본. 원문은 어떤 권한으로도 볼 수 없다 */
   question_masked: string
-  intent: Intent
+  /** 플래너 전에 끝난 건(캐시 적중·가드레일 거절·Gate EXIT)은 null */
+  intent: Intent | null
   status: LogStatus
   feedback: FeedbackVote | null
   /** 실패 건은 null(화면에서 '—') */
@@ -181,9 +182,9 @@ export interface ConversationLogDetail extends ConversationLogRow {
   /** 'cache' = 저장해 둔 답변을 그대로 돌려준 건(검색·생성 건너뜀). 평소 경로는 null */
   served_from: 'cache' | null
   classification: {
-    intent: Intent
+    intent: Intent | null
     business_function: BusinessFunction | null
-    question_type: QuestionType
+    question_type: QuestionType | null
     source_used: boolean | null
     /** 첫 줄 근거 사용 마커. 판정 원천이 없으면 null 이다 */
     marker: string | null
@@ -217,7 +218,7 @@ const rows: ConversationLogRow[] = [
   {
     // 위 4a01-77bc 와 같은 질문 — 저장해 둔 답을 그대로 돌려준 건이라 소요가 1초대다
     request_id: '2b77-05e1', occurred_at: at('09:40'), question_masked: '예금자보호 한도가 얼마인가요?',
-    intent: 'informational', status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.2,
+    intent: null, status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.2,
     triage: 'NONE',
   },
   {
@@ -283,7 +284,8 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
     served_from: 'cache',
     observation: null,
     classification: {
-      intent: 'informational', business_function: null, question_type: 'faq',
+      // 플래너를 안 타 성격·유형이 저장되지 않는다 — 화면은 '분류 기록 없음'을 적는다
+      intent: null, business_function: null, question_type: null,
       source_used: null, marker: null, normalized: false,
     },
     langfuse: null,

@@ -19,7 +19,8 @@ export interface ConversationLogRow {
   occurred_at: string
   /** 마스킹된 저장본 */
   question_masked: string
-  intent: Intent
+  /** 플래너 전에 끝난 건(캐시 적중·가드레일 거절·Gate EXIT·초기 실패)은 null 이다 */
+  intent: Intent | null
   status: LogStatus
   feedback: FeedbackVote | null
   source_count: number | null
@@ -97,9 +98,11 @@ export interface RunObservation {
 
 export interface ConversationLogDetail extends ConversationLogRow {
   classification: {
-    intent: Intent
+    /** 플래너를 안 탄 건은 null — 저장된 적이 없다는 뜻이지 '정보성'이 아니다 */
+    intent: Intent | null
     business_function: BusinessFunction | null
-    question_type: QuestionType
+    /** 웹 경로가 항상 null 을 넘긴다(admin_logs.py 주석). 원천이 생기면 채워진다 */
+    question_type: QuestionType | null
     /** rag_runs.observation 에서 온다. 관측 신설(2026-08-14) 이전 대화는 null */
     source_used: boolean | null
     /** '[SOURCE_USED]' | '[NO_SOURCE]' | '혼재'. 관측 이전 대화는 null */

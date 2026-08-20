@@ -218,9 +218,16 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
     <section aria-label="처리 과정">
       <div>
         <SectionTitle>분류</SectionTitle>
+        {/* 값이 있는 것만 이어 붙인다 — 종전에는 성격·유형이 null 인 건(캐시 적중·가드레일
+            거절·Gate EXIT)에서 구분점만 남아 '·' 한 글자가 찍혔다(2026-08-20) */}
         <p className="text-[13px]">
-          {INTENT_LABEL[c.intent]}
-          {c.business_function ? ` · ${c.business_function}` : ''} · {QUESTION_TYPE_LABEL[c.question_type]}
+          {[
+            c.intent === null ? null : INTENT_LABEL[c.intent],
+            c.business_function,
+            c.question_type === null ? null : QUESTION_TYPE_LABEL[c.question_type],
+          ]
+            .filter(Boolean)
+            .join(' · ') || '분류 기록 없음'}
         </p>
         <p className="mt-1.5 grid grid-cols-[120px_1fr] gap-2.5 text-[13px]">
           <span className="text-muted-foreground">출처 판정</span>
