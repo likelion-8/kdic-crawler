@@ -348,7 +348,7 @@ export function Evaluation() {
         return (
           <>
             <ColorText tone="red">미달 ✗</ColorText>
-            {r.gate.blocked_reason && <span className="text-muted-foreground"> {r.gate.blocked_reason}</span>}
+            {r.gate.warning_reason && <span className="text-muted-foreground"> {r.gate.warning_reason}</span>}
             {badges}
           </>
         )

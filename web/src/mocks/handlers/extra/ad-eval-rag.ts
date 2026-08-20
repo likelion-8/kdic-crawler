@@ -174,7 +174,7 @@ const runs: RunSeed[] = [
     item_count: 30, testset_version: 12,
     gate: {
       passed: false, smoke_passed: 27, smoke_total: 30,
-      blocked_reason: 'Smoke 통과 30건 미만 — 게시할 수 없습니다',
+      warning_reason: 'Smoke 30문항 미달 (27/30)',
     },
     raw: { recall_at_5: 0.889, mrr: 0.741, generation_rate: 98.9, avg_latency_ms: 5_910 },
     prompt: { regression: '5/6', citation_rate: 97.2, critical: 1 },
@@ -362,7 +362,7 @@ function mockSignature(draft: Record<string, ParamValue>): string {
 
 const EMPTY_GATE: RagGate = {
   passed: false, draft_signature: null, evaluated_at: null,
-  blocked_reason: '초안 평가를 실행해야 [운영 반영]이 활성화됩니다',
+  warning_reason: '초안 평가를 먼저 실행해 주세요.',
   warning: null, holdout_total: 89, holdout_passed: 0, smoke_total: 0, smoke_passed: 0,
   quantitative: null,
 }
@@ -535,7 +535,7 @@ export const adEvalRagHandlers = [
       passed: true,
       draft_signature: mockSignature(body.draft),
       evaluated_at: new Date().toISOString(),
-      blocked_reason: null,
+      warning_reason: null,
       // 게이트는 통과했지만 현행보다 낮아진 지표가 있으면 경고(§1.6)
       warning: worse ? 'A/B 비교 결과가 현행보다 낮습니다. 그래도 반영하려면 사유에 근거를 남겨 주세요' : null,
       holdout_total: 89, holdout_passed: 89, smoke_total: 0, smoke_passed: 0,

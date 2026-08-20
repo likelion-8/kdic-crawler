@@ -238,10 +238,12 @@ def compute_gate(m: dict) -> dict:
     criteria.append({"label": "Smoke 30문항", "target": SMOKE_TARGET,
                      "result": f"{sp}/{st}", "passed": smoke_ok})
 
-    blocked = None if all_passed else \
+    # 2026-08-19 게이트는 차단이 아니라 경고다 — 필드 이름도 warning_reason 이다(종전
+    # blocked_reason). 값은 '무엇이 목표에 못 미쳤나'이지 '무엇을 막았나'가 아니다.
+    shortfall = None if all_passed else \
         ", ".join(c["label"] for c in criteria if not c["passed"]) + " 미달"
     return {"passed": all_passed, "criteria": criteria,
-            "smoke_passed": sp or 0, "smoke_total": st or 0, "blocked_reason": blocked}
+            "smoke_passed": sp or 0, "smoke_total": st or 0, "warning_reason": shortfall}
 
 
 def format_metrics(m: dict) -> list:
@@ -353,7 +355,7 @@ def _run_to_dict(row) -> dict:
             "passed": bool(gate.get("passed", False)),
             "smoke_passed": gate.get("smoke_passed", 0) or 0,
             "smoke_total": gate.get("smoke_total", 0) or 0,
-            "blocked_reason": gate.get("blocked_reason"),
+            "warning_reason": gate.get("warning_reason"),
         },
         "follow_up": row.follow_up,
         "testset_version": _ver_int(row.testset_version),

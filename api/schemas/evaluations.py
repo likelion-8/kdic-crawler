@@ -35,7 +35,10 @@ class RunGate(BaseModel):
     passed: bool
     smoke_passed: int = 0
     smoke_total: int = 0
-    blocked_reason: Optional[str] = None
+    # 목표에 못 미친 기준. 2026-08-19 게이트가 차단 -> 경고로 바뀌면서 blocked_reason
+    # 에서 개명했다 — 이름이 '차단 사유'로 남아 있으면 나중에 이력을 보는 사람이
+    # '그때 막혔었구나'로 읽는다(실제로는 막은 적이 없다).
+    warning_reason: Optional[str] = None
 
 
 class EvaluationRun(BaseModel):

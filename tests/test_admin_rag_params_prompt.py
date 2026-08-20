@@ -71,7 +71,7 @@ def test_signature_is_order_independent_but_value_sensitive():
 # ------------------------------------------------- 3) 게이트(RagGate 모양)
 def test_gate_before_evaluation_is_blocked():
     gate = build_gate()
-    assert gate["passed"] is False and gate["blocked_reason"]
+    assert gate["passed"] is False and gate["warning_reason"]
     assert gate["smoke_total"] == 0     # 생성 Smoke 는 재지 않는다 — 30/30 을 지어내지 않는다
 
 
@@ -86,7 +86,7 @@ def test_gate_passes_only_when_both_axes_clear():
                      draft_metrics={"retrieval_accuracy@5": 0.93, "mrr": 0.79,
                                     "holdout_passed": 83},
                      signature="sig", evaluated_at="t", holdout_total=89)
-    assert low["passed"] is False and "MRR" in low["blocked_reason"]
+    assert low["passed"] is False and "MRR" in low["warning_reason"]
 
 
 # ------------------------------------------------- 4) apply 409 + 현재값 전문
