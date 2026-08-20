@@ -174,12 +174,15 @@ export interface CacheEntriesCardProps {
   selected: CacheEntry[]
   onSelectedChange: (next: CacheEntry[]) => void
   canSelect: boolean
+  onPurgeSelected: () => void
 }
 
 /** 무엇이 캐시돼 있는지 보여주고, 비울 것을 고르게 한다.
  * 종전에는 목록이 없어 '질의별 비우기'가 질의를 손으로 받아썼다 — 캐시에 없는 문장을 적어도
  * 화면은 성공으로 보였다(정규화가 어긋나면 0건 삭제). 고르는 대상을 눈으로 보게 바꿨다. */
-export function CacheEntriesCard({ selected, onSelectedChange, canSelect }: CacheEntriesCardProps) {
+export function CacheEntriesCard({
+  selected, onSelectedChange, canSelect, onPurgeSelected,
+}: CacheEntriesCardProps) {
   const [page, setPage] = useState(1)
   const query = useQuery({
     queryKey: [...opsKeys.cacheEntries, page],
@@ -256,10 +259,20 @@ export function CacheEntriesCard({ selected, onSelectedChange, canSelect }: Cach
       icon={<ListChecks />}
       wide
       meta={query.data ? `총 ${query.data.total.toLocaleString()}건` : undefined}
+      // 대상을 고르는 표와 같은 카드에 둔다 — 고른 것과 지우는 버튼이 한눈에 들어와야 한다
       actions={
-        selected.length > 0 ? (
-          <span className="text-xs text-muted-foreground">{selected.length}건 선택됨</span>
-        ) : undefined
+        <Button
+          size="sm"
+          disabled={!canSelect || selected.length === 0}
+          disabledReason={
+            !canSelect
+              ? '운영자(OPERATOR) 이상만 비울 수 있습니다'
+              : '표에서 비울 질의를 선택해 주세요'
+          }
+          onClick={onPurgeSelected}
+        >
+          질의별 비우기{selected.length > 0 && ` (${selected.length})`}
+        </Button>
       }
     >
       {query.isPending ? (
@@ -292,12 +305,8 @@ export interface CachePurgeCardProps {
   autoPurge: boolean
   autoPurgeBaseline: boolean
   canEditPolicy: boolean
-  canPurgeQuery: boolean
   canPurgeAll: boolean
-  /** 캐시 항목 카드에서 고른 건수. 0이면 [질의별 비우기]를 막는다 */
-  selectedCount: number
   onToggleAuto: (active: boolean) => void
-  onPurgeQuery: () => void
   onPurgeAll: () => void
 }
 
@@ -306,11 +315,8 @@ export function CachePurgeCard({
   autoPurge,
   autoPurgeBaseline,
   canEditPolicy,
-  canPurgeQuery,
   canPurgeAll,
-  selectedCount,
   onToggleAuto,
-  onPurgeQuery,
   onPurgeAll,
 }: CachePurgeCardProps) {
   return (
@@ -332,31 +338,17 @@ export function CachePurgeCard({
           {formatDateTime(stats.last_purged_at)} ({stats.last_purge_reason})
         </span>
       </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          disabled={!canPurgeQuery || selectedCount === 0}
-          disabledReason={
-            !canPurgeQuery
-              ? '운영자(OPERATOR) 이상만 비울 수 있습니다'
-              : selectedCount === 0
-                ? '아래 [캐시 항목]에서 비울 질의를 선택해 주세요'
-                : undefined
-          }
-          onClick={onPurgeQuery}
-        >
-          질의별 비우기{selectedCount > 0 && ` (${selectedCount})`}
-        </Button>
-        {/* Danger 버튼은 확인 모달 안에서만 쓴다(CM-DF-001 03절) — 여기서는 Secondary */}
-        <Button
-          size="sm"
-          disabled={!canPurgeAll}
-          disabledReason={canPurgeAll ? undefined : '관리자(ADMIN)만 전체를 비울 수 있습니다'}
-          onClick={onPurgeAll}
-        >
-          전체 비우기
-        </Button>
-      </div>
+      {/* Danger 버튼은 확인 모달 안에서만 쓴다(CM-DF-001 03절) — 여기서는 Secondary.
+          [질의별 비우기]는 대상을 고르는 [캐시 항목] 카드로 옮겼다(2026-08-20) — 버튼과 대상이
+          다른 카드에 떨어져 있으면 무엇이 지워질지 모른 채 누르게 된다 */}
+      <Button
+        size="sm"
+        disabled={!canPurgeAll}
+        disabledReason={canPurgeAll ? undefined : '관리자(ADMIN)만 전체를 비울 수 있습니다'}
+        onClick={onPurgeAll}
+      >
+        전체 비우기
+      </Button>
     </Card>
   )
 }

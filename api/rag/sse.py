@@ -186,7 +186,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         from api.schemas.chat import ChatResponse
         resp = ChatResponse.model_validate(resp_dict)
         logger.info("[%s] 질의 캐시 적중", request_id)
-        answer.log_run(message, resp, [], resp.latency_ms)
+        answer.log_run(message, resp, [], resp.latency_ms, served_from="cache")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())

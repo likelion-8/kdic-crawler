@@ -167,11 +167,8 @@ export function OpsPolicy() {
             autoPurge={value.auto_purge}
             autoPurgeBaseline={baseline.auto_purge}
             canEditPolicy={canAdmin}
-            canPurgeQuery={canOperate}
             canPurgeAll={canAdmin}
-            selectedCount={selectedEntries.length}
             onToggleAuto={(auto_purge) => onChange({ auto_purge })}
-            onPurgeQuery={() => setAsk({ kind: 'purge-query' })}
             onPurgeAll={() => setAsk({ kind: 'purge-all' })}
           />
         </div>
@@ -181,6 +178,7 @@ export function OpsPolicy() {
         selected={selectedEntries}
         onSelectedChange={setSelectedEntries}
         canSelect={canOperate}
+        onPurgeSelected={() => setAsk({ kind: 'purge-query' })}
       />
 
       <BlockListCard canRelease={canOperate} onRelease={(block) => setAsk({ kind: 'release', block })} />

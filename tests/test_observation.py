@@ -96,3 +96,31 @@ if __name__ == "__main__":
             fn()
             print(f"  ok  {name}")
     print("observation self-check ok")
+
+
+def test_cache_hit_is_recorded_as_served_from_without_faking_judgements():
+    """캐시로 답한 건은 검색을 안 탔다는 사실만 남긴다.
+
+    종전에는 observation 이 통째로 NULL 이라 캐시 적중이 가드레일 차단·Gate EXIT 와 구분되지
+    않았다(AD-005 상세가 '판정 원천 없음'만 말하고 이유를 못 말했다). 사실 하나를 더 남기되
+    판정 필드는 여전히 None 이어야 한다 — 캐시라고 근거를 썼다/안 썼다를 지어내면 안 된다.
+    """
+    o = obs.with_served_from(obs.build([]), "cache")
+    assert o == {"served_from": "cache"}
+    assert obs.served_from(o) == "cache"
+    assert obs.summarize(o) == {"source_count": None, "source_used": None,
+                                "marker": None, "normalized": None}
+    assert obs.expected_pages(o) == []
+
+
+def test_served_from_rides_along_with_a_real_observation():
+    sp = FakeSubPlan("한도?", top=[("pg_1#c1", 0.9, "본문")], obs_used_source=True)
+    o = obs.with_served_from(obs.build([sp]), "cache")
+    assert obs.served_from(o) == "cache"
+    assert obs.summarize(o)["source_used"] is True, "served_from 이 기존 관측을 덮으면 안 된다"
+
+
+def test_no_served_from_leaves_the_observation_untouched():
+    assert obs.with_served_from(None, None) is None
+    assert obs.served_from(None) is None
+    assert obs.served_from({"subs": []}) is None

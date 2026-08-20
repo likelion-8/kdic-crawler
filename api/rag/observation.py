@@ -64,6 +64,26 @@ def build(sub_plans: list) -> Optional[dict]:
     return {"subs": subs}
 
 
+def with_served_from(observation: Optional[dict], served_from: Optional[str]) -> Optional[dict]:
+    """관측에 '무엇이 이 답변을 냈나'를 얹는다. served_from 이 없으면 그대로 돌려준다.
+
+    캐시 적중은 검색·생성을 통째로 건너뛰므로 sub_plans 가 비고 build() 가 None 을 준다 —
+    그 결과 rag_runs.observation 이 NULL 이라 **캐시 적중과 가드레일 차단·Gate EXIT 가 로그에서
+    구분되지 않았다.** AD-005 상세가 '판정 원천 없음'이라고만 말하고 왜인지는 못 말했고, 총 소요
+    1.2초가 왜 이렇게 빠른지도 설명되지 않았다.
+
+    판정 필드는 건드리지 않는다 — 캐시라고 근거 사용 여부를 지어내면 안 된다(파일 상단 규칙).
+    """
+    if not served_from:
+        return observation
+    return {**(observation or {}), "served_from": served_from}
+
+
+def served_from(observation: Optional[dict]) -> Optional[str]:
+    """이 답변을 낸 경로. 현재 값은 'cache' 하나이고, 없으면 None(=평소 경로)."""
+    return (observation or {}).get("served_from")
+
+
 def _subs(observation: Optional[dict]) -> list:
     return (observation or {}).get("subs") or []
 

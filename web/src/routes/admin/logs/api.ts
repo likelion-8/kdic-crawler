@@ -113,6 +113,11 @@ export interface ConversationLogDetail extends ConversationLogRow {
    * 2026-08-14 신설이라 그 이전 대화는 null. 판정 필드의 null 은 '판정 안 함'이지 '아니오'가 아니다.
    */
   observation: RunObservation | null
+  /**
+   * 이 답변을 낸 경로. 'cache' = 저장해 둔 답을 그대로 돌려준 건이라 검색·생성을 타지 않았다
+   * (그래서 observation 이 비고 총 소요가 1초대다). 평소 경로와 2026-08-20 이전 대화는 null.
+   */
+  served_from: 'cache' | null
   /** 단계별 소요는 여기 없다 — Langfuse가 갖는다(위 LangfuseTrace 주석) */
   langfuse: LangfuseTrace | null
   /** rag_runs.total_latency_ms — 단계별 분해 없이 총합만 남았다 */

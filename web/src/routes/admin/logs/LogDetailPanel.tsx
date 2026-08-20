@@ -14,6 +14,7 @@ import {
 } from './api'
 import type { ConversationLogDetail, LangfuseTrace, RunObservation } from './api'
 import { formatTime } from '../../../lib/format'
+import { QUERY_CACHE_TTL_H } from '../../../lib/constants'
 
 export interface LogDetailPanelProps {
   detail: ConversationLogDetail
@@ -225,7 +226,13 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
           <span className="text-muted-foreground">출처 판정</span>
           <span>
             {/* 백엔드가 원천 부재로 null 을 내린다(admin_logs.py:419-422) — '미사용' 단정은 거짓이 된다 */}
-            {c.source_used === null ? '판정 원천 없음' : c.source_used ? '사용' : '미사용'}
+            {c.source_used === null
+              ? detail.served_from === 'cache'
+                ? '판정 원천 없음 (캐시 응답)'
+                : '판정 원천 없음'
+              : c.source_used
+                ? '사용'
+                : '미사용'}
             {c.marker === null ? '' : ` · 마커 [${c.marker}]`}
           </span>
         </p>
@@ -255,7 +262,18 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
           <span className="font-semibold tabular-nums">
             {detail.total_latency_ms === null ? '—' : `${(detail.total_latency_ms / 1000).toFixed(1)}초`}
           </span>
+          {/* 캐시 건은 총 소요가 1초대로 뚝 떨어지고 근거 구획이 통째로 비는데, 그 이유가
+              화면 어디에도 없었다 — 관리자가 '검색이 안 됐나'로 잘못 읽는다(2026-08-20) */}
+          {detail.served_from === 'cache' && ' · 캐시 응답'}
         </p>
+        {/* ⓘ로 접지 않는다 — 이 패널은 네이티브 <dialog showModal()> 안이라 body로 포털되는
+            팝오버가 top layer 아래에 깔려 아예 안 보인다(2026-08-20 실측). 한 줄로 편다 */}
+        {detail.served_from === 'cache' && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            저장해 둔 답변을 그대로 돌려준 건입니다 — 검색·생성을 거치지 않아 근거가 남지
+            않습니다. 캐시는 {QUERY_CACHE_TTL_H}시간 보관되며 운영 정책(AD-009)에서 비웁니다
+          </p>
+        )}
         <TraceLink trace={detail.langfuse} />
       </div>
 
