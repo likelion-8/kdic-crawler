@@ -94,24 +94,30 @@ def record_gate1_span(canonical_text, rule_text, result):
 
 
 def record_gate2_span(query, result):
-    """Gate 2(임베딩 유사도 도메인 판정) 결과를 현재 trace 의 자식 span(gate2_embedding)으로
-    남긴다. record_gate1_span 과 같은 이유로 CLI·평가 경로 전용이다(웹 SSE 는 ambient
-    컨텍스트가 없어 record_trace 메타데이터로 대신 남긴다 — api/rag/sse.py 참고).
-
-    nearest_out_category(내부 판정 카테고리, 예: 프롬프트인젝션)는 trace에는 남기지만 이
-    값이 사용자에게 노출되는 것은 아니다 — 사용자 응답은 fixed_gate_response의 고정 문구뿐.
-    result 는 gate2.Gate2Result(action/s_id/s_ood/threshold/reason 등 필드)."""
+    """Record accepted V6 request-unit scope evidence under the current trace."""
     if not _AVAILABLE:
         return
     try:
         span = get_client().start_observation(
-            name="gate2_embedding", as_type="span", input={"query": query})
+            name="gate2_v6_scope", as_type="span", input={"query": query})
         span.update(output={
-            "action": result.action, "s_id": result.s_id, "s_ood": result.s_ood,
-            "threshold": result.threshold,
-            "nearest_out_cluster_id": result.nearest_out_cluster_id,
-            "nearest_out_category": result.nearest_out_category,
-            "reason": result.reason})
+            "action": result.action,
+            "prediction": result.prediction,
+            "unitizer_mode": result.unitizer_mode,
+            "in_scope_count": len(result.in_scope_units),
+            "oos_count": len(result.oos_units),
+            "reason": result.reason,
+            "units": [
+                {
+                    "request_unit": u.request_unit,
+                    "prediction": u.prediction,
+                    "reason": u.reason,
+                    "external_support_axes": list(u.external_support_axes),
+                    "error": u.error,
+                }
+                for u in result.units
+            ],
+        })
         span.end()
     except Exception:
         pass

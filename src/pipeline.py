@@ -211,6 +211,31 @@ def _rag_answer_traced(query):
     return answer, timings, log_intent
 
 
+def _rag_answer_gate2_mixed(decision):
+    """Answer only V6 IN units; OOS units never reach Planner/Retrieval/HCX."""
+    parts = []
+    timings = {}
+    total = 0.0
+    log_intent = None
+    for unit in decision.units:
+        if unit.prediction == "OOS":
+            body = decision.response_text or (
+                "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 "
+                "정확한 안내가 어렵습니다."
+            )
+            parts.append(f"**{unit.request_unit}**\n{body}")
+            continue
+        body, unit_timings, unit_intent = _rag_answer_traced(unit.request_unit)
+        parts.append(f"**{unit.request_unit}**\n{body}")
+        total += float(unit_timings.get("total", 0.0))
+        for key, value in unit_timings.items():
+            if key != "total":
+                timings[key] = round(float(timings.get(key, 0.0)) + float(value), 4)
+        if log_intent is None and unit_intent is not None:
+            log_intent = unit_intent
+    timings["total"] = round(total, 4)
+    return "\n\n".join(parts), timings, (log_intent or "informational")
+
 @observe()
 def rag_answer(query):
     """질문 하나 -> 답변 문자열. intent(informational/civil_petition)에 따라
@@ -225,7 +250,7 @@ def rag_answer(query):
 
     CLI 경로는 웹(api/rag/sse.py)과 달리 가드레일·질의 캐시가 없다 — 그래서 Gate 1(결정론적
     룰 필터) 앞에 다른 단계를 둘 필요가 없고, 진입하자마자 바로 돈다. Gate 1이 CONTINUE면
-    바로 이어서 Gate 2(임베딩 유사도 도메인 판정)를 돈다 — 웹 경로(api/rag/sse.py)와 같은
+    바로 이어서 Gate 2(V6 request-unit semantic scope)를 돈다 — 웹 경로(api/rag/sse.py)와 같은
     순서(가드레일·캐시 다음 Gate 1 → Gate 2)다. 둘 중 하나라도 EXIT면 검색·LLM을 아예 타지
     않고 고정 응답을 그대로 돌려준다(순수 삽입 — 둘 다 CONTINUE면 아래 기존 흐름이 그대로
     이어진다). @observe 로 열린 이 trace 아래에 gate1_rulebase → gate2_embedding 순으로
@@ -239,8 +264,12 @@ def rag_answer(query):
     record_gate2_span(query, gate2)
     if gate2.action == "EXIT":
         return gate2.response_text
+    if gate2.action == "MIXED":
+        # Only V6 IN units may enter Planner/Retrieval/HCX.
+        answer, timings, log_intent = _rag_answer_gate2_mixed(gate2)
+    else:
+        answer, timings, log_intent = _rag_answer_traced(query)
 
-    answer, timings, log_intent = _rag_answer_traced(query)
 
     # 로깅용 intent: 플래너 경로는 이미 판단한 대표 intent를 재사용해 추가 호출을 안 한다
     # (쿼리 플래너의 '한 콜' 이점 유지). 폴백 경로(log_intent None)에서만 별도로 분류한다.

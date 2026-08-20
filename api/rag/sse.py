@@ -214,46 +214,50 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
-    # 0-5) Gate 2 — 임베딩 유사도 기반 도메인 판정(참조 사전 config/gate2_reference.json +
-    #      data/gate2_cache/*.npy, LLM 없음). Gate 1이 놓친 out-of-domain 중 참조 사전과의
-    #      최댓값 유사도(개별 문장 벡터, centroid 아님)로 '확실하다'고 판단되는 경우만 추가로
-    #      EXIT시킨다(정밀도 우선 — 애매하면 CONTINUE, src/gate2.py 참고). 참조 벡터 캐시가
-    #      없거나 손상됐으면 run_gate2가 항상 CONTINUE를 반환해(서버 크래시 없이) 이 블록은
-    #      조용히 건너뛰어진다. 어떤 카테고리(일상잡담/인접도메인/개인정보상담요청/
-    #      프롬프트인젝션)로 판정됐는지는 절대 사용자 응답에 노출하지 않고 trace 메타데이터
-    #      (내부 관측)에만 남긴다 — 응답 문구는 Gate 1의 resp_out_of_domain을 그대로 재사용
-    #      (fixed_gate_response)하므로 사용자 눈에는 Gate 1 EXIT와 구분되지 않는다.
+    # 0-5) Gate 2 V6 — request-unit semantic scope gate.
+    # EXIT stops here. MIXED allows only IN_SCOPE units into downstream stages.
     from gate2 import run_gate2
     g2 = run_gate2(query)
     if g2.action == "EXIT":
         resp = answer.fixed_gate_response(g2, session_id, request_id, _elapsed_ms(started))
-        logger.info("[%s] Gate2 EXIT: %s", request_id, g2.reason)
+        logger.info("[%s] Gate2 V6 EXIT: %s", request_id, g2.reason)
         from observability import record_trace
-        record_trace("web_chat", input={"question": message},
-                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
-                     metadata={"request_id": request_id, "session_id": session_id,
-                               "latency_ms": resp.latency_ms, "exit_at": "gate2",
-                               "gate2_s_id": g2.s_id, "gate2_s_ood": g2.s_ood,
-                               "gate2_threshold": g2.threshold,
-                               "gate2_nearest_cluster": g2.nearest_out_cluster_id,
-                               "gate2_nearest_category": g2.nearest_out_category})
+        record_trace(
+            "web_chat",
+            input={"question": message},
+            output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
+            metadata={
+                "request_id": request_id, "session_id": session_id,
+                "latency_ms": resp.latency_ms, "exit_at": "gate2_v6",
+                "gate2_action": g2.action, "gate2_prediction": g2.prediction,
+                "gate2_unitizer_mode": g2.unitizer_mode,
+                "gate2_in_scope_count": len(g2.in_scope_units),
+                "gate2_oos_count": len(g2.oos_units),
+            },
+        )
         answer.log_run(message, resp, [], resp.latency_ms)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
         return
 
-    # 1) 쿼리 플래너: 멀티쿼리 분해 + 하위질문별 intent를 한 콜(structured output)로 판단한다.
-    #    LLM 호출이라 실패할 수 있다(내부에서 안전 폴백하지만 예외도 방어).
     try:
-        plan_items = answer.plan(query)   # [(하위질문, intent|None), ...] — 재작성문 기준
+        if g2.action == "MIXED":
+            plan_items = []
+            for unit in g2.units:
+                if unit.prediction == "OOS":
+                    plan_items.append((unit.request_unit, None, True))
+                    continue
+                for q, intent in answer.plan(unit.request_unit):
+                    plan_items.append((q, intent, False))
+        else:
+            plan_items = [(q, intent, False) for q, intent in answer.plan(query)]
     except Exception as e:  # noqa: BLE001
         logger.exception("[%s] plan 실패", request_id)
-        # 기록을 yield 앞에 두는 이유는 아래 세 실패 경로 모두 같다 — yield 뒤에 두면 프론트가
-        # 오류 프레임을 받고 연결을 끊었을 때 제너레이터가 재개되지 않아 기록이 통째로 날아간다.
-        # log_rag_run 은 내부에서 예외를 삼키므로 이 호출이 오류 전달을 막지는 못한다.
-        answer.log_failed_run(message, e, "retrieval", request_id, session_id,
-                              sub_plans=[], latency_ms=_elapsed_ms(started))
+        answer.log_failed_run(
+            message, e, "retrieval", request_id, session_id,
+            sub_plans=[], latency_ms=_elapsed_ms(started),
+        )
         yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
         return
 
@@ -263,26 +267,36 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     sub_plans = []   # 로깅에 쓸 intent·검색경로 (하위질문마다 다를 수 있다)
     full_parts = []  # 흘려보낸 모든 조각(구분자 포함) — done.answer 로 쓴다(불변식 보장)
 
-    for i, (q, intent) in enumerate(plan_items):
-        # 2) 하위질문 준비(검색+프롬프트) — 동기. intent는 플래너 결과를 그대로 넘긴다.
+    for i, (q, intent, gate2_oos) in enumerate(plan_items):
+        if composite and i > 0:
+            sep = "\n\n"
+            full_parts.append(sep)
+            yield _sse("answer_delta", {"text": sep})
+
+        if gate2_oos:
+            # This OOS unit never reaches prepare_sub/retrieval/prompt/HCX.
+            sp = answer.SubPlan(
+                question=q, intent="informational", top=[], prompt=[], civil=None, evidence=""
+            )
+            sub_plans.append(sp)
+            body = g2.response_text or answer.OUT_OF_SCOPE_MESSAGE
+            sub = answer.SubAnswer(title=q, answer=body, sources=[], attachments=[])
+            finalized.append(sub)
+            used_flags.append(False)
+            full_parts.append(body)
+            yield _sse("answer_delta", {"text": body})
+            continue
+
         try:
             sp = answer.prepare_sub(q, intent)
         except Exception as e:  # noqa: BLE001
             logger.exception("[%s] prepare_sub 실패: %s", request_id, q)
-            # sub_plans 는 여기까지 성공한 하위질문들이다(이번 것은 아직 안 들어갔다).
-            # 복합 질문이 두 번째 하위에서 죽었을 때 어디까지 갔는지가 이 값으로 남는다.
             answer.log_failed_run(message, e, "retrieval", request_id, session_id,
                                   sub_plans=sub_plans, latency_ms=_elapsed_ms(started),
                                   partial_answer="".join(full_parts))
             yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
             return
         sub_plans.append(sp)
-
-        # 복합이면 하위 답변 사이에 구분자를 넣는다(스트림·done.answer 양쪽에 동일 반영).
-        if composite and i > 0:
-            sep = "\n\n"
-            full_parts.append(sep)
-            yield _sse("answer_delta", {"text": sep})
 
         # 3) 토큰 스트리밍 + 마커 제거 + 토큰 간 타임아웃
         stripper = _MarkerStripper()
@@ -349,7 +363,11 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
         metadata={"request_id": request_id, "session_id": session_id,
                   "latency_ms": latency_ms, "composite": composite,
-                  "gate1_label": g1.label, "gate1_reason": g1.reason,  # CONTINUE 도 기록(오탐 모니터링)
+                  "gate1_label": g1.label, "gate1_reason": g1.reason,
+                  "gate2_action": g2.action, "gate2_prediction": g2.prediction,
+                  "gate2_unitizer_mode": g2.unitizer_mode,
+                  "gate2_in_scope_count": len(g2.in_scope_units),
+                  "gate2_oos_count": len(g2.oos_units),
                   "sub_questions": [sp.question for sp in sub_plans]})
 
     # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에
