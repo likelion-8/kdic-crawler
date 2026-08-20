@@ -156,11 +156,15 @@ def test_apply_requires_editor_and_reason():
 
 
 # ------------------------------------------------- 5) 프롬프트 분해/조립 — 마커 규칙 생존
-def test_split_extracts_locked_marker_rule():
+def test_split_has_no_locked_rule_since_the_marker_was_dropped():
+    """2026-08-20(PR #174) 마커 규칙이 시스템 프롬프트에서 빠졌다 — 잠글 것이 없다.
+
+    잠금이 비면 라우터는 locked_principle 로 **None** 을 줘야 한다. 라벨만 남기면 AD-008 이
+    "편집 불가 원칙이 있다"고 거짓말하고, 화면이 빈 자물쇠 행을 그린다."""
     header, principles, locked = split_instruction(prompt_builder.SYSTEM_INSTRUCTION)
-    assert "[SOURCE_USED]" in locked                 # 마커 규칙이 잠금으로 분리된다
+    assert locked == ""
     assert all("[SOURCE_USED]" not in p for p in principles)
-    assert len(principles) == 6                      # 편집 가능 원칙 6개(코드 상수 기준)
+    assert len(principles) == 6                      # 원칙 6개 전부 편집 가능
     assert header.startswith("당신은 예금보험공사")
 
 
@@ -172,11 +176,23 @@ def test_roundtrip_preserves_full_instruction():
 
 
 def test_assemble_reappends_locked_rule_even_if_client_drops_it():
-    header, principles, locked = split_instruction(prompt_builder.SYSTEM_INSTRUCTION)
-    # 클라이언트가 원칙 두 개만 남기고 마커 규칙 없이 보내도 —
+    """잠금 원칙이 **있을 때는** 클라이언트가 빼고 보내도 서버가 마지막 번호로 되붙인다.
+
+    현행 프롬프트에는 잠금 규칙이 없으므로(2026-08-20 마커 폐지) 그 자리에 대역을 넣어
+    조립 규칙 자체를 검증한다 — 옛 게시본(AD-008)이 마커 규칙을 갖고 있으면 이 경로를 탄다."""
+    header, principles, _ = split_instruction(prompt_builder.SYSTEM_INSTRUCTION)
+    locked = "답변 첫 줄에 [SOURCE_USED] 또는 [NO_SOURCE] 를 쓰세요."
     rebuilt = assemble_instruction(header, principles[:2], locked)
     assert "[SOURCE_USED]" in rebuilt                # 서버가 무조건 다시 붙인다
     assert rebuilt.rstrip().split("\n")[-1].startswith("3. ")   # 마지막 번호로
+
+
+def test_assemble_without_a_locked_rule_adds_nothing():
+    """잠금이 비면 아무것도 덧붙이지 않는다 — 현행 프롬프트의 정상 경로."""
+    header, principles, locked = split_instruction(prompt_builder.SYSTEM_INSTRUCTION)
+    assert locked == ""
+    rebuilt = assemble_instruction(header, principles[:2], locked)
+    assert rebuilt.rstrip().split("\n")[-1].startswith("2. ")
 
 
 # ------------------------------------------------- 6) 긴급 롤백 권한

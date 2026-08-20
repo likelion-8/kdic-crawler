@@ -72,7 +72,10 @@ class _MarkerStripper:
     def __init__(self):
         self._buf = ""
         self._resolved = False
-        self.used_source = True  # 마커 없으면 기본 True — finalize_sub가 최종 판정
+        # ⚠️ 마커가 없으면 **None** 이다(2026-08-20). 종전에는 True 로 두어 '마커가
+        # SOURCE_USED 였다'와 구분이 안 됐고, 그 값이 관측에 그대로 박혀 AD-005 상세가
+        # 있지도 않은 마커를 그렸다. 판정은 finalize_sub(사후검증)가 한다.
+        self.used_source = None
 
     def feed(self, tok: str) -> str:
         """토큰을 넣고, 지금 흘려보낼 수 있는(마커가 제거된) 텍스트를 반환한다. 아직 판정
@@ -99,7 +102,7 @@ class _MarkerStripper:
         if m:
             self.used_source = m.group(1).upper().replace(" ", "_") == "SOURCE_USED"
             return text[m.end():]
-        return text
+        return text  # 마커 없음 — used_source 는 None 그대로
 
 
 def _stream_one(prompt):

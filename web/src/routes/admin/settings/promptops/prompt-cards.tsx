@@ -182,11 +182,13 @@ export function SystemPromptCard({ draft, canEdit, onChange }: SystemPromptCardP
          * 이어 붙고, 그대로 모델에 간다). '(편집 불가)' 같은 콘솔 사정은 이 값에 섞으면 안 된다 —
          * 목업 라벨이 데이터로 굳어 프롬프트에 실려 나가고 있었다(사용자 지적).
          * 잠금 표시는 자물쇠 아이콘과 이 회색 꼬리표가 맡는다. */}
-        <li className="flex min-h-10 items-center gap-2 border-b py-1.5 text-muted-foreground">
-          <Lock className="size-4 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 flex-1 text-sm">{draft.locked_principle}</span>
-          <span className="shrink-0 text-xs">시스템 원칙 · 편집 불가</span>
-        </li>
+        {draft.locked_principle && (
+          <li className="flex min-h-10 items-center gap-2 border-b py-1.5 text-muted-foreground">
+            <Lock className="size-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-sm">{draft.locked_principle}</span>
+            <span className="shrink-0 text-xs">시스템 원칙 · 편집 불가</span>
+          </li>
+        )}
       </ol>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -217,7 +219,7 @@ export function SystemPromptCard({ draft, canEdit, onChange }: SystemPromptCardP
           aria-label="모델에 전달되는 시스템 프롬프트 원문"
         >
           {principles.map((p, i) => `${i + 1}. ${p.text}`).join('\n')}
-          {`\n${draft.locked_principle}`}
+          {draft.locked_principle ? `\n${draft.locked_principle}` : ''}
         </pre>
       )}
 

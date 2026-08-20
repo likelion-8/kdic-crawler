@@ -218,7 +218,8 @@ const draft: PromptDraft = {
   base_updated_at: '2026-07-30T14:20:00+09:00',
   change_count: 0,
   principles: BASE_PRINCIPLES.map((text, i) => ({ id: `p${i + 1}`, text, dirty: false })),
-  locked_principle: '근거 사용 마커 표기',
+  // 마커 규칙이 프롬프트에서 빠져(2026-08-20) 잠긴 원칙이 없다 — 서버도 null 을 준다
+  locked_principle: null,
   char_count: BASE_CHAR_COUNT,
   dirty: { prompt: false, fewshot: false, guardrail: false },
   fewshots: FEWSHOTS,

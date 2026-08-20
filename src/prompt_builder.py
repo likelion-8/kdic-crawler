@@ -187,8 +187,30 @@ _MARKER_RE = re.compile(
     r"^\**\[\s*(SOURCE[_ ]USED|NO[_ ]SOURCE)\s*\]\**[:：]?\s*", re.IGNORECASE)
 
 
+def parse_marker(llm_text):
+    """(본문, 마커_판정 or None) — **마커가 없으면 None** 이다.
+
+    2026-08-20 마커 지시를 뺀 뒤(exp/hcx007-no-marker-v1) 정상 응답엔 마커가 없다. 그런데
+    `_strip_no_source_marker` 는 그때 기본값 True 를 돌려주므로 "마커가 SOURCE_USED 였다"와
+    "마커가 아예 없었다"를 호출부가 구분할 수 없다 — 그 결과 관측(rag_runs.observation)에
+    있지도 않은 마커가 True 로 박혀 AD-005 상세가 `마커 [[SOURCE_USED]]` 를 그렸고,
+    AD-008 검증에서도 근거가 없는 범위외 답변이 "근거를 썼다"로 세어졌다.
+
+    **모르는 것을 기본값으로 적지 않는다** — 그게 이 프로젝트가 관측에서 지켜온 규칙이다
+    (api/rag/observation.build 주석). 판정이 필요한 곳은 사후검증(validate_answer)을 쓰고,
+    이 함수는 '마커가 실제로 있었나'만 답한다."""
+    text = llm_text.strip()
+    m = _MARKER_RE.match(text)
+    if not m:
+        return llm_text, None
+    return text[m.end():].lstrip(), m.group(1).upper().replace(" ", "_") == "SOURCE_USED"
+
+
 def _strip_no_source_marker(llm_text):
-    """(본문, 근거_사용_여부)를 반환한다.
+    """(본문, 근거_사용_여부) — 마커가 없으면 True 로 가정하는 하위호환 래퍼.
+
+    판정 주체가 아니라 '일단 근거를 썼다고 가정'하는 기본값이다. 마커 유무를 구분해야 하면
+    `parse_marker` 를 쓸 것.
 
     ⚠️ 2026-08-20 실험(exp/hcx007-no-marker-v1): LLM 자기보고 마커([SOURCE_USED]/
     [NO_SOURCE]) 지시를 SYSTEM_INSTRUCTION에서 뺐다 — 마커 정확도가 낮았고(근거 쓴 답변
@@ -200,12 +222,8 @@ def _strip_no_source_marker(llm_text):
     사후검증에 전적으로 맡긴다(finalize_sub/_answer_one 참고). 과거에 게시된 관리자
     프롬프트(AD-008)가 여전히 마커를 요구할 수 있어 파싱 자체는 하위호환으로 남긴다 —
     마커가 실제로 있으면 그 값을 그대로 쓴다."""
-    text = llm_text.strip()
-    m = _MARKER_RE.match(text)
-    if not m:
-        return llm_text, True
-    used_source = m.group(1).upper().replace(" ", "_") == "SOURCE_USED"
-    return text[m.end():].lstrip(), used_source
+    body, marker = parse_marker(llm_text)
+    return body, True if marker is None else marker
 
 
 def _resolve_used_source(llm_text, recheck):

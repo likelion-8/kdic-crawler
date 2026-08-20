@@ -200,7 +200,7 @@ def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
         return "", False
 
 
-def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubAnswer, bool]:
+def finalize_sub(sp: SubPlan, body: str, marker_used_source: Optional[bool]) -> tuple[SubAnswer, bool]:
     """스트리밍이 끝난 하위 답변을 구조화한다. 판정(2026-08-14 팀 결정):
     use_source_recheck 가 켜져 있으면 **모든 답변**을 source_check.validate_answer 1콜로
     검증한다 — used_source 가 마커([SOURCE_USED]/[NO_SOURCE])를 양방향 오버라이드하고,
@@ -219,13 +219,19 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = bool(sp.top)
+    # 관측에는 **원값**을 적는다 — 마커가 없으면 None(모름)이지 True 가 아니다.
+    # 이 값이 AD-005 상세의 '마커 [...]' 표기 원천이라, True 로 채우면 화면이 있지도 않은
+    # 마커를 사실처럼 보여준다(2026-08-20 수정).
     sp.obs_marker = marker_used_source
     # 프리체크 섀도 기록(exp/source-precheck-v1): 판정만 남기고 동작은 바꾸지 않는다.
     # luna 와 같은 입력(생성 원문 body + 같은 evidence)으로 판정해야 교차표가 성립하므로
     # 재생성·본문 교체보다 앞에서 적는다. 다중 하위질문·civil 도 여기서는 실제 evidence 로
     # 판정돼, 소급 분석이 못 재던 로그의 69%가 표본이 된다. 실패해도 답변을 막지 않는다.
     try:
-        pc = precheck_classify(body, sp.evidence, marker_used_source)
+        # 마커가 없으면(None) marker_no_source 분기는 성립하지 않는다 — 근거 유무(used)를
+        # 넘겨 '근거가 있었는데 안 썼다'만 그 분기로 잡히게 한다. None 을 그대로 넘기면
+        # falsy 라 전 건이 marker_no_source 로 세어져 섀도 통계가 무너진다.
+        pc = precheck_classify(body, sp.evidence, used)
         sp.obs_precheck, sp.obs_precheck_missing = pc.reason, (pc.missing or None)
     except Exception:
         logger.warning("프리체크 섀도 판정 실패 — 기록 없이 계속", exc_info=True)

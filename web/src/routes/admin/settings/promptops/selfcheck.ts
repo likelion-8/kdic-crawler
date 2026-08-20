@@ -21,7 +21,7 @@ const BASE: PromptDraft = {
     { id: 'p1', text: '근거 자료에 있는 내용만으로 답변', dirty: false },
     { id: 'p2', text: '금액·날짜·연락처는 원문 그대로만 인용', dirty: false },
   ],
-  locked_principle: '근거 사용 마커 표기',
+  locked_principle: null,
   char_count: 778,
   dirty: { prompt: false, fewshot: false, guardrail: false },
   fewshots: [{ id: 'fs_1', question: '보호 한도는?', answer: '5천만원입니다.' }],
