@@ -73,6 +73,9 @@ export interface LogErrorDetail {
   root_cause: string | null
 }
 
+/** 답변을 낸 경로 — 모두 플래너 앞에서 끝나는 경로다(api/rag/sse.py 0-2 ~ 0-5) */
+export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2'
+
 /** rag_runs.observation 의 subs[].top[] 원소. 모양의 정본은 api/rag/observation.py */
 export interface ObservedChunk {
   chunk_id: string
@@ -117,10 +120,12 @@ export interface ConversationLogDetail extends ConversationLogRow {
    */
   observation: RunObservation | null
   /**
-   * 이 답변을 낸 경로. 'cache' = 저장해 둔 답을 그대로 돌려준 건이라 검색·생성을 타지 않았다
-   * (그래서 observation 이 비고 총 소요가 1초대다). 평소 경로와 2026-08-20 이전 대화는 null.
+   * 이 답변을 낸 경로. 넷 다 **플래너(분해+intent 판정) 앞에서 끝난 건**이라 성격·유형·근거가
+   * 없다 — 분류가 비는 이유가 곧 이 값이다. 평소 경로와 2026-08-20 이전 대화는 null.
    */
-  served_from: 'cache' | null
+  served_from: ServedFrom | null
+  /** 그 경로에서 걸린 규칙 이름(Gate 1 의 FIXED_GREETING 등). 원시 식별자다 */
+  served_label: string | null
   /** 단계별 소요는 여기 없다 — Langfuse가 갖는다(위 LangfuseTrace 주석) */
   langfuse: LangfuseTrace | null
   /** rag_runs.total_latency_ms — 단계별 분해 없이 총합만 남았다 */

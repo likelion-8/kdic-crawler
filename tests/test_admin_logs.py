@@ -313,12 +313,30 @@ def test_a_cache_served_answer_says_so_in_the_detail(db_session, test_prefix, db
         fresh = client.get(f"/api/admin/logs/{test_prefix}fresh").json()
 
     assert cached["served_from"] == "cache"
+    assert cached["served_label"] is None
     # 캐시라고 근거 판정을 지어내지 않는다 — 여전히 '모름'이다
     assert cached["classification"]["source_used"] is None
     # {subs: []} 를 내보내면 화면이 '근거가 하나도 없는 답변'으로 읽어 [다음 조치]가 데이터
     # 문제를 강조한다. 하위 질문이 없는 관측은 없는 것으로 내린다
     assert cached["observation"] is None
     assert fresh["served_from"] is None
+
+
+def test_a_gate_exit_says_which_rule_it_hit(db_session, test_prefix, db_cleanup):
+    """'분류 기록 없음'만으로는 부족하다 — 어느 경로의 어느 규칙에 걸려 분류가 없는지까지 낸다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="NORMAL", request_id_suffix="gated", intent=None,
+                observation={"served_from": "gate1", "served_label": "FIXED_GREETING"})
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        body = client.get(f"/api/admin/logs/{test_prefix}gated").json()
+
+    assert body["served_from"] == "gate1"
+    assert body["served_label"] == "FIXED_GREETING"
+    assert body["classification"]["intent"] is None
 
 def test_a_failed_run_keeps_its_stage_and_cause_in_the_detail(db_session, test_prefix, db_cleanup):
     """실패 건 상세가 failure_stage/root_cause 를 그대로 보여주는지 — 이 두 값이 없으면

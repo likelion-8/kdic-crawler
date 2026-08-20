@@ -124,3 +124,18 @@ def test_no_served_from_leaves_the_observation_untouched():
     assert obs.with_served_from(None, None) is None
     assert obs.served_from(None) is None
     assert obs.served_from({"subs": []}) is None
+
+
+def test_gate_exits_keep_the_rule_label_so_the_screen_can_say_which_rule():
+    """Gate 1 은 '왜 분류가 없나'의 답을 이미 갖고 있다 — 어느 규칙에 걸렸는지.
+    경로만 남기면 화면이 '분류 기록 없음 (Gate 1)'까지밖에 못 말한다."""
+    o = obs.with_served_from(obs.build([]), "gate1", label="FIXED_GREETING")
+    assert o == {"served_from": "gate1", "served_label": "FIXED_GREETING"}
+    assert obs.served_from(o) == "gate1"
+    assert obs.served_label(o) == "FIXED_GREETING"
+
+
+def test_label_is_omitted_when_there_is_none():
+    o = obs.with_served_from(obs.build([]), "guardrail")
+    assert o == {"served_from": "guardrail"}
+    assert obs.served_label(o) is None

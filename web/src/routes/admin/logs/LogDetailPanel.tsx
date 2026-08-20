@@ -12,7 +12,7 @@ import {
   LOG_STATUS_LABEL,
   formatMonthDayTime,
 } from './api'
-import type { ConversationLogDetail, LangfuseTrace, RunObservation } from './api'
+import type { ConversationLogDetail, LangfuseTrace, RunObservation, ServedFrom } from './api'
 import { formatTime } from '../../../lib/format'
 import { QUERY_CACHE_TTL_H } from '../../../lib/constants'
 
@@ -153,6 +153,47 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
   )
 }
 
+/** 답변을 낸 경로 4종. 전부 플래너 앞에서 끝나 성격·유형·근거가 없다 — 분류가 비는 이유다. */
+const SERVED_FROM_LABEL: Record<ServedFrom, string> = {
+  cache: '캐시 응답',
+  guardrail: '가드레일 차단',
+  gate1: '범위 판정 (Gate 1)',
+  gate2: '범위 판정 (Gate 2)',
+}
+
+/** 왜 그 경로로 끝났는지 한 줄. 관리자가 '검색이 안 됐나'로 잘못 읽지 않게 한다 */
+const SERVED_FROM_NOTE: Record<ServedFrom, string> = {
+  cache: `저장해 둔 답변을 그대로 돌려준 건입니다 — 검색·생성을 거치지 않아 근거가 남지 않습니다. 캐시는 ${QUERY_CACHE_TTL_H}시간 보관되며 운영 정책(AD-009)에서 비웁니다`,
+  guardrail: '게시된 금칙어(AD-008)에 걸려 고정 문구로 거절한 건입니다 — 검색·생성을 거치지 않습니다',
+  gate1: '규칙 필터가 인사·노이즈·타 분야로 판정해 고정 문구로 답한 건입니다 — LLM을 부르지 않습니다',
+  gate2: '임베딩 유사도 판정이 안내 범위 밖으로 보고 고정 문구로 답한 건입니다 — LLM을 부르지 않습니다',
+}
+
+/** Gate 1 규칙 이름. 모르는 값은 지어내지 않고 원본 식별자를 그대로 보여준다(STAGE_LABEL 과 같은 규약) */
+const GATE1_RULE_LABEL: Record<string, string> = {
+  FIXED_GREETING: '인사',
+  FIXED_THANKS: '감사',
+  FIXED_NOISE: '노이즈',
+  FIXED_BOT_INTRO: '정체성 질문',
+  FIXED_BOT_HELP: '도움말 요청',
+  SECURITY_BLOCK: '보안 우회 시도',
+  CAPABILITY_UNAVAILABLE: '미지원 기능',
+  OUT_OF_DOMAIN_RULE: '타 분야',
+}
+
+/** 경로만('범위 판정 (Gate 1)')과 규칙까지('… · 인사') 두 벌. 세 줄이 같은 문구를 되풀이하지
+ *  않도록 분류 줄만 규칙을 달고, 처리 추적은 경로만 적는다 */
+function servedPath(detail: ConversationLogDetail): string | null {
+  return detail.served_from === null ? null : SERVED_FROM_LABEL[detail.served_from]
+}
+
+function servedPathWithRule(detail: ConversationLogDetail): string | null {
+  const path = servedPath(detail)
+  if (path === null) return null
+  const rule = detail.served_label
+  return path + (rule ? ` · ${GATE1_RULE_LABEL[rule] ?? rule}` : '')
+}
+
 /** rag_runs.failure_stage 는 파이프라인 내부 식별자다 — 화면에는 사람이 읽는 단계명으로 적는다.
  *  모르는 값은 지어내지 않고 원본을 그대로 보여준다(단계가 늘어나도 화면이 거짓말하지 않는다). */
 const STAGE_LABEL: Record<string, string> = {
@@ -213,13 +254,16 @@ function TriageFooter({ detail, canRun, onResolve, onReopen }: LogDetailPanelPro
 function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps) {
   const [expanded, setExpanded] = useState(false)
   const { classification: c } = detail
+  const served = servedPathWithRule(detail)
+  const path = servedPath(detail)
   return (
     // 질문·시각·요청 ID는 DetailModal 헤더가 그린다 — 여기서 두 번 쓰지 않는다
     <section aria-label="처리 과정">
       <div>
         <SectionTitle>분류</SectionTitle>
-        {/* 값이 있는 것만 이어 붙인다 — 종전에는 성격·유형이 null 인 건(캐시 적중·가드레일
-            거절·Gate EXIT)에서 구분점만 남아 '·' 한 글자가 찍혔다(2026-08-20) */}
+        {/* 값이 있는 것만 이어 붙인다 — 종전에는 성격·유형이 null 인 건에서 구분점만 남아
+            '·' 한 글자가 찍혔다. 비었으면 **어느 경로에 걸려 분류가 없는지**까지 적는다:
+            정보성/민원성 판정은 플래너가 하는데 이 넷은 그 앞에서 끝난다(2026-08-20) */}
         <p className="text-[13px]">
           {[
             c.intent === null ? null : INTENT_LABEL[c.intent],
@@ -227,19 +271,15 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
             c.question_type === null ? null : QUESTION_TYPE_LABEL[c.question_type],
           ]
             .filter(Boolean)
-            .join(' · ') || '분류 기록 없음'}
+            .join(' · ') ||
+            (served === null ? '분류 기록 없음' : `분류 기록 없음 — ${served}`)}
         </p>
         <p className="mt-1.5 grid grid-cols-[120px_1fr] gap-2.5 text-[13px]">
           <span className="text-muted-foreground">출처 판정</span>
           <span>
             {/* 백엔드가 원천 부재로 null 을 내린다(admin_logs.py:419-422) — '미사용' 단정은 거짓이 된다 */}
-            {c.source_used === null
-              ? detail.served_from === 'cache'
-                ? '판정 원천 없음 (캐시 응답)'
-                : '판정 원천 없음'
-              : c.source_used
-                ? '사용'
-                : '미사용'}
+            {/* 이유(어느 경로라서 없는지)는 바로 위 분류 줄이 말한다 — 여기서 되풀이하지 않는다 */}
+            {c.source_used === null ? '판정 원천 없음' : c.source_used ? '사용' : '미사용'}
             {c.marker === null ? '' : ` · 마커 [${c.marker}]`}
           </span>
         </p>
@@ -269,16 +309,15 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
           <span className="font-semibold tabular-nums">
             {detail.total_latency_ms === null ? '—' : `${(detail.total_latency_ms / 1000).toFixed(1)}초`}
           </span>
-          {/* 캐시 건은 총 소요가 1초대로 뚝 떨어지고 근거 구획이 통째로 비는데, 그 이유가
+          {/* 이 경로들은 총 소요가 1초대로 뚝 떨어지고 근거 구획이 통째로 비는데, 그 이유가
               화면 어디에도 없었다 — 관리자가 '검색이 안 됐나'로 잘못 읽는다(2026-08-20) */}
-          {detail.served_from === 'cache' && ' · 캐시 응답'}
+          {path !== null && ` · ${path}`}
         </p>
         {/* ⓘ로 접지 않는다 — 이 패널은 네이티브 <dialog showModal()> 안이라 body로 포털되는
             팝오버가 top layer 아래에 깔려 아예 안 보인다(2026-08-20 실측). 한 줄로 편다 */}
-        {detail.served_from === 'cache' && (
+        {detail.served_from !== null && (
           <p className="mt-1 text-xs text-muted-foreground">
-            저장해 둔 답변을 그대로 돌려준 건입니다 — 검색·생성을 거치지 않아 근거가 남지
-            않습니다. 캐시는 {QUERY_CACHE_TTL_H}시간 보관되며 운영 정책(AD-009)에서 비웁니다
+            {SERVED_FROM_NOTE[detail.served_from]}
           </p>
         )}
         <TraceLink trace={detail.langfuse} />

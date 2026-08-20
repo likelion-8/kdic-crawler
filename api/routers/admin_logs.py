@@ -481,9 +481,13 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
         # 내보내면 화면이 '관측은 있는데 근거가 하나도 없다'로 읽어 [다음 조치]가 데이터 문제를
         # 강조한다. 캐시로 답한 사실은 아래 served_from 이 말한다.
         "observation": row.observation if (row.observation or {}).get("subs") else None,
-        # 이 답변을 낸 경로. 'cache' 면 저장해 둔 답을 그대로 돌려준 건이라 검색·생성을 타지
-        # 않았다 — 관측이 빈 이유이자 총 소요가 1초대인 이유다(2026-08-20). 평소 경로는 None.
+        # 이 답변을 낸 경로(2026-08-20). 플래너 앞에서 끝난 건은 intent·근거가 없는데, 그게
+        # 어느 경로 때문인지까지 적어야 화면이 '왜 분류가 없나'를 말할 수 있다. 평소 경로는 None.
         "served_from": observation.served_from(row.observation),
+        # 그 경로 안에서 무엇에 걸렸나 — Gate 1 규칙 이름(FIXED_GREETING 등). 다른 경로는 None.
+        # 원시 식별자 그대로 내린다(failure_stage 와 같은 규약 — 화면이 옮겨 적고, 모르는 값은
+        # 지어내지 않고 그대로 보여준다)
+        "served_label": observation.served_label(row.observation),
         # trace_id + 설정 호스트로 완성 URL 을 만든다(G5). 호스트가 비면 {id, url:null},
         # trace_id 자체가 없으면 langfuse=null. API_LANGFUSE_HOST 로 켠다(api/config.py).
         "langfuse": _langfuse(row.trace_id, settings.langfuse_host),
