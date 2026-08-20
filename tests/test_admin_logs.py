@@ -70,7 +70,12 @@ class _FakeDb:
 
 
 def _admin(role: str):
-    return lambda: SimpleNamespace(role=role, email=f"{role.lower()}@demo", name=role)
+    """가짜 관리자. **email 에 test_ 접두어를 붙인다** — 이 신원으로 부른 엔드포인트가
+    admin_activity_logs 에 감사 기록을 남기는데, 그 표는 추가 전용이라 정리할 수 없다
+    (conftest.APPEND_ONLY_TABLES). 종전에는 `operator@demo` 라 실재하지 않는 계정이
+    AD-011 화면에 진짜 실행자처럼 떠서, 계정 목록(AD-010)에 없는 계정이 활동 로그에만
+    보이는 상태가 됐다. 접두어를 붙여 눈으로 구분되게 한다(conftest 모듈 주석의 지시)."""
+    return lambda: SimpleNamespace(role=role, email=f"test_{role.lower()}@demo", name=role)
 
 
 def _client(role: str, db=None):
@@ -406,7 +411,7 @@ def test_a_failed_run_without_an_intent_still_renders(db_session, test_prefix, d
 def _summary(db):
     """라우터의 집계 함수를 그대로 부른다 — HTTP 를 태우지 않고 숫자만 본다."""
     from api.routers.admin_logs import logs_summary
-    return logs_summary(SimpleNamespace(role="ADMIN", email="t@demo", name="t"), db)
+    return logs_summary(SimpleNamespace(role="ADMIN", email="test_t@demo", name="t"), db)
 
 
 if __name__ == "__main__":

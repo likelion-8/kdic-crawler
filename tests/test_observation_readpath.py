@@ -71,7 +71,9 @@ ACTIVITY_WRITE = _Result()
 def _client(db, role="ADMIN"):
     app = create_app()
     app.dependency_overrides[get_current_admin] = lambda: SimpleNamespace(
-        role=role, email="admin@demo", name="admin")
+        # 감사 기록(admin_activity_logs)은 추가 전용이라 지울 수 없다 — test_ 접두어로
+        # 실재 계정과 구분되게 한다(conftest 모듈 주석)
+        role=role, email="test_admin@demo", name="admin")
     app.dependency_overrides[get_db] = lambda: db
     return TestClient(app)
 
