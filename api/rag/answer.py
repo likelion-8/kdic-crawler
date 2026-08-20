@@ -462,6 +462,24 @@ def guardrail_refusal(session_id: str, request_id: str, latency_ms: int) -> Chat
         latency_ms=latency_ms, session_id=session_id, request_id=request_id)
 
 
+def clarification_response(clar: dict, session_id: str, request_id: str,
+                           latency_ms: int) -> ChatResponse:
+    """업무 되묻기 응답 — 검색 전에 끝나므로 출처·서류가 없다(src/clarify.py 참고).
+
+    answer 에는 되묻기 문구를 넣는다: 프론트는 clarification 이 있으면 answer 를 버리지만
+    (스키마 계약), 대화 복원·rag_runs 로그·멀티턴 이력은 answer 텍스트를 읽는다 — 특히
+    이 문구가 이력에 남아야 다음 턴(버튼 클릭 = 업무명 전송)에서 재작성기가 "직전 챗봇
+    턴이 업무를 묻는 질문"임을 보고 원래 질문과 합성할 수 있다.
+
+    out_of_scope=False — 범위 밖이 아니라 범위 안에서 업무를 좁히는 중이다(True 면
+    프론트가 범위외 추천 칩을 붙여 되묻기 버튼과 섞인다)."""
+    from api.schemas.chat import Clarification
+    return ChatResponse(
+        answer=clar["question"], sources=[], attachments=[], out_of_scope=False,
+        sub_answers=[], clarification=Clarification.model_validate(clar), error=None,
+        latency_ms=latency_ms, session_id=session_id, request_id=request_id)
+
+
 def fixed_gate_response(gate_result, session_id: str, request_id: str, latency_ms: int) -> ChatResponse:
     """Gate 1(결정론적 룰)·Gate 2(임베딩 유사도) 중 하나가 EXIT 로 판정한 질문의 고정 응답을
     ChatResponse 로 감싼다. 두 게이트 모두 gate_result.response_text 속성(gate1.Gate1Result /

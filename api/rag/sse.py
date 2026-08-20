@@ -164,13 +164,39 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      재작성 없이는 멀티턴이 게이트에 막힌다. 실패·무이력은 원문 그대로(fail-open).
     #      저장(위 0-1)·rag_runs 로그는 사용자가 실제 쓴 원문(message)을 유지하고, 재작성문은
     #      검색·판정에만 쓴다 — 하위 질문(sub_plans[].question)으로 관측에 남는다.
+    #      2026-08-20 확장: 같은 콜의 구조화 출력에 needs_clarification(업무 되묻기 판정)이
+    #      실려 온다 — 후속 턴은 +0콜. 첫 턴은 clarify.first_turn_candidate 프리스크린을
+    #      통과한 후보("신청 링크 알려줘"처럼 업무 전제 낱말은 있는데 업무 특정 낱말이 없는
+    #      질문)만 같은 판정을 태운다(triage_first_turn) — 대부분의 첫 턴은 여전히 0콜.
     query = message
+    triage = None
     if history:
         from query_rewriter import rewrite_followup
-        rewritten = rewrite_followup(message, history)
-        if rewritten and rewritten != message:
-            query = rewritten
+        triage = rewrite_followup(message, history)
+        if triage and triage.rewritten and triage.standalone_question != message:
+            query = triage.standalone_question
             logger.info("[%s] 멀티턴 재작성: %r -> %r", request_id, message, query)
+    else:
+        from clarify import first_turn_candidate
+        if first_turn_candidate(message):
+            from query_rewriter import triage_first_turn
+            triage = triage_first_turn(message)
+
+    # 0-2.7) 업무 되묻기(2026-08-20, src/clarify.py) — 어느 업무인지 특정되지 않는 질문은
+    #      검색이 코퍼스 편향('신청'의 지배 주제 = 착오송금)으로 엉뚱한 업무를 단정하므로,
+    #      추측 답변 대신 업무 선택 버튼으로 되묻는다. 캐시 앞이 자리다 — 무주제 질문이
+    #      캐시에 적중해 단정 답변이 나가면 되묻기가 영영 안 보인다. 되묻기 문구는 assistant
+    #      이력에 저장된다(다음 턴에서 버튼 클릭 = 업무명 전송 → 재작성기가 원래 질문과
+    #      합성하는 재료). 스키마 계약(chat.py Clarification)대로 answer_delta 없이 done 만.
+    if triage is not None and triage.needs_clarification:
+        from clarify import clarification_payload
+        resp = answer.clarification_response(
+            clarification_payload(), session_id, request_id, _elapsed_ms(started))
+        logger.info("[%s] 업무 되묻기: %r", request_id, message)
+        answer.log_run(message, resp, [], resp.latency_ms, served_from="clarify")
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("done", resp.model_dump())
+        return
 
     # 0-3) 질의 캐시 — 2026-08-19 팀 결정: 턴 수 제한 없이 모든 질문에 대해 조회한다(가드레일
     #      → 캐시 → Gate 1 순서로 재편하면서, '단일 턴(첫 턴)' 적격 제한을 없앴다). 예전에는

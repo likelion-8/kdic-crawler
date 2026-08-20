@@ -14,7 +14,7 @@ for p in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(p))
 
 import query_rewriter  # noqa: E402
-from query_rewriter import _format_history, rewrite_followup  # noqa: E402
+from query_rewriter import _format_history, rewrite_followup, triage_first_turn  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -31,6 +31,12 @@ def test_no_history_skips_llm_entirely():
 
 def test_blank_query_skips_llm():
     assert rewrite_followup("   ", [("user", "이전 질문")]) is None
+
+
+def test_triage_blank_query_skips_llm():
+    # triage_first_turn 은 sse 가 프리스크린(clarify.first_turn_candidate) 뒤에만 부르는
+    # 규약이지만, 빈 질문 가드는 함수 자체에도 있다.
+    assert triage_first_turn("   ") is None
 
 
 def test_format_history_labels_and_truncates():
