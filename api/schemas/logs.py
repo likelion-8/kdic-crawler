@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # 코드 값 정본은 web/src/lib/codes.ts · logs/api.ts 다. change_request.py/activity.py 와 같은
 # 방침으로 enum 을 Literal 로 복제하지 않고 str 로 받는다(어휘가 늘어도 스키마를 안 고침).
 # 관련 폐집합: LogStatus 'NORMAL'|'OUT_OF_SCOPE'|'FAILED' · FeedbackVote 'up'|'down' ·
-# Intent · QuestionType · BusinessFunction · TriageStatus 'NONE'|'IN_REVIEW'|'RESOLVED' · ErrorCode.
+# Intent · QuestionType · BusinessFunction · TriageStatus 'NONE'|'RESOLVED' · ErrorCode.
 
 
 class ConversationLogRow(BaseModel):
@@ -71,13 +71,17 @@ class LangfuseTrace(BaseModel):
 
 class LogErrorDetail(BaseModel):
     """오류 상세. code→(meaning·user_message·auto_retry·fallback)은 정적 표에서 채운다
-    (codes.ts ERROR_CODES 대응). 단계·원인은 rag_runs 에서 온다."""
+    (api/rag/answer.ERROR_CATALOG · codes.ts ErrorCode 대응). 단계·원인은 rag_runs 에서 온다.
 
-    code: str
-    meaning: str
-    user_message: str
-    auto_retry: str
-    fallback: str
+    앞 4행은 **전부 nullable** 이다 — rag_runs.error_code 를 적기 시작한 건 2026-08-19 라
+    그 이전 실패에는 분류 기록이 없다. 빈 문자열로 내리면 화면이 '오류 코드 ·' 같은 껍데기를
+    그리게 되므로, 모르는 것은 null 로 내려 화면이 '기록 없음'이라 말하게 한다."""
+
+    code: Optional[str] = None
+    meaning: Optional[str] = None
+    user_message: Optional[str] = None
+    auto_retry: Optional[str] = None
+    fallback: Optional[str] = None
     failure_stage: Optional[str] = None     # rag_runs.failure_stage — 어느 단계에서 멈췄나
     root_cause: Optional[str] = None        # rag_runs.root_cause
 
@@ -141,6 +145,11 @@ class ConversationLogDetail(ConversationLogRow):
     error: Optional[LogErrorDetail] = None       # 실패 건에만
     # 관리자가 '왜 이렇게 답했는지'를 보는 근거. 2026-08-14 신설이라 그 이전 대화는 null 이다.
     observation: Optional[RunObservation] = None
+    # 조치 내역(2026-08-19). [처리 완료 표시] 때 받은 사유·처리자·시각. 미처리면 전부 null,
+    # 이 컬럼이 생기기 전에 처리한 행은 사유만 null 이다.
+    triage_reason: Optional[str] = None
+    triaged_by: Optional[str] = None
+    triaged_at: Optional[str] = None
 
 
 class ConversationLogList(BaseModel):

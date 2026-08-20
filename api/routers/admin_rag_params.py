@@ -198,27 +198,27 @@ def _kst(dt: Optional[datetime]) -> Optional[str]:
 def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
                signature: str = None, evaluated_at: str = None,
                holdout_total: int = 0) -> dict:
-    """화면의 RagGate 모양을 만든다. 평가 전이면 passed=false + blocked_reason.
+    """화면의 RagGate 모양을 만든다. 평가 전이면 passed=false + warning_reason.
 
     smoke 는 0/0 으로 명시한다 — 이 화면의 파라미터는 생성 품질을 직접 바꾸지 않아 생성
     Smoke 를 재지 않는다(모듈 주석). 지어낸 30/30 을 넣으면 게이트가 거짓말을 한다.
     """
     if draft_metrics is None:
         return {"passed": False, "draft_signature": signature, "evaluated_at": None,
-                "blocked_reason": "초안 평가를 먼저 실행해 주세요.", "warning": None,
+                "warning_reason": "초안 평가를 먼저 실행해 주세요.", "warning": None,
                 "holdout_total": 0, "holdout_passed": 0,
                 "smoke_total": 0, "smoke_passed": 0, "quantitative": None}
 
     acc, mrr = draft_metrics["retrieval_accuracy@5"], draft_metrics["mrr"]
     passed = acc >= GATE_ACCURACY and mrr >= GATE_MRR
-    blocked = None
+    shortfall = None
     if not passed:
         parts = []
         if acc < GATE_ACCURACY:
             parts.append(f"검색 정확도@5 {acc:.3f} < {GATE_ACCURACY}")
         if mrr < GATE_MRR:
             parts.append(f"MRR {mrr:.3f} < {GATE_MRR}")
-        blocked = "게이트 미달 — " + " · ".join(parts)
+        shortfall = "게이트 미달 — " + " · ".join(parts)
 
     warning = None
     quantitative = None
@@ -242,7 +242,7 @@ def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
         warning = "생성 Smoke 는 이 평가에서 재지 않습니다(검색 축만 실측)."
 
     return {"passed": passed, "draft_signature": signature, "evaluated_at": evaluated_at,
-            "blocked_reason": blocked, "warning": warning,
+            "warning_reason": shortfall, "warning": warning,
             "holdout_total": holdout_total,
             "holdout_passed": draft_metrics.get("holdout_passed", 0),
             "smoke_total": 0, "smoke_passed": 0, "quantitative": quantitative}

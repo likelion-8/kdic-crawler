@@ -70,7 +70,12 @@ class _FakeDb:
 
 
 def _admin(role: str):
-    return lambda: SimpleNamespace(role=role, email=f"{role.lower()}@demo", name=role)
+    """가짜 관리자. **email 에 test_ 접두어를 붙인다** — 이 신원으로 부른 엔드포인트가
+    admin_activity_logs 에 감사 기록을 남기는데, 그 표는 추가 전용이라 정리할 수 없다
+    (conftest.APPEND_ONLY_TABLES). 종전에는 `operator@demo` 라 실재하지 않는 계정이
+    AD-011 화면에 진짜 실행자처럼 떠서, 계정 목록(AD-010)에 없는 계정이 활동 로그에만
+    보이는 상태가 됐다. 접두어를 붙여 눈으로 구분되게 한다(conftest 모듈 주석의 지시)."""
+    return lambda: SimpleNamespace(role=role, email=f"test_{role.lower()}@demo", name=role)
 
 
 def _client(role: str, db=None):
@@ -222,7 +227,7 @@ def test_choosing_normal_also_finds_legacy_rows():
 # 질의가 rag_runs 에 행 자체가 없어서 아래 failed 는 무엇을 넣든 0 이었다.
 
 def _insert_run(db, prefix, *, status, request_id_suffix, intent="informational",
-                failure_stage=None, root_cause=None):
+                failure_stage=None, root_cause=None, error_code=None):
     """행을 직접 넣는다. rag_logger.log_rag_run 을 쓰지 않는 이유는 그 함수가 모든 예외를
     삼켜서(실패-안전) 삽입이 실패해도 테스트가 조용히 통과해 버리기 때문이다."""
     from schema import rag_runs
@@ -233,6 +238,7 @@ def _insert_run(db, prefix, *, status, request_id_suffix, intent="informational"
         "status": status,
         "failure_stage": failure_stage,
         "root_cause": root_cause,
+        "error_code": error_code,
         "total_latency_ms": 1234,
         "request_id": f"{prefix}{request_id_suffix}",
         "session_id": f"{prefix}sess",
@@ -305,6 +311,81 @@ def test_a_failed_run_keeps_its_stage_and_cause_in_the_detail(db_session, test_p
     assert body["error"]["root_cause"].startswith("TimeoutError")
 
 
+def test_error_rows_come_from_the_catalog(db_session, test_prefix, db_cleanup):
+    """오류 정보 4행은 error_code 하나에서 파생된다. 종전에는 원천이 없어 전부 빈 문자열이라
+    화면에 '오류 코드 ·' 같은 껍데기가 떴다(2026-08-19 해소).
+
+    auto_retry 가 '없음'인 것이 요점이다 — 응답 봉투의 retryable(=사용자가 다시 시도해도 됨)은
+    LLM_ERROR 에서 True 지만 서버는 재시도하지 않는다. 둘을 묶으면 화면이 하지도 않은 재시도를
+    했다고 말한다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="FAILED", request_id_suffix="coded",
+                failure_stage="llm", root_cause="RuntimeError: 응답 파싱 실패",
+                error_code="LLM_ERROR")
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        err = client.get(f"/api/admin/logs/{test_prefix}coded").json()["error"]
+
+    assert err["code"] == "LLM_ERROR"
+    assert err["meaning"] == "답변 생성 실패(5xx·응답 파싱)"
+    assert err["user_message"].startswith("답변 생성 중 문제가")
+    assert err["auto_retry"] == "없음", "서버는 재시도하지 않는다 — retryable 과 섞지 말 것"
+    assert err["fallback"] == "제공됨"
+
+
+def test_a_failed_run_without_an_error_code_says_so(db_session, test_prefix, db_cleanup):
+    """error_code 컬럼(2026-08-19) 이전 실패는 분류 기록이 없다. 빈 문자열로 내리면 화면이
+    껍데기를 그리므로 null 로 내려 '기록 없음'이라 말하게 한다 — 단계·원인은 그대로 남는다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="FAILED", request_id_suffix="nocode",
+                failure_stage="retrieval", root_cause="RuntimeError: 색인 불일치")
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        err = client.get(f"/api/admin/logs/{test_prefix}nocode").json()["error"]
+
+    assert err["code"] is None
+    assert (err["meaning"], err["user_message"], err["auto_retry"], err["fallback"]) == (None,) * 4
+    assert err["failure_stage"] == "retrieval"
+    assert err["root_cause"].startswith("RuntimeError")
+
+
+def test_reopening_a_resolved_run_clears_its_action_record(db_session, test_prefix, db_cleanup):
+    """실수로 누른 완료를 풀 수 있어야 한다 — 못 풀면 대시보드 할 일 건수가 거짓인 채로 남는다.
+
+    되돌릴 때는 사유를 요구하지 않는다(완료만 필수). 대신 처리자·시각과 함께 **조치 사유도
+    지운다** — 남겨 두면 '미처리인데 조치 사유가 있는' 행이 된다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="FAILED", request_id_suffix="undo",
+                failure_stage="llm", root_cause="RuntimeError: x")
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        rid = f"{test_prefix}undo"
+        done = client.patch(f"/api/admin/logs/{rid}",
+                            json={"request_id": rid, "triage": "RESOLVED", "reason": "키 갱신"})
+        assert done.status_code == 200, done.text
+        after_done = client.get(f"/api/admin/logs/{rid}").json()
+        assert after_done["triage_reason"] == "키 갱신"
+
+        # 사유 없이 되돌린다 — 400 이 나면 잘못 누른 완료를 풀 길이 없다
+        undo = client.patch(f"/api/admin/logs/{rid}", json={"request_id": rid, "triage": "NONE"})
+        assert undo.status_code == 200, undo.text
+        assert undo.json()["triage"] == "NONE"
+
+        after_undo = client.get(f"/api/admin/logs/{rid}").json()
+    assert after_undo["triage"] == "NONE"
+    assert after_undo["triage_reason"] is None, "되돌렸는데 조치 사유가 남으면 미처리 행에 남의 사유가 붙는다"
+    assert after_undo["triaged_by"] is None and after_undo["triaged_at"] is None
+
+
 def test_a_failed_run_without_an_intent_still_renders(db_session, test_prefix, db_cleanup):
     """플래너 자체가 죽은 실패(sse.py 의 첫 번째 에러 경로)는 intent 를 모른다.
 
@@ -330,7 +411,7 @@ def test_a_failed_run_without_an_intent_still_renders(db_session, test_prefix, d
 def _summary(db):
     """라우터의 집계 함수를 그대로 부른다 — HTTP 를 태우지 않고 숫자만 본다."""
     from api.routers.admin_logs import logs_summary
-    return logs_summary(SimpleNamespace(role="ADMIN", email="t@demo", name="t"), db)
+    return logs_summary(SimpleNamespace(role="ADMIN", email="test_t@demo", name="t"), db)
 
 
 if __name__ == "__main__":

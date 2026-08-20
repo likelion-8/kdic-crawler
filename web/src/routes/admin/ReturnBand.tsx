@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
 import { Button, ConfirmModal, Notice, useToast } from '../../components/ui'
-import { resolveLog } from './logs/api'
+import { setLogTriage } from './logs/api'
 
 /** ?from=log:{id} 를 읽는다. 없으면 null — 띠를 그리지 않는다 */
 export function useReturnFrom(): { requestId: string } | null {
@@ -28,7 +28,7 @@ export function ReturnBand({ note }: { note?: string }) {
   const [resolving, setResolving] = useState(false)
   const [done, setDone] = useState(false)
   const resolve = useMutation({
-    mutationFn: (reason: string) => resolveLog(from!.requestId, reason),
+    mutationFn: (reason: string) => setLogTriage(from!.requestId, 'RESOLVED', reason),
     onSuccess: () => {
       setResolving(false)
       setDone(true)

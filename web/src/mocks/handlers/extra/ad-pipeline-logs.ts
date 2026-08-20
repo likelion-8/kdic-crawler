@@ -4,7 +4,7 @@
  * 여기서는 기획서에만 있고 계약이 없는 것들을 채운다(10 §E · 11 §3).
  *  - 변경 페이지 알림 / 지금 확인 ↻ (AD-004 R2)
  *  - 확인 모달의 대상 건수·예상 소요 (AD-004 B-6·B-7 · 이슈 G-23)
- *  - 대화 로그 목록·요약·상세·재실행·조치·후보 등록·내보내기 (AD-005 전부)
+ *  - 대화 로그 목록·요약·상세·조치·내보내기 (AD-005 전부)
  *
  * 목업 숫자는 예시라 여기 데이터도 예시다. 화면은 이 응답만 보고 그린다(하드코딩 금지).
  * 단계별 소요 합계는 응답 시간과 일치시켜 두었다 — 기획서 목업은 5.9 vs 9.2로 어긋난다(11 §M1).
@@ -145,13 +145,16 @@ export interface LangfuseTrace {
 }
 
 export interface LogErrorDetail {
-  code: ErrorCode
+  /** 앞 4행은 서버가 rag_runs.error_code 하나에서 파생한다(api/rag/answer.ERROR_CATALOG).
+   *  그 컬럼(2026-08-19) 이전 실패에는 분류 기록이 없어 전부 null 로 온다 */
+  code: ErrorCode | null
   /** 코드 + 뜻 병기용 뒷부분 */
-  meaning: string
+  meaning: string | null
   /** 사용자에게 실제로 나갔던 문구 */
-  user_message: string
-  auto_retry: string
-  fallback: string
+  user_message: string | null
+  /** 서버가 스스로 재시도했는지. 재시도는 구현하지 않기로 확정해 현재 전부 '없음' */
+  auto_retry: string | null
+  fallback: string | null
   /** rag_runs.failure_stage — 단계별 소요가 아니라 '어디서 멈췄나' 한 값 */
   failure_stage: string | null
   /** rag_runs.root_cause */
@@ -197,6 +200,8 @@ export interface ConversationLogDetail extends ConversationLogRow {
     comment: string
   } | null
   error: LogErrorDetail | null
+  /** [처리 완료 표시] 때 받은 조치 사유. 아직 처리하지 않았으면 null */
+  triage_reason: string | null
 }
 
 const ANSWER_FULL =
@@ -213,7 +218,7 @@ const rows: ConversationLogRow[] = [
   },
   {
     request_id: '8f2c-41ab', occurred_at: at('09:36'), question_masked: '예금보험금 신청 서류 알려주세요',
-    intent: 'civil_petition', status: 'FAILED', feedback: null, source_count: null, latency_s: null, triage: 'IN_REVIEW',
+    intent: 'civil_petition', status: 'FAILED', feedback: null, source_count: null, latency_s: null, triage: 'NONE',
   },
   {
     request_id: '2b58-0c14', occurred_at: at('09:31'), question_masked: '안녕',
@@ -289,17 +294,23 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
     answer_masked_preview: '',
     answer_masked_full: '',
     feedback_detail: null,
+    // 🔴 서버는 ERROR_CATALOG 의 문구를 그대로 내려주고 failure_stage 는 **원시 식별자**다
+    // (화면이 STAGE_LABEL 로 '답변 생성'으로 옮겨 적는다). 목이 이미 다듬은 값을 주면
+    // 라벨 매핑이 목 모드에서 검증되지 않는다. 자동 재시도는 없다(2026-08-19 확정).
     error: {
       code: 'LLM_TIMEOUT',
-      meaning: '답변 생성 시간 초과(30초)',
-      user_message: '답변 생성이 지연되어 중단되었어요. 다시 시도해 주세요.',
-      auto_retry: '1회 재시도 → 재실패, 사용자에게 오류 안내됨',
-      fallback: '제공됨 · 검색은 성공해 관련 자료 2건을 대신 안내 (챗봇 Case 4)',
-      failure_stage: '답변 생성',
-      root_cause: '시간 초과(30초) — 여기서 중단',
+      meaning: '답변 생성 시간 초과',
+      user_message: '답변 생성이 지연되고 있어요. 잠시 후 다시 시도해 주세요.',
+      auto_retry: '없음',
+      fallback: '제공됨',
+      failure_stage: 'llm',
+      root_cause: 'TimeoutError: 답변 생성 시간 초과(30초)',
     },
   },
 }
+
+/** 조치 사유는 서버가 rag_runs.triage_reason 에 보관한다 — 목에서는 메모리에만 */
+const triageReasons: Record<string, string> = {}
 
 function detailOf(row: ConversationLogRow): ConversationLogDetail {
   const base: ConversationLogDetail = {
@@ -337,12 +348,10 @@ function detailOf(row: ConversationLogRow): ConversationLogDetail {
     answer_masked_full: ANSWER_FULL,
     feedback_detail: null,
     error: null,
+    triage_reason: triageReasons[row.request_id] ?? null,
   }
   return { ...base, ...DETAIL_OVERRIDE[row.request_id] }
 }
-
-/** 조치 사유는 서버가 보관한다 — 목에서는 메모리에만 */
-const triageReasons: Record<string, string> = {}
 
 // ---------------------------------------------------------------- 핸들러
 
@@ -428,62 +437,21 @@ export const adPipelineLogsHandlers = [
     return HttpResponse.json(detailOf(row))
   }),
 
-  // [동일 질문 재실행] — 원래 실패 행은 비교용으로 남기고 새 행을 만든다
-  http.post('/api/admin/logs/:requestId/rerun', async ({ params, request }) => {
-    const no = denied(request, 'OPERATOR')
-    if (no) return no
-    const body = (await request.json()) as { request_id?: string }
-    if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
-    const origin = rows.find((r) => r.request_id === params.requestId)
-    if (!origin) return fail(404, '대화 로그를 찾을 수 없습니다.')
-    await delay(800)
-    const created: ConversationLogRow = {
-      ...origin,
-      request_id: nextId('rr').replace('rr_', ''),
-      occurred_at: new Date().toISOString(),
-      status: 'NORMAL',
-      feedback: null,
-      source_count: 2,
-      latency_s: 6.4,
-      triage: 'NONE',
-    }
-    rows.unshift(created)
-    return HttpResponse.json(created, { status: 201 })
-  }),
-
-  // [처리 완료 표시] — 조치 사유 필수
+  // [처리 완료 표시] / [처리 완료 취소] — 완료는 사유 필수, 되돌리기는 선택(admin_logs.patch_log)
   http.patch('/api/admin/logs/:requestId', async ({ params, request }) => {
     const no = denied(request, 'OPERATOR')
     if (no) return no
     const body = (await request.json()) as { request_id?: string; reason?: string; triage?: TriageStatus }
     if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
-    if (!body.reason?.trim()) return fail(400, '조치 사유를 입력해 주세요.')
+    const triage = body.triage ?? 'RESOLVED'
+    if (triage === 'RESOLVED' && !body.reason?.trim()) return fail(400, '조치 사유를 입력해 주세요.')
     const row = rows.find((r) => r.request_id === params.requestId)
     if (!row) return fail(404, '대화 로그를 찾을 수 없습니다.')
-    row.triage = body.triage ?? 'RESOLVED'
-    triageReasons[row.request_id] = body.reason
+    row.triage = triage
+    // 되돌리면 서버가 조치 사유도 지운다 — 남겨 두면 '미처리인데 사유가 있는' 행이 된다
+    if (triage === 'NONE') delete triageReasons[row.request_id]
+    else triageReasons[row.request_id] = body.reason ?? ''
     return HttpResponse.json(row)
-  }),
-
-  // [테스트셋 보강 후보로 등록] — 승인 대기 상태로만 들어간다(AD-006 편입은 별도)
-  http.post('/api/admin/evaluations/candidates', async ({ request }) => {
-    const no = denied(request, 'EDITOR')
-    if (no) return no
-    // 🔴 종전 목은 request_id 를 요구했으나 프론트·백엔드 계약은 source_request_id 다
-    // (logs/api.ts addEvalCandidate · admin_evaluations.add_candidate). 목 모드에서 이
-    // 버튼이 항상 400 이던 원인이라 계약에 맞춘다(2026-08-14).
-    const body = (await request.json()) as { source_request_id?: string }
-    if (!body.source_request_id) return fail(400, 'source_request_id가 필요합니다.')
-    await delay(300)
-    // 서버가 관측에서 정답 출처를 미리 채운 건수. 관측 이전 대화면 0.
-    const src = rows.find((r) => r.request_id === body.source_request_id)
-    const prefilled = src
-      ? [...new Set(detailOf(src).observation?.subs.flatMap((sub) =>
-          sub.top.map((t) => t.page_id)) ?? [])].length
-      : 0
-    return HttpResponse.json(
-      { candidate_id: nextId('cand'), status: 'PENDING', prefilled_sources: prefilled },
-      { status: 201 })
   }),
 
   // 내보내기 — 사실 자체가 활동 로그에 남는다(AD-005 Desc 0)

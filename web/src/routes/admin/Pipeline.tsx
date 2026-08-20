@@ -222,7 +222,7 @@ export function Pipeline() {
   const columns: Column<PipelineJob>[] = [
     {
       key: 'time',
-      header: '시각',
+      header: '일시',
       render: (j) => <span className="nums">{formatMonthDayTime(j.created_at)}</span>,
       width: '128px',
     },

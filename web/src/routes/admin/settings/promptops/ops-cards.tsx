@@ -9,7 +9,7 @@ import {
 import type { Column } from '../../../../components/ui'
 import { DEFAULT_PAGE_SIZE } from '../../../../components/ui'
 import { cn } from '@/lib/utils'
-import { formatDateTime, formatRemaining, formatTime } from '../../../../lib/format'
+import { formatDateTime, formatMonthDayTime, formatRemaining } from '../../../../lib/format'
 import { Card, SectionError } from './common'
 import type { BlockEntry, CacheStats, OpsPolicy } from './api'
 import { fetchBlocks, opsKeys } from './api'
@@ -240,7 +240,7 @@ export function BlockListCard({ canRelease, onRelease }: BlockListCardProps) {
       render: (b) => (b.kind === '세션' ? `세션 ${b.subject}` : b.subject),
     },
     { key: 'reason', header: '사유', width: '150px', render: (b) => b.reason },
-    { key: 'blocked_at', header: '차단 시각', width: '110px', render: (b) => formatTime(b.blocked_at) },
+    { key: 'blocked_at', header: '차단 일시', width: '110px', render: (b) => <span className="nums">{formatMonthDayTime(b.blocked_at)}</span> },
     {
       key: 'count',
       header: '누적 차단',

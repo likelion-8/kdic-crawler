@@ -178,6 +178,11 @@ rag_runs = Table(
     Column("status", String),
     Column("failure_stage", String),
     Column("root_cause", Text),
+    # 사용자에게 실제로 나간 오류 코드 5종(CM-DF-002 04절 · codes.ts ErrorCode). 2026-08-19 추가.
+    # 실패 순간 error_from_exception 이 이 값을 계산해 사용자에게 보내고는 버렸다 — 그래서
+    # AD-005 오류 상세가 '오류 코드·사용자 노출 문구·재시도·대체 출처' 4행을 빈 문자열로만
+    # 내보냈다. 코드 하나만 있으면 나머지 3행은 api/rag/answer.ERROR_CATALOG 에서 파생된다.
+    Column("error_code", String),
     Column("total_latency_ms", Integer),
     Column("llm_model", String),
     Column("embedding_model", String),
@@ -186,12 +191,17 @@ rag_runs = Table(
     # 가릴 수 없고(source_count·source_used·marker·normalized 가 전부 null), AD-006 문항
     # 후보도 정답 없는 껍데기로만 등록된다. 모양은 api/rag/observation.py 가 정본이다.
     Column("observation", JSONB),
-    # 관리자 처리 상태(AD-005). CM-DF-002 06절 triage_status 3종 — NONE(미확인) / IN_REVIEW /
-    # RESOLVED. 이게 없으면 대시보드 '나쁨 평가' 할 일 건수가 조치해도 줄지 않아, 시작점이
-    # 3일이면 무의미해진다(관리자 유저플로우 설계 2026-08-18 · 미구현 6건 중 1순위).
+    # 관리자 처리 상태(AD-005). CM-DF-002 06절 triage_status — NONE(미확인) / RESOLVED.
+    # 이게 없으면 대시보드 '나쁨 평가' 할 일 건수가 조치해도 줄지 않아, 시작점이 3일이면
+    # 무의미해진다(관리자 유저플로우 설계 2026-08-18 · 미구현 6건 중 1순위).
+    # 종전 3값의 IN_REVIEW('확인 중')는 2026-08-19 폐기했다 — 설정하는 화면이 끝내 없었고
+    # 목록 필터도 미처리/처리 완료 2분법이라, 아무도 쓰지 않는 값이 스키마에만 남아 있었다.
     Column("triage", String, nullable=False, server_default=text("'NONE'")),
     Column("triaged_by", String),
     Column("triaged_at", DateTime(timezone=True)),
+    # 처리 완료로 표시할 때 받은 조치 사유(2026-08-19). 활동 로그(AD-011)에도 남지만 거기까지
+    # 찾아가야 보여서, 조치한 화면(AD-005 상세)에서 바로 읽히도록 여기에도 둔다.
+    Column("triage_reason", Text),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
@@ -288,27 +298,10 @@ suggested_questions = Table(
 )
 
 
-# 답변 매핑(AD-009) — 미리 작성해 둔 답변에 질문 문구 여러 개를 매핑한다(2026-08-14 팀 결정:
-# 정확 일치만·빈 상태 시작). 서빙은 질의 캐시보다 앞선다: 정규화 키가 일치하면 LLM 을 부르지
-# 않고 이 답변을 그대로 낸다(결정적·환각 0). 추천 질문(suggested_questions)은 클릭 시 문구가
-# 그대로 전송되므로, 그 문구를 questions 에 넣으면 클릭 경로가 100% 적중한다.
-# question_keys 는 admin_ops.cache_key_for_question 으로 서버가 계산한다 — 캐시와 같은
-# 정규화라야 "매핑엔 없는데 캐시엔 있는" 어긋남이 안 생긴다. sources 는 SourceItem 모양
-# ([{page_id,title,url,breadcrumb}])으로 저장 시점에 확정한다(출처 필수 불변식 — 빈 출처 금지).
-curated_answers = Table(
-    "curated_answers", metadata,
-    Column("id", String, primary_key=True),           # 클라이언트 부여(전량 교체 패턴 — 추천 질문과 동일)
-    Column("questions", ARRAY(Text), nullable=False),      # 등록 문구 원문(편집·표시용)
-    Column("question_keys", ARRAY(String), nullable=False),  # 정규화 키(조회용, 서버 계산)
-    Column("answer", Text, nullable=False),
-    Column("sources", JSONB, nullable=False),
-    Column("active", Boolean, nullable=False, server_default=text("true")),
-    Column("display_order", Integer, nullable=False),
-    Column("created_by", String),
-    Column("created_at", DateTime(timezone=True), server_default=func.now()),
-    Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
-)
-
+# 답변 매핑(curated_answers)은 2026-08-19 제거했다. 미리 작성한 답변에 질문 문구를 매핑해
+# 생성 없이 서빙하던 기능인데, Gate 1 이식(PR #164)이 파이프라인을 가드레일 → 캐시 → Gate 1 로
+# 재편하면서 서빙 경로(answer.curated_get)가 사라졌고 관리자 CRUD·화면도 함께 걷혔다.
+# 남아 있던 테이블(행 1건 = 인사 고정 답변)도 Gate 1 인사 규칙이 대신하므로 DROP 했다.
 
 # 데이터 파이프라인 작업(AD-004) — 재수집·재적재 잡의 접수·기록. 실제 실행(Redis·ARQ 워커)은
 # 아직 없다: 생성되면 QUEUED 로 남아 있고 상태는 바뀌지 않는다.
@@ -501,6 +494,10 @@ def main():
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triage text NOT NULL DEFAULT 'NONE'"))
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_by text"))
         conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triaged_at timestamptz"))
+        # 조치 사유(2026-08-19) — 이전에 처리한 행은 NULL 이라 화면이 '기록되지 않았습니다'로 읽는다.
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS triage_reason text"))
+        # 오류 코드(2026-08-19) — 이전 실패 행은 NULL 이라 화면이 '분류 기록 없음'으로 읽는다.
+        conn.execute(text("ALTER TABLE rag_runs ADD COLUMN IF NOT EXISTS error_code text"))
         conn.execute(text("ALTER TABLE pipeline_jobs ADD COLUMN IF NOT EXISTS params jsonb"))
         # 답변 1건당 피드백 1건 규칙을 DB가 강제하려면 unique가 필요하다. ADD CONSTRAINT에는
         # IF NOT EXISTS가 없어 카탈로그를 먼저 확인한다.

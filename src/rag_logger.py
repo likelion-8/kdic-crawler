@@ -45,14 +45,15 @@ STAGE_LLM = "llm"
 def log_rag_run(question, answer, intent, question_type, retrieval_route,
                  total_latency_ms, llm_model=None, embedding_model=None,
                  request_id=None, session_id=None, status=STATUS_NORMAL,
-                 failure_stage=None, root_cause=None, trace_id=None, observation=None):
+                 failure_stage=None, root_cause=None, error_code=None,
+                 trace_id=None, observation=None):
     """질의 1건을 rag_runs 에 남긴다.
 
     status/failure_stage/root_cause 는 전부 기본값이 있다. src/pipeline.py(CLI)가
     이 함수를 위치·키워드 혼용으로 부르는데 그 파일은 이 변경의 소유가 아니므로, 기본값이
     없으면 머지는 깨끗하게 되고 실행 시점에 TypeError 로 죽는다.
 
-    failure_stage/root_cause 는 status=FAILED 일 때만 의미가 있다. root_cause 는 예외 타입과
+    failure_stage/root_cause/error_code 는 status=FAILED 일 때만 의미가 있다. root_cause 는 예외 타입과
     메시지 원문이다 — 사용자에게 보여준 문구가 아니라 조사에 쓸 내부 원문을 넣는다.
 
     trace_id 는 Langfuse trace 식별자(observability.current_trace_id())다. 관리자 대화 로그
@@ -70,6 +71,7 @@ def log_rag_run(question, answer, intent, question_type, retrieval_route,
                     "question": question, "intent": intent, "question_type": question_type,
                     "retrieval_route": retrieval_route, "answer": answer, "status": status,
                     "failure_stage": failure_stage, "root_cause": root_cause,
+                    "error_code": error_code,
                     "total_latency_ms": round(total_latency_ms),
                     "llm_model": llm_model, "embedding_model": embedding_model,
                     "request_id": request_id, "session_id": session_id,

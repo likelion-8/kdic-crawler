@@ -165,7 +165,8 @@ def test_cancel_endpoint_changes_queued_job_to_cancelled(monkeypatch):
             raise AssertionError("성공 취소에서 rollback 되면 안 된다")
 
     db = FakeDb()
-    me = SimpleNamespace(email="admin@demo", role="ADMIN")
+    # 감사 기록은 추가 전용이라 지울 수 없다 — test_ 접두어로 실재 계정과 구분한다
+    me = SimpleNamespace(email="test_admin@demo", role="ADMIN")
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[get_db] = lambda: db

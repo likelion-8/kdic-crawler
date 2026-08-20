@@ -505,9 +505,9 @@ def replace_suggested_questions(
 # web/…/promptops/curated.tsx 화면)이 여기 있었다. Gate 1 이식과 함께 파이프라인 순서를
 # 가드레일 → 캐시 → Gate 1 로 재편하면서 서빙 경로(answer.curated_get)를 없앴고, 그 서빙이
 # 없으면 이 CRUD 도 관리자가 데이터를 쌓기만 하고 아무 효과가 없는 죽은 기능이라 함께
-# 걷어냈다(화면·API·테스트 전부). DB 테이블(schema.curated_answers)은 남겨뒀다 — 되살릴
-# 가능성을 열어두면서, drop 은 공유 Supabase 라 되돌리기 어려운 작업이라 피했다(기존 행
-# 1건은 그대로 테이블에 남아있지만 아무도 읽지 않는다).
+# 걷어냈다(화면·API·테스트 전부). 테이블은 되살릴 가능성을 열어두려 한동안 남겨뒀으나,
+# 기획서에서도 이 기능을 뺀 뒤라 되살릴 계획이 없어져 2026-08-19 DROP 했다(schema.py 주석).
+# 남아 있던 행 1건은 인사 고정 답변이었고, 그 자리는 Gate 1 의 인사 규칙이 대신한다.
 
 
 @router.post("/suggested-questions/validate")

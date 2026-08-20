@@ -17,15 +17,10 @@ import { formatTime } from '../../../lib/format'
 
 export interface LogDetailPanelProps {
   detail: ConversationLogDetail
-  /** OPERATOR 이상 — 재실행·처리 완료 */
+  /** OPERATOR 이상 — 처리 완료 · 되돌리기 */
   canRun: boolean
-  /** EDITOR 이상 — 테스트셋 보강 후보 등록 */
-  canEdit: boolean
-  onRerun: () => void
   onResolve: () => void
-  onAddCandidate: () => void
-  rerunPending: boolean
-  candidatePending: boolean
+  onReopen: () => void
 }
 
 /** 모달 헤더용 제목·부제 — 화면과 상세가 같은 문구를 쓰도록 여기서 만든다 */
@@ -122,10 +117,13 @@ function EvidencePanel({ observation }: { observation: RunObservation }) {
 }
 
 /**
- * [다음 조치] — 근거 구획이 가른 세 갈래를 **누를 수 있게** 만든다(2026-08-18).
+ * [다음 조치] — 근거 구획이 가른 갈래를 **누를 수 있게** 만든다(2026-08-18).
  *
  * 관측(observation)이 판정한 상태로 하나만 primary 로 강조한다. 강조는 힌트지 판정이
- * 아니다 — 세 버튼을 다 남긴다. 감추면 강조가 틀렸을 때 관리자가 갇힌다.
+ * 아니다 — 남은 버튼을 다 보여준다. 감추면 강조가 틀렸을 때 관리자가 갇힌다.
+ * [지식베이스에서 찾아보기]는 2026-08-19 제거했다 — 질문 문구로 페이지를 훑는 것뿐이라
+ * 검색·프롬프트 조치처럼 원인을 좁혀 주지 못했다. 근거가 비어 hint 가 'data' 인 경우엔
+ * 아무 버튼도 강조되지 않는데, 남은 둘 중 어느 쪽도 답이 아니므로 그게 맞다.
  * 목적지에는 ?from=log:{request_id} 와 프리필 값을 넘긴다. 목적지 상단 되돌아가기 띠에서
  * [처리 완료]를 눌러도 이 로그의 처리 상태가 바뀌어 루프가 닫힌다(돌아오지 않아도 된다).
  */
@@ -143,9 +141,6 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
     <div className="mt-3">
       <SectionTitle>다음 조치</SectionTitle>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant={v('data')} onClick={() => navigate(`/admin/knowledge/pages?q=${q}&${from}`)}>
-          지식베이스에서 찾아보기
-        </Button>
         <Button size="sm" variant={v('search')} onClick={() => navigate(`/admin/settings/rag?q=${q}&${from}`)}>
           검색 설정 비교하기
         </Button>
@@ -157,8 +152,64 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
   )
 }
 
+/** rag_runs.failure_stage 는 파이프라인 내부 식별자다 — 화면에는 사람이 읽는 단계명으로 적는다.
+ *  모르는 값은 지어내지 않고 원본을 그대로 보여준다(단계가 늘어나도 화면이 거짓말하지 않는다). */
+const STAGE_LABEL: Record<string, string> = {
+  retrieval: '검색',
+  llm: '답변 생성',
+}
+const stageLabel = (stage: string | null) =>
+  stage === null ? '확인할 수 없음' : (STAGE_LABEL[stage] ?? stage)
+
+/** 처리 상태 꼬리 — 미처리면 [처리 완료 표시], 처리했으면 그때 남긴 조치 사유와 되돌리기.
+ *
+ * 사유는 활동 로그(AD-011)에도 쌓이지만 거기까지 찾아가야 보였다. 조치를 한 화면에서
+ * 바로 읽히는 게 맞다. 정상 건과 실패 건이 같은 꼬리를 쓴다.
+ * 되돌리기가 없으면 잘못 누른 완료를 풀 길이 없어 대시보드 할 일 건수가 거짓이 된다. */
+function TriageFooter({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps) {
+  if (detail.triage === 'RESOLVED') {
+    return (
+      <div className="mt-4 rounded-md border border-border p-3">
+        <SectionTitle>조치 내역</SectionTitle>
+        <dl className="space-y-1 text-[13px]">
+          <div className="grid grid-cols-[120px_1fr] gap-2.5">
+            <dt className="text-muted-foreground">조치 사유</dt>
+            {/* 관측 이전에 처리한 건은 사유가 남아 있지 않다 — 없다고 말하지 지어내지 않는다 */}
+            <dd className="break-keep">{detail.triage_reason ?? '기록되지 않았습니다'}</dd>
+          </div>
+          {/* null 만 막으면 부족하다 — 서버가 이 필드를 아직 안 내려주는 배포에서는 undefined 가
+              와서 '처리 · —' 같은 빈 행이 그려진다. 값이 있을 때만 그린다 */}
+          {detail.triaged_by && (
+            <div className="grid grid-cols-[120px_1fr] gap-2.5">
+              <dt className="text-muted-foreground">처리</dt>
+              <dd>
+                {detail.triaged_by}
+                {detail.triaged_at ? ` · ${formatMonthDayTime(detail.triaged_at)}` : ''}
+              </dd>
+            </div>
+          )}
+        </dl>
+        {canRun && (
+          <Button className="mt-3" size="sm" variant="secondary" onClick={onReopen}>
+            처리 완료 취소
+          </Button>
+        )}
+      </div>
+    )
+  }
+  if (!canRun) return null
+  return (
+    <div className="mt-4">
+      <Button size="sm" onClick={onResolve}>
+        처리 완료 표시
+      </Button>
+    </div>
+  )
+}
+
+
 /** [2][3] 단계별 처리 추적 */
-function TracePanel({ detail, canEdit, canRun, onAddCandidate, onResolve, candidatePending }: LogDetailPanelProps) {
+function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps) {
   const [expanded, setExpanded] = useState(false)
   const { classification: c } = detail
   return (
@@ -235,60 +286,41 @@ function TracePanel({ detail, canEdit, canRun, onAddCandidate, onResolve, candid
           <p className="text-[13px]">
             사유 : {detail.feedback_detail.reason_label} · “{detail.feedback_detail.comment}”
           </p>
-          {canEdit && (
-            <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
-              테스트셋 보강 후보로 등록
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* 후보 등록은 실패·피드백 건 전용이 아니다 — 좋은 답변도 평가셋 보강 대상(CM-DF-002 07절) */}
-      {canEdit && !detail.feedback_detail && (
-        <div className="mt-4">
-          <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
-            테스트셋 보강 후보로 등록
-          </Button>
         </div>
       )}
 
       {/* 처리 완료 — 실패 건 전용이던 것을 전체 건으로(2026-08-18). 나쁨 평가 대응은 정상 건이
           대부분이라, 여기 없으면 조치를 끝내고도 대시보드 할 일 건수가 영원히 안 줄어든다 */}
-      {canRun && detail.triage !== 'RESOLVED' && (
-        <div className="mt-4">
-          <Button size="sm" onClick={onResolve}>
-            처리 완료 표시
-          </Button>
-        </div>
-      )}
+      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} onReopen={onReopen} />
     </section>
   )
 }
 
 
 /** [4] 실패 건(붉은 행) 선택 시 : 오류 상세 패널 */
-function ErrorPanel({
-  detail,
-  canRun,
-  canEdit,
-  onRerun,
-  onResolve,
-  onAddCandidate,
-  rerunPending,
-  candidatePending,
-}: LogDetailPanelProps) {
+function ErrorPanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps) {
   const error = detail.error!
-  const rows: [string, string, boolean][] = [
-    ['오류 코드', `${error.code} · ${error.meaning}`, true],
-    ['사용자 노출 문구', `"${error.user_message}"`, false],
-    ['서버 자동 재시도', error.auto_retry, false],
-    ['대체 출처', error.fallback, false],
-  ]
+  // 4행은 서버가 error_code 하나에서 파생한다. 그 컬럼(2026-08-19) 이전 실패는 전부 null 이라
+  // 행을 그리지 않는다 — 종전에는 빈 문자열을 그려 '오류 코드 ·' 같은 껍데기가 보였다.
+  const rows: [string, string, boolean][] =
+    error.code === null
+      ? []
+      : [
+          ['오류 코드', `${error.code} · ${error.meaning}`, true],
+          ['사용자 노출 문구', `"${error.user_message}"`, false],
+          ['서버 자동 재시도', error.auto_retry ?? '—', false],
+          ['대체 출처', error.fallback ?? '—', false],
+        ]
 
   return (
     <section aria-label="오류 상세">
       <div>
         <SectionTitle>오류 정보</SectionTitle>
+        {rows.length === 0 && (
+          <p className="text-[13px] text-muted-foreground">
+            이 실행에는 오류 분류 기록이 없습니다 — 아래 실패 지점으로 확인합니다
+          </p>
+        )}
         <dl className="space-y-1.5">
           {rows.map(([label, value, strong]) => (
             <div className="grid grid-cols-[120px_1fr] gap-2.5 text-[13px]" key={label}>
@@ -310,7 +342,7 @@ function ErrorPanel({
             {/* 기호만으로 알리지 않도록 상태 단어를 함께 읽힌다(CM-DF-004 09절) */}
             <dd className="font-semibold text-danger-fg">
               <span aria-hidden="true">✗</span>
-              <span className="sr-only">실패</span> {error.failure_stage ?? '확인할 수 없음'}
+              <span className="sr-only">실패</span> {stageLabel(error.failure_stage)}
             </dd>
           </div>
           {error.root_cause !== null && (
@@ -323,23 +355,7 @@ function ErrorPanel({
         <TraceLink trace={detail.langfuse} />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {canRun && (
-          <Button variant="primary" size="sm" onClick={onRerun} loading={rerunPending}>
-            동일 질문 재실행
-          </Button>
-        )}
-        {canEdit && (
-          <Button size="sm" onClick={onAddCandidate} loading={candidatePending}>
-            테스트셋 보강 후보 등록
-          </Button>
-        )}
-        {canRun && (
-          <Button size="sm" onClick={onResolve}>
-            처리 완료 표시
-          </Button>
-        )}
-      </div>
+      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} onReopen={onReopen} />
     </section>
   )
 }

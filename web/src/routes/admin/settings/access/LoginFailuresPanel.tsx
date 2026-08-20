@@ -8,13 +8,13 @@ import { Link } from 'react-router'
 import { DataTable, EmptyState, Loading } from '../../../../components/ui'
 import type { Column } from '../../../../components/ui'
 import { LOGIN_FAIL_LOCK_COUNT } from '../../../../lib/constants'
-import { formatTime } from '../../../../lib/format'
+import { formatMonthDayTime, formatTime } from '../../../../lib/format'
 import { ApiErrorBlock } from './ApiErrorBlock'
 import { accessKeys, fetchLoginFailures } from './api'
 import type { LoginFailure } from './api'
 
 const columns: Column<LoginFailure>[] = [
-  { key: 'time', header: '시각', render: (r) => formatTime(r.occurred_at) },
+  { key: 'time', header: '일시', render: (r) => formatMonthDayTime(r.occurred_at) },
   { key: 'email', header: '시도 계정', render: (r) => r.email },
   { key: 'ip', header: 'IP', render: (r) => r.ip },
   { key: 'reason', header: '실패 사유', render: (r) => r.reason },

@@ -58,8 +58,9 @@ export interface RagGate {
   /** 평가 시점의 초안 지문. 현재 초안과 다르면 평가가 무효화된다(Desc 0) */
   draft_signature: string | null
   evaluated_at: string | null
-  /** 미통과 사유. 서버 문구 그대로 노출 */
-  blocked_reason: string | null
+  /** 목표에 못 미친 기준. **막았다는 뜻이 아니다** — 게이트는 2026-08-19 부터
+   *  차단이 아니라 경고다(종전 이름 blocked_reason). 서버 문구 그대로 노출한다 */
+  warning_reason: string | null
   /** 게이트는 통과했지만 현행보다 낮아진 지표가 있을 때의 경고 문구 */
   warning: string | null
   holdout_total: number

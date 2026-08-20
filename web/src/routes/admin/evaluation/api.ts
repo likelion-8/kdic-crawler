@@ -37,8 +37,9 @@ export interface EvaluationRun {
   status: JobStatus
   item_count: number
   metrics: RunMetric[]
-  /** 게시 게이트 판정 — 통과 건수·총 건수 모두 서버가 준다 */
-  gate: { passed: boolean; smoke_passed: number; smoke_total: number; blocked_reason?: string }
+  /** 게이트 판정 — 통과 건수·총 건수 모두 서버가 준다. 미달이어도 반영·게시를 막지
+   *  않는다(2026-08-19 경고 전환) — warning_reason 은 '무엇이 목표에 못 미쳤나'다 */
+  gate: { passed: boolean; smoke_passed: number; smoke_total: number; warning_reason?: string }
   /** '판정 · 후속' 열의 후속 텍스트 — `→ 11:40 반영됨` · `→ 게시 v1.4` (§2.3) */
   follow_up?: string
   /** 이 실행이 쓴 평가셋 버전. 바뀐 지점에 '평가셋 vN부터' 구분 뱃지를 단다(Desc 1) */

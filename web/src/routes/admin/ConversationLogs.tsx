@@ -8,7 +8,7 @@
  *  - 진입 시 행을 자동 선택하지 않는다. 로그 정독이 목적이다(Desc 2)
  *  - 실패 행은 추적 패널 대신 오류 상세를 연다(Desc 2)
  *  - VIEWER는 집계만, 그 외 역할은 마스킹된 상세까지(Desc 0)
- *  - 조회·검색·내보내기·재실행·후보 등록·처리 완료는 모두 AD-011에 기록된다 */
+ *  - 조회·검색·내보내기·처리 완료는 모두 AD-011에 기록된다 */
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import type { ReactNode } from 'react'
@@ -33,7 +33,8 @@ import {
 import type { Column } from '../../components/ui'
 import { isApiRequestError } from '../../lib/api/client'
 import { INTENT_LABEL, hasRole } from '../../lib/codes'
-import { formatTime } from '../../lib/format'
+import type { TriageStatus } from '../../lib/codes'
+import { formatMonthDayTime } from '../../lib/format'
 import { useSession } from '../../app/session'
 import { LogDetailPanel, logDetailMeta, logDetailTitle } from './logs/LogDetailPanel'
 import {
@@ -44,7 +45,6 @@ import {
   MAX_CUSTOM_DAYS,
   PERIOD_OPTIONS,
   TRIAGE_LABEL,
-  addEvalCandidate,
   dash,
   daysBetween,
   exportLogs,
@@ -53,8 +53,7 @@ import {
   fetchSummary,
   kstToday,
   logsQueryKey,
-  rerunLog,
-  resolveLog,
+  setLogTriage,
 } from './logs/api'
 import type { ConversationLogRow, LogFilters } from './logs/api'
 
@@ -105,7 +104,6 @@ export function ConversationLogs() {
   const queryClient = useQueryClient()
 
   const canViewDetail = hasRole(session?.role, 'OPERATOR') // VIEWER는 집계만
-  const canEdit = hasRole(session?.role, 'EDITOR') // 테스트셋 보강 후보 등록
   const canExport = hasRole(session?.role, 'ADMIN') // 내보내기
 
   // 초기 필터는 URL 을 우선한다 — 대시보드 할 일 카드가 ?feedback=down 처럼 필터를 들고
@@ -123,7 +121,8 @@ export function ConversationLogs() {
   const [page, setPage] = useState(1)
   // ?request= 로 특정 행을 바로 연다 — 되돌아가기 띠의 [로그로 돌아가기]가 그 대화를 들고 온다
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('request'))
-  const [resolving, setResolving] = useState<string | null>(null)
+  // 처리 상태 확인 모달 — 완료 표시와 되돌리기가 같은 모달을 방향만 바꿔 쓴다
+  const [triaging, setTriaging] = useState<{ id: string; to: TriageStatus } | null>(null)
 
   // 필터가 바뀌면 첫 페이지로 돌아가고 선택도 푼다(선택한 행이 결과에서 빠질 수 있다)
   function patch(next: Partial<LogFilters>) {
@@ -155,36 +154,14 @@ export function ConversationLogs() {
     enabled: selectedId !== null && canViewDetail,
   })
 
-  const rerun = useMutation({
-    mutationFn: () => rerunLog(selectedId!),
-    onSuccess: (created) => {
+  const triage = useMutation({
+    mutationFn: ({ reason }: { reason?: string }) =>
+      setLogTriage(triaging!.id, triaging!.to, reason ?? ''),
+    onSuccess: (_row, _vars, _ctx) => {
+      const reopened = triaging!.to === 'NONE'
+      setTriaging(null)
       void queryClient.invalidateQueries({ queryKey: logsQueryKey })
-      // 필터·정렬 때문에 새 행이 목록 맨 위에 없을 수 있어 [결과 보기]로 직접 연다(11 §M6 제안)
-      showToast('동일 질문을 재실행했습니다', {
-        label: '결과 보기',
-        onClick: () => setSelectedId(created.request_id),
-      })
-    },
-  })
-
-  const candidate = useMutation({
-    mutationFn: () => addEvalCandidate(selectedId!),
-    // 정답 출처가 미리 채워졌는지를 알려야 관리자가 AD-006 에서 무엇을 확인할지 안다.
-    // 0건(관측 이전 대화)이면 종전처럼 맨손 등록이라는 사실을 그대로 말한다.
-    onSuccess: (r) =>
-      showToast(
-        r.prefilled_sources > 0
-          ? `테스트셋 보강 후보로 등록했습니다 · 정답 출처 ${r.prefilled_sources}건을 미리 채웠습니다`
-          : '테스트셋 보강 후보로 등록했습니다 · 정답 출처는 직접 입력해야 합니다',
-      ),
-  })
-
-  const resolve = useMutation({
-    mutationFn: ({ reason }: { reason?: string }) => resolveLog(resolving!, reason ?? ''),
-    onSuccess: () => {
-      setResolving(null)
-      void queryClient.invalidateQueries({ queryKey: logsQueryKey })
-      showToast('처리 완료로 표시했습니다')
+      showToast(reopened ? '처리 완료를 취소했습니다 · 미처리로 돌아갑니다' : '처리 완료로 표시했습니다')
     },
   })
 
@@ -193,21 +170,13 @@ export function ConversationLogs() {
     onSuccess: () => showToast('내보내기를 시작했습니다'),
   })
 
-  // 조치 실패는 토스트가 아니라 패널 안에 남긴다(07.4절). 문구는 서버 user_message 그대로
-  const actionFailure = rerun.error ?? candidate.error
-  const actionError =
-    actionFailure === null
-      ? null
-      : isApiRequestError(actionFailure)
-        ? actionFailure.error.user_message
-        : '조치를 처리하지 못했습니다.'
-
   const columns: Column<ConversationLogRow>[] = [
     {
       key: 'time',
-      header: '시각',
-      width: '72px',
-      render: (r) => <span className="nums">{formatTime(r.occurred_at)}</span>,
+      header: '일시',
+      // 기간 필터가 최대 90일이라 시각만으로는 어느 날 것인지 알 수 없다(2026-08-20)
+      width: '104px',
+      render: (r) => <span className="nums">{formatMonthDayTime(r.occurred_at)}</span>,
     },
     {
       key: 'question',
@@ -544,40 +513,42 @@ export function ConversationLogs() {
           <LogDetailPanel
             detail={detail.data}
             canRun={canViewDetail}
-            canEdit={canEdit}
-            rerunPending={rerun.isPending}
-            candidatePending={candidate.isPending}
-            onRerun={() => rerun.mutate()}
-            onAddCandidate={() => candidate.mutate()}
-            onResolve={() => setResolving(selectedId)}
+            onResolve={() => setTriaging({ id: selectedId!, to: 'RESOLVED' })}
+            onReopen={() => setTriaging({ id: selectedId!, to: 'NONE' })}
           />
         ) : null}
-        {actionError !== null && <ErrorNote>{actionError}</ErrorNote>}
       </DetailModal>
 
 
-      {resolving !== null && (
+      {/* 되돌리기에까지 사유를 요구하면 잘못 누른 완료를 못 풀어 건수가 거짓인 채로 남는다 —
+          완료는 사유 필수, 취소는 선택이다(백엔드 patch_log 도 같은 규칙) */}
+      {triaging !== null && (
         <ConfirmModal
           open
-          title="이 대화를 처리 완료로 표시할까요?"
-          reason="required"
-          reasonPlaceholder="예: 원인 확인 후 프롬프트 수정 반영"
-          confirmLabel="처리 완료"
-          pending={resolve.isPending}
-          onCancel={() => setResolving(null)}
-          onConfirm={(payload) => resolve.mutate(payload)}
+          title={triaging.to === 'NONE' ? '처리 완료를 취소할까요?' : '이 대화를 처리 완료로 표시할까요?'}
+          reason={triaging.to === 'NONE' ? 'optional' : 'required'}
+          reasonPlaceholder={
+            triaging.to === 'NONE' ? '예: 잘못 눌렀습니다' : '예: 원인 확인 후 프롬프트 수정 반영'
+          }
+          confirmLabel={triaging.to === 'NONE' ? '처리 완료 취소' : '처리 완료'}
+          pending={triage.isPending}
+          onCancel={() => setTriaging(null)}
+          onConfirm={(payload) => triage.mutate(payload)}
           impact={
             <div className="space-y-3">
-              {resolve.isError && (
+              {triage.isError && (
                 <ErrorNote>
-                  {isApiRequestError(resolve.error)
-                    ? resolve.error.error.user_message
-                    : '처리 완료로 표시하지 못했습니다.'}
+                  {isApiRequestError(triage.error)
+                    ? triage.error.error.user_message
+                    : triaging.to === 'NONE'
+                      ? '처리 완료를 취소하지 못했습니다.'
+                      : '처리 완료로 표시하지 못했습니다.'}
                 </ErrorNote>
               )}
               <p className="text-[13px]">
-                처리 완료로 표시해도 사용자에게 다시 보내지는 않습니다. 조치 사유는 관리자 활동 로그에
-                기록됩니다.
+                {triaging.to === 'NONE'
+                  ? '미처리로 돌아가 대시보드 할 일 건수에 다시 포함됩니다. 남아 있던 조치 사유는 지워지고, 취소한 사실이 관리자 활동 로그에 기록됩니다.'
+                  : '처리 완료로 표시해도 사용자에게 다시 보내지는 않습니다. 조치 사유는 관리자 활동 로그에 기록됩니다.'}
               </p>
             </div>
           }

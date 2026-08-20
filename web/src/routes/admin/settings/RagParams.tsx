@@ -131,7 +131,7 @@ export function RagParams() {
    *  AD-008 publishBlocked와 같은 형태 — 두 화면이 같은 상태에서 같게 행동해야 한다 */
   const gateWarning = stale
     ? '초안이 바뀌어 평가가 무효화되었습니다 — 재평가 없이 반영하면 결과를 보증할 수 없습니다'
-    : (gate.blocked_reason ? `${gate.blocked_reason} — 이 상태로도 반영은 가능합니다` : undefined)
+    : (gate.warning_reason ? `${gate.warning_reason} — 이 상태로도 반영은 가능합니다` : undefined)
   const applyBlocked = !canEdit
     ? '편집자(EDITOR) 이상만 운영에 반영할 수 있습니다'
     : undefined
@@ -225,7 +225,7 @@ export function RagParams() {
   ]
 
   const historyColumns: Column<RagHistoryEntry>[] = [
-    { key: 'changed_at', header: '시각', render: (r) => formatShortKst(r.changed_at), width: '18%' },
+    { key: 'changed_at', header: '일시', render: (r) => formatShortKst(r.changed_at), width: '18%' },
     { key: 'summary', header: '변경 내용', render: (r) => <strong>{r.summary}</strong>, width: '38%' },
     { key: 'actor', header: '변경자', render: (r) => r.actor, width: '12%' },
     { key: 'reason', header: '사유', render: (r) => <span className="text-muted-foreground">{r.reason}</span> },
