@@ -15,7 +15,7 @@ import type { BusinessFunction, Role } from '../../../lib/codes'
 import { hasRole } from '../../../lib/codes'
 // 계약(타입)의 정본은 화면 쪽 api.ts다. 타입 전용 import라 번들에는 남지 않는다
 import type {
-  BlockEntry, BlocklistRule, CacheStats, FewshotExample, MaskingRule, OpsPolicy,
+  BlockEntry, BlocklistRule, CacheEntry, CacheStats, FewshotExample, MaskingRule, OpsPolicy,
   PromptDraft, PromptDraftContent, PromptEvalItem, PromptEvaluation, PromptVersion,
 } from '../../../routes/admin/settings/promptops/api'
 
@@ -308,12 +308,49 @@ const opsPolicy: OpsPolicy = {
 const cacheStats: CacheStats = {
   hit_rate: 0.34,
   saved_generations: 1204,
-  entries: 3812,
+  entries: 23,
   extension: '시맨틱 캐시',
   extension_applied: false,
   last_purged_at: '2026-07-29T03:02:00+09:00',
   last_purge_reason: '전체 재적재 완료',
 }
+
+/** 캐시 항목 목록 — 적중 많은 순(서버 정렬과 같다). 페이지네이션이 도는 것을 보려고 23건을 만든다.
+ * cache_key 는 서버에선 정규화 질문의 sha256 이지만, 목에서는 식별만 되면 되므로 순번으로 둔다. */
+const CACHE_QUESTIONS = [
+  '착오송금 반환지원 신청은 어떻게 하나요?',
+  '예금보험 한도는 얼마인가요?',
+  '착오송금 반환까지 얼마나 걸리나요?',
+  '반환지원 신청 수수료가 있나요?',
+  '보호되는 금융상품은 어떤 것이 있나요?',
+  '가지급금은 언제 받을 수 있나요?',
+  '파산배당금 신청 기한은 언제까지인가요?',
+  '미수령금은 어떻게 찾나요?',
+  '예금자보호법 적용 대상 금융회사는?',
+  '착오송금 반환지원 대상 금액 기준은?',
+  '보험금 지급 절차가 궁금합니다',
+  '신청 후 진행 상황은 어디서 확인하나요?',
+  '반환지원 신청이 거절되는 경우는?',
+  '외화예금도 보호되나요?',
+  '퇴직연금은 별도로 보호되나요?',
+  '착오송금 수취인이 반환을 거부하면?',
+  '예금보험공사 고객센터 전화번호는?',
+  '보호한도 초과분은 어떻게 되나요?',
+  '가지급금과 보험금의 차이는?',
+  '신청 서류는 무엇이 필요한가요?',
+  '반환지원 신청을 취소할 수 있나요?',
+  '착오송금 발생 후 언제까지 신청해야 하나요?',
+  '금융회사가 파산하면 대출금은 어떻게 되나요?',
+]
+
+let cacheEntries: CacheEntry[] = CACHE_QUESTIONS.map((question, index) => ({
+  cache_key: `cache_${String(index + 1).padStart(2, '0')}`,
+  question,
+  hit_count: Math.max(1, 24 - index),
+  created_at: new Date(Date.now() - (index + 1) * 40 * 60_000).toISOString(),
+  // 24시간 TTL(QUERY_CACHE_TTL_H) — 오래 전에 저장된 것일수록 남은 보관 시간이 짧다
+  expires_at: new Date(Date.now() + (24 * 60 - (index + 1) * 40) * 60_000).toISOString(),
+}))
 
 /** 한 건은 차단 유지 중, 한 건은 이미 만료 — 두 상태를 한 화면에서 볼 수 있게 지금 시각 기준으로 만든다 */
 const BOOT = Date.now()
@@ -510,19 +547,34 @@ export const adPromptOpsHandlers = [
 
   http.get('/api/admin/cache/stats', () => HttpResponse.json(cacheStats)),
 
+  http.get('/api/admin/cache/entries', ({ request }) =>
+    HttpResponse.json(envelope(cacheEntries, new URL(request.url)))),
+
   /** 질의별(OPERATOR 이상) / 전체(ADMIN) 비우기 */
   http.post('/api/admin/cache/purge', async ({ request }) => {
-    const body = (await request.json()) as WriteBody & { scope?: 'query' | 'all'; query?: string }
+    const body = (await request.json()) as WriteBody & { scope?: 'query' | 'all'; cache_keys?: string[] }
     const no = denied(request, body.scope === 'all' ? 'ADMIN' : 'OPERATOR')
     if (no) return no
     const bad = missingWriteFields(body)
     if (bad) return bad
-    if (body.scope === 'query' && !body.query?.trim()) return fail(400, '비울 질의를 입력해 주세요.')
+    const keys = body.cache_keys ?? []
+    if (body.scope === 'query' && keys.length === 0) {
+      return fail(400, '비울 캐시 항목을 선택해 주세요.')
+    }
     await delay(600)
-    const removed = body.scope === 'all' ? cacheStats.entries : 1
-    cacheStats.entries -= removed
+    const hit = cacheEntries.filter((entry) => keys.includes(entry.cache_key))
+    if (body.scope === 'query' && hit.length === 0) {
+      return fail(400, '이미 비워졌거나 없는 캐시 항목입니다.')
+    }
+    const removed = body.scope === 'all' ? cacheEntries.length : hit.length
+    // 목록과 현황의 '캐시 항목'은 같은 수를 가리켜야 한다 — 한쪽만 줄이면 화면이 서로를 부정한다
+    cacheEntries = body.scope === 'all' ? [] : cacheEntries.filter((entry) => !keys.includes(entry.cache_key))
+    cacheStats.entries = cacheEntries.length
     cacheStats.last_purged_at = nowIso()
-    cacheStats.last_purge_reason = body.scope === 'all' ? '전체 비우기' : `질의별 비우기 (${body.query})`
+    cacheStats.last_purge_reason =
+      body.scope === 'all'
+        ? '전체 비우기'
+        : `질의별 비우기 (${hit[0].question}${hit.length > 1 ? ` 외 ${hit.length - 1}건` : ''})`
     return HttpResponse.json({ removed, ...cacheStats })
   }),
 

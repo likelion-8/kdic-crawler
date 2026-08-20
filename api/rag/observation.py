@@ -64,6 +64,38 @@ def build(sub_plans: list) -> Optional[dict]:
     return {"subs": subs}
 
 
+def with_served_from(observation: Optional[dict], served_from: Optional[str],
+                     label: Optional[str] = None) -> Optional[dict]:
+    """관측에 '무엇이 이 답변을 냈나'를 얹는다. served_from 이 없으면 그대로 돌려준다.
+
+    플래너(분해+intent 판정) 앞에서 끝나는 경로는 sub_plans 가 비어 build() 가 None 을 주고,
+    그 결과 rag_runs 의 intent·retrieval_route·observation 이 전부 NULL 이 된다 — **캐시 적중과
+    가드레일 차단, Gate 1·2 EXIT 가 로그에서 서로 구분되지 않았다.** AD-005 상세는 '분류 기록
+    없음'까지만 말하고 어느 경로에 걸린 건지는 말할 수 없었다.
+
+    label 은 Gate 1 처럼 '어느 규칙에 걸렸나'가 있는 경로만 채운다(FIXED_GREETING 등). Gate 2 의
+    카테고리는 내부 로그 전용이라 여기 담지 않는다(src/gate2.py:55).
+
+    판정 필드는 건드리지 않는다 — 경로를 안다고 근거 사용 여부를 지어내면 안 된다(파일 상단 규칙).
+    """
+    if not served_from:
+        return observation
+    extra = {"served_from": served_from}
+    if label:
+        extra["served_label"] = label
+    return {**(observation or {}), **extra}
+
+
+def served_from(observation: Optional[dict]) -> Optional[str]:
+    """이 답변을 낸 경로. 'cache' | 'guardrail' | 'gate1' | 'gate2', 없으면 None(=평소 경로)."""
+    return (observation or {}).get("served_from")
+
+
+def served_label(observation: Optional[dict]) -> Optional[str]:
+    """그 경로 안에서 무엇에 걸렸나(Gate 1 규칙 이름). 없는 경로면 None."""
+    return (observation or {}).get("served_label")
+
+
 def _subs(observation: Optional[dict]) -> list:
     return (observation or {}).get("subs") or []
 

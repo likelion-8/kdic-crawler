@@ -145,6 +145,11 @@ class ConversationLogDetail(ConversationLogRow):
     error: Optional[LogErrorDetail] = None       # 실패 건에만
     # 관리자가 '왜 이렇게 답했는지'를 보는 근거. 2026-08-14 신설이라 그 이전 대화는 null 이다.
     observation: Optional[RunObservation] = None
+    # 이 답변을 낸 경로 — 'cache' | 'guardrail' | 'gate1' | 'gate2'. 넷 다 플래너 앞에서 끝나
+    # intent·근거가 없다. 평소 경로와 그 이전 대화는 null(2026-08-20 · observation.served_from).
+    served_from: Optional[str] = None
+    # 그 경로 안에서 걸린 규칙 이름(Gate 1 의 FIXED_GREETING 등). 원시 식별자를 그대로 내린다.
+    served_label: Optional[str] = None
     # 조치 내역(2026-08-19). [처리 완료 표시] 때 받은 사유·처리자·시각. 미처리면 전부 null,
     # 이 컬럼이 생기기 전에 처리한 행은 사유만 null 이다.
     triage_reason: Optional[str] = None

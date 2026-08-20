@@ -150,7 +150,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     if hit is not None:
         resp = answer.guardrail_refusal(session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] 금칙어 적중(질문): %r", request_id, hit)
-        answer.log_run(message, resp, [], resp.latency_ms)
+        answer.log_run(message, resp, [], resp.latency_ms, served_from="guardrail")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -186,7 +186,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         from api.schemas.chat import ChatResponse
         resp = ChatResponse.model_validate(resp_dict)
         logger.info("[%s] 질의 캐시 적중", request_id)
-        answer.log_run(message, resp, [], resp.latency_ms)
+        answer.log_run(message, resp, [], resp.latency_ms, served_from="cache")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -211,7 +211,8 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
                                "latency_ms": resp.latency_ms, "exit_at": "gate1",
                                "gate1_label": g1.label, "gate1_rule_id": g1.rule_id,
                                "gate1_reason": g1.reason})
-        answer.log_run(message, resp, [], resp.latency_ms)
+        answer.log_run(message, resp, [], resp.latency_ms,
+                       served_from="gate1", served_label=g1.label)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -240,7 +241,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
                                "gate2_threshold": g2.threshold,
                                "gate2_nearest_cluster": g2.nearest_out_cluster_id,
                                "gate2_nearest_category": g2.nearest_out_category})
-        answer.log_run(message, resp, [], resp.latency_ms)
+        answer.log_run(message, resp, [], resp.latency_ms, served_from="gate2")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())

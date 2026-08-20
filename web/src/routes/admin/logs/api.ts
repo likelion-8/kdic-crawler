@@ -19,7 +19,8 @@ export interface ConversationLogRow {
   occurred_at: string
   /** 마스킹된 저장본 */
   question_masked: string
-  intent: Intent
+  /** 플래너 전에 끝난 건(캐시 적중·가드레일 거절·Gate EXIT·초기 실패)은 null 이다 */
+  intent: Intent | null
   status: LogStatus
   feedback: FeedbackVote | null
   source_count: number | null
@@ -72,6 +73,9 @@ export interface LogErrorDetail {
   root_cause: string | null
 }
 
+/** 답변을 낸 경로 — 모두 플래너 앞에서 끝나는 경로다(api/rag/sse.py 0-2 ~ 0-5) */
+export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2'
+
 /** rag_runs.observation 의 subs[].top[] 원소. 모양의 정본은 api/rag/observation.py */
 export interface ObservedChunk {
   chunk_id: string
@@ -97,9 +101,11 @@ export interface RunObservation {
 
 export interface ConversationLogDetail extends ConversationLogRow {
   classification: {
-    intent: Intent
+    /** 플래너를 안 탄 건은 null — 저장된 적이 없다는 뜻이지 '정보성'이 아니다 */
+    intent: Intent | null
     business_function: BusinessFunction | null
-    question_type: QuestionType
+    /** 웹 경로가 항상 null 을 넘긴다(admin_logs.py 주석). 원천이 생기면 채워진다 */
+    question_type: QuestionType | null
     /** rag_runs.observation 에서 온다. 관측 신설(2026-08-14) 이전 대화는 null */
     source_used: boolean | null
     /** '[SOURCE_USED]' | '[NO_SOURCE]' | '혼재'. 관측 이전 대화는 null */
@@ -113,6 +119,13 @@ export interface ConversationLogDetail extends ConversationLogRow {
    * 2026-08-14 신설이라 그 이전 대화는 null. 판정 필드의 null 은 '판정 안 함'이지 '아니오'가 아니다.
    */
   observation: RunObservation | null
+  /**
+   * 이 답변을 낸 경로. 넷 다 **플래너(분해+intent 판정) 앞에서 끝난 건**이라 성격·유형·근거가
+   * 없다 — 분류가 비는 이유가 곧 이 값이다. 평소 경로와 2026-08-20 이전 대화는 null.
+   */
+  served_from: ServedFrom | null
+  /** 그 경로에서 걸린 규칙 이름(Gate 1 의 FIXED_GREETING 등). 원시 식별자다 */
+  served_label: string | null
   /** 단계별 소요는 여기 없다 — Langfuse가 갖는다(위 LangfuseTrace 주석) */
   langfuse: LangfuseTrace | null
   /** rag_runs.total_latency_ms — 단계별 분해 없이 총합만 남았다 */

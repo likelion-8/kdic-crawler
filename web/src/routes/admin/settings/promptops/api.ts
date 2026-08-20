@@ -145,6 +145,17 @@ export interface CacheStats {
   last_purge_reason: string
 }
 
+/** GET /api/admin/cache/entries — 캐시된 질의 1건. 답변 본문(response)은 내리지 않는다 */
+export interface CacheEntry {
+  /** 정규화 질문의 해시(64자). 비우기 대상 식별자다 */
+  cache_key: string
+  question: string
+  hit_count: number
+  created_at: string
+  /** 빈 문자열이면 만료 없음 */
+  expires_at: string
+}
+
 export interface BlockEntry {
   id: string
   subject: string
@@ -177,6 +188,7 @@ export const promptKeys = {
 export const opsKeys = {
   policy: ['admin', 'ops-policy'] as const,
   cache: ['admin', 'cache', 'stats'] as const,
+  cacheEntries: ['admin', 'cache', 'entries'] as const,
   blocks: ['admin', 'blocks'] as const,
   suggestions: ['admin', 'suggested-questions'] as const,
 }
@@ -245,8 +257,13 @@ export const saveOpsPolicy = (patch: Partial<OpsPolicy>, reason: string) =>
 
 export const fetchCacheStats = () => apiRequest<CacheStats>('/api/admin/cache/stats')
 
-export const purgeCache = (scope: 'query' | 'all', reason: string, query?: string) =>
-  write<CacheStats>('/api/admin/cache/purge', reason, { scope, query })
+export const fetchCacheEntries = (page: number, size: number) =>
+  apiRequest<Page<CacheEntry>>(`/api/admin/cache/entries?page=${page}&size=${size}`)
+
+/** 질의별은 목록에서 고른 cache_key 로만 비운다 — 손으로 받아쓴 질의는 정규화가 어긋나면
+ * 0건이 지워지고도 성공으로 보인다(2026-08-20 §5 변경) */
+export const purgeCache = (scope: 'query' | 'all', reason: string, cacheKeys?: string[]) =>
+  write<CacheStats>('/api/admin/cache/purge', reason, { scope, cache_keys: cacheKeys })
 
 export const fetchBlocks = (page: number, size: number) =>
   apiRequest<Page<BlockEntry>>(`/api/admin/blocks?page=${page}&size=${size}`)

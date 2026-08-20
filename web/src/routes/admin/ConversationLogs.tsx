@@ -194,7 +194,7 @@ export function ConversationLogs() {
       width: '72px',
       render: (r) => (
         <span className={r.status === 'OUT_OF_SCOPE' ? 'text-muted-foreground' : undefined}>
-          {INTENT_LABEL[r.intent]}
+          {r.intent === null ? '—' : INTENT_LABEL[r.intent]}
         </span>
       ),
     },

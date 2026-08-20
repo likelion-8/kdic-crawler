@@ -2,17 +2,19 @@
  * 문구는 기획서 13절 §3~§6 원문 그대로. ※로 시작하는 빨간 주석은 렌더하지 않는다(00-meta NOTATION). */
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Ban, Database, Eraser, Gauge } from 'lucide-react'
+import { Ban, Database, Eraser, Gauge, ListChecks } from 'lucide-react'
 import {
   Badge, Button, ColorText, DataTable, EmptyState, Loading, Pagination, Stepper, TextField, Toggle,
 } from '../../../../components/ui'
 import type { Column } from '../../../../components/ui'
 import { DEFAULT_PAGE_SIZE } from '../../../../components/ui'
+import { Checkbox } from '@/components/shadcn/checkbox'
 import { cn } from '@/lib/utils'
 import { formatDateTime, formatMonthDayTime, formatRemaining } from '../../../../lib/format'
+import { QUERY_CACHE_TTL_H } from '../../../../lib/constants'
 import { Card, SectionError } from './common'
-import type { BlockEntry, CacheStats, OpsPolicy } from './api'
-import { fetchBlocks, opsKeys } from './api'
+import type { BlockEntry, CacheEntry, CacheStats, OpsPolicy } from './api'
+import { fetchBlocks, fetchCacheEntries, opsKeys } from './api'
 
 /** 기획서에 min/max/step이 없다(13절 M-9). 서버 검증 문구를 그대로 받으려면 상한을 넉넉히 둔다 */
 const LIMIT_MIN = 1
@@ -113,7 +115,21 @@ export function UsageLimitCard({ value, baseline, canEdit, onChange }: UsageLimi
 export function CacheStatsCard({ stats }: { stats: CacheStats }) {
   const percent = Math.round(stats.hit_rate * 100)
   return (
-    <Card title="질의 캐시 현황" icon={<Database />} meta="동일 질의 매칭 (1차)">
+    <Card
+      title="질의 캐시 현황"
+      icon={<Database />}
+      meta="동일 질의 매칭 (1차)"
+      // '무엇이 캐시되는가'는 지금 수치가 아니라 규칙이다 — 카드에 문단으로 깔지 않고 ⓘ로 접는다.
+      // 문구 근거는 서버 적재 조건(api/rag/sse.py 5-2)과 무효화 규칙(api/rag/answer.py _cache_versions)
+      hint={
+        <>
+          아래 조건을 모두 만족한 답변만 {QUERY_CACHE_TTL_H}시간 저장합니다 — 하위 질문으로 나뉘지
+          않은 단일 질문 · 정보성 질문(민원 처리 제외) · 오류 없이 생성된 답변 · 안내 범위 안 ·
+          되묻기가 아닌 답변. 질문은 공백·말줄임·영문 대소문자를 맞춰 같은 질문으로 봅니다.
+          색인·RAG 파라미터·프롬프트·모델 버전이 바뀌면 해당 캐시는 자동으로 무효화됩니다.
+        </>
+      }
+    >
       {/* 숫자가 주인공 — 색이 아니라 크기·굵기로 세운다 */}
       <p className="mb-2 flex items-baseline gap-2">
         <strong className="text-2xl leading-tight font-bold tracking-tight tabular-nums">{percent}%</strong>
@@ -151,6 +167,137 @@ export function CacheStatsCard({ stats }: { stats: CacheStats }) {
   )
 }
 
+// ------------------------------------------------------- ②-2 캐시 항목 목록 (2026-08-20 신설)
+
+export interface CacheEntriesCardProps {
+  /** 비우기 대상. 페이지를 넘겨도 유지되도록 키가 아니라 항목 자체를 들고 있는다 */
+  selected: CacheEntry[]
+  onSelectedChange: (next: CacheEntry[]) => void
+  canSelect: boolean
+  onPurgeSelected: () => void
+}
+
+/** 무엇이 캐시돼 있는지 보여주고, 비울 것을 고르게 한다.
+ * 종전에는 목록이 없어 '질의별 비우기'가 질의를 손으로 받아썼다 — 캐시에 없는 문장을 적어도
+ * 화면은 성공으로 보였다(정규화가 어긋나면 0건 삭제). 고르는 대상을 눈으로 보게 바꿨다. */
+export function CacheEntriesCard({
+  selected, onSelectedChange, canSelect, onPurgeSelected,
+}: CacheEntriesCardProps) {
+  const [page, setPage] = useState(1)
+  const query = useQuery({
+    queryKey: [...opsKeys.cacheEntries, page],
+    queryFn: () => fetchCacheEntries(page, DEFAULT_PAGE_SIZE),
+  })
+
+  const rows = query.data?.items ?? []
+  const isSelected = (entry: CacheEntry) => selected.some((s) => s.cache_key === entry.cache_key)
+  const toggle = (entry: CacheEntry) =>
+    onSelectedChange(
+      isSelected(entry)
+        ? selected.filter((s) => s.cache_key !== entry.cache_key)
+        : [...selected, entry],
+    )
+  // 전체 선택은 '보이는 페이지'까지만 — 안 보이는 행까지 지우는 조작은 [전체 비우기]가 따로 있다
+  const allOnPage = rows.length > 0 && rows.every(isSelected)
+  const toggleAll = () =>
+    onSelectedChange(
+      allOnPage
+        ? selected.filter((s) => !rows.some((r) => r.cache_key === s.cache_key))
+        : [...selected.filter((s) => !rows.some((r) => r.cache_key === s.cache_key)), ...rows],
+    )
+
+  const columns: Column<CacheEntry>[] = [
+    {
+      key: 'select',
+      header: (
+        <Checkbox
+          checked={allOnPage}
+          disabled={!canSelect || rows.length === 0}
+          aria-label="이 페이지 전체 선택"
+          onCheckedChange={toggleAll}
+        />
+      ),
+      width: '44px',
+      render: (entry) => (
+        <Checkbox
+          checked={isSelected(entry)}
+          disabled={!canSelect}
+          aria-label={`${entry.question} 선택`}
+          onCheckedChange={() => toggle(entry)}
+        />
+      ),
+    },
+    { key: 'question', header: '질의', render: (entry) => entry.question },
+    {
+      key: 'hit_count',
+      header: '적중',
+      width: '80px',
+      align: 'right',
+      render: (entry) => <span className="nums">{entry.hit_count}회</span>,
+    },
+    {
+      key: 'created_at',
+      header: '저장',
+      width: '110px',
+      render: (entry) => <span className="nums">{formatMonthDayTime(entry.created_at)}</span>,
+    },
+    {
+      key: 'expires_at',
+      header: '남은 보관',
+      width: '110px',
+      // 만료 시각보다 '얼마나 남았나'가 비울지 말지를 가른다 — 곧 사라질 항목은 비울 필요가 없다
+      render: (entry) =>
+        entry.expires_at
+          ? formatRemaining(new Date(entry.expires_at).getTime() - Date.now())
+          : '만료 없음',
+    },
+  ]
+
+  return (
+    <Card
+      title="캐시 항목"
+      icon={<ListChecks />}
+      wide
+      meta={query.data ? `총 ${query.data.total.toLocaleString()}건` : undefined}
+      // 대상을 고르는 표와 같은 카드에 둔다 — 고른 것과 지우는 버튼이 한눈에 들어와야 한다
+      actions={
+        <Button
+          size="sm"
+          disabled={!canSelect || selected.length === 0}
+          disabledReason={
+            !canSelect
+              ? '운영자(OPERATOR) 이상만 비울 수 있습니다'
+              : '표에서 비울 질의를 선택해 주세요'
+          }
+          onClick={onPurgeSelected}
+        >
+          질의별 비우기{selected.length > 0 && ` (${selected.length})`}
+        </Button>
+      }
+    >
+      {query.isPending ? (
+        <Loading />
+      ) : query.isError ? (
+        <SectionError error={query.error} onRetry={() => void query.refetch()} />
+      ) : (
+        <>
+          <DataTable
+            caption="캐시된 질의 목록"
+            columns={columns}
+            rows={rows}
+            rowKey={(entry) => entry.cache_key}
+            rowState={(entry) => (isSelected(entry) ? 'selected' : 'default')}
+            empty={<EmptyState title="캐시된 질의가 없습니다" />}
+          />
+          {query.data.total > DEFAULT_PAGE_SIZE && (
+            <Pagination page={page} total={query.data.total} onPageChange={setPage} />
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
 // ---------------------------------------------------------------- ③ 캐시 비우기
 
 export interface CachePurgeCardProps {
@@ -158,10 +305,8 @@ export interface CachePurgeCardProps {
   autoPurge: boolean
   autoPurgeBaseline: boolean
   canEditPolicy: boolean
-  canPurgeQuery: boolean
   canPurgeAll: boolean
   onToggleAuto: (active: boolean) => void
-  onPurgeQuery: () => void
   onPurgeAll: () => void
 }
 
@@ -170,10 +315,8 @@ export function CachePurgeCard({
   autoPurge,
   autoPurgeBaseline,
   canEditPolicy,
-  canPurgeQuery,
   canPurgeAll,
   onToggleAuto,
-  onPurgeQuery,
   onPurgeAll,
 }: CachePurgeCardProps) {
   return (
@@ -195,25 +338,17 @@ export function CachePurgeCard({
           {formatDateTime(stats.last_purged_at)} ({stats.last_purge_reason})
         </span>
       </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          disabled={!canPurgeQuery}
-          disabledReason={canPurgeQuery ? undefined : '운영자(OPERATOR) 이상만 비울 수 있습니다'}
-          onClick={onPurgeQuery}
-        >
-          질의별 비우기
-        </Button>
-        {/* Danger 버튼은 확인 모달 안에서만 쓴다(CM-DF-001 03절) — 여기서는 Secondary */}
-        <Button
-          size="sm"
-          disabled={!canPurgeAll}
-          disabledReason={canPurgeAll ? undefined : '관리자(ADMIN)만 전체를 비울 수 있습니다'}
-          onClick={onPurgeAll}
-        >
-          전체 비우기
-        </Button>
-      </div>
+      {/* Danger 버튼은 확인 모달 안에서만 쓴다(CM-DF-001 03절) — 여기서는 Secondary.
+          [질의별 비우기]는 대상을 고르는 [캐시 항목] 카드로 옮겼다(2026-08-20) — 버튼과 대상이
+          다른 카드에 떨어져 있으면 무엇이 지워질지 모른 채 누르게 된다 */}
+      <Button
+        size="sm"
+        disabled={!canPurgeAll}
+        disabledReason={canPurgeAll ? undefined : '관리자(ADMIN)만 전체를 비울 수 있습니다'}
+        onClick={onPurgeAll}
+      >
+        전체 비우기
+      </Button>
     </Card>
   )
 }

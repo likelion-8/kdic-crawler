@@ -116,7 +116,8 @@ export interface ConversationLogRow {
   occurred_at: string
   /** 마스킹된 저장본. 원문은 어떤 권한으로도 볼 수 없다 */
   question_masked: string
-  intent: Intent
+  /** 플래너 전에 끝난 건(캐시 적중·가드레일 거절·Gate EXIT)은 null */
+  intent: Intent | null
   status: LogStatus
   feedback: FeedbackVote | null
   /** 실패 건은 null(화면에서 '—') */
@@ -176,15 +177,19 @@ export interface RunObservation {
 }
 
 export interface ConversationLogDetail extends ConversationLogRow {
-  /** 관측 신설(2026-08-14) 이전 대화는 null */
+  /** 관측 신설(2026-08-14) 이전 대화는 null. 캐시 응답도 검색을 안 타 null 이다 */
   observation: RunObservation | null
+  /** 답변을 낸 경로. 넷 다 플래너 앞에서 끝나 성격·유형·근거가 없다. 평소 경로는 null */
+  served_from: 'cache' | 'guardrail' | 'gate1' | 'gate2' | null
+  /** 그 경로에서 걸린 규칙 이름(Gate 1 의 FIXED_GREETING 등). 원시 식별자 */
+  served_label: string | null
   classification: {
-    intent: Intent
+    intent: Intent | null
     business_function: BusinessFunction | null
-    question_type: QuestionType
-    source_used: boolean
-    /** 첫 줄 근거 사용 마커 */
-    marker: string
+    question_type: QuestionType | null
+    source_used: boolean | null
+    /** 첫 줄 근거 사용 마커. 판정 원천이 없으면 null 이다 */
+    marker: string | null
     /** 마커가 어긋나 정규화로 보정한 건 */
     normalized: boolean
   }
@@ -211,6 +216,18 @@ const rows: ConversationLogRow[] = [
   {
     request_id: '4a01-77bc', occurred_at: at('09:41'), question_masked: '예금자보호 한도가 얼마인가요?',
     intent: 'informational', status: 'NORMAL', feedback: 'up', source_count: 2, latency_s: 7.9, triage: 'NONE',
+  },
+  {
+    // 위 4a01-77bc 와 같은 질문 — 저장해 둔 답을 그대로 돌려준 건이라 소요가 1초대다
+    request_id: '2b77-05e1', occurred_at: at('09:40'), question_masked: '예금자보호 한도가 얼마인가요?',
+    intent: null, status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.2,
+    triage: 'NONE',
+  },
+  {
+    // Gate 1 규칙 필터가 인사로 판정해 즉답한 건 — LLM 을 안 불러 0.1초다
+    request_id: '9c40-1d22', occurred_at: at('09:39'), question_masked: '안녕하세요',
+    intent: null, status: 'NORMAL', feedback: null, source_count: null, latency_s: 0.1,
+    triage: 'NONE',
   },
   {
     request_id: '7d1a-93f2', occurred_at: at('09:38'), question_masked: '착오송금 반환지원 신청 방법',
@@ -270,6 +287,29 @@ function shiftKstDate(days: number): string {
 
 /** 상세는 목록 행에서 파생하고, 목업에 값이 있는 2건만 실제 값을 채운다 */
 const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
+  // Gate 1 EXIT — '분류 기록 없음 — 범위 판정 (Gate 1) · 인사' 가 뜨는 상태
+  '9c40-1d22': {
+    served_from: 'gate1',
+    served_label: 'FIXED_GREETING',
+    observation: null,
+    classification: {
+      intent: null, business_function: null, question_type: null,
+      source_used: null, marker: null, normalized: false,
+    },
+    langfuse: null,
+  },
+  // 캐시 적중 — 검색·생성을 건너뛰어 관측이 없다. 판정을 지어내지 않고 null 로 둔다
+  '2b77-05e1': {
+    served_from: 'cache',
+    served_label: null,
+    observation: null,
+    classification: {
+      // 플래너를 안 타 성격·유형이 저장되지 않는다 — 화면은 '분류 기록 없음'을 적는다
+      intent: null, business_function: null, question_type: null,
+      source_used: null, marker: null, normalized: false,
+    },
+    langfuse: null,
+  },
   '7d1a-93f2': {
     classification: {
       intent: 'civil_petition', business_function: '착오송금 반환 신청', question_type: 'fact',
@@ -341,6 +381,9 @@ function detailOf(row: ConversationLogRow): ConversationLogDetail {
       marker: (row.source_count ?? 0) > 0 ? 'SOURCE_USED' : 'SOURCE_UNUSED',
       normalized: false,
     },
+    // 평소 경로는 검색·생성을 탄다. 플래너 앞에서 끝난 건만 값이 있다(DETAIL_OVERRIDE 참고)
+    served_from: null,
+    served_label: null,
     // 추적이 없는 실행도 있다 — trace_id를 못 남긴 경우(로깅 실패는 응답을 막지 않는다)
     langfuse: null,
     total_latency_ms: row.latency_s === null ? null : Math.round(row.latency_s * 1000),

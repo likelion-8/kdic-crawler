@@ -323,7 +323,8 @@ def _plan_labels(sub_plans: list) -> tuple[Optional[str], Optional[str]]:
 
 
 def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
-            trace_id=None) -> None:
+            trace_id=None, served_from: Optional[str] = None,
+            served_label: Optional[str] = None) -> None:
     """실사용 질의 1건을 Supabase rag_runs 에 남긴다.
 
     pipeline.rag_answer() 는 자기 안에서 이걸 부르지만 API 는 그 함수를 우회해 흐름을
@@ -353,7 +354,10 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
         trace_id=trace_id,   # observability.record_trace 결과 — AD-005 상세의 Langfuse 링크 원천
         # 검색 상위 청크·검증 판정. 이게 없으면 AD-005 상세의 source_count·source_used·marker·
         # normalized 가 영원히 null 이라 관리자가 원인을 못 가린다(api/rag/observation.py).
-        observation=observation.build(sub_plans),
+        # 플래너 앞에서 끝난 경로(캐시·가드레일·Gate 1·2)는 sub_plans 가 비어 관측이 NULL 이
+        # 된다 — 경로를 적어 두지 않으면 AD-005 가 '왜 분류가 없나'를 말할 수 없다.
+        observation=observation.with_served_from(observation.build(sub_plans), served_from,
+                                                 served_label),
     )
 
 

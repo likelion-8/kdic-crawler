@@ -227,7 +227,7 @@ def test_choosing_normal_also_finds_legacy_rows():
 # 질의가 rag_runs 에 행 자체가 없어서 아래 failed 는 무엇을 넣든 0 이었다.
 
 def _insert_run(db, prefix, *, status, request_id_suffix, intent="informational",
-                failure_stage=None, root_cause=None, error_code=None):
+                failure_stage=None, root_cause=None, error_code=None, observation=None):
     """행을 직접 넣는다. rag_logger.log_rag_run 을 쓰지 않는 이유는 그 함수가 모든 예외를
     삼켜서(실패-안전) 삽입이 실패해도 테스트가 조용히 통과해 버리기 때문이다."""
     from schema import rag_runs
@@ -242,6 +242,7 @@ def _insert_run(db, prefix, *, status, request_id_suffix, intent="informational"
         "total_latency_ms": 1234,
         "request_id": f"{prefix}{request_id_suffix}",
         "session_id": f"{prefix}sess",
+        "observation": observation,
     })
 
 
@@ -291,6 +292,51 @@ def test_the_list_renders_a_real_row_end_to_end(db_session, test_prefix, db_clea
     assert row["source_count"] is None
     assert row["triage"] == "NONE"
 
+
+
+def test_a_cache_served_answer_says_so_in_the_detail(db_session, test_prefix, db_cleanup):
+    """캐시로 나간 답변인지 상세에서 읽히는지.
+
+    캐시 적중은 검색·생성을 건너뛰어 관측이 비므로, 종전에는 가드레일 차단·Gate EXIT 와
+    똑같이 '판정 원천 없음'으로만 보였다. 총 소요가 1초대인 이유도 화면에 설명이 없었다.
+    """
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="NORMAL", request_id_suffix="cached",
+                observation={"served_from": "cache"})
+    _insert_run(db_session, test_prefix, status="NORMAL", request_id_suffix="fresh")
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        cached = client.get(f"/api/admin/logs/{test_prefix}cached").json()
+        fresh = client.get(f"/api/admin/logs/{test_prefix}fresh").json()
+
+    assert cached["served_from"] == "cache"
+    assert cached["served_label"] is None
+    # 캐시라고 근거 판정을 지어내지 않는다 — 여전히 '모름'이다
+    assert cached["classification"]["source_used"] is None
+    # {subs: []} 를 내보내면 화면이 '근거가 하나도 없는 답변'으로 읽어 [다음 조치]가 데이터
+    # 문제를 강조한다. 하위 질문이 없는 관측은 없는 것으로 내린다
+    assert cached["observation"] is None
+    assert fresh["served_from"] is None
+
+
+def test_a_gate_exit_says_which_rule_it_hit(db_session, test_prefix, db_cleanup):
+    """'분류 기록 없음'만으로는 부족하다 — 어느 경로의 어느 규칙에 걸려 분류가 없는지까지 낸다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="NORMAL", request_id_suffix="gated", intent=None,
+                observation={"served_from": "gate1", "served_label": "FIXED_GREETING"})
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        body = client.get(f"/api/admin/logs/{test_prefix}gated").json()
+
+    assert body["served_from"] == "gate1"
+    assert body["served_label"] == "FIXED_GREETING"
+    assert body["classification"]["intent"] is None
 
 def test_a_failed_run_keeps_its_stage_and_cause_in_the_detail(db_session, test_prefix, db_cleanup):
     """실패 건 상세가 failure_stage/root_cause 를 그대로 보여주는지 — 이 두 값이 없으면

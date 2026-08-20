@@ -10,15 +10,17 @@ import { useState } from 'react'
 import { ReturnBand } from '../ReturnBand'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  CARD_COLUMN, CARD_COLUMNS, ConfirmModal, DraftStatusBar, InfoHint, Loading, ReadOnlyNotice, TextField, useToast,
+  CARD_COLUMN, CARD_COLUMNS, ConfirmModal, DraftStatusBar, InfoHint, Loading, ReadOnlyNotice, useToast,
 } from '../../../components/ui'
 import { hasRole } from '../../../lib/codes'
 import { QUERY_CACHE_TTL_H } from '../../../lib/constants'
 import { needsReauth, useSession } from '../../../app/session'
 import { Card, SectionError, modalError } from './promptops/common'
-import { BlockImpact, BlockListCard, CachePurgeCard, CacheStatsCard, UsageLimitCard } from './promptops/ops-cards'
+import {
+  BlockImpact, BlockListCard, CacheEntriesCard, CachePurgeCard, CacheStatsCard, UsageLimitCard,
+} from './promptops/ops-cards'
 import { SuggestedQuestionsCard } from './promptops/suggested'
-import type { BlockEntry, OpsPolicy as OpsPolicyValue } from './promptops/api'
+import type { BlockEntry, CacheEntry, OpsPolicy as OpsPolicyValue } from './promptops/api'
 import {
   fetchCacheStats, fetchOpsPolicy, opsKeys, purgeCache, reauthenticate, releaseBlock, saveOpsPolicy,
 } from './promptops/api'
@@ -54,7 +56,8 @@ export function OpsPolicy() {
   /** 서버 현행값 위에 덮어쓰는 초안. [초기화]는 이걸 비우기만 하면 된다(서버 호출 없음) */
   const [edits, setEdits] = useState<Partial<OpsPolicyValue>>({})
   const [ask, setAsk] = useState<Ask | null>(null)
-  const [purgeTarget, setPurgeTarget] = useState('')
+  /** 캐시 항목 카드에서 고른 비우기 대상. 질의 원문을 확인 모달이 그대로 보여준다 */
+  const [selectedEntries, setSelectedEntries] = useState<CacheEntry[]>([])
 
   const policyQuery = useQuery({ queryKey: opsKeys.policy, queryFn: fetchOpsPolicy })
   const cacheQuery = useQuery({ queryKey: opsKeys.cache, queryFn: fetchCacheStats })
@@ -82,13 +85,21 @@ export function OpsPolicy() {
   })
 
   const purge = useMutation({
-    mutationFn: async (input: { scope: 'query' | 'all'; reason: string; query?: string; password?: string }) => {
+    mutationFn: async (input: {
+      scope: 'query' | 'all'
+      reason: string
+      cacheKeys?: string[]
+      password?: string
+    }) => {
       // 전체 비우기는 ADMIN + 비밀번호 재확인이 필수다(§5)
       if (input.password) await reauthenticate(input.password)
-      return purgeCache(input.scope, input.reason, input.query)
+      return purgeCache(input.scope, input.reason, input.cacheKeys)
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: opsKeys.cache })
+      // 목록도 함께 무효화하지 않으면 방금 지운 행이 표에 남는다
+      void qc.invalidateQueries({ queryKey: opsKeys.cacheEntries })
+      setSelectedEntries([])
       closeAsk()
       showToast('질의 캐시를 비웠습니다')
     },
@@ -156,17 +167,19 @@ export function OpsPolicy() {
             autoPurge={value.auto_purge}
             autoPurgeBaseline={baseline.auto_purge}
             canEditPolicy={canAdmin}
-            canPurgeQuery={canOperate}
             canPurgeAll={canAdmin}
             onToggleAuto={(auto_purge) => onChange({ auto_purge })}
-            onPurgeQuery={() => {
-              setPurgeTarget('')
-              setAsk({ kind: 'purge-query' })
-            }}
             onPurgeAll={() => setAsk({ kind: 'purge-all' })}
           />
         </div>
       </div>
+
+      <CacheEntriesCard
+        selected={selectedEntries}
+        onSelectedChange={setSelectedEntries}
+        canSelect={canOperate}
+        onPurgeSelected={() => setAsk({ kind: 'purge-query' })}
+      />
 
       <BlockListCard canRelease={canOperate} onRelease={(block) => setAsk({ kind: 'release', block })} />
 
@@ -231,28 +244,34 @@ export function OpsPolicy() {
 
       <ConfirmModal
         open={ask?.kind === 'purge-query'}
-        title="이 질의의 캐시를 비울까요?"
-        // 대상 선택 UI가 기획서에 없어(13절 M-6) 확인 모달 안에서 질의를 받는다
+        title={`선택한 질의 ${selectedEntries.length}건의 캐시를 비울까요?`}
+        // 대상은 [캐시 항목] 카드에서 고른다(2026-08-20 §4 신설 — 종전에는 여기서 질의를 손으로
+        // 받아써서, 캐시에 없는 문장을 적어도 0건 삭제가 성공으로 보였다)
         impact={
           <>
             비운 질의는 다음 요청부터 답변을 새로 생성합니다. 보관 기간은 {QUERY_CACHE_TTL_H}시간입니다.
-            <TextField
-              label="대상 질의"
-              value={purgeTarget}
-              placeholder="예: 착오송금 반환까지 얼마나 걸리나요?"
-              onChange={setPurgeTarget}
-            />
+            <ul className="mt-2 max-h-40 space-y-1 overflow-auto text-xs text-muted-foreground">
+              {selectedEntries.map((entry) => (
+                <li key={entry.cache_key}>
+                  {entry.question} · 적중 {entry.hit_count}회
+                </li>
+              ))}
+            </ul>
           </>
         }
         reason="required"
         // 대상 확인 + 사유 필수(§5 Description 3) — 대상이 비면 실행 자체를 막는다
-        confirmDisabled={purgeTarget.trim() === ''}
-        confirmDisabledReason="비울 질의를 입력해 주세요"
+        confirmDisabled={selectedEntries.length === 0}
+        confirmDisabledReason="비울 캐시 항목을 선택해 주세요"
         error={modalError(purge.error)}
         confirmLabel="비우기"
         pending={purge.isPending}
         onConfirm={({ reason }) =>
-          purge.mutate({ scope: 'query', reason: reason ?? '', query: purgeTarget.trim() })
+          purge.mutate({
+            scope: 'query',
+            reason: reason ?? '',
+            cacheKeys: selectedEntries.map((entry) => entry.cache_key),
+          })
         }
         onCancel={closeAsk}
       />

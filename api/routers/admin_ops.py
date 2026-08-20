@@ -220,9 +220,13 @@ def update_ops_policy(body: dict, request: Request, admin: CurrentAdmin, db: DbS
     return _policy_response(new_version, after)
 
 
+def _active_cache_filter(now: datetime):
+    return query_cache.c.expires_at.is_(None) | (query_cache.c.expires_at > now)
+
+
 def _cache_stats(db) -> dict:
     now = datetime.now(timezone.utc)
-    active = (query_cache.c.expires_at.is_(None) | (query_cache.c.expires_at > now))
+    active = _active_cache_filter(now)
     aggregate = db.execute(
         select(func.count().label("entries"),
                func.coalesce(func.sum(query_cache.c.hit_count), 0).label("hits"))
@@ -258,6 +262,44 @@ def get_cache_stats(admin: CurrentAdmin, db: DbSession):
     return _cache_stats(db)
 
 
+@router.get("/cache/entries")
+def list_cache_entries(
+    admin: CurrentAdmin,
+    db: DbSession,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+):
+    """캐시된 질의 목록 — 화면이 무엇을 비울지 고르는 근거다(AD-009 §4).
+
+    만료 행을 빼는 기준을 /cache/stats 의 '캐시 항목'과 같게 둔다. 다르면 현황이 23건인데
+    목록은 25행이 나와, 관리자가 어느 쪽을 믿어야 할지 모르게 된다.
+    적중 많은 순 — 비우면 영향이 큰 것부터 보인다. response(답변 본문)는 내리지 않는다."""
+    del admin
+    now = datetime.now(timezone.utc)
+    total = db.execute(
+        select(func.count()).select_from(query_cache).where(_active_cache_filter(now))
+    ).scalar_one()
+    rows = db.execute(
+        select(query_cache.c.cache_key, query_cache.c.question, query_cache.c.hit_count,
+               query_cache.c.created_at, query_cache.c.expires_at)
+        .where(_active_cache_filter(now))
+        .order_by(query_cache.c.hit_count.desc(), query_cache.c.created_at.desc())
+        .offset((page - 1) * size).limit(size)
+    ).all()
+    return {
+        "items": [{
+            "cache_key": row.cache_key,
+            "question": row.question,
+            "hit_count": row.hit_count,
+            "created_at": _to_kst_iso(row.created_at) or "",
+            "expires_at": _to_kst_iso(row.expires_at) or "",
+        } for row in rows],
+        "total": total,
+        "page": page,
+        "size": size,
+    }
+
+
 @router.post("/cache/purge")
 def purge_cache(
     body: dict,
@@ -270,12 +312,30 @@ def purge_cache(
     scope = str(scope_query or body.get("scope") or "").strip()
     if scope not in {"query", "all"}:
         raise BadRequestError("scope는 query 또는 all이어야 합니다.")
+    detail_extra: dict = {}
 
     _require_role(admin, "ADMIN" if scope == "all" else "OPERATOR", "질의 캐시 비우기")
     if scope == "all":
         _require_recent_reauth(admin)
         statement = delete(query_cache)
         target = "전체 캐시"
+    elif body.get("cache_keys") is not None:
+        # 화면이 목록에서 고른 항목(§4). 질의 원문 대신 키를 받는 이유는 정규화 재현이 필요 없고
+        # 목록에 보인 그 행을 정확히 지우기 때문이다.
+        keys = [str(key) for key in body["cache_keys"] if str(key).strip()]
+        if not keys:
+            raise BadRequestError("비울 캐시 항목을 선택해 주세요.")
+        selected = db.execute(
+            select(query_cache.c.cache_key, query_cache.c.question)
+            .where(query_cache.c.cache_key.in_(keys))
+        ).all()
+        if not selected:
+            raise BadRequestError("이미 비워졌거나 없는 캐시 항목입니다.")
+        statement = delete(query_cache).where(query_cache.c.cache_key.in_(keys))
+        # 감사 로그(AD-011)는 사람이 읽는다 — 64자 해시만 남기면 무엇을 지웠는지 알 수 없다
+        first = selected[0].question
+        target = first if len(selected) == 1 else f"{first} 외 {len(selected) - 1}건"
+        detail_extra = {"cache_keys": keys}
     else:
         question = str(body.get("query") or "").strip()
         if not normalize_cache_question(question):
@@ -293,7 +353,7 @@ def purge_cache(
         action=ACTION_CACHE_PURGE,
         target=target,
         reason=reason,
-        detail={"scope": scope, "removed": removed},
+        detail={"scope": scope, "removed": removed, **detail_extra},
     )
     return {"removed": removed, **_cache_stats(db)}
 
