@@ -17,9 +17,10 @@ import { formatTime } from '../../../lib/format'
 
 export interface LogDetailPanelProps {
   detail: ConversationLogDetail
-  /** OPERATOR 이상 — 처리 완료 */
+  /** OPERATOR 이상 — 처리 완료 · 되돌리기 */
   canRun: boolean
   onResolve: () => void
+  onReopen: () => void
 }
 
 /** 모달 헤더용 제목·부제 — 화면과 상세가 같은 문구를 쓰도록 여기서 만든다 */
@@ -160,11 +161,12 @@ const STAGE_LABEL: Record<string, string> = {
 const stageLabel = (stage: string | null) =>
   stage === null ? '확인할 수 없음' : (STAGE_LABEL[stage] ?? stage)
 
-/** 처리 상태 꼬리 — 미처리면 [처리 완료 표시], 처리했으면 그때 남긴 조치 사유.
+/** 처리 상태 꼬리 — 미처리면 [처리 완료 표시], 처리했으면 그때 남긴 조치 사유와 되돌리기.
  *
  * 사유는 활동 로그(AD-011)에도 쌓이지만 거기까지 찾아가야 보였다. 조치를 한 화면에서
- * 바로 읽히는 게 맞다. 정상 건과 실패 건이 같은 꼬리를 쓴다. */
-function TriageFooter({ detail, canRun, onResolve }: LogDetailPanelProps) {
+ * 바로 읽히는 게 맞다. 정상 건과 실패 건이 같은 꼬리를 쓴다.
+ * 되돌리기가 없으면 잘못 누른 완료를 풀 길이 없어 대시보드 할 일 건수가 거짓이 된다. */
+function TriageFooter({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps) {
   if (detail.triage === 'RESOLVED') {
     return (
       <div className="mt-4 rounded-md border border-border p-3">
@@ -187,6 +189,11 @@ function TriageFooter({ detail, canRun, onResolve }: LogDetailPanelProps) {
             </div>
           )}
         </dl>
+        {canRun && (
+          <Button className="mt-3" size="sm" variant="secondary" onClick={onReopen}>
+            처리 완료 취소
+          </Button>
+        )}
       </div>
     )
   }
@@ -202,7 +209,7 @@ function TriageFooter({ detail, canRun, onResolve }: LogDetailPanelProps) {
 
 
 /** [2][3] 단계별 처리 추적 */
-function TracePanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
+function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps) {
   const [expanded, setExpanded] = useState(false)
   const { classification: c } = detail
   return (
@@ -284,14 +291,14 @@ function TracePanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
 
       {/* 처리 완료 — 실패 건 전용이던 것을 전체 건으로(2026-08-18). 나쁨 평가 대응은 정상 건이
           대부분이라, 여기 없으면 조치를 끝내고도 대시보드 할 일 건수가 영원히 안 줄어든다 */}
-      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} />
+      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} onReopen={onReopen} />
     </section>
   )
 }
 
 
 /** [4] 실패 건(붉은 행) 선택 시 : 오류 상세 패널 */
-function ErrorPanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
+function ErrorPanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps) {
   const error = detail.error!
   // 4행은 서버가 error_code 하나에서 파생한다. 그 컬럼(2026-08-19) 이전 실패는 전부 null 이라
   // 행을 그리지 않는다 — 종전에는 빈 문자열을 그려 '오류 코드 ·' 같은 껍데기가 보였다.
@@ -348,7 +355,7 @@ function ErrorPanel({ detail, canRun, onResolve }: LogDetailPanelProps) {
         <TraceLink trace={detail.langfuse} />
       </div>
 
-      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} />
+      <TriageFooter detail={detail} canRun={canRun} onResolve={onResolve} onReopen={onReopen} />
     </section>
   )
 }

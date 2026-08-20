@@ -437,17 +437,20 @@ export const adPipelineLogsHandlers = [
     return HttpResponse.json(detailOf(row))
   }),
 
-  // [처리 완료 표시] — 조치 사유 필수
+  // [처리 완료 표시] / [처리 완료 취소] — 완료는 사유 필수, 되돌리기는 선택(admin_logs.patch_log)
   http.patch('/api/admin/logs/:requestId', async ({ params, request }) => {
     const no = denied(request, 'OPERATOR')
     if (no) return no
     const body = (await request.json()) as { request_id?: string; reason?: string; triage?: TriageStatus }
     if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
-    if (!body.reason?.trim()) return fail(400, '조치 사유를 입력해 주세요.')
+    const triage = body.triage ?? 'RESOLVED'
+    if (triage === 'RESOLVED' && !body.reason?.trim()) return fail(400, '조치 사유를 입력해 주세요.')
     const row = rows.find((r) => r.request_id === params.requestId)
     if (!row) return fail(404, '대화 로그를 찾을 수 없습니다.')
-    row.triage = body.triage ?? 'RESOLVED'
-    triageReasons[row.request_id] = body.reason
+    row.triage = triage
+    // 되돌리면 서버가 조치 사유도 지운다 — 남겨 두면 '미처리인데 사유가 있는' 행이 된다
+    if (triage === 'NONE') delete triageReasons[row.request_id]
+    else triageReasons[row.request_id] = body.reason ?? ''
     return HttpResponse.json(row)
   }),
 

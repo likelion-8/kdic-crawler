@@ -234,11 +234,15 @@ export function fetchLogDetail(requestId: string) {
   return apiRequest<ConversationLogDetail>(`/api/admin/logs/${requestId}`)
 }
 
-/** [처리 완료 표시] — 조치 사유 필수 (Desc 4) */
-export function resolveLog(requestId: string, reason: string) {
+/**
+ * 처리 상태 변경. `RESOLVED` 는 조치 사유가 필수고(Desc 4), `NONE` 으로 되돌릴 때는 선택이다
+ * — 잘못 누른 완료를 푸는 데까지 사유를 요구하면 건수가 거짓인 채로 남는다.
+ * 되돌리면 서버가 처리자·시각과 함께 **조치 사유도 지운다**(admin_logs.patch_log).
+ */
+export function setLogTriage(requestId: string, triage: TriageStatus, reason: string) {
   return apiRequest<ConversationLogRow>(`/api/admin/logs/${requestId}`, {
     method: 'PATCH',
-    body: { triage: 'RESOLVED' },
+    body: { triage },
     reason,
   })
 }

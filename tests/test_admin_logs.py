@@ -350,6 +350,37 @@ def test_a_failed_run_without_an_error_code_says_so(db_session, test_prefix, db_
     assert err["root_cause"].startswith("RuntimeError")
 
 
+def test_reopening_a_resolved_run_clears_its_action_record(db_session, test_prefix, db_cleanup):
+    """실수로 누른 완료를 풀 수 있어야 한다 — 못 풀면 대시보드 할 일 건수가 거짓인 채로 남는다.
+
+    되돌릴 때는 사유를 요구하지 않는다(완료만 필수). 대신 처리자·시각과 함께 **조치 사유도
+    지운다** — 남겨 두면 '미처리인데 조치 사유가 있는' 행이 된다."""
+    from schema import rag_runs
+    db_cleanup(rag_runs, rag_runs.c.request_id)
+
+    _insert_run(db_session, test_prefix, status="FAILED", request_id_suffix="undo",
+                failure_stage="llm", root_cause="RuntimeError: x")
+    db_session.commit()
+
+    with _client("OPERATOR", db_session) as client:
+        rid = f"{test_prefix}undo"
+        done = client.patch(f"/api/admin/logs/{rid}",
+                            json={"request_id": rid, "triage": "RESOLVED", "reason": "키 갱신"})
+        assert done.status_code == 200, done.text
+        after_done = client.get(f"/api/admin/logs/{rid}").json()
+        assert after_done["triage_reason"] == "키 갱신"
+
+        # 사유 없이 되돌린다 — 400 이 나면 잘못 누른 완료를 풀 길이 없다
+        undo = client.patch(f"/api/admin/logs/{rid}", json={"request_id": rid, "triage": "NONE"})
+        assert undo.status_code == 200, undo.text
+        assert undo.json()["triage"] == "NONE"
+
+        after_undo = client.get(f"/api/admin/logs/{rid}").json()
+    assert after_undo["triage"] == "NONE"
+    assert after_undo["triage_reason"] is None, "되돌렸는데 조치 사유가 남으면 미처리 행에 남의 사유가 붙는다"
+    assert after_undo["triaged_by"] is None and after_undo["triaged_at"] is None
+
+
 def test_a_failed_run_without_an_intent_still_renders(db_session, test_prefix, db_cleanup):
     """플래너 자체가 죽은 실패(sse.py 의 첫 번째 에러 경로)는 intent 를 모른다.
 

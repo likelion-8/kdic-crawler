@@ -33,6 +33,7 @@ import {
 import type { Column } from '../../components/ui'
 import { isApiRequestError } from '../../lib/api/client'
 import { INTENT_LABEL, hasRole } from '../../lib/codes'
+import type { TriageStatus } from '../../lib/codes'
 import { formatTime } from '../../lib/format'
 import { useSession } from '../../app/session'
 import { LogDetailPanel, logDetailMeta, logDetailTitle } from './logs/LogDetailPanel'
@@ -52,7 +53,7 @@ import {
   fetchSummary,
   kstToday,
   logsQueryKey,
-  resolveLog,
+  setLogTriage,
 } from './logs/api'
 import type { ConversationLogRow, LogFilters } from './logs/api'
 
@@ -120,7 +121,8 @@ export function ConversationLogs() {
   const [page, setPage] = useState(1)
   // ?request= 로 특정 행을 바로 연다 — 되돌아가기 띠의 [로그로 돌아가기]가 그 대화를 들고 온다
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('request'))
-  const [resolving, setResolving] = useState<string | null>(null)
+  // 처리 상태 확인 모달 — 완료 표시와 되돌리기가 같은 모달을 방향만 바꿔 쓴다
+  const [triaging, setTriaging] = useState<{ id: string; to: TriageStatus } | null>(null)
 
   // 필터가 바뀌면 첫 페이지로 돌아가고 선택도 푼다(선택한 행이 결과에서 빠질 수 있다)
   function patch(next: Partial<LogFilters>) {
@@ -152,12 +154,14 @@ export function ConversationLogs() {
     enabled: selectedId !== null && canViewDetail,
   })
 
-  const resolve = useMutation({
-    mutationFn: ({ reason }: { reason?: string }) => resolveLog(resolving!, reason ?? ''),
-    onSuccess: () => {
-      setResolving(null)
+  const triage = useMutation({
+    mutationFn: ({ reason }: { reason?: string }) =>
+      setLogTriage(triaging!.id, triaging!.to, reason ?? ''),
+    onSuccess: (_row, _vars, _ctx) => {
+      const reopened = triaging!.to === 'NONE'
+      setTriaging(null)
       void queryClient.invalidateQueries({ queryKey: logsQueryKey })
-      showToast('처리 완료로 표시했습니다')
+      showToast(reopened ? '처리 완료를 취소했습니다 · 미처리로 돌아갑니다' : '처리 완료로 표시했습니다')
     },
   })
 
@@ -508,34 +512,42 @@ export function ConversationLogs() {
           <LogDetailPanel
             detail={detail.data}
             canRun={canViewDetail}
-            onResolve={() => setResolving(selectedId)}
+            onResolve={() => setTriaging({ id: selectedId!, to: 'RESOLVED' })}
+            onReopen={() => setTriaging({ id: selectedId!, to: 'NONE' })}
           />
         ) : null}
       </DetailModal>
 
 
-      {resolving !== null && (
+      {/* 되돌리기에까지 사유를 요구하면 잘못 누른 완료를 못 풀어 건수가 거짓인 채로 남는다 —
+          완료는 사유 필수, 취소는 선택이다(백엔드 patch_log 도 같은 규칙) */}
+      {triaging !== null && (
         <ConfirmModal
           open
-          title="이 대화를 처리 완료로 표시할까요?"
-          reason="required"
-          reasonPlaceholder="예: 원인 확인 후 프롬프트 수정 반영"
-          confirmLabel="처리 완료"
-          pending={resolve.isPending}
-          onCancel={() => setResolving(null)}
-          onConfirm={(payload) => resolve.mutate(payload)}
+          title={triaging.to === 'NONE' ? '처리 완료를 취소할까요?' : '이 대화를 처리 완료로 표시할까요?'}
+          reason={triaging.to === 'NONE' ? 'optional' : 'required'}
+          reasonPlaceholder={
+            triaging.to === 'NONE' ? '예: 잘못 눌렀습니다' : '예: 원인 확인 후 프롬프트 수정 반영'
+          }
+          confirmLabel={triaging.to === 'NONE' ? '처리 완료 취소' : '처리 완료'}
+          pending={triage.isPending}
+          onCancel={() => setTriaging(null)}
+          onConfirm={(payload) => triage.mutate(payload)}
           impact={
             <div className="space-y-3">
-              {resolve.isError && (
+              {triage.isError && (
                 <ErrorNote>
-                  {isApiRequestError(resolve.error)
-                    ? resolve.error.error.user_message
-                    : '처리 완료로 표시하지 못했습니다.'}
+                  {isApiRequestError(triage.error)
+                    ? triage.error.error.user_message
+                    : triaging.to === 'NONE'
+                      ? '처리 완료를 취소하지 못했습니다.'
+                      : '처리 완료로 표시하지 못했습니다.'}
                 </ErrorNote>
               )}
               <p className="text-[13px]">
-                처리 완료로 표시해도 사용자에게 다시 보내지는 않습니다. 조치 사유는 관리자 활동 로그에
-                기록됩니다.
+                {triaging.to === 'NONE'
+                  ? '미처리로 돌아가 대시보드 할 일 건수에 다시 포함됩니다. 남아 있던 조치 사유는 지워지고, 취소한 사실이 관리자 활동 로그에 기록됩니다.'
+                  : '처리 완료로 표시해도 사용자에게 다시 보내지는 않습니다. 조치 사유는 관리자 활동 로그에 기록됩니다.'}
               </p>
             </div>
           }
