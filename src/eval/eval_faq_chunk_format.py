@@ -60,11 +60,11 @@ _PREFIX_END_RE = re.compile(r"^(\[[^\]]+\]\s*)")   # "[제목 · 업무] " 프�
 FRAMING = "아래는 이 주제에 대해 자주 묻는 질문과 그 답변입니다.\n"
 
 
-def v_current(text):
+def v_current(text, cid=None):
     return text
 
 
-def v_prepend(text):
+def v_prepend(text, cid=None):
     if not _FAQ_RE.search(text):
         return text
     m = _PREFIX_END_RE.match(text)
@@ -73,23 +73,73 @@ def v_prepend(text):
     return FRAMING + text
 
 
-def v_artifact(text):
+def v_artifact(text, cid=None):
     return text.replace("\n열기\n", "\n")
 
 
-def v_relabel(text):
+def v_relabel(text, cid=None):
     return _FAQ_RE.sub(lambda m: f"관련 질문 예시: {m.group(1)}\n답변: ", text)
 
 
-def v_combo(text):
+def v_combo(text, cid=None):
     """B+C 결합 — 1차 실험(2026-08-19)에서 B·C 만 효과(Q3 거절→정답, D 는 전패)라
     결합을 후속 검증한다. 프리펜드가 열기 존재를 조건으로 보므로 프리펜드 → 열기제거 순."""
     return v_artifact(v_prepend(text))
 
 
-VARIANTS = [("A.현행", v_current), ("B.프리펜드", v_prepend),
-            ("C.열기제거", v_artifact), ("D.재라벨링", v_relabel),
-            ("E.B+C결합", v_combo)]
+# ── H. 요약 프리펜드(생성축, 2026-08-19 후속) ─────────────────────────────────
+# luna 페이지 요약(data/page_summaries_pilot.json — 검색축 실험에서 생성)을 청크 앞에
+# 끼워 HCX 거절률을 잰다. 검색축은 이미 기각(순위 불변·가드 MRR -0.012)이라, 채택 여부는
+# 이 생성축 이득이 그 비용을 상회하는지로 정한다. 요약에는 답이 평서문으로 들어 있어
+# (예: "예상 소요 기간(2개월 내외)") 문답 구조의 문구 대조 함정을 우회하는 별도 통로가
+# 될 수 있다는 가설 — B(내용 없는 프레이밍)와의 차이가 그 지점이다.
+import json as _json
+
+_SUMMARIES_FILE = ROOT / "data" / "page_summaries_pilot.json"
+_SUMMARIES = (_json.loads(_SUMMARIES_FILE.read_text(encoding="utf-8"))
+              if _SUMMARIES_FILE.exists() else {})
+
+
+def v_summary(text, cid=None):
+    s = _SUMMARIES.get((cid or "").split("#")[0])
+    if not s or not text.startswith("["):
+        return text
+    cut = text.index("] ") + 2
+    return text[:cut] + s["summary"] + "\n" + text[cut:]
+
+
+# ── 질문 정렬(G, 2026-08-19 후속) — 자료가 아니라 질문 쪽을 자료에 맞추는 우회 ─────────
+# 근거: 문구 대조 실험 — 같은 자료에서 질문을 FAQ 원문 문구로 바꾸면 100% 정답. 자료 정제
+# (A~F)로 못 구한 먼 패러프레이즈를, 검색이 물어온 청크에 이미 박혀 있는 원문 질문으로
+# 사용자 질문을 정렬해서 공략한다. LLM 불필요 — 원문 질문은 top-1 청크 안에 있다.
+# ⚠️ 주의: build_units 가 이미 B+C 를 적용하므로(2026-08-19) 이 하네스의 '현행'은 B+C
+# 적용본이다 — G 의 비교 기준도 그것(= 오늘 운영 상태 대비 추가 이득을 잰다).
+_EMBEDDED_Q_RE = re.compile(r"질문\n(?:\d+\.\s*)?(.+?)\n(?:열기\n)?답변\n", re.DOTALL)
+
+
+def _embedded_question(top):
+    """top-1 청크에 박힌 FAQ 원문 질문. FAQ 꼴이 아니면 None(정렬 미적용)."""
+    m = _EMBEDDED_Q_RE.search(top[0][2]) if top else None
+    return m.group(1).strip() if m else None
+
+
+def q_replace(q, top):
+    """G1. 교체 — 사용자 질문을 원문 질문으로 통째 대체. 효과 상한 측정용(공격적)."""
+    return _embedded_question(top) or q
+
+
+def q_annotate(q, top):
+    """G2. 병기 — 사용자 문구를 유지하고 원문 질문을 참고로 덧붙임. 오정렬 시에도
+    사용자 의도가 남는 보수적 형태 — 운영 채택 후보는 이쪽."""
+    eq = _embedded_question(top)
+    return f"{q} (참고 — 이 질문은 자료의 다음 공식 문항과 같은 내용입니다: {eq})" if eq else q
+
+
+VARIANTS = [("A.현행", v_current, None), ("B.프리펜드", v_prepend, None),
+            ("C.열기제거", v_artifact, None), ("D.재라벨링", v_relabel, None),
+            ("E.B+C결합", v_combo, None),
+            ("G1.질문교체", v_current, q_replace), ("G2.질문병기", v_current, q_annotate),
+            ("H.요약프리펜드", v_summary, None)]
 
 
 def call_with_retry(prompt, *, deterministic, sleep):
@@ -128,9 +178,12 @@ def main():
     for q, must in QUESTIONS:
         top = gate_low_relevance(top_k_cut(route_search_chunks(q, k=20), k=5))
         print(f"\n{'=' * 70}\n질문: {q}\n근거 top3: {[(c, round(s, 3)) for c, s, _ in top[:3]]}")
-        for name, fn in variants:
-            chunks = [(cid, s, fn(t)) for cid, s, t in top]
-            prompt = build_informational_prompt(q, chunks)
+        for name, fn, q_fn in variants:
+            chunks = [(cid, s, fn(t, cid)) for cid, s, t in top]
+            q_used = q_fn(q, top) if q_fn else q
+            if q_fn and q_used != q:
+                print(f"  {name:10s} 정렬된 질문: {q_used[:60]}")
+            prompt = build_informational_prompt(q_used, chunks)
             time.sleep(args.sleep)
             raw = call_with_retry(prompt, deterministic=True, sleep=args.sleep)
             refused, correct, leaked, body = judge(raw, must)
