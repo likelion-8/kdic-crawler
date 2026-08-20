@@ -1,0 +1,254 @@
+{
+  "summary": {
+    "rerank": false,
+    "n_total": 20,
+    "n_success": 20,
+    "n_failed": 0,
+    "생성_성공률": 1.0,
+    "평균_응답시간_s": 11.75,
+    "must_include_커버리지(답변형)": 0.75,
+    "출처_정확률(답변형)": 0.9,
+    "출처링크_포함률(답변형)": 1.0,
+    "oos_적절거절률": null,
+    "n_answerable": 20,
+    "n_oos": 0,
+    "effective_params": {
+      "k_candidates": 20,
+      "k_final": 5,
+      "use_reranker": false,
+      "use_source_recheck": true,
+      "prompt_version": null
+    },
+    "recheck_mode": "single(pipeline·CLI경로)"
+  },
+  "manual_review": [
+    {
+      "test_id": "dp_syst_pl1",
+      "why": "must_include 실패",
+      "answer": "예금자보호법은 금융회사가 영업정지나 파산 등으로 고객의 예금을 지급하지 못하게 될 경우 해당 예금자뿐만 아니라 전체 금융제도의 안정성도 큰 타격을 입을 수 있기 때문에, 이러한 사태를 방지하고자 제정되었습니다. 이를 위해 예금보험제도를 운영하여 예금자의 예금을 보호하고 금융시장의 안정을 유지하는 것을 목적으로 하고 있습니다. 즉, 예금보험공사가 평소에 금융회사로부터 보험료를 받아 기금을 적립한 후, 금융회사가 예금을 지급할 수 없게 되면 금융회사를 대신하여 예금(예금보험금)을 지급하게 되는 것입니다. 이는 예금자를 보호하기 위한 목적으로 법에 의해 운영되는 공적보험입니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_syst_pl1t",
+      "why": "must_include 실패",
+      "answer": "예금자보호법을 제정하여 예금보험제도를 운영하는 근본적인 목적은 금융회사의 영업정지나 파산 등으로 인한 예금 지급불능 사태를 방지하고, 예금자를 보호하기 위함입니다. 이는 금융시장의 안정성을 유지하고, 예금자들이 안심하고 금융기관을 이용할 수 있도록 지원하는 데 중요한 역할을 합니다. 예금보험제도는 예금자보호법에 의해 운영되는 공적보험으로서, 예금자를 보호하기 위한 목적으로 법에 의해 마련된 제도입니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1",
+      "why": "must_include 실패",
+      "answer": "해외거주 유학생인 예금자가 위임장을 준비하려면 현지 대사관의 공증을 받아야 합니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n- 신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 금융거래정보 제공 요구(동의)서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 본인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 채권양도통지 위임장 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 대리인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 친권합의서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 취소신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 매입계약해제신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 수령계좌변경신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 위임해지통지서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 예금자보호법 시행령 개정에 따른 퇴직연금 예금자보호안내문 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인종합자산관리계좌(ISA) 예금자보호안내문 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 및 [보호금융상품등록부변동내역] 작성 서식 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 작성 서식 수정공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 취약계층에 대한 우선 설명확인 의무 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 금융상품 홍보물 제작 및 사용 시 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- (보험업권) 표시 설명 확인제도 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인형퇴직연금(IRP) 표시설명확인의무 조사실시 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 인터넷홈페이지 및 모바일 앱에 대한 표시.설명.확인의무 조사실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 표시설명확인시스템(DPMS) 사용자매뉴얼 게시 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 보호금융상품등록부 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 및 설명확인에 관한 규정 시행세칙 개정내용 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 온라인조사 사전 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2020년도 예금보험관계 표시설명확인의무 이행여부 점검실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2021년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보호 로고 사용 안내(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF, JPG 이미지 형식)(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문 영문 번역본(제1종, 제1종 축약문, 제2종) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 퇴직연금, ISA, 변액보험 제1종 예금자보호안내문 및 축약 안내문 영문 번역본(2022.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2022) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2022.12) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문(제1종, 제2종) 및 설명의 확인 표준문안 영문 번역본(2024.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2025.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1t",
+      "why": "must_include 실패",
+      "answer": "해외거주 유학생인 경우, 예금보험금 수령을 위해 필요한 위임장은 현지 대사관의 공증을 받아야 합니다. 이를 통해 예금자 본인이 위임한 사실을 확인할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n- 신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 금융거래정보 제공 요구(동의)서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 본인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 채권양도통지 위임장 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 대리인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 친권합의서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 취소신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 매입계약해제신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 수령계좌변경신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 위임해지통지서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 예금자보호법 시행령 개정에 따른 퇴직연금 예금자보호안내문 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인종합자산관리계좌(ISA) 예금자보호안내문 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 및 [보호금융상품등록부변동내역] 작성 서식 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 작성 서식 수정공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 취약계층에 대한 우선 설명확인 의무 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 금융상품 홍보물 제작 및 사용 시 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- (보험업권) 표시 설명 확인제도 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인형퇴직연금(IRP) 표시설명확인의무 조사실시 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 인터넷홈페이지 및 모바일 앱에 대한 표시.설명.확인의무 조사실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 표시설명확인시스템(DPMS) 사용자매뉴얼 게시 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 보호금융상품등록부 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 및 설명확인에 관한 규정 시행세칙 개정내용 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 온라인조사 사전 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2020년도 예금보험관계 표시설명확인의무 이행여부 점검실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2021년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보호 로고 사용 안내(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF, JPG 이미지 형식)(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문 영문 번역본(제1종, 제1종 축약문, 제2종) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 퇴직연금, ISA, 변액보험 제1종 예금자보호안내문 및 축약 안내문 영문 번역본(2022.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2022) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2022.12) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문(제1종, 제2종) 및 설명의 확인 표준문안 영문 번역본(2024.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2025.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2t",
+      "why": "must_include 실패",
+      "answer": "친권자가 아닌 다른 가족이 대신 수령하려면 다음과 같은 서류가 필요합니다.\n1. 친권자 본인의 확인 증명(주민등록증, 경로우대증, 운전면허증, 여권 등 공공기관에서 발행한 사진이 들어간 본인임을 확인할 수 있는 증명서)\n2. 미성년자 본인의 가족관계증명서 및 기본증명서\n3. 친권자의 동의서(인감증명 및 인감도장 날인)\n4. 친권자 여부를 확인할 수 있는 증명서(친권자를 확인할 수 있는 증명서)\n5. 대리인의 도장\n\n위와 같은 서류를 준비하여 제출하면, 대리인이 대신 수령할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    }
+  ],
+  "records": [
+    {
+      "test_id": "dp_protlmts_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 23.1452,
+      "answer": "예금자 한 명이 한 금융회사에서 보호받을 수 있는 한도는 원금과 소정의 이자를 합쳐 **1억원**입니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호한도(해외) — 예금자보호한도(해외) (https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do)"
+    },
+    {
+      "test_id": "dp_protlmts_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.6737,
+      "answer": "예금자 한 명이 한 금융회사에서 보호받을 수 있는 한도는 원금과 소정의 이자를 합쳐 **1억원**입니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호한도(해외) — 예금자보호한도(해외) (https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)"
+    },
+    {
+      "test_id": "dp_syst_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 9.4689,
+      "answer": "예금자보호법은 금융회사가 영업정지나 파산 등으로 고객의 예금을 지급하지 못하게 될 경우 해당 예금자뿐만 아니라 전체 금융제도의 안정성도 큰 타격을 입을 수 있기 때문에, 이러한 사태를 방지하고자 제정되었습니다. 이를 위해 예금보험제도를 운영하여 예금자의 예금을 보호하고 금융시장의 안정을 유지하는 것을 목적으로 하고 있습니다. 즉, 예금보험공사가 평소에 금융회사로부터 보험료를 받아 기금을 적립한 후, 금융회사가 예금을 지급할 수 없게 되면 금융회사를 대신하여 예금(예금보험금)을 지급하게 되는 것입니다. 이는 예금자를 보호하기 위한 목적으로 법에 의해 운영되는 공적보험입니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_syst_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 11.8605,
+      "answer": "예금자보호법을 제정하여 예금보험제도를 운영하는 근본적인 목적은 금융회사의 영업정지나 파산 등으로 인한 예금 지급불능 사태를 방지하고, 예금자를 보호하기 위함입니다. 이는 금융시장의 안정성을 유지하고, 예금자들이 안심하고 금융기관을 이용할 수 있도록 지원하는 데 중요한 역할을 합니다. 예금보험제도는 예금자보호법에 의해 운영되는 공적보험으로서, 예금자를 보호하기 위한 목적으로 법에 의해 마련된 제도입니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_fnst_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": true,
+      "elapsed": 16.8644,
+      "answer": "**신용협동조합에 맡긴 돈도 예금보험공사가 보호해주나요?**\n제공된 자료에서 확인할 수 없습니다. 신용협동조합은 예금보험공사의 보호대상 금융회사가 아니며, 관련 법률에 따른 자체 기금에 의해 보호됩니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n\n**새마을금고에 맡긴 돈도 예금보험공사가 보호해주나요?**\n새마을금고는 예금보험공사의 보호대상 금융회사가 아니므로, 자체 기금에 의해 보호됩니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_fnst_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 10.2429,
+      "answer": "아니요, 신용협동조합이나 새마을금고에 맡긴 돈은 예금보험공사가 보호하지 않습니다. 이러한 조합들은 자체 기금으로 보호하고 있으며, 이는 관련 법률에 근거하고 있습니다. 따라서 예금보험공사의 보호 대상에는 포함되지 않습니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_prdct_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 11.9136,
+      "answer": "네, 은행의 정기예금은 예금보호 대상 상품입니다. 은행에서 취급하는 보통예금, 기업자유예금, 별단예금, 당좌예금 등의 요구불예금과 정기예금, 저축예금, 주택청약예금, 표지어음 등의 저축성예금이 모두 예금보호 대상에 포함됩니다. 다만, 예금보험공사는 원금과 이자를 합쳐 1인당 최대 5천만원까지만 보호하므로 이 점 유의하시기 바랍니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 보호대상금융상품검색 — 보호대상금융상품검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do)"
+    },
+    {
+      "test_id": "dp_prdct_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.7343,
+      "answer": "네, 은행의 정기예금은 예금보호 대상 상품입니다. 원금과 이자를 합쳐 1억원까지 보호됩니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 보호대상금융상품검색 — 보호대상금융상품검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do)"
+    },
+    {
+      "test_id": "dp_gudn_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 10.1247,
+      "answer": "표시제도의 주요 업무 중 하나는 예금자보호 안내문을 표시하는 것입니다. 부보금융회사는 당해 금융회사가 판매하는 금융상품의 보험관계 성립 여부와 그 내용을 거래고객이 쉽게 확인할 수 있도록 홍보물 및 통장 등, 계좌 조회 화면 등에 예금자보호 안내문을 표시해야 합니다. 또한, 보호금융 상품 등록부를 작성, 제출 및 비치하고, 예금자보호제도 안내자료를 관리하며, 예금보호 로고와 비보호금융 상품 로고를 사용합니다. 마지막으로, 신상품의 보호 여부를 확인하는 절차가 포함됩니다.\n\n**참고 출처**\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ — 표시·설명·확인 제도 관련 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_gudn_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 10.3913,
+      "answer": "부보금융회사가 해야 하는 표시 업무는 다음과 같습니다.\n- 예금자보호 안내문 표시\n- 보호금융상품 등록부 관리\n- 예금자보호제도 안내자료 관리\n- 예금보호 로고 및 보호금융상품 로고 사용\n- 신상품 보호여부 확인\n\n**참고 출처**\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ — 표시·설명·확인 제도 관련 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_aply_proc_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 11.271,
+      "answer": "예금보험금 지급 공고는 다음과 같은 방법으로 이루어집니다:\n\n1. 서울지역에서 발행하는 일간지와 주요 사무소가 소재한 지역의 일간지를 통해 공고합니다.\n2. 예금보험공사 홈페이지(www.kdic.or.kr)에 관련 내용을 게재합니다.\n3. 예금보험금 수령 대상자에 대한 우편물과 휴대폰 안내 문자를 발송합니다. 우편주소 및 휴대폰 번호 정보 등은 해당 보험사고 금융회사에서 제공받아 최신 정보가 반영되지 않은 경우 정확하게 전달되지 않을 수 있습니다.\n\n**참고 출처**\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)\n- 예금보험금 안내 > 신청시 구비서류 — 신청시 구비서류 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_aply_proc_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 9.6519,
+      "answer": "예금보험금 지급 공고는 다음과 같은 방법으로 이루어집니다.\n\n- 서울지역에서 발행하는 일간지와 주요 사무소가 소재한 지역의 일간지에 지급 기한, 구비 서류 등이 포함된 예금 보험금 지급 공고가 게재됩니다.\n- 예금 보험공사 홈페이지(www.kdic.or.kr)에도 관련 내용이 게재됩니다.\n- 예금 보험금 수령 대상자에 대한 우편물과 휴대폰 안내 문자가 발송됩니다. 단, 우편 주소 및 휴대폰 번호 정보 등은 해당 보험 사고 금융 회사에서 제공받아 최신 정보가 반영되어 있지 않을 수 있습니다.\n\n**참고 출처**\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)\n- 예금보험금 안내 > 신청시 구비서류 — 신청시 구비서류 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_expln_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 17.0357,
+      "answer": "**가지급금은 무엇인가요?**\n가지급금은 보험사고 발생 금융회사의 예금자가 장기간 금융거래 중단에 따른 경제적 불편을 최소화하기 위해 예금보험금 지급 이전에 예금보험금 지급한도 내에서 예금보험위원회가 정하는 금액(원금 기준)을 예금자의 신청에 의해 미리 지급하는 금전을 말합니다.\n\n**참고 출처**\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n\n**개산지급금은 무엇인가요?**\n개산지급금이란, 장기간에 걸친 파산절차로 인한 예금자의 불편을 해소해 드리기 위해 예금자가 향후 파산배당으로 받게 될 예상배당률을 고려하여 예금자의 보호한도 초과 예금 등 채권을 예금자의 청구에 의하여 공사가 매입하고, 그 매입의 대가로 예금자에게 지급하는 금전을 의미합니다. 개산지급금을 수령하지 않은 예금자께서는 해당 금융회사의 파산절차에 따라 파산배당금으로 보호한도를 초과하는 예금 등 채권의 일부를 수령하시게 됩니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 상속인 금융거래조회 — 상속인 금융거래조회 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)"
+    },
+    {
+      "test_id": "ms_expln_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 13.1319,
+      "answer": "**가지급금은 무엇인가요?**\n가지급금은 **보험사고 발생 금융회사의 예금자가 예금보험금 지급 이전에 예금보험위원회에서 정하는 금액(원금 기준)** 을 예금자의 신청에 의해 미리 지급하는 금전을 말합니다. 이는 예금자가 장기간 금융거래 중단에 따른 경제적 불편을 최소화할 수 있도록 설계되었습니다.\n\n**참고 출처**\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n\n**개삼지급금은 무엇인가요?**\n개삼지급금은 예금자가 향후 파산배당으로 받게 될 예상배당률을 고려하여 예금자의 예금등 채권을 예금자의 청구에 의하여 예금보험공사가 매입하고, 그 매입의 대가로 예금자에게 지급하는 금전을 말합니다. 개산지급금을 수령하지 않은 예금자께서는 해당 금융회사의 파산절차에 따라 배당금을 수령하시게 됩니다.\n\n**참고 출처**\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.3852,
+      "answer": "파산재단 현황에서 더 자세한 정보를 확인하실 수 있습니다.\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 11.9809,
+      "answer": "근거 자료에 따르면, 보험금 지급대상 금융회사를 검색했으나 결과가 나오지 않는 경우에는 '파산재단 현황'에서 더 자세한 정보를 확인하시기 바랍니다. 또한, 예금보험공사는 예금보험금 지급은 예금보험금 지급 개시일로부터 5년간 지급이 가능함을 안내하고 있으니 참고하시기 바랍니다.\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.265,
+      "answer": "해외거주 유학생인 예금자가 위임장을 준비하려면 현지 대사관의 공증을 받아야 합니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n- 신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 금융거래정보 제공 요구(동의)서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 본인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 채권양도통지 위임장 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 대리인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 친권합의서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 취소신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 매입계약해제신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 수령계좌변경신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 위임해지통지서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 예금자보호법 시행령 개정에 따른 퇴직연금 예금자보호안내문 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인종합자산관리계좌(ISA) 예금자보호안내문 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 및 [보호금융상품등록부변동내역] 작성 서식 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 작성 서식 수정공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 취약계층에 대한 우선 설명확인 의무 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 금융상품 홍보물 제작 및 사용 시 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- (보험업권) 표시 설명 확인제도 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인형퇴직연금(IRP) 표시설명확인의무 조사실시 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 인터넷홈페이지 및 모바일 앱에 대한 표시.설명.확인의무 조사실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 표시설명확인시스템(DPMS) 사용자매뉴얼 게시 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 보호금융상품등록부 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 및 설명확인에 관한 규정 시행세칙 개정내용 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 온라인조사 사전 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2020년도 예금보험관계 표시설명확인의무 이행여부 점검실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2021년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보호 로고 사용 안내(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF, JPG 이미지 형식)(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문 영문 번역본(제1종, 제1종 축약문, 제2종) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 퇴직연금, ISA, 변액보험 제1종 예금자보호안내문 및 축약 안내문 영문 번역본(2022.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2022) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2022.12) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문(제1종, 제2종) 및 설명의 확인 표준문안 영문 번역본(2024.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2025.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 9.9589,
+      "answer": "해외거주 유학생인 경우, 예금보험금 수령을 위해 필요한 위임장은 현지 대사관의 공증을 받아야 합니다. 이를 통해 예금자 본인이 위임한 사실을 확인할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n- 신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 금융거래정보 제공 요구(동의)서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 본인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 채권양도통지 위임장 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 대리인 신청서 샘플 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 친권합의서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 취소신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 매입계약해제신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 수령계좌변경신청서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 위임해지통지서양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 착오송금반환지원 신청등위임장양식 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 예금자보호법 시행령 개정에 따른 퇴직연금 예금자보호안내문 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인종합자산관리계좌(ISA) 예금자보호안내문 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 및 [보호금융상품등록부변동내역] 작성 서식 변경 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- [보호금융상품등록부] 작성 서식 수정공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 취약계층에 대한 우선 설명확인 의무 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 금융상품 홍보물 제작 및 사용 시 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- (보험업권) 표시 설명 확인제도 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 개인형퇴직연금(IRP) 표시설명확인의무 조사실시 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 인터넷홈페이지 및 모바일 앱에 대한 표시.설명.확인의무 조사실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 표시설명확인시스템(DPMS) 사용자매뉴얼 게시 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 보호금융상품등록부 관련 유의사항 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 및 설명확인에 관한 규정 시행세칙 개정내용 공지 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2018년도 예금보험관계 표시·설명·확인 의무 조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보(보험,금투,종금,저축은행업권) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2019년도 예금보험관계 표시,설명,확인의무 온라인조사 사전 안내 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2020년도 예금보험관계 표시설명확인의무 이행여부 점검실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 2021년도 예금보험관계 표시,설명,확인의무 현장조사 실시 통보 — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보호 로고 사용 안내(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF, JPG 이미지 형식)(2021.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문 영문 번역본(제1종, 제1종 축약문, 제2종) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 퇴직연금, ISA, 변액보험 제1종 예금자보호안내문 및 축약 안내문 영문 번역본(2022.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2022) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2022.12) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시 설명 확인 의무 관련 규정 일체(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호안내문(제1종, 제2종) 및 설명의 확인 표준문안 영문 번역본(2024.1) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금보험관계 표시·설명·확인제도 가이드라인(2024.2) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n- 예금자보호제도 안내자료(PDF 형식)(2025.9) — 파일다운로드: https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 9.7268,
+      "answer": "친권자가 아닌 다른 가족이 대신 수령하려면, 미성년자 명의의 예금에 대한 가지급금과 예금보험금을 대리 수령할 수 있는 서류를 준비해야 합니다. 이때 필요한 서류는 다음과 같습니다:\n\n- 대리인의 주민등록증 등 본인증명 서류\n- 친권자 합의서(소정서식, 인감 날인 필요)\n- 위임장(친권자 합의서상에서 친권행사를 위임받은 자의 인감날인 필요)\n- 부모의 인감증명서 각 1부\n- 가족관계증명서 및 미성년자 명의의 기본증명서\n\n이러한 서류를 준비하여 지급대행지점에 방문하시면 예금보험금을 수령할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 15.0977,
+      "answer": "친권자가 아닌 다른 가족이 대신 수령하려면 다음과 같은 서류가 필요합니다.\n1. 친권자 본인의 확인 증명(주민등록증, 경로우대증, 운전면허증, 여권 등 공공기관에서 발행한 사진이 들어간 본인임을 확인할 수 있는 증명서)\n2. 미성년자 본인의 가족관계증명서 및 기본증명서\n3. 친권자의 동의서(인감증명 및 인감도장 날인)\n4. 친권자 여부를 확인할 수 있는 증명서(친권자를 확인할 수 있는 증명서)\n5. 대리인의 도장\n\n위와 같은 서류를 준비하여 제출하면, 대리인이 대신 수령할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    }
+  ],
+  "failed": []
+}

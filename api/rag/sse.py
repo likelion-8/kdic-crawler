@@ -56,11 +56,15 @@ def _elapsed_ms(started: float) -> int:
 
 
 class _MarkerStripper:
-    """스트리밍 토큰에서 맨 앞 [SOURCE_USED]/[NO_SOURCE] 마커를 떼어낸다.
+    """스트리밍 토큰에서 맨 앞 [SOURCE_USED]/[NO_SOURCE] 마커가 있으면 떼어낸다.
 
-    마커는 답변 첫 줄에만 온다(prompt_builder 규칙). 그래서 첫 줄(개행)까지, 혹은 마커보다 긴
-    길이까지만 버퍼링해 마커를 판정·제거하고, 그 뒤로는 토큰을 그대로 흘린다. 토큰이 마커를
-    쪼개 들어와도(예: "[SOURCE","_USED]\\n") 버퍼링으로 안전하게 합쳐 판정한다.
+    ⚠️ 2026-08-20 실험(exp/hcx007-no-marker-v1): 마커 지시를 프롬프트에서 뺐으므로
+    (prompt_builder.SYSTEM_INSTRUCTION), 정상적인 응답엔 이제 마커가 없다. 그래도 첫 줄
+    버퍼링 자체는 그대로 둔다 — 과거 게시된 관리자 프롬프트(AD-008)가 여전히 마커를 요구할
+    수 있어 하위호환 파싱은 유지한다. 마커가 없으면 최종 판정은 전적으로 검색 관련성 게이트
+    +사후검증(answer.finalize_sub)에 맡긴다 — 그래서 기본값을 True(일단 근거 사용으로
+    가정)로 둔다. 토큰이 마커를 쪼개 들어와도(예: "[SOURCE","_USED]\\n") 버퍼링으로 안전하게
+    합쳐 판정한다.
 
     하위 답변마다 새 인스턴스를 만들어 상태를 초기화한다(복합 질문 요구사항).
     """
@@ -68,7 +72,7 @@ class _MarkerStripper:
     def __init__(self):
         self._buf = ""
         self._resolved = False
-        self.used_source = False  # 마커가 [SOURCE_USED]로 판정되면 True
+        self.used_source = True  # 마커 없으면 기본 True — finalize_sub가 최종 판정
 
     def feed(self, tok: str) -> str:
         """토큰을 넣고, 지금 흘려보낼 수 있는(마커가 제거된) 텍스트를 반환한다. 아직 판정

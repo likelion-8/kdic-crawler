@@ -172,25 +172,29 @@ RETRY_NOTICE = (
 
 def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
     """확률적 거절 복구용 1회 재생성(비스트리밍). (본문, 근거사용) 을 돌려준다 —
-    마커가 [SOURCE_USED]거나 판정이 근거 사용으로 보면 채택, 아니면 (원문 무관) 미채택.
-    실패는 미채택으로 떨어져 원래 거절문이 유지된다.
+    판정이 근거 사용으로 보면 채택, 아니면 (원문 무관) 미채택. 실패는 미채택으로 떨어져
+    원래 거절문이 유지된다.
 
     같은 프롬프트를 그대로 다시 돌리면 거절이 그대로 재현되기 쉬워(실측: 복구 1/4)
     질문 직전에 RETRY_NOTICE 를 끼워 근거 재확인을 강제한다. 억지 답변 위험은 채택
-    조건(판정 통과)이 막는다 — 근거에 정말 없으면 판정이 거절을 유지시킨다."""
+    조건(판정 통과)이 막는다 — 근거에 정말 없으면 판정이 거절을 유지시킨다.
+
+    ⚠️ 2026-08-20 실험(exp/hcx007-no-marker-v1): 예전엔 재생성본의 마커가 [SOURCE_USED]면
+    검증 없이 바로 채택하는 지름길이 있었다. 마커 지시를 프롬프트에서 뺀 지금은
+    `_strip_no_source_marker`가 사실상 항상 True를 돌려주므로, 그 지름길을 그대로 두면
+    재생성본을 사실상 무조건 채택(재검증 없음)하게 되어 버린다 — 그래서 지름길을 없애고
+    재생성본도 항상 사후검증을 거치게 한다(호출 1회 추가, 안전이 우선)."""
     try:
         role, human = sp.prompt[-1]
         # few-shot 예시에도 "질문: "이 있으므로 마지막(실제 질문) 위치에 끼운다
         idx = human.rfind("질문: ")
         pushed = sp.prompt[:-1] + [(role, human[:idx] + RETRY_NOTICE + human[idx:] if idx >= 0 else human)]
         raw = call_hyperclova(pushed)
-        body, marker_used = _strip_no_source_marker(raw)
-        if marker_used:
-            return body, True
+        body, _ = _strip_no_source_marker(raw)
         # 단일 검증 1콜(2026-08-14 팀 결정으로 다수결 폐지). 재생성본은 근거를 썼고
         # 질문에도 적절해야 채택한다 — 실패(None)는 미채택으로 원래 거절문 유지.
         v = validate_answer(sp.question, body, sp.evidence)
-        return body, bool(v) and v.used_source and v.appropriate
+        return body, bool(v) and v.used_source and v.appropriate and bool(sp.top)
     except Exception:
         logger.warning("재생성 실패 — 원래 답변 유지", exc_info=True)
         return "", False
@@ -203,12 +207,18 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: bool) -> tuple[SubA
     appropriate=False(동문서답·근거와 모순)면 본문을 OUT_OF_SCOPE_MESSAGE 로 교체해
     범위외 처리한다. "근거 없는 내용을 사실처럼 서술"(ungrounded_claims)의 본문 교체도
     유지한다 — 인사·정체성·정상 거절문은 appropriate=true·kind 상이라 교체되지 않는다.
-    검증 실패(None)는 fail-open: 마커 판정 유지 + 적절성 통과(검증이 답변을 막지 않는다).
-    스위치 Off 면 마커만 신뢰하고 검증을 통째로 생략한다.
+
+    ⚠️ 2026-08-20 실험(exp/hcx007-no-marker-v1): 마커 지시를 프롬프트에서 뺐으므로
+    marker_used_source 파라미터는 이제 신뢰할 자기보고가 아니다(대부분 기본값 True로
+    들어옴, prompt_builder._strip_no_source_marker 참고). 그래서 기본값을
+    `bool(sp.top)`(검색 관련성 게이트를 통과해 근거가 실제로 있는지)로 바꿨다 — 마커를
+    믿던 자리를 "근거 존재 여부"로 대체한 것. use_source_recheck Off거나 검증 실패(None)
+    같은 fail-open 상황에서도 이 기본값이 안전망 역할을 한다(근거 자체가 없으면 항상
+    False). 검증이 성공하면 그 판정(v.used_source and bool(sp.top))이 그대로 최종 판정이다.
 
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
-    used = marker_used_source
+    used = bool(sp.top)
     sp.obs_marker = marker_used_source
     # 프리체크 섀도 기록(exp/source-precheck-v1): 판정만 남기고 동작은 바꾸지 않는다.
     # luna 와 같은 입력(생성 원문 body + 같은 evidence)으로 판정해야 교차표가 성립하므로
