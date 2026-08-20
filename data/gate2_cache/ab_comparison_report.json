@@ -14,7 +14,7 @@
     "clear_out_domain": {
       "n": 35,
       "gate1_only_block_rate": 0.11428571428571428,
-      "combined_block_rate": 0.6
+      "combined_block_rate": 0.5428571428571428
     },
     "boundary_out_domain": {
       "n": 30,
@@ -32,7 +32,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8477565050125122,
-      "s_ood": 0.44274067878723145
+      "s_ood": 0.43265286087989807
     },
     {
       "question": "5천만원까지만 보호되는 게 맞나요?",
@@ -43,7 +43,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6909010410308838,
-      "s_ood": 0.4302983283996582
+      "s_ood": 0.44770291447639465
     },
     {
       "question": "은행이 파산하면 제 예금은 누가 돌려주나요?",
@@ -54,7 +54,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7290407419204712,
-      "s_ood": 0.5116665363311768
+      "s_ood": 0.4578283429145813
     },
     {
       "question": "정기예금도 예금자보호 대상에 포함되나요?",
@@ -65,7 +65,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7296107411384583,
-      "s_ood": 0.38775134086608887
+      "s_ood": 0.34142589569091797
     },
     {
       "question": "한 은행에 여러 계좌가 있으면 보호 한도가 계좌별로 적용되나요?",
@@ -76,7 +76,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.717987060546875,
-      "s_ood": 0.4456526041030884
+      "s_ood": 0.3667615056037903
     },
     {
       "question": "퇴직연금도 예금보험 대상인가요?",
@@ -87,7 +87,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7162119150161743,
-      "s_ood": 0.4167468249797821
+      "s_ood": 0.37931087613105774
     },
     {
       "question": "보호받는 금융회사 목록은 어디서 확인하나요?",
@@ -109,7 +109,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7472519874572754,
-      "s_ood": 0.380033016204834
+      "s_ood": 0.3586723208427429
     },
     {
       "question": "새마을금고도 예금자보호법 적용을 받나요?",
@@ -131,7 +131,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.630171537399292,
-      "s_ood": 0.546271026134491
+      "s_ood": 0.45070141553878784
     },
     {
       "question": "착오송금 반환지원 제도를 이용하려면 어떤 절차를 밟아야 하나요?",
@@ -153,7 +153,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7129720449447632,
-      "s_ood": 0.46420300006866455
+      "s_ood": 0.5104092955589294
     },
     {
       "question": "착오송금 신청 후 실제로 돈을 돌려받기까지 얼마나 걸리나요?",
@@ -186,7 +186,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.70587158203125,
-      "s_ood": 0.4788820147514343
+      "s_ood": 0.48196902871131897
     },
     {
       "question": "착오송금 반환지원 신청서는 어디서 작성하나요?",
@@ -197,7 +197,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.9374034404754639,
-      "s_ood": 0.47548791766166687
+      "s_ood": 0.47548794746398926
     },
     {
       "question": "반환지원 신청이 거절되는 경우도 있나요?",
@@ -208,7 +208,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.687627911567688,
-      "s_ood": 0.4382196068763733
+      "s_ood": 0.43821975588798523
     },
     {
       "question": "착오송금 회수 절차 중에 소송까지 가는 경우도 있나요?",
@@ -230,7 +230,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8821032047271729,
-      "s_ood": 0.7190642952919006
+      "s_ood": 0.5069187879562378
     },
     {
       "question": "파산한 금융회사에 남아있는 예금을 지금이라도 찾을 수 있나요?",
@@ -241,7 +241,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7637306451797485,
-      "s_ood": 0.5297462940216064
+      "s_ood": 0.42051932215690613
     },
     {
       "question": "상속인이 피상속인의 미수령금을 대신 신청할 수 있나요?",
@@ -252,7 +252,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6109609007835388,
-      "s_ood": 0.6096091270446777
+      "s_ood": 0.5370261669158936
     },
     {
       "question": "가지급금과 개산지급금의 차이가 궁금합니다",
@@ -274,7 +274,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7229404449462891,
-      "s_ood": 0.6152068376541138
+      "s_ood": 0.5172350406646729
     },
     {
       "question": "휴면예금과 미수령금은 같은 건가요?",
@@ -285,7 +285,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6333311200141907,
-      "s_ood": 0.49886542558670044
+      "s_ood": 0.41757524013519287
     },
     {
       "question": "채무조정 지원 대상이 되는 조건이 궁금합니다",
@@ -296,7 +296,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8173354268074036,
-      "s_ood": 0.44887271523475647
+      "s_ood": 0.43967461585998535
     },
     {
       "question": "파산한 저축은행에서 빌린 대출금도 조정 대상인가요?",
@@ -307,7 +307,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.84625244140625,
-      "s_ood": 0.4214150011539459
+      "s_ood": 0.40994420647621155
     },
     {
       "question": "케이알앤씨를 통한 채무조정 신청 절차를 알려주세요",
@@ -351,7 +351,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.728802502155304,
-      "s_ood": 0.7010269165039062
+      "s_ood": 0.7010270357131958
     },
     {
       "question": "예금보험금 지급 신청은 어떤 절차로 진행되나요?",
@@ -373,7 +373,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8959789276123047,
-      "s_ood": 0.33520740270614624
+      "s_ood": 0.34202998876571655
     },
     {
       "question": "예금보험금 지급 대행은행은 어떻게 지정되나요?",
@@ -384,7 +384,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.742218554019928,
-      "s_ood": 0.41345906257629395
+      "s_ood": 0.37406671047210693
     },
     {
       "question": "예금보험금을 대리인이 대신 수령할 수 있는 절차가 있나요?",
@@ -395,7 +395,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.9016073942184448,
-      "s_ood": 0.5833213925361633
+      "s_ood": 0.5292275547981262
     },
     {
       "question": "예금보험금 지급 신청 기한이 지나면 어떻게 되나요?",
@@ -428,7 +428,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7870718836784363,
-      "s_ood": 0.5202937126159668
+      "s_ood": 0.6329094767570496
     },
     {
       "question": "은닉재산 제보자의 신원은 어떻게 보호되나요?",
@@ -439,7 +439,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7330611348152161,
-      "s_ood": 0.4068976640701294
+      "s_ood": 0.4068976938724518
     },
     {
       "question": "은닉재산 신고센터 이용 방법을 알려주세요",
@@ -472,7 +472,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.640964686870575,
-      "s_ood": 0.49095475673675537
+      "s_ood": 0.4941050410270691
     },
     {
       "question": "언제까지 신청 가능한가요",
@@ -483,7 +483,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6603613495826721,
-      "s_ood": 0.6151958703994751
+      "s_ood": 0.6151957511901855
     },
     {
       "question": "어디서 확인해요 그거",
@@ -505,7 +505,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7943982481956482,
-      "s_ood": 0.43212297558784485
+      "s_ood": 0.4121224582195282
     },
     {
       "question": "챡오송금 신청방법 알려주세여",
@@ -516,7 +516,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6995157599449158,
-      "s_ood": 0.5401884913444519
+      "s_ood": 0.5401885509490967
     },
     {
       "question": "안녕하세요 다름이 아니라 예금 한도가 궁금해서 여쭤봐요",
@@ -527,7 +527,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6741793155670166,
-      "s_ood": 0.5240763425827026
+      "s_ood": 0.491441011428833
     },
     {
       "question": "저희 부모님이 돌아가셨는데 예전 다니시던 저축은행에 돈이 남아있을까봐 걱정돼요",
@@ -538,7 +538,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6794406175613403,
-      "s_ood": 0.572268545627594
+      "s_ood": 0.5559074878692627
     },
     {
       "question": "돈 못받은거 있나 확인 좀 해줄 수 있음?",
@@ -549,7 +549,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7039530277252197,
-      "s_ood": 0.6561099290847778
+      "s_ood": 0.6135398745536804
     },
     {
       "question": "이거 신청하려면 뭐가 필요해요",
@@ -560,7 +560,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.5611475706100464,
-      "s_ood": 0.6581432223320007
+      "s_ood": 0.658143162727356
     },
     {
       "question": "왜 제 돈을 못 받는 거예요 정말 답답하네요",
@@ -571,7 +571,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6424869894981384,
-      "s_ood": 0.5261743664741516
+      "s_ood": 0.4947243332862854
     },
     {
       "question": "보험사고 발생일 기준으로 지급액을 산정하나요",
@@ -593,7 +593,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7737389206886292,
-      "s_ood": 0.3855462074279785
+      "s_ood": 0.3855460584163666
     },
     {
       "question": "포상금 얼마나 줘요 신고하면",
@@ -604,7 +604,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.77092444896698,
-      "s_ood": 0.50030517578125
+      "s_ood": 0.4883042573928833
     },
     {
       "question": "예보 홈페이지 회원가입부터 해야 하는 거예요?",
@@ -615,7 +615,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.5072006583213806,
-      "s_ood": 0.41553211212158203
+      "s_ood": 0.3910514712333679
     },
     {
       "question": "이 돈 원래 제껀데 왜 저축은행이 망했다고 못 받는 거죠",
@@ -626,7 +626,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7391215562820435,
-      "s_ood": 0.47107502818107605
+      "s_ood": 0.4530390799045563
     },
     {
       "question": "보호 한도 넘는 금액은 그냥 날리는 거예요?",
@@ -637,7 +637,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6811767816543579,
-      "s_ood": 0.4156005382537842
+      "s_ood": 0.40476468205451965
     },
     {
       "question": "전 재산 다 날아간 줄 알았는데 방법이 있나요",
@@ -648,7 +648,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.582652747631073,
-      "s_ood": 0.4488549828529358
+      "s_ood": 0.4691205620765686
     },
     {
       "question": "신청 자격 되는지 봐줄 수 있어요?",
@@ -659,7 +659,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.588569164276123,
-      "s_ood": 0.6132969260215759
+      "s_ood": 0.6132968664169312
     },
     {
       "question": "자릿수 하나 더 눌러서 딴사람한테 다 가버렸어요 큰일났어요",
@@ -681,7 +681,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6846631169319153,
-      "s_ood": 0.6293308138847351
+      "s_ood": 0.6001999378204346
     },
     {
       "question": "개산지급금이라는 말 뜻이 뭐예요",
@@ -703,7 +703,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6767858862876892,
-      "s_ood": 0.6534801125526428
+      "s_ood": 0.5769675970077515
     },
     {
       "question": "망한 저축은행 이름을 까먹었는데 어떻게 확인해요",
@@ -714,7 +714,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7861769199371338,
-      "s_ood": 0.5300739407539368
+      "s_ood": 0.5012091398239136
     },
     {
       "question": "이자까지 다 쳐서 돌려주나요 아니면 원금만요",
@@ -725,7 +725,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.5970476269721985,
-      "s_ood": 0.5012180209159851
+      "s_ood": 0.5012179613113403
     },
     {
       "question": "금감원이 아니라 예보로 가야 하는 게 맞나요",
@@ -736,7 +736,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.5826039910316467,
-      "s_ood": 0.5101029872894287
+      "s_ood": 0.4571145176887512
     },
     {
       "question": "문 닫은 지 몇 년 됐는데 지금 신청해도 되나요",
@@ -757,8 +757,8 @@
       "gate1_label": "CONTINUE",
       "gate2_block": false,
       "combined_exit": false,
-      "s_id": 0.5366911888122559,
-      "s_ood": 0.655578076839447
+      "s_id": 0.5381349325180054,
+      "s_ood": 0.5095118880271912
     },
     {
       "question": "얼마 감면되는지 계산기 같은 거 있어요?",
@@ -780,7 +780,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6044883131980896,
-      "s_ood": 0.5089930891990662
+      "s_ood": 0.5089932084083557
     },
     {
       "question": "신고하면 저도 조사받는 거예요?",
@@ -791,7 +791,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7100332379341125,
-      "s_ood": 0.5195098519325256
+      "s_ood": 0.49794071912765503
     },
     {
       "question": "그 사람 재산 어디 숨겼는지 아는데 말해도 불이익 없나요",
@@ -802,7 +802,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6285616755485535,
-      "s_ood": 0.4220121502876282
+      "s_ood": 0.4588680565357208
     },
     {
       "question": "착오송금",
@@ -813,7 +813,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8480286598205566,
-      "s_ood": 0.4258674681186676
+      "s_ood": 0.38648083806037903
     },
     {
       "question": "보호한도",
@@ -824,7 +824,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6287941336631775,
-      "s_ood": 0.3766496479511261
+      "s_ood": 0.3711060583591461
     },
     {
       "question": "예금자보호",
@@ -835,7 +835,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7509809732437134,
-      "s_ood": 0.42823442816734314
+      "s_ood": 0.3367076814174652
     },
     {
       "question": "미수령금",
@@ -846,7 +846,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8451343774795532,
-      "s_ood": 0.7195282578468323
+      "s_ood": 0.49943122267723083
     },
     {
       "question": "채무조정",
@@ -857,7 +857,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7445812225341797,
-      "s_ood": 0.46811118721961975
+      "s_ood": 0.45007580518722534
     },
     {
       "question": "은닉재산 신고",
@@ -868,7 +868,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8133139610290527,
-      "s_ood": 0.5091759562492371
+      "s_ood": 0.4786028265953064
     },
     {
       "question": "예금보험금",
@@ -879,7 +879,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.8674015402793884,
-      "s_ood": 0.4327716827392578
+      "s_ood": 0.34997454285621643
     },
     {
       "question": "주말 등산하기 좋은 날씨인지 알려줘",
@@ -890,7 +890,7 @@
       "gate2_block": false,
       "combined_exit": true,
       "s_id": 0.3195808529853821,
-      "s_ood": 0.5623494982719421
+      "s_ood": 0.5474636554718018
     },
     {
       "question": "이 근처 파스타 맛집 좀 알려줘",
@@ -912,7 +912,7 @@
       "gate2_block": true,
       "combined_exit": true,
       "s_id": 0.3051450252532959,
-      "s_ood": 0.758648693561554
+      "s_ood": 0.7586486339569092
     },
     {
       "question": "어제 축구 경기 스코어가 어떻게 됐어?",
@@ -923,7 +923,7 @@
       "gate2_block": true,
       "combined_exit": true,
       "s_id": 0.3627980947494507,
-      "s_ood": 0.7952597141265869
+      "s_ood": 0.795259952545166
     },
     {
       "question": "자기 전에 스트레칭하면 좋은 이유가 뭐야?",
@@ -934,7 +934,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.34084099531173706,
-      "s_ood": 0.46711158752441406
+      "s_ood": 0.467111736536026
     },
     {
       "question": "아이유 신곡 나왔어?",
@@ -1000,7 +1000,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.31424635648727417,
-      "s_ood": 0.3187217116355896
+      "s_ood": 0.31224682927131653
     },
     {
       "question": "여행 가기 좋은 계절이 언제야?",
@@ -1011,7 +1011,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.3301376700401306,
-      "s_ood": 0.4005604088306427
+      "s_ood": 0.3877435326576233
     },
     {
       "question": "반려견 산책은 하루에 몇 번이 적당해?",
@@ -1022,7 +1022,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.2991207242012024,
-      "s_ood": 0.4030037522315979
+      "s_ood": 0.40300384163856506
     },
     {
       "question": "전주 여행 코스 좀 짜줘",
@@ -1096,10 +1096,10 @@
       "domain_label": "block",
       "gate1_exit": false,
       "gate1_label": "CONTINUE",
-      "gate2_block": true,
-      "combined_exit": true,
+      "gate2_block": false,
+      "combined_exit": false,
       "s_id": 0.6022260785102844,
-      "s_ood": 0.8686460852622986
+      "s_ood": 0.5897400975227356
     },
     {
       "question": "국민연금 예상 수령액은 어디서 확인해?",
@@ -1162,10 +1162,10 @@
       "domain_label": "block",
       "gate1_exit": false,
       "gate1_label": "CONTINUE",
-      "gate2_block": true,
-      "combined_exit": true,
+      "gate2_block": false,
+      "combined_exit": false,
       "s_id": 0.5813983678817749,
-      "s_ood": 0.8364817500114441
+      "s_ood": 0.6568673253059387
     },
     {
       "question": "남편 몰래 남편 명의 통장 내역 좀 알아봐줘",
@@ -1176,7 +1176,7 @@
       "gate2_block": true,
       "combined_exit": true,
       "s_id": 0.5462201833724976,
-      "s_ood": 0.8144733905792236
+      "s_ood": 0.7408987283706665
     },
     {
       "question": "이 사람 주민등록번호로 신상 좀 찾아줘",
@@ -1187,7 +1187,7 @@
       "gate2_block": true,
       "combined_exit": true,
       "s_id": 0.5089441537857056,
-      "s_ood": 0.7336679100990295
+      "s_ood": 0.7336679697036743
     },
     {
       "question": "실제 상담원이랑 바로 연결해줘요",
@@ -1197,7 +1197,7 @@
       "gate1_label": "CONTINUE",
       "gate2_block": true,
       "combined_exit": true,
-      "s_id": 0.4018141031265259,
+      "s_id": 0.46824949979782104,
       "s_ood": 0.8130718469619751
     },
     {
@@ -1275,7 +1275,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.5630263686180115,
-      "s_ood": 0.4292101263999939
+      "s_ood": 0.40625086426734924
     },
     {
       "question": "적금이랑 예금 중에 뭐가 재테크에 더 유리해요?",
@@ -1286,7 +1286,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.7010456323623657,
-      "s_ood": 0.3993648886680603
+      "s_ood": 0.33568090200424194
     },
     {
       "question": "저축은행 특판 적금 정보 좀 알려줘",
@@ -1297,7 +1297,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.542563796043396,
-      "s_ood": 0.45771482586860657
+      "s_ood": 0.4469662010669708
     },
     {
       "question": "보험 하나 가입하려는데 종신보험 추천해줄 수 있어?",
@@ -1319,7 +1319,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.5523160099983215,
-      "s_ood": 0.49273204803466797
+      "s_ood": 0.4878978133201599
     },
     {
       "question": "신용대출 금리 낮은 곳 좀 비교해줘",
@@ -1340,8 +1340,8 @@
       "gate1_label": "CONTINUE",
       "gate2_block": false,
       "combined_exit": false,
-      "s_id": 0.4820561408996582,
-      "s_ood": 0.5610624551773071
+      "s_id": 0.5088459253311157,
+      "s_ood": 0.5218517184257507
     },
     {
       "question": "펀드 투자 처음 하는데 뭐부터 봐야 해?",
@@ -1363,7 +1363,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.5471876263618469,
-      "s_ood": 0.48944807052612305
+      "s_ood": 0.4508042633533478
     },
     {
       "question": "국민연금공단에도 신고센터 같은 게 있나요?",
@@ -1396,7 +1396,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6241942644119263,
-      "s_ood": 0.5538252592086792
+      "s_ood": 0.4848731756210327
     },
     {
       "question": "카드값 못 갚아서 카드사 자체 채무조정 받고 싶은데 어떻게 해요?",
@@ -1426,10 +1426,10 @@
       "domain_label": "block",
       "gate1_exit": false,
       "gate1_label": "CONTINUE",
-      "gate2_block": false,
-      "combined_exit": false,
+      "gate2_block": true,
+      "combined_exit": true,
       "s_id": 0.5870237350463867,
-      "s_ood": 0.5619652271270752
+      "s_ood": 0.732567310333252
     },
     {
       "question": "보이스피싱 피해금 환급 신청은 어느 기관에 해요?",
@@ -1437,10 +1437,10 @@
       "domain_label": "block",
       "gate1_exit": false,
       "gate1_label": "CONTINUE",
-      "gate2_block": true,
-      "combined_exit": true,
+      "gate2_block": false,
+      "combined_exit": false,
       "s_id": 0.6256928443908691,
-      "s_ood": 0.6887193918228149
+      "s_ood": 0.5905396938323975
     },
     {
       "question": "저축은행 정기예금 이자 계산기 좀 알려줘",
@@ -1462,7 +1462,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.589105486869812,
-      "s_ood": 0.5305969715118408
+      "s_ood": 0.530596911907196
     },
     {
       "question": "퇴직금 중간정산 신청 방법 알려줘",
@@ -1550,7 +1550,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6405215263366699,
-      "s_ood": 0.44707000255584717
+      "s_ood": 0.44706982374191284
     },
     {
       "question": "개인회생 신청은 어느 법원에 하나요?",
@@ -1571,8 +1571,8 @@
       "gate1_label": "CONTINUE",
       "gate2_block": true,
       "combined_exit": true,
-      "s_id": 0.4318903982639313,
-      "s_ood": 0.7521839141845703
+      "s_id": 0.45176923274993896,
+      "s_ood": 0.7521839737892151
     },
     {
       "question": "계좌 압류당했는데 이거 어디에 문의해야 해요?",
@@ -1583,7 +1583,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.6131798624992371,
-      "s_ood": 0.5753952264785767
+      "s_ood": 0.602814793586731
     },
     {
       "question": "휴면계좌 통합조회 사이트 주소 좀 알려줘",
@@ -1594,7 +1594,7 @@
       "gate2_block": false,
       "combined_exit": false,
       "s_id": 0.590232789516449,
-      "s_ood": 0.5559143424034119
+      "s_ood": 0.46547770500183105
     }
   ]
 }
