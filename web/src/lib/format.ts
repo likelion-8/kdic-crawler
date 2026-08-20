@@ -69,7 +69,12 @@ export function formatDateTime(value: Instant): string {
   return p ? `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}` : INVALID
 }
 
-/** `08-01 10:42` — 목록·헤더처럼 자리가 좁고 '올해 안'이 자명한 곳의 시각.
+/** `08-01 10:42` — 목록 표 '일시' 열의 정본 포맷.
+ *
+ * 관리자 목록의 시각 열은 전부 이 함수를 쓴다(2026-08-20). 종전에는 같은 문자열을 만드는
+ * 구현이 셋이었고(여기 · evaluation/kst.formatShortKst · ActivityLog.stamp), 화면마다
+ * 시각만·날짜만·날짜+시각이 섞여 있었다 — 최근 7일·30일을 조회하는 목록에서 `10:42`만
+ * 보이면 어느 날 것인지 알 수 없다. 열 제목도 '시각'이 아니라 '일시'다.
  * (원래 pipeline/api.ts에 있었다 — 표기 포맷은 이 파일 하나로 모은다) */
 export function formatMonthDayTime(value: Instant): string {
   const date = formatDate(value)

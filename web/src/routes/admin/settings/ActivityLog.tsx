@@ -28,7 +28,7 @@ import type { Column } from '../../../components/ui'
 import { apiRequest, isApiRequestError } from '../../../lib/api/client'
 import type { Page } from '../../../lib/api/types'
 import { hasRole } from '../../../lib/codes'
-import { formatDate, formatTime } from '../../../lib/format'
+import { formatDate, formatMonthDayTime, formatTime } from '../../../lib/format'
 import { useSession } from '../../../app/session'
 import { EventDetail, eventDetailMeta, eventDetailTitle } from './activity/EventDetail'
 import type { ActivityEventDetailData, ActivityEventRow } from './activity/EventDetail'
@@ -70,12 +70,6 @@ interface Filters {
 }
 
 const EMPTY_FILTERS: Filters = { q: '', period: '7', action: '', actor: '', result: '' }
-
-/** `2026-08-03T10:05:12+09:00` → `08-03 10:05`.
- * 목업은 당일 목록이라 `10:42`만 적혀 있으나 최대 90일을 조회하므로 날짜를 병기한다. */
-function stamp(iso: string): string {
-  return `${formatDate(iso).slice(5)} ${formatTime(iso)}`
-}
 
 export function ActivityLog() {
   const { session } = useSession()
@@ -167,9 +161,9 @@ export function ActivityLog() {
   const columns: Column<ActivityEventRow>[] = [
     {
       key: 'occurred_at',
-      header: '시각',
+      header: '일시',
       width: '104px',
-      render: (r) => <span className="nums">{stamp(r.occurred_at)}</span>,
+      render: (r) => <span className="nums">{formatMonthDayTime(r.occurred_at)}</span>,
     },
     { key: 'action', header: '행위', width: '150px', render: (r) => r.action },
     { key: 'target', header: '대상', render: (r) => r.target },

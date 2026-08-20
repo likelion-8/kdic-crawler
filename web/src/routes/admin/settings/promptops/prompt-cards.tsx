@@ -12,7 +12,7 @@ import {
 import type { Column } from '../../../../components/ui'
 import { DEFAULT_PAGE_SIZE } from '../../../../components/ui'
 import { Input } from '../../../../components/shadcn/input'
-import { formatDate } from '../../../../lib/format'
+import { formatDate, formatMonthDayTime } from '../../../../lib/format'
 import { Card, EditDialog, SectionError, linkClass } from './common'
 import type {
   BlocklistRule, FewshotExample, MaskingRule, PromptDraft, PromptPrinciple, PromptVersion,
@@ -300,8 +300,14 @@ export function VersionHistoryCard({
       // 현행 행은 '현행' 배지 + 선택 행 배경이 이미 알린다 — 버전 글자는 굵기만 준다
       render: (v) => (v.status === '현행' ? <strong>{v.version}</strong> : v.version),
     },
-    // 목업 포맷은 `07-30` — 초 단위까지 붙이지 않는다(§2.5 표)
-    { key: 'created_at', header: '시각', width: '96px', render: (v) => formatDate(v.created_at).slice(5) },
+    // 목업 포맷은 `07-30` 이지만 같은 날 여러 버전을 게시하면 구분이 안 된다 — 다른 목록과
+    // 같은 `MM-DD HH:mm` 로 맞춘다(2026-08-20). 초 단위는 붙이지 않는다(§2.5 표)
+    {
+      key: 'created_at',
+      header: '일시',
+      width: '104px',
+      render: (v) => <span className="nums">{formatMonthDayTime(v.created_at)}</span>,
+    },
     // 사유는 게시할 때 받은 자유 입력이다. DataTable의 td는 whitespace-nowrap이라 그대로 두면
     // 이 좁은 카드(가용 431px)에서 표가 넘쳐 '긴급 롤백' 버튼이 잘렸다.
     // 잘라내는 대신 두 줄로 흘린다 — 왜 그 버전이 나왔는지가 이 표에서 제일 중요한 정보다

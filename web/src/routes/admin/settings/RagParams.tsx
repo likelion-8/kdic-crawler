@@ -225,7 +225,7 @@ export function RagParams() {
   ]
 
   const historyColumns: Column<RagHistoryEntry>[] = [
-    { key: 'changed_at', header: '시각', render: (r) => formatShortKst(r.changed_at), width: '18%' },
+    { key: 'changed_at', header: '일시', render: (r) => formatShortKst(r.changed_at), width: '18%' },
     { key: 'summary', header: '변경 내용', render: (r) => <strong>{r.summary}</strong>, width: '38%' },
     { key: 'actor', header: '변경자', render: (r) => r.actor, width: '12%' },
     { key: 'reason', header: '사유', render: (r) => <span className="text-muted-foreground">{r.reason}</span> },

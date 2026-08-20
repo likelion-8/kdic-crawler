@@ -12,7 +12,7 @@ import { Link } from 'react-router'
 import { Badge, Button, buttonVariants, DataTable, EmptyState, Loading } from '../../../components/ui'
 import type { Column } from '../../../components/ui'
 import { cn } from '@/lib/utils'
-import { formatTarget, formatTime } from '../../../lib/format'
+import { formatMonthDayTime, formatTarget } from '../../../lib/format'
 import { useSession } from '../../../app/session'
 import { AccountAddModal } from './access/AccountAddModal'
 import { AccountsPanel } from './access/AccountsPanel'
@@ -197,7 +197,7 @@ function failureSummaryText(count: number, locked: { email: string }[]): string 
 }
 
 const RISKY_COLUMNS: Column<RiskyOp>[] = [
-  { key: 'time', header: '시각', render: (r) => formatTime(r.occurred_at) },
+  { key: 'time', header: '일시', render: (r) => formatMonthDayTime(r.occurred_at) },
   { key: 'action', header: '작업', render: (r) => r.action },
   // 대상은 '사람이 읽는 이름 + (ID)' — ID 단독 노출 금지(AD-011 Description 3)
   { key: 'target', header: '대상', render: (r) => (r.target_id ? formatTarget(r.target_name, r.target_id) : r.target_name) },

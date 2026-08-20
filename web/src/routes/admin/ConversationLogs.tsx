@@ -34,7 +34,7 @@ import type { Column } from '../../components/ui'
 import { isApiRequestError } from '../../lib/api/client'
 import { INTENT_LABEL, hasRole } from '../../lib/codes'
 import type { TriageStatus } from '../../lib/codes'
-import { formatTime } from '../../lib/format'
+import { formatMonthDayTime } from '../../lib/format'
 import { useSession } from '../../app/session'
 import { LogDetailPanel, logDetailMeta, logDetailTitle } from './logs/LogDetailPanel'
 import {
@@ -173,9 +173,10 @@ export function ConversationLogs() {
   const columns: Column<ConversationLogRow>[] = [
     {
       key: 'time',
-      header: '시각',
-      width: '72px',
-      render: (r) => <span className="nums">{formatTime(r.occurred_at)}</span>,
+      header: '일시',
+      // 기간 필터가 최대 90일이라 시각만으로는 어느 날 것인지 알 수 없다(2026-08-20)
+      width: '104px',
+      render: (r) => <span className="nums">{formatMonthDayTime(r.occurred_at)}</span>,
     },
     {
       key: 'question',

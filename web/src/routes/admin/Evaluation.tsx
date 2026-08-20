@@ -271,7 +271,7 @@ export function Evaluation() {
   const runColumns: Column<EvaluationRun>[] = [
     {
       key: 'started_at',
-      header: '시각',
+      header: '일시',
       width: '11%',
       // 행 전체가 클릭 대상이지만 키보드로도 닿아야 한다 — 첫 셀을 포커스 가능한 버튼으로 둔다
       render: (r) => (
