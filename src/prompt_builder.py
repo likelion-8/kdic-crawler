@@ -148,7 +148,7 @@ def build_civil_petition_prompt(query, civil_petition_answer):
         f"[절차 안내 근거]\n{civil_petition_answer['procedure']}\n\n"
         f"질문: {query}\n"
         "답변(위 절차 안내 근거가 질문 주제와 실제로 관련 있으면 그 내용으로 자연스럽게"
-        " 설명하세요 - 서류·URL 언급은 하지 마세요. 근거가 질문과 다른 제도·기관 이야기라면"
+        " 설명하세요 - 서류·URL 언급은 하지 마세요. 신청 링크나 서류를 달라는 질문, '받을 수 있나요'처럼 가능 여부를 묻는 질문이어도 거절하지 말고 위 근거의 절차를 설명하세요 - 실제 링크와 서류 목록은 당신의 답변 뒤에 시스템이 따로 붙이므로 당신이 URL을 몰라도 사용자는 받게 됩니다. 근거가 질문과 다른 제도·기관 이야기라면"
         " 절대 그걸로 답을 지어내지 말고 확인할 수 없다고 정중히 답하세요):"
     )
     return [("system", _system_instruction()), ("human", human)]
