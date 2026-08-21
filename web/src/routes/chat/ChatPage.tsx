@@ -413,9 +413,14 @@ export function ChatPage() {
     send(item.question, { retries: item.retries + 1, echoUser: false })
   }
 
-  /** 역할 버튼 클릭 = 그 라벨을 일반 메시지로 전송 (CB-005 §3.7-1) */
+  /** 되묻기 버튼 클릭 = 그 라벨을 일반 메시지로 전송 (CB-005 §3.7-1).
+   *
+   * 입장 배지는 역할 되묻기(businessFunction 있음 — 업무가 정해진 상태에서 예금자 본인/
+   * 상속인 등을 고르는 턴)에만 단다. 업무 선택 되묻기는 businessFunction 이 없고(업무를
+   * 몰라서 묻는 턴이므로) 1회성 질문 선택이라 배지를 남기면 "입장 · 미수령금 찾기" 같은
+   * 어색한 고정이 생긴다(2026-08-20 실사용 보고). */
   const selectRole = (label: string, businessFunction?: BusinessFunction) => {
-    setRole({ label, businessFunction })
+    if (businessFunction) setRole({ label, businessFunction })
     send(label)
   }
 

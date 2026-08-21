@@ -84,3 +84,62 @@ def test_gate2_exit_records_the_path_without_the_internal_category(captured, mon
 
     # 카테고리는 내부 로그 전용이다(src/gate2.py:55) — 경로만 남긴다
     assert captured == [("gate2", None)]
+
+
+# ── 업무 되묻기 — 판정이 플래너 콜에 얹힌 뒤(2026-08-21) ──────────────────────────
+# 핵심 규약: **턴당 판정은 한 번**이다. 이력이 있으면 재작성기(0-2.7), 없으면 플래너(1-1).
+# 둘 다 보면 재작성기가 "필요 없음"이라 한 것을 플래너가 뒤집어 이중 되묻기가 된다.
+
+def _gates_open(monkeypatch):
+    _no_cache(monkeypatch)
+    monkeypatch.setattr("gate1.run_gate1", lambda _q: SimpleNamespace(
+        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched"))
+    monkeypatch.setattr("gate2.run_gate2", lambda _q: SimpleNamespace(
+        action="CONTINUE", s_id=0.9, s_ood=0.1, threshold=0.5,
+        nearest_out_cluster_id=None, nearest_out_category=None, reason="in_domain"))
+    monkeypatch.setattr(sse.answer, "clarification_response", lambda *a: _resp())
+
+
+def test_planner_clarification_fires_on_first_turn(captured, monkeypatch):
+    """첫 턴(이력 없음)은 플래너 판정으로 되묻는다 — 정규식 프리스크린 없이."""
+    _gates_open(monkeypatch)
+    monkeypatch.setattr(sse.answer, "plan",
+                        lambda _q: sse.answer.Plan([("얼마까지 가능해?", "informational")], True))
+
+    list(sse.chat_event_stream("얼마까지 가능해?", "sess", "req"))
+
+    assert captured == [("clarify", None)]
+
+
+def test_planner_clarification_is_skipped_when_the_rewriter_already_judged(captured, monkeypatch):
+    """이력이 있으면 재작성기 판정이 최종 — 플래너가 true 를 줘도 되묻지 않는다(이중 판정 금지)."""
+    _gates_open(monkeypatch)
+    monkeypatch.setattr(sse.conversation, "recent_messages",
+                        lambda _s: [("user", "착오송금 반환 기한은?"), ("assistant", "2개월입니다")])
+    monkeypatch.setattr("query_rewriter.rewrite_followup", lambda *a: SimpleNamespace(
+        rewritten=False, standalone_question="신청 링크 알려줘", needs_clarification=False))
+    monkeypatch.setattr(sse.answer, "plan",
+                        lambda _q: sse.answer.Plan([("신청 링크 알려줘", "civil_petition")], True))
+
+    reached = []
+
+    def _prepare(*_a):
+        reached.append(True)
+        raise RuntimeError("답변 경로 도달을 확인하고 멈춘다 — 실제 LLM 을 부르지 않으려고")
+
+    monkeypatch.setattr(sse.answer, "prepare_sub", _prepare)
+    monkeypatch.setattr(sse.answer, "log_failed_run", lambda *a, **kw: None)
+    monkeypatch.setattr(sse.answer, "error_from_exception",
+                        lambda *a: SimpleNamespace(model_dump=lambda: {}))
+
+    list(sse.chat_event_stream("신청 링크 알려줘", "sess", "req"))
+
+    assert reached, "되묻기로 새지 않고 답변 경로(prepare_sub)까지 내려가야 한다"
+    assert captured == [], "이 턴은 되묻기가 아니므로 clarify 로 기록되면 안 된다"
+
+
+def test_plan_carries_the_clarification_flag_from_the_planner_call():
+    """같은 한 콜에서 나온 값이라 items 와 함께 돌아와야 한다 — 두 번 부르면 LLM 콜이 2배."""
+    from api.rag.answer import Plan
+    assert Plan([("q", "informational")], True).needs_clarification is True
+    assert Plan([("q", "informational")]).needs_clarification is False, "기본값은 되묻지 않음"

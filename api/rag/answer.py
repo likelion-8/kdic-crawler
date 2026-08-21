@@ -14,7 +14,7 @@
 """
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import NamedTuple, Optional
 
 # src/ 빌딩블록 (flat import — api/__init__.py 가 sys.path 에 src/ 를 넣어줌). pipeline.py 와
 # 완전히 같은 함수들을 쓴다. src/ 는 읽기만 하고 수정하지 않는다.
@@ -95,23 +95,37 @@ class SubPlan:
     obs_precheck_missing: Optional[list] = None   # number_mismatch 일 때 근거에 없던 수치 토큰
 
 
-def plan(query: str) -> list:
-    """(하위 질문, intent) 목록. pipeline._rag_answer_traced 와 동일 로직으로, 웹 SSE 경로도
-    같은 쿼리 플래너를 쓰게 한다(두 경로 동작 일치).
+class Plan(NamedTuple):
+    """플래너 1콜의 결과 전부. items 는 [(하위질문, intent|None), ...].
 
-    USE_QUERY_PLANNER면 query_planner.plan_query() 한 콜(structured output)로 분해+intent를
-    함께 얻는다. 단일이면 원본 질문으로 검색하고(pipeline 과 동일: 재질문판 문구로 검색 안 함)
+    needs_clarification 을 튜플 목록과 함께 돌려주는 이유: 같은 한 콜에서 나온 값이라
+    호출부가 두 번 부를 수 없다(부르면 LLM 콜이 2배가 된다)."""
+    items: list
+    needs_clarification: bool = False
+
+
+def plan(query: str) -> Plan:
+    """분해·intent·업무 되묻기 판정을 한 콜로. pipeline._rag_answer_traced 와 동일 로직으로,
+    웹 SSE 경로도 같은 쿼리 플래너를 쓰게 한다(두 경로 동작 일치).
+
+    USE_QUERY_PLANNER면 query_planner.plan_query() 한 콜(structured output)로 셋을 함께
+    얻는다. 단일이면 원본 질문으로 검색하고(pipeline 과 동일: 재질문판 문구로 검색 안 함)
     intent만 플래너 결과를 쓴다. False면 기존 decompose_query 로 나누고 intent 는 prepare_sub 에서
-    분류하도록 None 을 넘긴다."""
+    분류하도록 None 을 넘긴다 — 그 경로엔 되묻기 판정이 없으므로 False 로 둔다(폴백은 기존
+    동작 유지가 원칙).
+
+    되묻기가 필요하다고 나와도 items 는 평소대로 채워 돌려준다 — 호출부(sse)가 되묻기로
+    전환하면 쓰이지 않고, 전환하지 않기로 하면 그대로 답변에 쓸 수 있어야 한다."""
     if get_param("use_query_planner", USE_QUERY_PLANNER):
         p = plan_query(query)
         items = p["items"] or [{"question": query, "intent": "informational"}]
+        clarify_needed = bool(p.get("needs_clarification"))
         if p["should_split"] and len(items) > 1:
-            return [(it["question"], it["intent"]) for it in items]
-        return [(query, items[0]["intent"])]
+            return Plan([(it["question"], it["intent"]) for it in items], clarify_needed)
+        return Plan([(query, items[0]["intent"])], clarify_needed)
     subs = decompose_query(query)
     subs = subs if subs and len(subs) > 1 else [query]
-    return [(q, None) for q in subs]
+    return Plan([(q, None) for q in subs], False)
 
 
 def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
@@ -288,7 +302,8 @@ def to_chat_response(finalized: list[SubAnswer], used_flags: list[bool], full_an
     out_of_scope: 근거를 하나도 안 쓴 답변(인사·정체성·범위 밖)을 뜻한다. 프론트는 이 값이 true 면
     출처·서류 섹션을 통째로 그리지 않는다(mocks/README §3-2). 파이프라인에 별도 OOS 판정기가 없어
     "모든 하위가 근거 미사용"으로 대신한다.
-    clarification 은 되묻기 로직 자체가 아직 없어 None.
+    clarification 은 여기서 항상 None 이다 — 되묻기 턴은 이 함수까지 오지 않는다.
+    sse 가 판정 즉시 clarification_response() 로 빠져나간다(0-2.7 후속 턴 / 1-1 첫 턴).
     """
     out_of_scope = not any(used_flags)
     # answer 는 스트림 원문(full_answer)이 아니라 확정된 하위 본문으로 조립한다 — finalize_sub 가
@@ -459,6 +474,24 @@ def guardrail_refusal(session_id: str, request_id: str, latency_ms: int) -> Chat
     return ChatResponse(
         answer=GUARDRAIL_BLOCK_MESSAGE, sources=[], attachments=[], out_of_scope=True,
         sub_answers=[], clarification=None, error=None,
+        latency_ms=latency_ms, session_id=session_id, request_id=request_id)
+
+
+def clarification_response(clar: dict, session_id: str, request_id: str,
+                           latency_ms: int) -> ChatResponse:
+    """업무 되묻기 응답 — 검색 전에 끝나므로 출처·서류가 없다(src/clarify.py 참고).
+
+    answer 에는 되묻기 문구를 넣는다: 프론트는 clarification 이 있으면 answer 를 버리지만
+    (스키마 계약), 대화 복원·rag_runs 로그·멀티턴 이력은 answer 텍스트를 읽는다 — 특히
+    이 문구가 이력에 남아야 다음 턴(버튼 클릭 = 업무명 전송)에서 재작성기가 "직전 챗봇
+    턴이 업무를 묻는 질문"임을 보고 원래 질문과 합성할 수 있다.
+
+    out_of_scope=False — 범위 밖이 아니라 범위 안에서 업무를 좁히는 중이다(True 면
+    프론트가 범위외 추천 칩을 붙여 되묻기 버튼과 섞인다)."""
+    from api.schemas.chat import Clarification
+    return ChatResponse(
+        answer=clar["question"], sources=[], attachments=[], out_of_scope=False,
+        sub_answers=[], clarification=Clarification.model_validate(clar), error=None,
         latency_ms=latency_ms, session_id=session_id, request_id=request_id)
 
 

@@ -48,17 +48,29 @@ MAX_CHARS_PER_TURN = 300
 
 SYSTEM_PROMPT = """당신은 예금보험공사(KDIC) 챗봇의 질문 정리기입니다. 사용자의 새 질문이 이전 대화 없이도 이해되는지 판단하고, 아니라면 독립적인 질문으로 다시 씁니다. 질문에 답하지 마세요.
 
+[재작성 규칙]
 - 새 질문이 그 자체로 완결되면 rewritten=false, standalone_question 에는 새 질문을 **원문 그대로** 넣습니다.
 - 새 질문이 "그거", "거기", "그럼", "위에서 말한" 같은 지시어나 생략으로 이전 대화에 기대고 있으면 rewritten=true, 이전 대화에서 가리키는 대상을 찾아 채운 독립 질문을 씁니다.
 - 채울 때는 새 질문과 이전 대화에 실제로 나온 낱말만 씁니다. 대화에 없는 기관명·제도명·수식어를 지어내지 않습니다.
 - 독립 질문은 검색어로 그대로 쓰입니다 — 짧고 명확한 한 문장의 정중한 의문문으로 만듭니다.
-- 새 질문이 이전 대화와 무관한 새 주제면 rewritten=false 로 원문을 그대로 둡니다."""
+- 새 질문이 이전 대화와 무관한 새 주제면 rewritten=false 로 원문을 그대로 둡니다.
+- 새 질문이 업무명 하나뿐인 짧은 답이고 직전 챗봇 턴이 어떤 업무를 찾는지 묻는 질문이면: 사용자가 그 직전에 하려던 질문에 선택한 업무를 채워 독립 질문으로 합성합니다(rewritten=true). 예: 사용자가 "신청한 결과 언제 받을 수 있어요?"라고 물었고 챗봇이 업무를 되물었으며 새 질문이 "예금보험금·가지급금"이면 → "예금보험금 신청 결과는 언제 받을 수 있나요?"
+
+[되묻기 판단 — needs_clarification]
+예금보험공사가 다루는 업무: 착오송금 반환지원 / 예금보험금·가지급금 / 미수령금 찾기 / 은닉재산 신고 / 채무조정 / 예금자보호제도.
+- 새 질문이 특정 업무를 전제로 하는데(신청·접수·링크·절차·서류·자격·처리 결과·기한 등) 새 질문에도 이전 대화에도 어느 업무인지 정해져 있지 않으면 needs_clarification=true 로 표시합니다.
+- 사용자가 지금까지의 업무를 제외하면서("다른 업무", "그거 말고") 새 업무를 지목하지 않은 경우도 needs_clarification=true 입니다 — 이전 대화의 업무로 채우면 안 됩니다.
+- 어느 업무인지 정해지거나(질문에 명시, 또는 이전 대화로 자연스럽게 해소), 업무를 특정하지 않아도 답할 수 있는 일반 질문이면 needs_clarification=false 입니다.
+- 확실하지 않으면 needs_clarification=false 입니다 — 되묻기가 잦으면 사용자를 번거롭게 합니다.
+- needs_clarification=true 인 경우에도 standalone_question 에는 새 질문 원문을 넣습니다."""
 
 
 class RewriteResult(BaseModel):
     """재작성 판단 + 결과. rewritten=false 면 standalone_question == 원문이어야 한다."""
     rewritten: bool = Field(description="이전 대화 맥락을 채워 다시 썼으면 true")
     standalone_question: str = Field(description="이전 대화 없이도 이해되는 독립 질문(원문 유지 포함)")
+    needs_clarification: bool = Field(
+        description="어느 업무에 대한 질문인지 정해지지 않아 업무를 되물어야 하면 true")
 
 
 _openai = {}
@@ -94,29 +106,61 @@ def _format_history(history):
     return "\n".join(lines)
 
 
-def rewrite_followup(query: str, history: list) -> str | None:
-    """후속 질문 하나를 독립 질문으로 편다 → str | None.
+# LLM 이 독립 질문을 따옴표로 감싸 내놓는 경우가 있다 — 2026-08-21 실측: query_cache 에
+# '"반환지원 대상이 아닌 경우는 어떤 경우인가요?"' 가 따옴표 없는 같은 질문(hit=3)과 별도
+# 행으로 쌓여 있었다. standalone_question 은 그대로 검색 질의이자 캐시 키라, 감싼 따옴표
+# 하나가 검색을 오염시키고 캐시 적중을 막는다. 짝이 맞을 때만 벗긴다 — 한쪽에만 있는
+# 따옴표는 원문 인용의 일부일 수 있어 건드리지 않는다.
+_QUOTE_PAIRS = (('"', '"'), ("'", "'"), ('“', '”'), ('‘', '’'),
+                ('「', '」'), ('『', '』'))
 
-    query: 이번 턴 사용자 질문 원문.
-    history: [(role, text), ...] — conversation.recent_messages() 결과(과거→최근 순).
-             비어 있으면 즉시 None (LLM 호출 없음 — 첫 턴 비용·동작 불변 보장).
-    반환: 독립 질문 문자열. 원문이 이미 자립적이면 원문 그대로 돌아온다.
-          실패(키 없음·호출 오류·파싱 오류·빈 결과)는 None — 호출부는 원문으로 계속한다.
-    """
-    if not history or not query.strip():
-        return None
+
+def _unwrap_quotes(text: str) -> str:
+    """양끝을 감싼 따옴표 한 쌍을 벗긴다. 중첩이면 반복하고, 짝이 안 맞으면 그대로 둔다."""
+    while len(text) >= 2:
+        for open_q, close_q in _QUOTE_PAIRS:
+            if text.startswith(open_q) and text.endswith(close_q):
+                text = text[len(open_q):-len(close_q)].strip()
+                break
+        else:
+            return text
+    return text
+
+
+def _run(query: str, history_text: str) -> RewriteResult | None:
+    """재작성·되묻기 판정 LLM 콜 공통 본체. 실패는 None(fail-open) — 호출부가 원문으로 계속."""
     try:
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",
-             "content": f"[이전 대화]\n{_format_history(history)}\n\n[새 질문]\n{query}"},
+             "content": f"[이전 대화]\n{history_text}\n\n[새 질문]\n{query}"},
         ]
         r = _parse(_get_client(), _MODEL, messages)
         parsed = r.choices[0].message.parsed
-        if parsed is None or not parsed.standalone_question.strip():
+        if parsed is None:
             logger.warning("재작성 응답이 비어 원문으로 계속 — 질문: %r", query)
             return None
-        return parsed.standalone_question.strip()
+        parsed.standalone_question = _unwrap_quotes(parsed.standalone_question.strip())
+        if not parsed.standalone_question:
+            logger.warning("재작성 응답이 비어 원문으로 계속 — 질문: %r", query)
+            return None
+        return parsed
     except Exception:
-        logger.warning("후속 질문 재작성 실패 — 원문으로 계속. 질문: %r", query, exc_info=True)
+        logger.warning("질문 정리(재작성·되묻기 판정) 실패 — 원문으로 계속. 질문: %r",
+                       query, exc_info=True)
         return None
+
+
+def rewrite_followup(query: str, history: list) -> RewriteResult | None:
+    """후속 질문 하나를 독립 질문으로 펴고, 업무 되묻기 필요 여부를 함께 판정한다.
+
+    query: 이번 턴 사용자 질문 원문.
+    history: [(role, text), ...] — conversation.recent_messages() 결과(과거→최근 순).
+             비어 있으면 즉시 None (LLM 호출 없음 — 첫 턴 비용·동작 불변 보장).
+    반환: RewriteResult — standalone_question 은 독립 질문(원문이 자립적이면 원문 그대로),
+          needs_clarification 은 어느 업무인지 특정 불가 판정(호출부가 되묻기로 전환).
+          실패(키 없음·호출 오류·파싱 오류·빈 결과)는 None — 호출부는 원문으로 계속한다.
+    """
+    if not history or not query.strip():
+        return None
+    return _run(query, _format_history(history))
