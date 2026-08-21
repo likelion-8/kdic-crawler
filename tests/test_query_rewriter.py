@@ -14,7 +14,8 @@ for p in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(p))
 
 import query_rewriter  # noqa: E402
-from query_rewriter import _format_history, rewrite_followup, triage_first_turn  # noqa: E402
+from query_rewriter import (_format_history, _unwrap_quotes, rewrite_followup,  # noqa: E402
+                            triage_first_turn)
 
 
 @pytest.fixture(autouse=True)
@@ -56,3 +57,37 @@ def test_format_history_keeps_only_recent_turns():
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+# ── 감싼 따옴표 벗기기 ────────────────────────────────────────────────────────────
+# standalone_question 은 그대로 검색 질의이자 캐시 키다. LLM 이 출력을 따옴표로 감싸면
+# 같은 질문이 캐시에 두 행으로 쌓이고 검색 질의도 오염된다(2026-08-21 실측).
+
+def test_unwrap_strips_curly_quotes():
+    """실제로 query_cache 에 쌓였던 모양."""
+    assert _unwrap_quotes('“반환지원 대상이 아닌 경우는 어떤 경우인가요?”') ==         "반환지원 대상이 아닌 경우는 어떤 경우인가요?"
+
+
+def test_unwrap_strips_straight_quotes():
+    assert _unwrap_quotes('"착오송금이 뭐야?"') == "착오송금이 뭐야?"
+    assert _unwrap_quotes("'착오송금이 뭐야?'") == "착오송금이 뭐야?"
+
+
+def test_unwrap_strips_nested_quotes():
+    assert _unwrap_quotes('"“착오송금이 뭐야?”"') == "착오송금이 뭐야?"
+
+
+def test_unwrap_leaves_unmatched_quote_alone():
+    """한쪽에만 있는 따옴표는 원문 인용의 일부일 수 있어 건드리지 않는다."""
+    assert _unwrap_quotes('"착오송금이 뭐야?') == '"착오송금이 뭐야?'
+    assert _unwrap_quotes('착오송금이 뭐야?”') == '착오송금이 뭐야?”'
+
+
+def test_unwrap_leaves_inner_quotes_alone():
+    """가운데 따옴표는 의미가 있는 인용이라 남긴다."""
+    q = '“착오송금”이 무슨 뜻인가요?'
+    assert _unwrap_quotes(q) == q
+
+
+def test_unwrap_leaves_plain_question_alone():
+    assert _unwrap_quotes("착오송금 반환 기한은 언제인가요?") == "착오송금 반환 기한은 언제인가요?"

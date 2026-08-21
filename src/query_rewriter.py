@@ -106,6 +106,27 @@ def _format_history(history):
     return "\n".join(lines)
 
 
+# LLM 이 독립 질문을 따옴표로 감싸 내놓는 경우가 있다 — 2026-08-21 실측: query_cache 에
+# '"반환지원 대상이 아닌 경우는 어떤 경우인가요?"' 가 따옴표 없는 같은 질문(hit=3)과 별도
+# 행으로 쌓여 있었다. standalone_question 은 그대로 검색 질의이자 캐시 키라, 감싼 따옴표
+# 하나가 검색을 오염시키고 캐시 적중을 막는다. 짝이 맞을 때만 벗긴다 — 한쪽에만 있는
+# 따옴표는 원문 인용의 일부일 수 있어 건드리지 않는다.
+_QUOTE_PAIRS = (('"', '"'), ("'", "'"), ('“', '”'), ('‘', '’'),
+                ('「', '」'), ('『', '』'))
+
+
+def _unwrap_quotes(text: str) -> str:
+    """양끝을 감싼 따옴표 한 쌍을 벗긴다. 중첩이면 반복하고, 짝이 안 맞으면 그대로 둔다."""
+    while len(text) >= 2:
+        for open_q, close_q in _QUOTE_PAIRS:
+            if text.startswith(open_q) and text.endswith(close_q):
+                text = text[len(open_q):-len(close_q)].strip()
+                break
+        else:
+            return text
+    return text
+
+
 def _run(query: str, history_text: str) -> RewriteResult | None:
     """재작성·되묻기 판정 LLM 콜 공통 본체. 실패는 None(fail-open) — 호출부가 원문으로 계속."""
     try:
@@ -116,10 +137,13 @@ def _run(query: str, history_text: str) -> RewriteResult | None:
         ]
         r = _parse(_get_client(), _MODEL, messages)
         parsed = r.choices[0].message.parsed
-        if parsed is None or not parsed.standalone_question.strip():
+        if parsed is None:
             logger.warning("재작성 응답이 비어 원문으로 계속 — 질문: %r", query)
             return None
-        parsed.standalone_question = parsed.standalone_question.strip()
+        parsed.standalone_question = _unwrap_quotes(parsed.standalone_question.strip())
+        if not parsed.standalone_question:
+            logger.warning("재작성 응답이 비어 원문으로 계속 — 질문: %r", query)
+            return None
         return parsed
     except Exception:
         logger.warning("질문 정리(재작성·되묻기 판정) 실패 — 원문으로 계속. 질문: %r",
