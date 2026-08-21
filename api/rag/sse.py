@@ -165,9 +165,11 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      저장(위 0-1)·rag_runs 로그는 사용자가 실제 쓴 원문(message)을 유지하고, 재작성문은
     #      검색·판정에만 쓴다 — 하위 질문(sub_plans[].question)으로 관측에 남는다.
     #      2026-08-20 확장: 같은 콜의 구조화 출력에 needs_clarification(업무 되묻기 판정)이
-    #      실려 온다 — 후속 턴은 +0콜. 첫 턴은 clarify.first_turn_candidate 프리스크린을
-    #      통과한 후보("신청 링크 알려줘"처럼 업무 전제 낱말은 있는데 업무 특정 낱말이 없는
-    #      질문)만 같은 판정을 태운다(triage_first_turn) — 대부분의 첫 턴은 여전히 0콜.
+    #      실려 온다 — 후속 턴은 +0콜. 2026-08-21: 첫 턴 판정은 여기서 빠지고 플래너(1)로
+    #      옮겼다 — 첫 턴에도 어차피 도는 콜이라 +0콜이고, 종전의 정규식 프리스크린
+    #      (clarify.first_turn_candidate)이 문지기라 힌트 낱말 없는 질문("얼마까지 가능해?")은
+    #      판정을 아예 못 받던 문제가 사라진다. **되묻기 판정은 턴당 한 번만 한다** —
+    #      이력이 있으면 여기(재작성기), 없으면 플래너. 아래 1)의 triage is None 조건이 그 규약.
     query = message
     triage = None
     if history:
@@ -176,13 +178,10 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         if triage and triage.rewritten and triage.standalone_question != message:
             query = triage.standalone_question
             logger.info("[%s] 멀티턴 재작성: %r -> %r", request_id, message, query)
-    else:
-        from clarify import first_turn_candidate
-        if first_turn_candidate(message):
-            from query_rewriter import triage_first_turn
-            triage = triage_first_turn(message)
 
-    # 0-2.7) 업무 되묻기(2026-08-20, src/clarify.py) — 어느 업무인지 특정되지 않는 질문은
+    # 0-2.7) 업무 되묻기 — **후속 턴 전용**(첫 턴은 아래 1) 플래너가 판정한다). 이력을 보는
+    #      재작성기만 "다른 업무 말고" 같은 배제형을 판정할 수 있어 여기 남는다.
+    #      (2026-08-20, src/clarify.py) — 어느 업무인지 특정되지 않는 질문은
     #      검색이 코퍼스 편향('신청'의 지배 주제 = 착오송금)으로 엉뚱한 업무를 단정하므로,
     #      추측 답변 대신 업무 선택 버튼으로 되묻는다. 캐시 앞이 자리다 — 무주제 질문이
     #      캐시에 적중해 단정 답변이 나가면 되묻기가 영영 안 보인다. 되묻기 문구는 assistant
@@ -275,8 +274,9 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
     # 1) 쿼리 플래너: 멀티쿼리 분해 + 하위질문별 intent를 한 콜(structured output)로 판단한다.
     #    LLM 호출이라 실패할 수 있다(내부에서 안전 폴백하지만 예외도 방어).
+    #    2026-08-21: 같은 콜의 구조화 출력에 needs_clarification 도 실려 온다(+0콜).
     try:
-        plan_items = answer.plan(query)   # [(하위질문, intent|None), ...] — 재작성문 기준
+        plan_result = answer.plan(query)  # .items = [(하위질문, intent|None), ...] — 재작성문 기준
     except Exception as e:  # noqa: BLE001
         logger.exception("[%s] plan 실패", request_id)
         # 기록을 yield 앞에 두는 이유는 아래 세 실패 경로 모두 같다 — yield 뒤에 두면 프론트가
@@ -287,6 +287,25 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
         return
 
+    # 1-1) 업무 되묻기(첫 턴) — 판정은 위 플래너 콜에 실려 왔다. triage is None 일 때만 본다:
+    #      이력이 있으면 0-2.7 에서 이미 판정했고(재작성기가 이력까지 보므로 그쪽이 정확하다),
+    #      여기서 또 보면 이중 판정이 된다. triage 가 None 인 경우는 첫 턴이거나 재작성 실패인데,
+    #      후자도 판정이 없었던 것이니 플래너 결과를 쓰는 게 맞다.
+    #
+    #      캐시(0-3)보다 뒤라는 점: 되묻기가 붙는 응답은 cache_put 적격에서 빠지므로(5-2 의
+    #      resp.clarification is None) 앞으로 이런 질문이 캐시에 쌓이지 않는다. 이 변경 전에
+    #      쌓인 행만 AD-009 질의별 비우기로 지우면 된다.
+    if triage is None and plan_result.needs_clarification:
+        from clarify import clarification_payload
+        resp = answer.clarification_response(
+            clarification_payload(), session_id, request_id, _elapsed_ms(started))
+        logger.info("[%s] 업무 되묻기(플래너): %r", request_id, message)
+        answer.log_run(message, resp, [], resp.latency_ms, served_from="clarify")
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("done", resp.model_dump())
+        return
+
+    plan_items = plan_result.items
     composite = len(plan_items) > 1
     finalized = []
     used_flags = []

@@ -164,14 +164,3 @@ def rewrite_followup(query: str, history: list) -> RewriteResult | None:
     if not history or not query.strip():
         return None
     return _run(query, _format_history(history))
-
-
-def triage_first_turn(query: str) -> RewriteResult | None:
-    """첫 턴(무이력) 질문의 되묻기 판정 — 재작성기와 같은 콜·같은 프롬프트를 이력 없이 돌린다.
-
-    모든 첫 턴에 부르면 "첫 턴 0콜" 비용 약속이 깨진다 — 반드시 clarify.first_turn_candidate()
-    프리스크린을 통과한 질문에만 부를 것(sse 0-2.5 가 그 규약을 지킨다). 실패는 None(fail-open).
-    """
-    if not query.strip():
-        return None
-    return _run(query, "(첫 대화 — 이전 턴 없음)")
