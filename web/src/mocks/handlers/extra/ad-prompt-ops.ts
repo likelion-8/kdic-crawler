@@ -158,7 +158,9 @@ const BLOCKLIST: BlocklistRule[] = [
   { id: 'bw_02', pattern: '원금 손실 없음', type: '단어', scope: '답변', action: BLOCK_ACTION_ANSWER, active: true },
   {
     id: 'bw_03',
-    pattern: '비속어 기본 사전 (외부 사전)',
+    // '사전' 유형의 pattern 은 사람이 읽는 이름이다 — 실제 매칭은 서버 내장 사전이 한다
+    // (api/rag/blocklist_ko.py · LDNOOBW ko 기반). 화면에서 낱말을 편집하지 않는다
+    pattern: '비속어 기본 사전 (LDNOOBW ko 기반 · 코드 내장)',
     type: '사전',
     scope: '질문 + 답변',
     action: '질문이면 범위 외 안내 · 답변이면 차단',
@@ -166,10 +168,12 @@ const BLOCKLIST: BlocklistRule[] = [
   },
   {
     id: 'bw_04',
-    pattern: '\\d{6}[-]\\d{7} (주민번호 형태)',
+    // ⚠ 정규식 규칙의 pattern 은 순수 정규식이어야 한다 — 설명을 덧붙이면 그 문구까지
+    // 찾으므로 규칙이 조용히 죽는다(2026-08-24 정정: 종전 값에 '(주민번호 형태)'가 붙어 있었다)
+    pattern: '\\d{6}[-]\\d{7}',
     type: '정규식',
     scope: '질문',
-    action: '입력 즉시 경고(개인정보 입력 금지 안내)',
+    action: '주민번호 형태 · 입력 즉시 경고(개인정보 입력 금지 안내)',
     active: true,
   },
   { id: 'bw_05', pattern: '확정 수익', type: '단어', scope: '답변', action: BLOCK_ACTION_ANSWER, active: true },
@@ -181,10 +185,10 @@ const BLOCKLIST: BlocklistRule[] = [
   { id: 'bw_11', pattern: '불법 사금융', type: '단어', scope: '질문 + 답변', action: BLOCK_ACTION_ANSWER, active: false },
   {
     id: 'bw_12',
-    pattern: '\\d{2,6}[-]\\d{2,6}[-]\\d{2,8} (계좌번호 형태)',
+    pattern: '\\d{2,6}[-]\\d{2,6}[-]\\d{2,8}',
     type: '정규식',
     scope: '질문',
-    action: '입력 즉시 경고(개인정보 입력 금지 안내)',
+    action: '계좌번호 형태 · 입력 즉시 경고(개인정보 입력 금지 안내)',
     active: true,
   },
 ]

@@ -233,16 +233,16 @@ def _draft_to_content(db, draft: dict) -> dict:
             "few_shot": fewshots or base["few_shot"], "guardrails": guardrails}
 
 
-def _blockwords(guardrails: dict) -> list:
-    block = (guardrails or {}).get("blocklist") or {}
-    if not block.get("active", True):
-        return []
-    words = []
-    for item in block.get("items") or []:
-        w = item if isinstance(item, str) else (item.get("pattern") or "")
-        if str(w).strip():
-            words.append(str(w).strip())
-    return words
+def _blocklist_hit(guardrails: dict, text: str) -> Optional[str]:
+    """초안의 금칙어 목록을 답변 텍스트에 적용해 첫 적중 표현을 돌려준다.
+
+    🔴 판정은 챗 경로와 **같은 함수**(api.rag.answer.blocklist_match)로 한다. 종전에는 여기서
+    규칙의 pattern 문자열을 그대로 `in` 으로 찾아, 유형·적용 범위·행별 활성을 전부 무시했다 —
+    정규식 규칙은 그 정규식 원문이 답변에 나올 때만 걸리고, '사전' 규칙은 이름을 찾느라 절대
+    걸리지 않았다. 평가가 통과시킨 초안이 운영에서 막히는 어긋남이 거기서 났다(2026-08-24).
+    """
+    from api.rag.answer import blocklist_match
+    return blocklist_match((guardrails or {}).get("blocklist"), text, "답변")
 
 
 # ──────────────────────── 생성 실측 공통 ────────────────────────
@@ -399,7 +399,7 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
     _require_request_id(body)
     content = _draft_to_content(db, dict(body.get("draft") or {}))
     base = _effective(db)
-    blockwords = _blockwords(content["guardrails"])
+
 
     in_scope, oos = _eval_questions(db, body.get("question_ids") or [])
     if not in_scope:
@@ -415,18 +415,18 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
         for q in questions:
             b_body, b_marker, b_sources = _generate(q, base["system_instruction"], base["few_shot"])
             a_body, a_marker, a_sources = _generate(q, content["system_instruction"], content["few_shot"])
-            hits = [w for w in blockwords if w in a_body]
+            hit = _blocklist_hit(content["guardrails"], a_body)
             before_ok = b_marker if kind == "in" else (not b_marker)
-            after_ok = ((a_marker if kind == "in" else not a_marker) and not hits)
+            after_ok = ((a_marker if kind == "in" else not a_marker) and not hit)
             if before_ok and not after_ok:
                 # REGRESSED 후보만 seed 바꿔 1회 재생성 — 2연속 실패만 회귀 확정(flaky 흡수).
                 # seed 고정도 best-effort 라 잔여 비결정이 남는다(2026-08-13 리서치).
                 from llm_client import EVAL_SEED
                 a_body, a_marker, a_sources = _generate(
                     q, content["system_instruction"], content["few_shot"], seed=EVAL_SEED + 1)
-                hits = [w for w in blockwords if w in a_body]
-                after_ok = ((a_marker if kind == "in" else not a_marker) and not hits)
-            guard_hits += len(hits)
+                hit = _blocklist_hit(content["guardrails"], a_body)
+                after_ok = ((a_marker if kind == "in" else not a_marker) and not hit)
+            guard_hits += 1 if hit else 0
             if kind == "in":
                 if after_ok:
                     src_ok += 1
@@ -444,8 +444,8 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
             else:
                 verdict, note = "KEEP", (f"{axis} 유지" if after_ok else f"{axis} 전후 모두 미통과")
                 keep += 1
-            if hits:
-                note += f" · 금칙어 {len(hits)}건"
+            if hit:
+                note += f" · 금칙어 적중({hit})"
             items.append({
                 "id": f"ev{len(items)+1}", "question": q, "verdict": verdict, "note": note,
                 "before": {"answer": b_body, "sources": b_sources},
