@@ -179,8 +179,8 @@ export interface RunObservation {
 export interface ConversationLogDetail extends ConversationLogRow {
   /** 관측 신설(2026-08-14) 이전 대화는 null. 캐시 응답도 검색을 안 타 null 이다 */
   observation: RunObservation | null
-  /** 답변을 낸 경로. 넷 다 플래너 앞에서 끝나 성격·유형·근거가 없다. 평소 경로는 null */
-  served_from: 'cache' | 'guardrail' | 'gate1' | 'gate2' | null
+  /** 답변을 낸 경로. 다섯 다 검색·생성을 타지 않아 성격·유형·근거가 없다. 평소 경로는 null */
+  served_from: 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'clarify' | null
   /** 그 경로에서 걸린 규칙 이름(Gate 1 의 FIXED_GREETING 등). 원시 식별자 */
   served_label: string | null
   classification: {

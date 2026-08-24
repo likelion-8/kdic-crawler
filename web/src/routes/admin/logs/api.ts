@@ -73,8 +73,10 @@ export interface LogErrorDetail {
   root_cause: string | null
 }
 
-/** 답변을 낸 경로 — 모두 플래너 앞에서 끝나는 경로다(api/rag/sse.py 0-2 ~ 0-5) */
-export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2'
+/** 답변을 낸 경로 — 전부 검색·생성을 타지 않고 끝나 성격·근거가 없다(api/rag/sse.py 0-2 ~ 1-1).
+ *  clarify(업무 되묻기, 2026-08-24)만 플래너 뒤에서도 끝날 수 있다(첫 턴은 1-1, 후속 턴은 0-2.7).
+ *  그 경우에도 log_run 에 하위 질문을 넘기지 않아 intent 는 저장되지 않는다. */
+export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'clarify'
 
 /** rag_runs.observation 의 subs[].top[] 원소. 모양의 정본은 api/rag/observation.py */
 export interface ObservedChunk {

@@ -153,12 +153,13 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
   )
 }
 
-/** 답변을 낸 경로 4종. 전부 플래너 앞에서 끝나 성격·유형·근거가 없다 — 분류가 비는 이유다. */
+/** 답변을 낸 경로 5종. 전부 검색·생성을 타지 않아 성격·유형·근거가 없다 — 분류가 비는 이유다. */
 const SERVED_FROM_LABEL: Record<ServedFrom, string> = {
   cache: '캐시 응답',
   guardrail: '가드레일 차단',
   gate1: '범위 판정 (Gate 1)',
   gate2: '범위 판정 (Gate 2)',
+  clarify: '업무 되묻기',
 }
 
 /** 왜 그 경로로 끝났는지 한 줄. 관리자가 '검색이 안 됐나'로 잘못 읽지 않게 한다 */
@@ -167,6 +168,7 @@ const SERVED_FROM_NOTE: Record<ServedFrom, string> = {
   guardrail: '게시된 금칙어(AD-008)에 걸려 고정 문구로 거절한 건입니다 — 검색·생성을 거치지 않습니다',
   gate1: '규칙 필터가 인사·노이즈·타 분야로 판정해 고정 문구로 답한 건입니다 — LLM을 부르지 않습니다',
   gate2: '임베딩 유사도 판정이 안내 범위 밖으로 보고 고정 문구로 답한 건입니다 — LLM을 부르지 않습니다',
+  clarify: '어느 업무에 대한 질문인지 정해지지 않아 업무 선택지로 되물은 건입니다 — 검색·생성을 거치지 않아 근거가 없습니다. 사용자가 업무를 고르면 그 답변은 다음 행에 남습니다',
 }
 
 /** Gate 1 규칙 이름. 모르는 값은 지어내지 않고 원본 식별자를 그대로 보여준다(STAGE_LABEL 과 같은 규약) */
