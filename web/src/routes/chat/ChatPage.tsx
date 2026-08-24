@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowDown, CircleAlert, Plus, RefreshCw, Wrench, X } from 'lucide-react'
+import { ArrowDown, CircleAlert, Plus, RefreshCw, Wrench } from 'lucide-react'
 import {
   AnswerMessage,
   ClarificationMessage,
@@ -31,7 +31,6 @@ import type {
   SubAnswer,
   Suggestion,
 } from '../../lib/api/types'
-import type { BusinessFunction } from '../../lib/codes'
 import type { ClarificationOption } from '../../lib/api/types'
 import { Composer } from './Composer'
 import { RetryExhaustedPanel } from './RetryExhaustedPanel'
@@ -65,8 +64,6 @@ export function newChatLoss(draft: string, openFeedbackForms: number): string {
   return lost.length === 0 ? '' : `${lost.join('과 ')}이 사라지고 `
 }
 
-/** 역할(입장) 초기화 무응답 시간 (CM-DF-004 02절 "30분 미활동 시 역할을 초기화") */
-const ROLE_IDLE_RESET_MS = 30 * 60_000
 /** 점검 해제를 감지하는 폴링 주기. 기획서에 주기 값이 없어(CB-004 D-3 15) 30초로 정했다 */
 const HEALTH_POLL_MS = 30_000
 /** '맨 아래 추종' 판정 여유. 기획서 미정의(CB-002 §7-17) */
@@ -118,9 +115,8 @@ type ChatItem =
       kind: 'clarification'
       id: string
       question: string
-      /** 서버가 준 역할 선택지 (B-01) — 프론트가 만들어내지 않는다 */
+      /** 서버가 준 선택지 (B-01) — 프론트가 만들어내지 않는다 */
       options: ClarificationOption[]
-      businessFunction?: BusinessFunction
       at?: number
     }
   /** question·retries = 같은 질문의 재시도 카운터(CB-004 Case 5) */
@@ -133,13 +129,6 @@ interface PendingTurn {
   answerItemId: string
 }
 
-interface RoleContext {
-  /** 사용자가 고른 역할 라벨 그대로 (예: `잘못 보낸 사람(송금인)`) */
-  label: string
-  /** 주제 변경 판정 기준 — 후속 답변의 business_function이 달라지면 초기화 */
-  businessFunction?: BusinessFunction
-}
-
 const newId = () => crypto.randomUUID()
 
 export function ChatPage() {
@@ -148,8 +137,6 @@ export function ChatPage() {
   const [items, setItems] = useState<ChatItem[]>([])
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState<PendingTurn | null>(null)
-  const [role, setRole] = useState<RoleContext | null>(null)
-  const [lastActivityAt, setLastActivityAt] = useState(() => Date.now())
   const [confirmNewChat, setConfirmNewChat] = useState(false)
   /** 열려 있는 피드백 사유 폼 수. 답변마다 위젯이 따로 있어 여러 개가 동시에 열릴 수 있다 */
   const [openFeedbackForms, setOpenFeedbackForms] = useState(0)
@@ -242,13 +229,6 @@ export function ChatPage() {
     else setHasNewBelow(true)
   }, [items, pending])
 
-  // 30분 무응답이면 선택한 입장을 버린다 (CB-005 §3.5)
-  useEffect(() => {
-    if (!role) return
-    const t = setTimeout(() => setRole(null), ROLE_IDLE_RESET_MS)
-    return () => clearTimeout(t)
-  }, [role, lastActivityAt])
-
   // 페이지를 떠날 때 열려 있는 스트림을 끊는다
   useEffect(() => () => abortRef.current?.abort(), [])
 
@@ -273,7 +253,6 @@ export function ChatPage() {
       setItems((list) => [...list, { kind: 'user', id: userItemId, text, at: Date.now() }])
     }
     setDraft('')
-    setLastActivityAt(Date.now())
     setPending({ question: text, retries, userItemId, answerItemId })
 
     const controller = new AbortController()
@@ -353,7 +332,6 @@ export function ChatPage() {
                   id: answerItemId,
                   question: res.clarification.question,
                   options: res.clarification.options ?? [],
-                  businessFunction: res.business_function,
                 },
               ]
             }
@@ -374,13 +352,6 @@ export function ChatPage() {
               },
             ]
           })
-          // 주제가 바뀌면 역할 초기화, 아직 주제를 모르면 이번 업무로 고정 (CB-005 §3.5)
-          setRole((prev) => {
-            if (!prev || !res.business_function) return prev
-            if (!prev.businessFunction) return { ...prev, businessFunction: res.business_function }
-            return prev.businessFunction === res.business_function ? prev : null
-          })
-          setLastActivityAt(Date.now())
         },
 
         onError: (error) =>
@@ -413,16 +384,10 @@ export function ChatPage() {
     send(item.question, { retries: item.retries + 1, echoUser: false })
   }
 
-  /** 되묻기 버튼 클릭 = 그 라벨을 일반 메시지로 전송 (CB-005 §3.7-1).
-   *
-   * 입장 배지는 역할 되묻기(businessFunction 있음 — 업무가 정해진 상태에서 예금자 본인/
-   * 상속인 등을 고르는 턴)에만 단다. 업무 선택 되묻기는 businessFunction 이 없고(업무를
-   * 몰라서 묻는 턴이므로) 1회성 질문 선택이라 배지를 남기면 "입장 · 미수령금 찾기" 같은
-   * 어색한 고정이 생긴다(2026-08-20 실사용 보고). */
-  const selectRole = (label: string, businessFunction?: BusinessFunction) => {
-    if (businessFunction) setRole({ label, businessFunction })
-    send(label)
-  }
+  /** 되묻기 버튼 클릭 = 그 라벨을 그대로 일반 메시지로 전송한다 (CB-005).
+   *  고른 값을 화면에 칩으로 남기지 않는다 — 되묻기는 그 턴 한 번의 선택이고,
+   *  원래 질문과의 합성은 서버(멀티턴 재작성기)가 한다. */
+  const selectOption = (label: string) => send(label)
 
   const startNewChat = () => {
     abortRef.current?.abort()
@@ -430,7 +395,6 @@ export function ChatPage() {
     setItems([])
     setPending(null)
     setDraft('')
-    setRole(null) // 새 대화는 세션과 역할을 함께 초기화 (CM-DF-004 02절)
     restoredRef.current = null
     sessionIdRef.current = undefined
     window.history.replaceState(null, '', '/')
@@ -578,7 +542,7 @@ export function ChatPage() {
                         question={item.question}
                         options={item.options}
                         at={item.at}
-                        onSelect={(label) => selectRole(label, item.businessFunction)}
+                        onSelect={selectOption}
                       />
                     </li>
                   )
@@ -687,22 +651,6 @@ export function ChatPage() {
           </div>
         )}
 
-        {/* 역할 칩 — 위치·형태가 기획서 미정의(CB-005 G4)라 입력창 바로 위 + 해제 버튼으로 정했다 */}
-        {role && (
-          <div className="mx-auto mb-2 flex min-h-11 w-fit max-w-(--chat-input-max) items-center gap-1 rounded-md border bg-card pr-0.5 pl-3.5">
-            <span className="text-[13px] text-foreground">입장 · {role.label}</span>
-            {/* 터치 타깃 44×44 이상 (CM-DF-004 09절) */}
-            <button
-              type="button"
-              className="flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground"
-              onClick={() => setRole(null)}
-              aria-label={`선택한 입장 ${role.label} 해제`}
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          </div>
-        )}
-
         <Composer
           value={draft}
           onChange={setDraft}
@@ -726,7 +674,7 @@ export function ChatPage() {
         open={confirmNewChat}
         title="새 대화를 시작할까요?"
         // 없는 것이 사라진다고 쓰지 않는다 — 피드백 폼만 열려 있는데 '작성 중인 질문'을 말하면 거짓이다
-        impact={`${newChatLoss(draft, openFeedbackForms)}지금까지의 대화와 선택한 입장(역할)이 초기화됩니다.`}
+        impact={`${newChatLoss(draft, openFeedbackForms)}지금까지의 대화가 초기화됩니다.`}
         confirmLabel="새 대화"
         onConfirm={startNewChat}
         onCancel={() => setConfirmNewChat(false)}

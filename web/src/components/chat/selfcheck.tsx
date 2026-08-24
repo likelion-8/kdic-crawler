@@ -155,18 +155,18 @@ const LINK: Attachment = { label: '착오송금 반환지원 신청방법', url:
   assert.ok(html.includes('예금자보호 한도 안내'))
 }
 
-// 10. 역할 되묻기 — 선택지 2개는 프론트 상수, 출처는 붙지 않는다
+// 10. 업무 되묻기 — 선택지는 서버가 준 것을 그대로, 출처는 붙지 않는다
 {
   const html = renderToStaticMarkup(
     <ClarificationMessage
-      question="어느 입장에서 궁금하신가요?"
-      options={[{ label: '잘못 보낸 사람(송금인)' }, { label: '잘못 받은 사람(수취인)' }]}
+      question="어떤 업무를 찾고 계신가요?"
+      options={[{ label: '착오송금 반환지원' }, { label: '미수령금 찾기' }]}
       onSelect={() => {}}
     />,
   )
-  assert.ok(html.includes('어느 입장에서 궁금하신가요?'))
-  assert.ok(html.includes('잘못 보낸 사람(송금인)'))
-  assert.ok(html.includes('잘못 받은 사람(수취인)'))
+  assert.ok(html.includes('어떤 업무를 찾고 계신가요?'))
+  assert.ok(html.includes('착오송금 반환지원'))
+  assert.ok(html.includes('미수령금 찾기'))
   assert.ok(!html.includes('참고 출처'))
 }
 
