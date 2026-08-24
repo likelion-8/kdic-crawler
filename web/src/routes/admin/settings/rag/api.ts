@@ -96,11 +96,6 @@ export interface AbColumn {
   /** B에서 바뀐 칩만 주황 강조 (AD-007 §1.5) */
   changed_chips: string[]
   hits: AbHit[]
-  /** 이 열에 적용된 무관 질문 게이트 임계값 */
-  gate_threshold?: number
-  /** 게이트 **전** top-1 점수. 후보가 하나도 없으면 null.
-   *  hits 가 비었을 때 '검색이 못 찾음'과 '점수가 임계값에 못 미쳐 잘림'을 가른다 */
-  top1_score?: number | null
 }
 
 export interface AbSearchResponse {
@@ -141,6 +136,12 @@ export function abSearch(query: string, draft: Record<string, ParamValue>) {
 }
 
 /** [운영 반영] — 사유 필수. 무중단 즉시 적용, 실패 시 이전 버전 유지 (Desc 0 ③) */
+/** [초기화] — 편집 중인 초안을 서버에서도 버린다. 로컬만 되돌리면 게이트·정량 비교가 남고
+ *  새로고침에 초안이 되살아난다. 응답은 GET 과 같은 화면 전체 상태다 */
+export function resetDraft() {
+  return apiRequest<RagParamsResponse>(`${BASE}/reset`, { method: 'POST' })
+}
+
 export function applyDraft(draft: Record<string, ParamValue>, reason: string) {
   return apiRequest<RagParamsResponse>(`${BASE}/apply`, { method: 'POST', body: { draft }, reason })
 }

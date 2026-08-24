@@ -25,7 +25,7 @@ import { formatShortKst } from '../evaluation/kst'
 import { Card, SectionError, modalError } from './promptops/common'
 import { AbCompare } from './rag/AbCompare'
 import {
-  applyDraft, evaluateDraft, fetchHistory, fetchParams, ragKeys, rollbackTo,
+  applyDraft, evaluateDraft, fetchHistory, fetchParams, ragKeys, resetDraft, rollbackTo,
 } from './rag/api'
 import type { ParamValue, RagHistoryEntry, RagParam, RagParamsResponse } from './rag/api'
 
@@ -69,6 +69,8 @@ export function RagParams() {
   const [applyOpen, setApplyOpen] = useState(false)
   const [resetOpen, setResetOpen] = useState(false)
   const [rollbackTarget, setRollbackTarget] = useState<RagHistoryEntry | null>(null)
+  /** A/B 비교 결과를 비우기 위한 remount 열쇠 — 초기화가 누른 뒤 옛 초안 결과가 남지 않게 */
+  const [abSeq, setAbSeq] = useState(0)
 
   const server = params.data
   // 서버가 준 초안(없으면 현행)을 편집 시작점으로 삼는다. 재조회로 초안을 덮어쓰지 않는다
@@ -99,6 +101,21 @@ export function RagParams() {
       setEvaluated(null)
       setApplyOpen(false)
       showToast('설정을 운영에 반영했습니다')
+    },
+  })
+
+  /** [초기화] — 서버의 초안 행까지 버린다. 로컬 draft 만 되돌리면 게이트 배지·정량 비교가
+   *  그대로 남고, 새로고침하면 서버 초안이 되살아나 초기화가 되지 않는다 */
+  const reset = useMutation({
+    mutationFn: () => resetDraft(),
+    onSuccess: (res) => {
+      queryClient.setQueryData(ragKeys.params, res)
+      setDraft({ ...res.current })
+      setEvaluated(null)
+      setResetOpen(false)
+      // A/B 결과는 버린 초안(B)으로 낸 것이라 함께 지운다 — remount 로 비운다
+      setAbSeq((n) => n + 1)
+      showToast('초안을 버리고 현행 운영값으로 되돌렸습니다')
     },
   })
 
@@ -253,8 +270,12 @@ export function RagParams() {
                 {reindex > 0 && (
                   <Badge tone="orange" kind="warning">재적재 필요 {reindex}</Badge>
                 )}
-                {gateReady ? (
+                {/* 미달과 미평가는 다른 상태다 — 평가한 적이 없는데 '미통과'라고 쓰면 무언가
+                    떨어진 것처럼 읽힌다. 바꾼 것이 없으면 게이트를 논할 대상 자체가 없다 */}
+                {changed.length === 0 ? null : gateReady ? (
                   <Badge tone="green" kind="status">게이트 통과</Badge>
+                ) : gate.draft_signature === null || stale ? (
+                  <Badge tone="orange" kind="warning">미평가</Badge>
                 ) : (
                   <Badge tone="orange" kind="warning">게이트 미통과</Badge>
                 )}
@@ -295,6 +316,7 @@ export function RagParams() {
 
       {/* ---------------- ③ ④ A/B 비교 · 정량 비교 ---------------- */}
       <AbCompare
+        key={abSeq}
         draft={draft}
         gate={gate}
         evaluating={evaluate.isPending}
@@ -391,10 +413,8 @@ export function RagParams() {
         title="편집 중인 초안을 버릴까요?"
         impact={<p>변경 {changed.length}건이 사라지고 현행 운영값으로 돌아갑니다. 운영 설정은 바뀌지 않습니다.</p>}
         confirmLabel="초기화"
-        onConfirm={() => {
-          setDraft({ ...current })
-          setResetOpen(false)
-        }}
+        pending={reset.isPending}
+        onConfirm={() => reset.mutate()}
         onCancel={() => setResetOpen(false)}
       />
 

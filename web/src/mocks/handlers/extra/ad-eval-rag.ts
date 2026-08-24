@@ -428,14 +428,7 @@ function abColumn(label: string, chips: string[], changed: string[], threshold: 
   const hits = hitsFor(threshold)
   const top1 = hits.length > 0 ? hits[0].score : null
   const gated = top1 !== null && top1 < threshold
-  return {
-    label,
-    chips,
-    changed_chips: changed,
-    gate_threshold: threshold,
-    top1_score: top1,
-    hits: gated ? [] : hits,
-  }
+  return { label, chips, changed_chips: changed, hits: gated ? [] : hits }
 }
 
 // ---------------------------------------------------------------- 핸들러
@@ -536,6 +529,17 @@ export const adEvalRagHandlers = [
 
   // ---- AD-007 RAG 파라미터 ----
   http.get('/api/admin/rag-params', () => {
+    const body: RagParamsResponse = { params: RAG_PARAMS, current: currentValues, draft: null, gate }
+    return HttpResponse.json(body)
+  }),
+
+  // [초기화] — 서버에 저장된 초안과 거기 매달린 게이트를 버린다. 로컬만 되돌리면 게이트
+  // 배지·정량 비교가 남고 새로고침에 초안이 되살아난다(실서버는 draft 행을 지운다)
+  http.post('/api/admin/rag-params/reset', async ({ request }) => {
+    const no = denied(request, 'EDITOR')
+    if (no) return no
+    await delay(200)
+    gate = { ...EMPTY_GATE }
     const body: RagParamsResponse = { params: RAG_PARAMS, current: currentValues, draft: null, gate }
     return HttpResponse.json(body)
   }),

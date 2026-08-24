@@ -11,6 +11,7 @@ RagHistoryEntry)에 응답 모양을 1:1로 맞춘다 — 처음 구현을 핸�
     POST /ab-search {query,draft}  현행(A) vs 초안(B) 검색 비교 -> AbSearchResponse
     POST /apply     {draft}+reason 운영 반영 -> RagParamsResponse(반영 후 전체 상태)
     GET  /history               버전 이력 -> Page<RagHistoryEntry>
+    POST /reset                 편집 중인 초안을 버린다 -> RagParamsResponse
     POST /history/{id}/rollback 그 시점 값으로 **초안만** 복원 -> {draft}
 
 ## 파라미터 메타는 서버가 정본이다
@@ -46,7 +47,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import delete, func, insert, select, update
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin, write_activity_log
 from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
@@ -279,12 +280,7 @@ def _holdout_rows(db):
 
 
 def _search_ranked(query: str, params: dict, *, for_scoring: bool = False) -> tuple:
-    """실검색 -> (게이트 전 순위, 게이트 후 순위). 검색은 한 번만 돈다.
-
-    게이트 전 순위를 함께 돌려주는 이유: 게이트는 top-1 이 임계값 미만이면 근거를 **통째로**
-    비운다. 그때 화면이 '검색이 아무것도 못 찾음'과 '점수가 모자라 잘림'을 구분하려면 잘리기
-    전 top-1 점수가 필요하다. 이걸 위해 검색을 두 번 돌리면 A/B 한 번에 4회가 된다.
-    """
+    """실검색 -> (게이트 전 순위, 게이트 후 순위). 검색은 한 번만 돈다."""
     from retrieval import route_search_chunks
     k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
     k_final = params.get("k_final", pipeline.K_FINAL)
@@ -407,6 +403,26 @@ def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession
     return gate
 
 
+@router.post("/reset")
+def reset_draft(me: CurrentAdmin, db: DbSession):
+    """[초기화] — 편집 중인 초안을 **서버에서도** 버린다.
+
+    종전에는 화면이 로컬 상태만 현행값으로 되돌렸다. 초안 행(rag_param_versions status='draft')과
+    거기 매달린 평가·게이트는 그대로 남아, 게이트 배지와 정량 비교가 계속 떠 있고 새로고침하면
+    초안이 되살아났다 — 초기화가 초기화가 아니었다.
+
+    운영값(status='current')은 건드리지 않는다. 활동 로그도 남기지 않는다 — 초안은 서비스에
+    영향이 없어 게시·반영·롤백과 같은 감사 대상이 아니다(초안 저장도 기록하지 않는다).
+    """
+    _require_editor(me, "RAG 파라미터 초기화")
+    draft = _row(db, "draft")
+    if draft:
+        # 초안 행을 지우면 _stored_gate 도 자동으로 '평가 없음' 상태가 된다(draft is None).
+        db.execute(delete(rag_param_versions).where(rag_param_versions.c.id == draft.id))
+        db.commit()
+    return _full_response(db)
+
+
 @router.post("/ab-search")
 def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
     """[비교 실행] — 같은 질문을 A(현행)/B(초안)로 동시 검색. 결과를 저장하지 않는다(§1.5)."""
@@ -433,10 +449,7 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
                 f"플래너 {'On' if p['use_query_planner'] else 'Off'}"]
 
     def _column(label: str, p: dict, changed: list) -> dict:
-        # 게이트가 통째로 비운 경우를 화면이 구분할 수 있게 한다 — '검색이 아무것도 못 찾음'과
-        # '점수는 있었는데 임계값에 못 미쳐 잘림'은 관리자가 할 조치가 다르다. 게이트 전 top-1
-        # 점수를 함께 내려, 화면이 "top-1 0.58 < 게이트 0.65" 처럼 이유를 말할 수 있게 한다.
-        ungated, top = _search_ranked(query, p)
+        _, top = _search_ranked(query, p)
         pages: list = []
         seen: set = set()
         for cid, score, _text in top:
@@ -447,8 +460,6 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
             pages.append((page, float(score)))
         return {
             "label": label, "chips": _chips(p), "changed_chips": changed,
-            "gate_threshold": float(p["min_top1_score"]),
-            "top1_score": float(ungated[0][1]) if ungated else None,
             "hits": [{"rank": i + 1, "title": titles.get(pid, pid), "doc_id": pid,
                       "score": round(score, 4), "is_answer": pid in gold}
                      for i, (pid, score) in enumerate(pages[:5])],
