@@ -350,6 +350,9 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
   const usedFlags = subs.map((s) => s.used_source).filter((v): v is boolean => v !== null)
   const usedCount = usedFlags.filter(Boolean).length
   const mixedUse = usedFlags.length > 1 && usedCount > 0 && usedCount < usedFlags.length
+  // 답변 구성 기준의 복합 여부 — 관측(subs)이 아니라 실제로 하위 답변이 저장됐는지를 본다.
+  // 관측은 있는데 하위 답변이 없는 건(대화 저장 이전)에서 본문을 잃지 않기 위해서다.
+  const composite = (detail.answer_composition?.sub_answers.length ?? 0) > 0
   // 분류로 읽히는 값 전부. 복합 질문은 성격·업무와 같은 줄에 선다 — 종전에는 하위가 몇 개로
   // 나뉘었는지가 분류 어디에도 없어, 근거 구획을 펼쳐 보고서야 복합인 줄 알 수 있었다.
   const labels = [
@@ -441,26 +444,35 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
           답변 전문 (마스킹)
           <InfoHint label="답변 전문 설명" size="sm">
             사용자가 챗봇에서 본 것과 같은 구성입니다 — 본문 뒤에 필요 서류 · 신청 페이지 · 참고
-            출처가 순서대로 붙습니다. 값이 없는 섹션은 그리지 않습니다. 본문·하위 답변은 마스킹된
-            저장본이며 원문 복원 진입점은 없습니다.
+            출처가 순서대로 붙습니다. 값이 없는 섹션은 그리지 않습니다. 복합 질문은 하위 답변이
+            곧 본문이라 하위 단위로만 그립니다. 본문·하위 답변은 마스킹된 저장본이며 원문 복원
+            진입점은 없습니다.
           </InfoHint>
         </SectionTitle>
-        <p className="text-[13px] leading-relaxed whitespace-pre-line">
-          {expanded ? detail.answer_masked_full : detail.answer_masked_preview}
-        </p>
-        {/* 전문이 응답에 이미 담겨 있어 펼치기는 클라이언트 토글이다(11 §L3 제안) */}
-        <button
-          type="button"
-          className="mt-1 rounded-sm py-1 text-xs font-medium text-primary outline-none transition-colors duration-200 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? '접기▴' : '전체 펼치기▾'}
-        </button>
-        {/* 서버가 구성을 안 내려주는 배포에서는 undefined — 그때는 본문만 그리고 없는 것을
-            지어내지 않는다(원천은 chat_messages, api.ts AnswerComposition 주석 참고) */}
-        {detail.answer_composition && (
-          <AnswerCompositionView comp={detail.answer_composition} />
+        {/* 복합 질문의 rag_runs.answer 는 하위 답변을 이어붙인 것이다 — 그 본문을 그리고 하위
+            카드를 또 그리면 같은 글이 두 번 나온다. 하위가 있으면 하위만 그린다(챗봇도 그렇다) */}
+        {composite ? (
+          <AnswerCompositionView comp={detail.answer_composition!} />
+        ) : (
+          <>
+            <p className="text-[13px] leading-relaxed whitespace-pre-line">
+              {expanded ? detail.answer_masked_full : detail.answer_masked_preview}
+            </p>
+            {/* 전문이 응답에 이미 담겨 있어 펼치기는 클라이언트 토글이다(11 §L3 제안) */}
+            <button
+              type="button"
+              className="mt-1 rounded-sm py-1 text-xs font-medium text-primary outline-none transition-colors duration-200 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              aria-expanded={expanded}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? '접기▴' : '전체 펼치기▾'}
+            </button>
+            {/* 서버가 구성을 안 내려주는 배포에서는 undefined — 그때는 본문만 그리고 없는 것을
+                지어내지 않는다(원천은 chat_messages, api.ts AnswerComposition 주석 참고) */}
+            {detail.answer_composition && (
+              <AnswerCompositionView comp={detail.answer_composition} />
+            )}
+          </>
         )}
       </div>
 
