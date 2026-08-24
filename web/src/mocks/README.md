@@ -138,7 +138,7 @@ error        ApiError                  ← done 대신 온다
 | POST | `/api/admin/jobs/{id}/cancel` | OPERATOR | 단계 상태를 그 시점으로 얼려 반환 |
 | POST | `/api/admin/jobs/{id}/retry` | OPERATOR | **새 job을 만든다**(활동 로그에 둘 다 남아야 함) |
 | POST | `/api/admin/jobs/{id}/rollback` | ADMIN | 긴급 롤백 → REINDEX job(`rollback_of`) |
-| GET | `/api/admin/evaluations/runs` | VIEWER | `page`·`size`·`sort` + 필터 `target=운영 설정\|RAG 초안\|프롬프트 초안` · `source=수동 실행\|프롬프트 게시 게이트\|파이프라인 후속\|RAG 파라미터 평가` (A-10·A-11 확정) |
+| GET | `/api/admin/evaluations/runs` | VIEWER | `page`·`size`·`sort` + 필터 `target=운영 설정\|RAG` · `source=파이프라인 후속\|RAG 파라미터 평가` (서버가 넣는 값만 — 2026-08-24 정리) |
 | GET | `/api/admin/evaluations/runs/{run_id}` | VIEWER | 게이트 판정 포함 |
 | GET | `/api/admin/activity/events` | VIEWER | 필터 `q`·`actor`·`result` |
 | GET | `/api/admin/activity/events/{id}` | VIEWER | 당시 스냅샷 포함 |

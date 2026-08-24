@@ -245,13 +245,15 @@ rate_limit_blocks = Table(
 evaluation_runs = Table(
     "evaluation_runs", admin_metadata,
     _uuid_pk(),
-    Column("target", String, nullable=False),                   # 무엇을 평가했나(RAG / 프롬프트 등)
-    # 실행 출처 4종(수동 실행 / 프롬프트 게시 게이트 / 파이프라인 후속 / RAG 파라미터 평가).
-    # 고정 코드값 사전이 아직 CM-DF-002 에 없어(E9) String 으로 두고 정본이 정해지면 맞춘다.
+    # 무엇을 평가했나. 실제로 넣는 값은 둘뿐이다 — '운영 설정'(평가셋 반영 재측정) · 'RAG'
+    # (RAG 파라미터 초안 평가 · 파이프라인 후속). 프롬프트 초안 평가는 무상태라 행을 남기지 않는다.
+    Column("target", String, nullable=False),
+    # 실행 출처. 넣는 값은 '파이프라인 후속' · 'RAG 파라미터 평가' 둘뿐이다 — '수동 실행'은
+    # 엔드포인트가 없고 '프롬프트 게시 게이트'는 게시 Smoke 폐지로 사라졌다(2026-08-24).
     Column("source", String),
     Column("testset_version", String),                          # 어떤 버전의 문항으로 쟀나(E3)
-    # ⚠️ 지표를 숫자 4컬럼으로 두지 않는다. 대상별로 축이 다르다(RAG=정확도/MRR/생성,
-    # 프롬프트=회귀/인용/중대 위반) — E1 이 [{label, value}] 배열을 요구하는 이유다.
+    # ⚠️ 지표를 숫자 4컬럼으로 두지 않는다. 축이 바뀔 수 있어 E1 이 [{label, value}] 배열을
+    # 요구한다. 현재 넣는 축은 한 종류다(정확도/MRR/생성).
     # 반올림까지 끝낸 문자열로 저장한다(서버가 표기를 확정, E1).
     Column("metrics", JSONB),
     # 게이트 판정 전문. 목록의 passed 와 상세의 기준별 판정이 어긋나면 안 되므로(E10)

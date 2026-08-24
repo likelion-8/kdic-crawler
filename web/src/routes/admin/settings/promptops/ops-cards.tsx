@@ -47,7 +47,6 @@ export function UsageLimitCard({ value, baseline, canEdit, onChange }: UsageLimi
       title="사용량 제한 정책"
       icon={<Gauge />}
       dirty={dirty}
-      meta={<ColorText tone="green">승인 후 적용</ColorText>}
       // 편집 필드가 없는 값(burst)과 권한 조건은 규칙이다 — 카드 안에 문단으로 깔지 않는다.
       // burst는 서버 고정값이라 필드 자체를 두지 않는다(13절 H-4)
       hint={

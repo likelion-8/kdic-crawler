@@ -150,34 +150,24 @@ function validate(input: EvalItemInput, ignoreId?: string): EvalItemValidation {
   }
 }
 
-/** AD-006 §2.3 이력 표 — 목업 5행 + 상태 다양성(미달 · 실행 중) 3행.
- * '핵심 결과'는 **대상별로 지표 축이 다르므로**(§2.3) 서버가 라벨까지 완성해 내려준다.
+/** AD-006 §2.3 이력 표. '핵심 결과'는 서버가 라벨까지 완성해 내려준다 — 지표 축은 한 종류다
+ * (정확도·MRR·생성). 프롬프트 계열 축(회귀·인용·중대 위반)은 서버가 그런 실행 행을 만들지 않아 뺐다.
  * seed가 원지표(raw)를 함께 들고 있는 건 게이트 판정 상세(§2.4) 표를 같은 실행에서 만들기 위해서다. */
 interface RunSeed extends Omit<EvaluationRun, 'metrics'> {
   raw: { recall_at_5: number; mrr: number; generation_rate: number; avg_latency_ms: number }
-  /** 프롬프트 계열 지표 축 — 회귀 / 인용 / 중대 위반 */
-  prompt?: { regression: string; citation_rate: number; critical: number }
 }
 
 const PASSED_GATE = { passed: true }
 
 const runs: RunSeed[] = [
   {
-    run_id: 'run_20260803_0930', target: '운영 설정', source: '수동 실행',
+    run_id: 'run_20260803_0930', target: '운영 설정', source: '파이프라인 후속',
     started_at: '2026-08-03T09:30:00+09:00', finished_at: '2026-08-03T09:47:00+09:00', status: 'SUCCESS',
     item_count: 580, testset_version: 12, gate: PASSED_GATE,
     raw: { recall_at_5: 0.912, mrr: 0.784, generation_rate: 100, avg_latency_ms: 5_240 },
   },
   {
-    run_id: 'run_20260802_1810', target: '프롬프트 초안', source: '프롬프트 게시 게이트',
-    started_at: '2026-08-02T18:10:00+09:00', finished_at: '2026-08-02T18:29:00+09:00', status: 'SUCCESS',
-    item_count: 30, testset_version: 12,
-    gate: { passed: false, warning_reason: '생성 성공률 미달' },
-    raw: { recall_at_5: 0.889, mrr: 0.741, generation_rate: 98.9, avg_latency_ms: 5_910 },
-    prompt: { regression: '5/6', citation_rate: 97.2, critical: 1 },
-  },
-  {
-    run_id: 'run_20260801_1400', target: 'RAG 초안', source: 'RAG 파라미터 평가',
+    run_id: 'run_20260801_1400', target: 'RAG', source: 'RAG 파라미터 평가',
     started_at: '2026-08-01T14:00:00+09:00', finished_at: null, status: 'RUNNING',
     item_count: 580, testset_version: 12,
     gate: { passed: false },
@@ -190,7 +180,7 @@ const runs: RunSeed[] = [
     raw: { recall_at_5: 0.922, mrr: 0.806, generation_rate: 100, avg_latency_ms: 5_200 },
   },
   {
-    run_id: 'run_20260729_1105', target: 'RAG 초안', source: 'RAG 파라미터 평가',
+    run_id: 'run_20260729_1105', target: 'RAG', source: 'RAG 파라미터 평가',
     started_at: '2026-07-29T11:05:00+09:00', finished_at: '2026-07-29T11:24:00+09:00', status: 'SUCCESS',
     item_count: 89, testset_version: 12, gate: PASSED_GATE, follow_up: '→ 11:40 반영됨',
     raw: { recall_at_5: 0.918, mrr: 0.801, generation_rate: 100, avg_latency_ms: 5_300 },
@@ -201,13 +191,6 @@ const runs: RunSeed[] = [
     // 평가셋 v12의 첫 재측정 = 구성이 바뀐 뒤 점수가 오른 실행(Desc 0)
     item_count: 89, testset_version: 12, gate: PASSED_GATE, improved_by_composition: true,
     raw: { recall_at_5: 0.921, mrr: 0.804, generation_rate: 100, avg_latency_ms: 5_180 },
-  },
-  {
-    run_id: 'run_20260724_1612', target: '프롬프트 초안', source: '프롬프트 게시 게이트',
-    started_at: '2026-07-24T16:12:00+09:00', finished_at: '2026-07-24T16:26:00+09:00', status: 'SUCCESS',
-    item_count: 6, testset_version: 11, gate: PASSED_GATE, follow_up: '→ 게시 v1.4',
-    raw: { recall_at_5: 0.915, mrr: 0.799, generation_rate: 100, avg_latency_ms: 5_400 },
-    prompt: { regression: '6/6', citation_rate: 99.6, critical: 0 },
   },
   {
     run_id: 'run_20260721_0400', target: '운영 설정', source: '파이프라인 후속',
@@ -222,13 +205,6 @@ const pct = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)}%`
 
 function metricsOf(run: RunSeed): RunMetric[] {
   if (run.status === 'RUNNING' || run.status === 'QUEUED') return []
-  if (run.prompt) {
-    return [
-      { label: '회귀', value: run.prompt.regression },
-      { label: '인용', value: pct(run.prompt.citation_rate) },
-      { label: '중대 위반', value: String(run.prompt.critical) },
-    ]
-  }
   return [
     { label: '정확도', value: run.raw.recall_at_5.toFixed(3) },
     { label: 'MRR', value: run.raw.mrr.toFixed(3) },
@@ -236,9 +212,9 @@ function metricsOf(run: RunSeed): RunMetric[] {
   ]
 }
 
-/** raw·prompt는 게이트 상세를 만들기 위한 서버 내부값이라 응답에서 뺀다 */
-function toRun({ raw, prompt, ...wire }: RunSeed): EvaluationRun {
-  return { ...wire, metrics: metricsOf({ ...wire, raw, prompt }) }
+/** raw는 게이트 상세를 만들기 위한 서버 내부값이라 응답에서 뺀다 */
+function toRun({ raw, ...wire }: RunSeed): EvaluationRun {
+  return { ...wire, metrics: metricsOf({ ...wire, raw }) }
 }
 
 /** AD-006 §2.4 목표 열 — CM-DF-004 05절이 정본이라 화면에서 못 고친다. 서버가 내려준다 */
@@ -438,13 +414,7 @@ export const adEvalRagHandlers = [
   }),
 
   http.get('/api/admin/evaluations/schedule', () => {
-    // 매주 월 04:00 정기 재측정(AD-006 Desc 1 ③) — 다음 월요일을 계산해 준다
-    const next = new Date()
-    next.setHours(4, 0, 0, 0)
-    do {
-      next.setDate(next.getDate() + 1)
-    } while (next.getDay() !== 1)
-    const body: EvalSchedule = { next_check_at: next.toISOString(), testset_version: testsetVersion }
+    const body: EvalSchedule = { testset_version: testsetVersion }
     return HttpResponse.json(body)
   }),
 

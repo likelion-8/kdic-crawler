@@ -42,8 +42,8 @@ class RunGate(BaseModel):
 class EvaluationRun(BaseModel):
     """평가 실행 1건. api.ts EvaluationRun 과 1:1."""
     run_id: str
-    target: str                             # '운영 설정' | 'RAG 초안' | '프롬프트 초안'
-    source: str                             # RUN_SOURCES(수동 실행 등)
+    target: str                             # '운영 설정' | 'RAG' (서버가 넣는 값)
+    source: str                             # '파이프라인 후속' | 'RAG 파라미터 평가'
     started_at: str                         # KST ISO
     finished_at: Optional[str] = None       # 실행 중이면 null
     status: str                             # JobStatus (RUNNING/DONE/FAILED)

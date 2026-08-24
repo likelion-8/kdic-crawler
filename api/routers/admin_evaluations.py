@@ -28,7 +28,7 @@ CLI 로 부를 수 있다. _measure 는 커밋하지 않아 apply(한 트랜잭�
 공유한다.
 
 ## 게이트 목표값은 서버가 못 박는다 (E4·E10)
-GATE_CRITERIA 가 정본이다(0.92↑/0.80↑/99.5%↑/10초↓/30of30). passed 와 기준별 판정을
+GATE_CRITERIA 가 정본이다(0.92↑/0.80↑/99.5%↑/10초↓). passed 와 기준별 판정을
 compute_gate 가 함께 계산해 evaluation_runs.gate(JSONB)에 담고, 목록·상세가 그 한 값을 읽는다.
 프론트 상수로 박으면 '관리자 화면에서 기준을 낮추는 우회'를 막는 설계가 무너진다.
 
@@ -543,17 +543,14 @@ def validate_item(body: EvalItemInput, db: DbSession):
 
 @router.get("/schedule")
 def get_schedule(admin: CurrentAdmin, db: DbSession):
-    """정기 재측정 일정 -> {next_check_at, testset_version}. 프론트(evaluation/api.ts
-    fetchSchedule)가 AD-006 진입 즉시 부르는데 라우트가 없어 항상 404 였다(2026-08-13 실측).
-    일정 정본은 PRD-03 '운영 재측정 4시점'의 정기 축 — 매주 월 04:00 KST.
-    ⚠️ 스케줄러 프로세스는 아직 없다 — '계획된 다음 시각'이지 실행 보장이 아니다."""
+    """현재 평가셋 버전 -> {testset_version}. 화면 헤더의 버전 배지가 이 값을 쓴다.
+
+    종전에는 next_check_at(다음 월요일 04:00)도 함께 내려 화면이 '다음 자동 확인'으로 보여
+    줬는데, 그 시각에 재측정을 인큐하는 스케줄러가 없어 지키지 못하는 약속이었다 — 값과 표기를
+    함께 없앴다(2026-08-24). 정기 재측정을 실제로 돌리게 되면 그때 다시 내려준다."""
     del admin
     _bootstrap_if_empty(db)
-    kst = timezone(timedelta(hours=9))
-    nxt = datetime.now(kst).replace(hour=4, minute=0, second=0, microsecond=0)
-    while nxt <= datetime.now(kst) or nxt.weekday() != 0:   # 다음 월요일 04:00
-        nxt += timedelta(days=1)
-    return {"next_check_at": nxt.isoformat(), "testset_version": _current_version(db)}
+    return {"testset_version": _current_version(db)}
 
 
 # ──────────────────────────────── 반영(apply) ───────────────────────────────

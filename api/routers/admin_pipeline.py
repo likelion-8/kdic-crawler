@@ -49,7 +49,7 @@ from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
 from api.schemas.pipeline import (ChangedPage, ChangedPagesResponse, JobCancel,
                                   JobCreate, JobEstimate, JobRetry, JobRollback,
                                   PipelineJob, PipelineJobList)
-from schema import documents, pipeline_jobs, test_set
+from schema import documents, pipeline_jobs
 from schema_admin import admin_activity_logs
 
 router = APIRouter(
@@ -60,8 +60,11 @@ router = APIRouter(
 )
 
 # JobType/JobStatus 정본: web/src/lib/codes.ts
+# 여기 있는 값만 POST /jobs 로 만들 수 있다. SMOKE_EVAL 은 뺐다(2026-08-24) — 평가셋 반영
+# (AD-006)이 evaluation_runs 행을 만들어 targets[0] 에 실어 인큐하는 잡이라, 그 run 없이 만들면
+# 워커가 마감할 대상이 없다. JobType 자체는 그대로다(그렇게 만들어진 잡이 AD-004 목록에 보인다).
 JOB_TYPES = frozenset(
-    {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED", "SMOKE_EVAL",
+    {"FULL_RECRAWL", "SELECTED_RECRAWL", "REINDEX", "RECHUNK", "REEMBED",
      "CHANGE_DETECT"})   # CHANGE_DETECT: 변경 감지(2026-08-18) — [지금 확인]이 만든다
 ACTIVE_STATUSES = ("QUEUED", "RUNNING")  # 동시 실행 1개 규칙의 판정 대상
 JOB_STATUSES = frozenset({"QUEUED", "RUNNING", "SUCCESS", "FAILED", "CANCELLED"})
@@ -299,7 +302,6 @@ _SECONDS_PER_TARGET = {
     "REINDEX": 3.0,
     "RECHUNK": 0.5,
     "REEMBED": 3.0,
-    "SMOKE_EVAL": 8.0,
 }
 
 
@@ -316,11 +318,7 @@ def _resolve_targets(db, job_type: str, targets: list) -> tuple[str, int]:
     """(target_summary, target_count). 화면의 '대상' 열 문자열을 서버가 완성한다.
 
     선택 작업은 받은 배열이 곧 대상이고, 전체 작업은 targets 가 비어 있어 서버가 센다.
-    SMOKE_EVAL 만 단위가 페이지가 아니라 평가 문항이라 문구가 다르다.
     """
-    if job_type == "SMOKE_EVAL":
-        count = db.execute(select(func.count()).select_from(test_set)).scalar_one()
-        return f"평가 {count}문항", count
     if job_type == "CHANGE_DETECT":
         count = _active_document_count(db)
         return f"변경 감지 · 전체 {count}페이지", count

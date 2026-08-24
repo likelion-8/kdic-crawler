@@ -22,7 +22,7 @@
 | FULL_RECRAWL · SELECTED_RECRAWL | ✅ 실제 실행 | 수집(inventory.PAGES 기준 실제 재크롤, expect 판본 검증 + 재시도) -> 변환(파싱 + 코퍼스 재조립, **content_sha256 비교로 바뀐 페이지만 갱신 집계**) -> 이하 재적재와 동일 |
 | REINDEX · RECHUNK · REEMBED | ✅ 실제 실행 | 코퍼스(data/corpus.jsonl) -> 청킹 -> 검증 -> **게이트(홀드아웃 평가, 경고만)** -> 색인(UPSERT) -> 버전 기록. 게이트 미달이어도 색인은 진행하고 판정은 경고로만 남긴다(2026-08-19 정책, src/index_gate.py) |
 | 롤백 잡(rollback_of 있음)   | ✅ 실제 실행 | search_index_versions 의 직전 스냅샷으로 corpus.jsonl 을 되돌린 뒤 위와 동일 재적재. **게이트는 SKIPPED** — 직전에 통과했던 스냅샷이라 다시 재는 의미가 없고, 장애 복구를 게이트가 막으면 안 된다 |
-| SMOKE_EVAL                  | ✅ 실제 실행 | admin_evaluations.run_evaluation 위임(문항 수만큼 OpenAI·HCX — 수 분) |
+| SMOKE_EVAL                  | ✅ 실제 실행 | admin_evaluations.run_evaluation 위임(문항 수만큼 OpenAI·HCX — 수 분). **평가셋 반영(AD-006 [반영])이 evaluation_runs 행을 먼저 만들고 targets[0]=run_id 로 실어 인큐하는 경로 하나뿐이다** — 이 잡을 손으로 만들 수는 없다(POST /jobs 가 받지 않는다) |
 | CHANGE_DETECT               | ✅ 실제 실행 | change_detect.run — 정적 페이지 재수집 후 본문 해시 대조, 바뀐 것만 index_status=PENDING 표시(저장·색인 안 함). AD-004 [지금 확인]·주기 배치가 만든다(2026-08-18, 미구현 ② 해소) |
 
 ## 재수집(수집 단계)이 하는 일 — 기존 크롤 파이프라인을 그대로 자동화
@@ -471,9 +471,7 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
 def _run_smoke_eval(session, job) -> None:
     """평가 실행을 admin_evaluations.run_evaluation 에 위임한다(그 함수의 docstring 이
     말하는 '워커' 가 바로 여기다). 문항 수만큼 OpenAI·HCX 를 부르는 수 분짜리 작업."""
-    import uuid as _uuid
-    from sqlalchemy import insert
-    from api.routers.admin_evaluations import _current_version, run_evaluation
+    from api.routers.admin_evaluations import run_evaluation
     from schema_admin import evaluation_runs
 
     for name in ("수집", "변환", "청킹", "검증"):
@@ -481,15 +479,16 @@ def _run_smoke_eval(session, job) -> None:
 
     def _measure_stage():
         # apply(AD-006)가 run 을 만들어 targets[0] 에 실어 보낸다 — 그 run 을 마감한다.
-        # (새 run 을 만들면 원 run 이 영구 RUNNING 으로 남는다.) targets 가 비면 종전대로 자체 생성.
+        # (새 run 을 만들면 원 run 이 영구 RUNNING 으로 남는다.)
+        # 🔴 자체 생성은 없앴다(2026-08-24). 종전에는 targets 가 비면 여기서 run 을 만들었는데
+        #    target='RAG' · source='파이프라인 후속' 로 넣어 AD-006 이력이 거짓을 보였다 —
+        #    측정 대상은 운영 설정이고 유발한 곳은 파이프라인 후속이 아니었다. 이 잡을 만드는
+        #    경로는 apply 하나뿐이므로(POST /jobs 는 이 타입을 받지 않는다) 없는 상황이다.
         run_id = (job.targets or [None])[0]
         if not run_id:
-            run_id = _uuid.uuid4()
-            session.execute(insert(evaluation_runs).values(
-                id=run_id, target="RAG", source="파이프라인 후속",
-                testset_version=str(_current_version(session)),
-                triggered_by=job.created_by, status="RUNNING"))
-            session.commit()
+            raise RuntimeError(
+                "SMOKE_EVAL 잡에 평가 실행 id(targets[0])가 없습니다 — 이 잡은 "
+                "평가셋 반영(AD-006)이 run 을 만들어 실어 보내는 경로로만 만들어집니다.")
         try:
             result = run_evaluation(session, str(run_id))
         except Exception:
