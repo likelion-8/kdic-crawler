@@ -77,6 +77,16 @@ function ResultColumn({ column, highlight }: { column: AbColumn; highlight: bool
         rows={column.hits}
         rowKey={(h) => `${column.label}-${h.doc_id}`}
       />
+      {/* 비었을 때 이유를 말한다 — '검색이 못 찾음'과 '게이트가 잘라냄'은 관리자가 할 조치가
+          다르다(전자는 지식베이스, 후자는 임계값). 점수가 화면에 있으니 판단 근거도 함께 준다 */}
+      {column.hits.length === 0 &&
+        column.top1_score != null &&
+        column.gate_threshold != null && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            무관 질문 게이트가 근거를 통째로 비웠습니다 — top-1 {column.top1_score.toFixed(2)} &lt;{' '}
+            게이트 {column.gate_threshold.toFixed(2)}
+          </p>
+        )}
     </div>
   )
 }

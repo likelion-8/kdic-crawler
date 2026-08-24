@@ -96,6 +96,11 @@ export interface AbColumn {
   /** B에서 바뀐 칩만 주황 강조 (AD-007 §1.5) */
   changed_chips: string[]
   hits: AbHit[]
+  /** 이 열에 적용된 무관 질문 게이트 임계값 */
+  gate_threshold?: number
+  /** 게이트 **전** top-1 점수. 후보가 하나도 없으면 null.
+   *  hits 가 비었을 때 '검색이 못 찾음'과 '점수가 임계값에 못 미쳐 잘림'을 가른다 */
+  top1_score?: number | null
 }
 
 export interface AbSearchResponse {

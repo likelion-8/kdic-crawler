@@ -278,15 +278,12 @@ def _holdout_rows(db):
     return rows
 
 
-def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> list:
-    """초안/현행 파라미터로 실검색 -> 페이지 순위. eval_pipeline_retrieval 과 같은 규약
-    (chunk_id 의 '#' 앞이 page_id, 같은 페이지 첫 등장 = 최고 순위).
+def _search_ranked(query: str, params: dict, *, for_scoring: bool = False) -> tuple:
+    """실검색 -> (게이트 전 순위, 게이트 후 순위). 검색은 한 번만 돈다.
 
-    for_scoring=True 면 k_final 컷 **없이** 후보 전체(k_candidates)에서 페이지를 접는다 —
-    기준선(0.922/0.806, retrieve_pages)이 그렇게 재기 때문이다. 컷 이후로 재면 페이지가
-    2~4개뿐이라 같은 검색이 기준선보다 불리하게 나와 게이트(0.92)가 영구 미달이 된다
-    (2026-08-12 실측). 컷은 LLM 에 넘길 근거 선택이지 검색 품질의 정의가 아니다.
-    for_scoring=False(A/B 화면)는 LLM 이 실제로 받는 것을 보여줘야 하므로 컷을 유지한다.
+    게이트 전 순위를 함께 돌려주는 이유: 게이트는 top-1 이 임계값 미만이면 근거를 **통째로**
+    비운다. 그때 화면이 '검색이 아무것도 못 찾음'과 '점수가 모자라 잘림'을 구분하려면 잘리기
+    전 top-1 점수가 필요하다. 이걸 위해 검색을 두 번 돌리면 A/B 한 번에 4회가 된다.
     """
     from retrieval import route_search_chunks
     k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
@@ -294,12 +291,31 @@ def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> lis
     threshold = params.get("min_top1_score", candidate_ranking.MIN_TOP1_SCORE)
     candidates = route_search_chunks(query, k=k_candidates)
     ranked = candidates if for_scoring else candidate_ranking.top_k_cut(candidates, k=k_final)
-    top = candidate_ranking.gate_low_relevance(ranked, threshold=threshold)
-    pages = []
-    for cid, _score, _text in top:
+    return ranked, candidate_ranking.gate_low_relevance(ranked, threshold=threshold)
+
+
+def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> list:
+    """초안/현행 파라미터로 실검색 -> [(page_id, score), ...] 페이지 순위.
+
+    eval_pipeline_retrieval 과 같은 규약(chunk_id 의 '#' 앞이 page_id, 같은 페이지 첫 등장 =
+    최고 순위). 점수는 그 페이지를 대표하는 청크(= 첫 등장 청크)의 점수다 — A/B 화면이
+    게이트 임계값과 나란히 보여줘야 관리자가 "왜 B가 비었나"를 스스로 읽는다.
+
+    for_scoring=True 면 k_final 컷 **없이** 후보 전체(k_candidates)에서 페이지를 접는다 —
+    기준선(0.922/0.806, retrieve_pages)이 그렇게 재기 때문이다. 컷 이후로 재면 페이지가
+    2~4개뿐이라 같은 검색이 기준선보다 불리하게 나와 게이트(0.92)가 영구 미달이 된다
+    (2026-08-12 실측). 컷은 LLM 에 넘길 근거 선택이지 검색 품질의 정의가 아니다.
+    for_scoring=False(A/B 화면)는 LLM 이 실제로 받는 것을 보여줘야 하므로 컷을 유지한다.
+    """
+    _, top = _search_ranked(query, params, for_scoring=for_scoring)
+    pages: list = []
+    seen: set = set()
+    for cid, score, _text in top:
         page = cid.split("#")[0]
-        if page not in pages:
-            pages.append(page)
+        if page in seen:
+            continue
+        seen.add(page)
+        pages.append((page, float(score)))
     return pages
 
 
@@ -309,7 +325,7 @@ def _measure(rows, params: dict) -> dict:
     rr_sum = 0.0
     for r in rows:
         gold = set(r["expected_sources"] or [])
-        ranked5 = _search_pages(r["question"], params, for_scoring=True)[:5]
+        ranked5 = [page for page, _ in _search_pages(r["question"], params, for_scoring=True)[:5]]
         if gold & set(ranked5):
             hits += 1
         for i, page in enumerate(ranked5, 1):
@@ -417,12 +433,25 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
                 f"플래너 {'On' if p['use_query_planner'] else 'Off'}"]
 
     def _column(label: str, p: dict, changed: list) -> dict:
-        pages = _search_pages(query, p)
+        # 게이트가 통째로 비운 경우를 화면이 구분할 수 있게 한다 — '검색이 아무것도 못 찾음'과
+        # '점수는 있었는데 임계값에 못 미쳐 잘림'은 관리자가 할 조치가 다르다. 게이트 전 top-1
+        # 점수를 함께 내려, 화면이 "top-1 0.58 < 게이트 0.65" 처럼 이유를 말할 수 있게 한다.
+        ungated, top = _search_ranked(query, p)
+        pages: list = []
+        seen: set = set()
+        for cid, score, _text in top:
+            page = cid.split("#")[0]
+            if page in seen:
+                continue
+            seen.add(page)
+            pages.append((page, float(score)))
         return {
             "label": label, "chips": _chips(p), "changed_chips": changed,
+            "gate_threshold": float(p["min_top1_score"]),
+            "top1_score": float(ungated[0][1]) if ungated else None,
             "hits": [{"rank": i + 1, "title": titles.get(pid, pid), "doc_id": pid,
-                      "score": 0.0, "is_answer": pid in gold}
-                     for i, pid in enumerate(pages[:5])],
+                      "score": round(score, 4), "is_answer": pid in gold}
+                     for i, (pid, score) in enumerate(pages[:5])],
         }
 
     changed = [c for a, c in zip(_chips(current), _chips(merged)) if a != c]

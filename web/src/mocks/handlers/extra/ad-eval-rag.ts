@@ -421,6 +421,23 @@ function hitsFor(alpha: number) {
   }))
 }
 
+/** 서버와 같은 규칙으로 A·B 한 열을 만든다 — 무관 질문 게이트는 top-1 이 임계값 미만이면
+ *  근거를 **통째로** 비운다(candidate_ranking.gate_low_relevance). 목이 이걸 흉내내지 않으면
+ *  임계값을 올려도 목에서는 계속 결과가 나와, 화면의 빈 상태·사유 문구가 검증되지 않는다. */
+function abColumn(label: string, chips: string[], changed: string[], threshold: number) {
+  const hits = hitsFor(threshold)
+  const top1 = hits.length > 0 ? hits[0].score : null
+  const gated = top1 !== null && top1 < threshold
+  return {
+    label,
+    chips,
+    changed_chips: changed,
+    gate_threshold: threshold,
+    top1_score: top1,
+    hits: gated ? [] : hits,
+  }
+}
+
 // ---------------------------------------------------------------- 핸들러
 
 export const adEvalRagHandlers = [
@@ -561,15 +578,13 @@ export const adEvalRagHandlers = [
     const baseChips = chipsOf(currentValues)
     const res: AbSearchResponse = {
       query: body.query,
-      a: {
-        label: 'A. 현행 운영값', chips: baseChips, changed_chips: [],
-        hits: hitsFor(Number(currentValues.min_top1_score)),
-      },
-      b: {
-        label: 'B. 초안 (편집 중)', chips: draftChips,
-        changed_chips: draftChips.filter((c) => !baseChips.includes(c)),
-        hits: hitsFor(Number(body.draft.min_top1_score ?? currentValues.min_top1_score)),
-      },
+      a: abColumn('A. 현행 운영값', baseChips, [], Number(currentValues.min_top1_score)),
+      b: abColumn(
+        'B. 초안 (편집 중)',
+        draftChips,
+        draftChips.filter((c) => !baseChips.includes(c)),
+        Number(body.draft.min_top1_score ?? currentValues.min_top1_score),
+      ),
     }
     return HttpResponse.json(res)
   }),
