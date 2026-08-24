@@ -184,8 +184,8 @@ def build_error_body(*, code, user_message, retryable, fallback_sources, request
     }
 
 
-def error_response(status_code, body):
-    return JSONResponse(status_code=status_code, content=body)
+def error_response(status_code, body, headers=None):
+    return JSONResponse(status_code=status_code, content=body, headers=headers or None)
 
 
 def _request_id(request):
@@ -257,6 +257,35 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+def _cors_headers(request: Request) -> dict:
+    """이 핸들러가 만든 500 응답에 CORS 헤더를 직접 붙인다.
+
+    Exception 핸들러는 Starlette 의 ServerErrorMiddleware 가 실행하는데, 그건 우리가 등록한
+    CORSMiddleware **바깥**에 있다. 그래서 여기서 만든 응답에는 Access-Control-Allow-Origin
+    이 붙지 않고, 브라우저가 응답을 통째로 막아 프론트에는 status 0 으로 도착한다 — 화면은
+    「네트워크에 연결할 수 없습니다」라고 적는다. 서버는 이유를 말했는데 관리자는 인터넷을
+    의심하게 되는 것이다(2026-08-24 AD-008 [초안 평가] 실측: 서버 500, 화면은 네트워크 오류).
+
+    허용 목록에 있는 Origin 일 때만 붙인다 — 여기서 아무 Origin 이나 열면 CORS 설정을
+    우회하는 구멍이 된다.
+    """
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+    try:
+        from api.config import get_settings
+        allowed = get_settings().cors_origin_list
+    except Exception:  # noqa: BLE001 — 설정을 못 읽어도 500 응답 자체는 나가야 한다
+        return {}
+    if origin not in allowed:
+        return {}
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Vary": "Origin",
+    }
+
+
 async def unhandled_exception_handler(request: Request, exc: Exception):
     """우리가 예상하지 못한 모든 예외의 마지막 그물.
 
@@ -274,6 +303,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
             fallback_sources=[],
             request_id=request_id,
         ),
+        headers=_cors_headers(request),
     )
 
 

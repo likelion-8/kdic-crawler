@@ -48,6 +48,7 @@ gate_passed(클라이언트가 보낸 직전 평가 결과)는 진입 조건일 
 """
 import logging
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -56,7 +57,7 @@ from sqlalchemy import func, insert, select, update
 
 from api.deps import (CurrentAdmin, DbSession, ReauthedAdmin, get_current_admin,
                       write_activity_log)
-from api.errors import BadRequestError, ForbiddenError, NotFoundError
+from api.errors import BadRequestError, ForbiddenError, NotFoundError, RateLimitError
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다).
 import prompt_builder
 import runtime_config
@@ -249,6 +250,57 @@ def _blockwords(guardrails: dict) -> list:
 
 # ──────────────────────── 생성 실측 공통 ────────────────────────
 
+# 콜 사이 최소 간격(초). 0 으로 두면 12콜이 한꺼번에 나가 한도에 걸린다.
+_CALL_GAP_S = 1.5
+_last_call_at = 0.0
+
+
+def _pace() -> None:
+    """직전 HCX 콜로부터 _CALL_GAP_S 가 지나도록 기다린다(프로세스 내 단일 워커 기준)."""
+    global _last_call_at
+    wait = _CALL_GAP_S - (time.monotonic() - _last_call_at)
+    if wait > 0:
+        time.sleep(wait)
+    _last_call_at = time.monotonic()
+
+
+def _is_rate_limited(exc: Exception) -> bool:
+    """HCX(CLOVA Studio) 요청 한도 초과인가. SDK 예외 타입을 import 하지 않고 판별한다 —
+    langchain_naver 가 openai SDK 를 통해 던지므로 타입을 붙잡으면 그 의존성에 묶인다."""
+    if type(exc).__name__ == "RateLimitError":
+        return True
+    return getattr(exc, "status_code", None) == 429 or "429" in str(exc)
+
+
+def _call_with_retry(messages: list, *, seed: int | None):
+    """HCX 1콜 + 한도 초과 재시도.
+
+    [전후 비교]는 문항마다 현행·초안 두 벌을 생성해 (4+2)×2 콜을 연달아 쏜다. 쉬지 않고
+    보내면 CLOVA Studio 의 짧은 구간 한도에 걸리고, 무상태 API 라 그때까지 만든 생성이 통째로
+    버려진다. 그래서 (a) 콜 사이에 간격을 두고 (b) 걸리면 쉬었다 다시 부른다.
+    그래도 걸리면 429 를 그대로 올려 화면이 '잠시 후 다시' 라고 말하게 한다 — 조용히 빈
+    결과를 돌려주면 관리자가 게이트 판정을 사실로 믿는다.
+
+    ⚠ 한도 자체는 클라비가 준 키의 제공자 설정이라 여기서 알 수 없다. 간격·재시도 값은
+    실측으로 정한 것이고, 평가 문항이 늘면 다시 봐야 한다.
+    """
+    from llm_client import call_hyperclova
+    _pace()
+    delays = (5, 15)
+    for attempt in range(len(delays) + 1):
+        try:
+            return call_hyperclova(messages, deterministic=True, seed=seed)
+        except Exception as exc:  # noqa: BLE001 — 한도 초과만 재시도하고 나머지는 그대로 올린다
+            if not _is_rate_limited(exc) or attempt == len(delays):
+                if _is_rate_limited(exc):
+                    logger.warning("HCX 요청 한도 초과 — 재시도 %d회 후 포기", len(delays))
+                    raise RateLimitError(
+                        "답변 생성 요청 한도를 넘었습니다. 1~2분 뒤 다시 실행해 주세요."
+                    ) from exc
+                raise
+            time.sleep(delays[attempt])
+
+
 def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
               ) -> tuple[str, bool, list]:
     """실서비스와 같은 검색 근거로 1문항 생성 -> (본문, 마커 SOURCE_USED, 출처 목록).
@@ -261,7 +313,6 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
       함께 단일 검증 1콜(validate_answer, 모든 답변 대상)로 정렬했다(평가=운영 원칙)."""
     from candidate_ranking import gate_low_relevance, top_k_cut
     from citation import format_all_citations
-    from llm_client import call_hyperclova
     from retrieval import route_search_chunks
 
     top = gate_low_relevance(top_k_cut(route_search_chunks(question, k=20), k=5))
@@ -269,7 +320,7 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
     examples = "\n\n".join(f"질문: {ex['question']}\n답변: {ex['answer']}" for ex in few_shot)
     human = (f"{examples}\n\n--- 아래는 실제 질문입니다 ---\n\n"
              f"근거 자료:\n{context}\n\n질문: {question}\n답변:")
-    raw = call_hyperclova([("system", si), ("human", human)], deterministic=True, seed=seed)
+    raw = _call_with_retry([("system", si), ("human", human)], seed=seed)
     body, marker = prompt_builder.parse_marker(raw)
     # 🔴 근거가 비었으면(게이트가 걷어냄) 쓸 출처가 애초에 없다 — "근거를 썼다"가 될 수 없다.
     # 종전에는 마커 없는 응답이 True 로 들어와, 범위외 문항의 회귀 판정(not marker)이
