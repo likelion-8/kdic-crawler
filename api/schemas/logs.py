@@ -133,6 +133,48 @@ class RunObservation(BaseModel):
     subs: list[ObservedSub] = []
 
 
+class AnswerSource(BaseModel):
+    """답변에 붙은 참고 출처 하나. chat_messages.sources 원소 = citation.format_citation() 결과.
+
+    필드마다 기본값을 둔 이유: 이 값은 답변 시점에 JSONB 로 굳은 것이라 스키마 변경 이력이
+    그대로 남아 있다. 키 하나가 없다고 상세 화면 전체가 500 이 되면 안 된다."""
+    page_id: str = ""
+    breadcrumb: str = ""
+    title: str = ""
+    url: str = ""
+
+
+class AnswerAttachment(BaseModel):
+    """필요 서류(kind='document')와 신청 페이지(kind='link'). chat_messages.attachments 원소."""
+    label: str = ""
+    url: str = ""
+    kind: str = "link"
+    page_id: Optional[str] = None
+
+
+class AnswerSubAnswer(BaseModel):
+    """복합 질문의 하위 답변 하나. 하위마다 근거가 독립이라 출처·서류도 하위에 붙는다."""
+    title: str = ""
+    answer: str = ""
+    sources: list[AnswerSource] = []
+    attachments: list[AnswerAttachment] = []
+
+
+class AnswerComposition(BaseModel):
+    """사용자가 챗봇에서 실제로 본 답변의 구성 — 본문 뒤에 붙는 것들.
+
+    원천은 chat_messages(rag_runs 와 request_id 로 이어진다). rag_runs 에는 answer 텍스트만
+    있어 출처·서류·신청 페이지가 남지 않는데, 민원이 "링크가 틀렸다"·"서류가 빠졌다"일 때
+    관리자가 확인할 것이 바로 그것이다(본문에는 URL 이 없다 — 시스템이 뒤에 따로 붙인다).
+
+    🔴 sub_answers 가 비어 있지 않으면 최상위 sources·attachments 는 빈 배열이다 — 근거가
+    전부 하위로 내려간다(챗봇 응답과 같은 불변식). 한쪽만 채우면 출처가 사라지거나 두 배가 된다.
+    """
+    sources: list[AnswerSource] = []
+    attachments: list[AnswerAttachment] = []
+    sub_answers: list[AnswerSubAnswer] = []
+
+
 class ConversationLogDetail(ConversationLogRow):
     """상세 = 행 + 분류·추적·답변·피드백·오류. api.ts 의 ConversationLogDetail 와 1:1."""
 
@@ -141,6 +183,9 @@ class ConversationLogDetail(ConversationLogRow):
     total_latency_ms: Optional[int] = None      # rag_runs.total_latency_ms (단계 분해 없이 총합만)
     answer_masked_preview: str                  # mask_text(rag_runs.answer) 앞부분 — 현재 패스스루
     answer_masked_full: str                     # mask_text(rag_runs.answer) 전체 — 현재 패스스루
+    # 본문 뒤에 붙은 출처·서류·하위 답변(chat_messages). 그 행이 없으면 null — 대화 저장 이전
+    # 대화이거나 세션이 만료돼 지워진 건이며, 화면은 본문만 그린다(없는 것을 지어내지 않는다).
+    answer_composition: Optional[AnswerComposition] = None
     feedback_detail: Optional[FeedbackDetail] = None
     error: Optional[LogErrorDetail] = None       # 실패 건에만
     # 관리자가 '왜 이렇게 답했는지'를 보는 근거. 2026-08-14 신설이라 그 이전 대화는 null 이다.

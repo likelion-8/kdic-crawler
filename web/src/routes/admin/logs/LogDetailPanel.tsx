@@ -385,7 +385,8 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
                 : c.source_used
                   ? '사용'
                   : '미사용'}
-            {c.marker === null ? '' : ` · 마커 [${c.marker}]`}
+            {/* 서버가 이미 '[SOURCE_USED]' 형태로 내려준다 — 여기서 또 감싸면 [[…]] 가 된다 */}
+            {c.marker === null ? '' : ` · 마커 ${c.marker}`}
           </span>
         </p>
         {/* 사후검증이 환각·동문서답을 잡아 본문을 표준 안내로 갈아끼운 건 */}

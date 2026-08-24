@@ -67,6 +67,7 @@ from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
                               ConversationLogRow, LogExportRequest, LogExportResponse,
                               LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
+from schema import chat_messages
 from schema import feedback as feedback_table
 from schema import rag_runs
 
@@ -415,6 +416,43 @@ def _error_detail(row) -> dict:
     }
 
 
+def _answer_composition(db, request_id: str) -> Optional[dict]:
+    """chat_messages 에서 이 답변의 구성(출처·서류·하위 답변)을 꺼낸다 — 없으면 None.
+
+    rag_runs 에는 answer 텍스트만 있어 "링크가 틀렸다"·"서류가 빠졌다" 민원을 확인할 방법이
+    없었다. 본문에는 URL 이 없다 — 출처·서류·신청 페이지는 시스템이 본문 뒤에 따로 붙이고
+    (assemble_*), 그 구조가 남는 곳은 대화 복원용 chat_messages 뿐이다.
+
+    행이 없는 경우: 대화 저장 이전 대화, 또는 세션이 지워진 건. 그때는 None 을 내려 화면이
+    본문만 그리게 한다 — 빈 배열을 내리면 '출처가 하나도 없었다'는 다른 뜻이 된다.
+
+    마스킹은 본문과 같은 규칙으로 하위 답변 텍스트에만 적용한다. 제목·URL 은 코퍼스에서 온
+    값이라 개인정보가 없고, URL 을 건드리면 링크가 깨진다.
+    """
+    row = db.execute(
+        select(chat_messages.c.sources, chat_messages.c.attachments,
+               chat_messages.c.sub_answers)
+        .where(and_(chat_messages.c.request_id == request_id,
+                    chat_messages.c.role == "assistant"))
+        .limit(1)
+    ).first()
+    if row is None:
+        return None
+    subs = []
+    for sub in (row.sub_answers or []):
+        subs.append({
+            "title": sub.get("title") or "",
+            "answer": mask_text(sub.get("answer")) or "",
+            "sources": sub.get("sources") or [],
+            "attachments": sub.get("attachments") or [],
+        })
+    return {
+        "sources": row.sources or [],
+        "attachments": row.attachments or [],
+        "sub_answers": subs,
+    }
+
+
 @router.get("/{request_id}", response_model=ConversationLogDetail)
 def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSession,
             settings: SettingsDep):
@@ -492,6 +530,8 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
         # trace_id 자체가 없으면 langfuse=null. API_LANGFUSE_HOST 로 켠다(api/config.py).
         "langfuse": _langfuse(row.trace_id, settings.langfuse_host),
         "total_latency_ms": row.total_latency_ms,
+        # 사용자가 챗봇에서 실제로 본 구성(출처·서류·하위 답변) — 원천은 chat_messages
+        "answer_composition": _answer_composition(db, request_id),
         "answer_masked_preview": preview,
         "answer_masked_full": answer,
         "feedback_detail": None if row.vote is None else {
