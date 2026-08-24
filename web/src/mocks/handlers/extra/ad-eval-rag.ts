@@ -547,9 +547,18 @@ export const adEvalRagHandlers = [
   http.post('/api/admin/rag-params/evaluate', async ({ request }) => {
     const no = denied(request, 'EDITOR')
     if (no) return no
-    const body = (await request.json()) as { draft: Record<string, ParamValue>; request_id?: string }
+    const body = (await request.json()) as {
+      draft: Record<string, ParamValue>
+      request_id?: string
+      question_ids?: string[]
+    }
     if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
-    await delay(1400) // 홀드아웃 89문항 실행 — 로딩 상태를 볼 수 있는 시간
+    // 고른 문항이 있으면 그만큼만 잰다 — 없으면 홀드아웃 전체(기대 출처가 있는 것만)
+    const inScope = items.filter((i) => i.expected_source?.doc_id)
+    const picked = body.question_ids?.length
+      ? inScope.filter((i) => body.question_ids!.includes(i.item_id))
+      : inScope
+    await delay(1400) // 실행 시간 — 로딩 상태를 볼 수 있게
     const t = Number(body.draft.min_top1_score ?? currentValues.min_top1_score)
     const worse = t > Number(currentValues.min_top1_score)
     gate = {
@@ -559,7 +568,7 @@ export const adEvalRagHandlers = [
       warning_reason: null,
       // 게이트는 통과했지만 현행보다 낮아진 지표가 있으면 경고(§1.6)
       warning: worse ? 'A/B 비교 결과가 현행보다 낮습니다. 그래도 반영하려면 사유에 근거를 남겨 주세요' : null,
-      holdout_total: 89, holdout_passed: 89, smoke_total: 0, smoke_passed: 0,
+      holdout_total: picked.length, holdout_passed: picked.length, smoke_total: 0, smoke_passed: 0,
       quantitative: {
         basis: '기준 : 링크 안내로 분류된 문항 59건 · 2026-07-28 측정. 융합 비중은 이 질의에만 영향하므로 분모가 전체 평가셋과 다릅니다',
         metrics: [

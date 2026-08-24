@@ -84,16 +84,6 @@ export interface EvalQuestions {
   out_of_scope: string[]
 }
 
-/** [초안 평가]에 쓸 문항으로 고른 평가셋(AD-006) 문항 1건.
- *
- * in_scope 는 화면 표시용이다 — 판정에 쓰는 분류는 **서버가** 기대 출처 유무로 다시 정한다
- * (인스코프는 근거를 써야 통과, 범위외는 안 써야 통과라 화면 버그에 흔들리면 안 된다). */
-export interface EvalPick {
-  item_id: string
-  question: string
-  in_scope: boolean
-}
-
 /** 한 번에 고를 수 있는 문항 수 상한. 문항당 현행·초안 두 벌을 생성하므로 콜은 이것의 2배다.
  *  서버 EVAL_PICK_MAX 와 같은 값 — 다르면 화면이 허용한 선택이 서버에서 400 이 된다. */
 export const EVAL_PICK_MAX = 12

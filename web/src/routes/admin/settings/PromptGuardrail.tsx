@@ -22,14 +22,14 @@ import {
   VersionHistoryCard,
 } from './promptops/prompt-cards'
 import { BeforeAfterCard } from './promptops/prompt-compare'
-import { EvalPickerDialog } from './promptops/eval-picker'
+import { EvalPickerDialog } from './eval-picker'
 import type {
-  BlocklistRule, EvalPick, MaskingRule, PromptDraft, PromptDraftContent, PromptEvaluation,
+  BlocklistRule, MaskingRule, PromptDraft, PromptDraftContent, PromptEvaluation,
   PromptPrinciple, PromptVersion,
 } from './promptops/api'
 import {
-  emergencyRollback, evaluatePrompt, fetchPromptDraft, promptKeys, publishPrompt, reauthenticate,
-  rollbackVersion,
+  EVAL_PICK_MAX, emergencyRollback, evaluatePrompt, fetchPromptDraft, promptKeys, publishPrompt,
+  reauthenticate, rollbackVersion,
 } from './promptops/api'
 import { contentOf, deriveDraft, useLocalDraft } from './promptops/useLocalDraft'
 
@@ -81,22 +81,17 @@ export function PromptGuardrail() {
     void qc.invalidateQueries({ queryKey: promptKeys.versions })
   }
 
-  /** 이 실행에 쓸 문항. null 이면 서버 기본값(평가셋 AD-006 앞 6건)을 쓴다.
-   *  프롬프트 초안과 섞지 않는다 — 문항은 프롬프트 내용이 아니라 평가 설정이라, 게시
-   *  payload 나 변경 건수에 들어가면 '프롬프트를 고쳤다'고 거짓말하게 된다. */
-  const [picks, setPicks] = useState<EvalPick[] | null>(null)
+  /** [초안 평가]는 문항 고르기 모달을 먼저 연다 — 무엇으로 재는지 보고 고른 뒤 실행한다.
+   *  고른 id 는 다음에 열 때의 시작점으로만 남기고, 프롬프트 초안과 섞지 않는다(문항은
+   *  프롬프트 내용이 아니라 평가 설정이라 게시 payload·변경 건수에 들어가면 안 된다). */
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [lastIds, setLastIds] = useState<string[]>([])
+  /** 처음 열 때 미리 체크할 기본값 — 서버가 평가셋에서 뽑은 문구만 준다(id 가 없다) */
   const defaults = draftQuery.data?.eval_questions
-  /** 기본값을 화면에 보여줄 형태로 — 기본값에는 item_id 가 없다(서버가 문구만 준다).
-   *  useMemo 로 참조를 고정한다: 이 값이 모달의 초기화 effect 의 의존성이라, 매 렌더 새
-   *  배열이면 effect 가 매번 다시 돌아 무한 루프가 된다 */
-  const defaultPicks = useMemo<EvalPick[]>(() => [
-    ...(defaults?.in_scope ?? []).map((q) => ({ item_id: '', question: q, in_scope: true })),
-    ...(defaults?.out_of_scope ?? []).map((q) => ({ item_id: '', question: q, in_scope: false })),
-  ], [defaults])
-  const effectivePicks = picks ?? defaultPicks
-  /** 고른 게 없으면 빈 배열 — 서버가 기본값을 쓴다(기본값에는 id 가 없어 보낼 것도 없다) */
-  const pickedIds = (picks ?? []).map((p) => p.item_id).filter(Boolean)
+  const defaultQuestions = useMemo(
+    () => [...(defaults?.in_scope ?? []), ...(defaults?.out_of_scope ?? [])],
+    [defaults],
+  )
 
   /** [초안 평가] — 로컬 초안을 실어 보내는 일시 평가. 서버 초안을 만들지도 바꾸지도 않는다 */
   const evaluate = useMutation({
@@ -206,7 +201,7 @@ export function PromptGuardrail() {
           // (`초안 평가 : A/B 검색 비교` / `초안 평가 : 전후 답변 비교`).
           // 같은 동작에 두 이름을 붙이면 두 화면이 다른 물건처럼 보인다(사용자 지적).
           secondaryLabel="초안 평가"
-          onSecondary={() => evaluate.mutate({ draft: contentOf(draft), questionIds: pickedIds })}
+          onSecondary={() => setPickerOpen(true)}
         />
       </div>
 
@@ -309,20 +304,22 @@ export function PromptGuardrail() {
         baseVersion={draft.base_version}
         running={evaluate.isPending}
         error={evaluate.error}
-        onRun={() => evaluate.mutate({ draft: contentOf(draft), questionIds: pickedIds })}
-        picks={effectivePicks}
-        picksAreDefault={picks === null}
-        onPick={() => setPickerOpen(true)}
-        onPicksReset={() => setPicks(null)}
+        onRun={() => setPickerOpen(true)}
       />
 
       <EvalPickerDialog
         open={pickerOpen}
-        selected={effectivePicks}
+        maxPicks={EVAL_PICK_MAX}
+        costHint={(n) =>
+          `문항당 현행·초안 두 벌을 생성하므로 답변 생성은 ${n * 2}회입니다`}
+        initialIds={lastIds}
+        initialQuestions={defaultQuestions}
+        running={evaluate.isPending}
         onClose={() => setPickerOpen(false)}
-        onApply={(next) => {
-          setPicks(next)
+        onRun={(ids) => {
+          setLastIds(ids)
           setPickerOpen(false)
+          evaluate.mutate({ draft: contentOf(draft), questionIds: ids })
         }}
       />
 

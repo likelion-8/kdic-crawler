@@ -287,12 +287,14 @@ function promote(content: PromptDraftContent, version: string) {
 }
 
 /** 대표 질의 6건 회귀 판정. 목은 초안 내용을 실제로 돌려보지 않고 고정 결과를 준다 */
-function evaluate(asked: string[] = []): PromptEvaluation {
-  // 화면이 문항을 고쳐 보내면 그 문항명으로 항목을 만든다 — 목이 늘 같은 6건을 돌려주면
-  // '내가 고친 질의로 재고 있다'가 검증되지 않는다. 답변 본문은 고정 예시를 돌려 쓴다
-  const items = asked.length === 0
+function evaluate(pickCount = 0): PromptEvaluation {
+  // 고른 문항 수만큼 항목을 만든다 — 목이 늘 6건을 돌려주면 선택이 반영되는지 안 보인다
+  const items = pickCount === 0
     ? EVAL_ITEMS
-    : asked.map((question, i) => ({ ...EVAL_ITEMS[i % EVAL_ITEMS.length], id: `ev${i + 1}`, question }))
+    : Array.from({ length: pickCount }, (_, i) => ({
+        ...EVAL_ITEMS[i % EVAL_ITEMS.length],
+        id: `ev${i + 1}`,
+      }))
   const improved = items.filter((i) => i.verdict === 'IMPROVED').length
   const regressed = items.filter((i) => i.verdict === 'REGRESSED').length
   return {
@@ -445,17 +447,13 @@ export const adPromptOpsHandlers = [
   http.post('/api/admin/prompt/evaluate', async ({ request }) => {
     const no = denied(request, 'EDITOR')
     if (no) return no
-    const body = (await request.json()) as WriteBody & DraftBody & {
-      questions?: { in_scope?: string[]; out_of_scope?: string[] }
-    }
+    const body = (await request.json()) as WriteBody & DraftBody & { question_ids?: string[] }
     if (!body.draft) return fail(400, '평가할 초안 내용이 필요합니다.')
-    // 화면이 고친 대표 질의를 그대로 쓴다(안 보내면 기본값). 서버도 같은 규칙이다
-    const asked = [
-      ...(body.questions?.in_scope ?? []),
-      ...(body.questions?.out_of_scope ?? []),
-    ].filter((q) => q.trim())
+    // 고른 문항 수만큼 항목을 만든다 — 목이 늘 같은 6건을 돌려주면 '내가 고른 문항으로
+    // 재고 있다'가 검증되지 않는다. 문구는 id 를 알 수 없어 고정 예시를 돌려 쓴다
+    const asked = body.question_ids ?? []
     await delay(1_200)
-    return HttpResponse.json(evaluate(asked))
+    return HttpResponse.json(evaluate(asked.length))
   }),
 
   http.get('/api/admin/prompt/versions', ({ request }) =>

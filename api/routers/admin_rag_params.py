@@ -268,14 +268,21 @@ def _stored_gate(db) -> dict:
 
 # ──────────────────────────────── 검색 실측 ─────────────────────────────────
 
-def _holdout_rows(db):
-    # 2026-08-19 전환: 문항 정본은 평가메뉴 현행 버전(testset_items) — admin_evaluations.
-    # holdout_rows 에 위임한다(in_scope_only=True 가 종전의 "빈 정답 문항 제외"와 동일:
-    # 범위외가 섞이면 정확도가 부당하게 깎인다. 2026-08-12 실측).
-    from api.routers.admin_evaluations import holdout_rows
-    rows = holdout_rows(db, in_scope_only=True)
+def _holdout_rows(db, ids=None):
+    """평가에 쓸 문항. ids 를 주면 그것만, 없으면 홀드아웃 전체.
+
+    문항 정본은 평가메뉴 현행 버전(testset_items)이다 — admin_evaluations 에 위임한다
+    (in_scope_only=True: 기대 출처가 없는 문항이 섞이면 정확도가 부당하게 깎인다. 2026-08-12 실측).
+    ids 는 관리자가 [초안 평가]에서 고른 문항이다 — 무엇으로 재는지 보고 고르게 하려는 것이고,
+    수를 줄이면 지표가 거칠어진다는 점은 화면이 문항 수로 함께 말한다.
+    """
+    from api.routers.admin_evaluations import holdout_rows, holdout_rows_by_ids
+    rows = (holdout_rows_by_ids(db, list(ids), in_scope_only=True) if ids
+            else holdout_rows(db, in_scope_only=True))
     if not rows:
-        raise BadRequestError("평가할 문항이 없습니다(평가셋 비어 있음).")
+        raise BadRequestError(
+            "평가할 문항이 없습니다 — 기대 출처가 있는 문항을 하나 이상 골라 주세요."
+            if ids else "평가할 문항이 없습니다(평가셋 비어 있음).")
     return rows
 
 
@@ -366,7 +373,7 @@ def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession
     params = validate_params(dict(body.get("draft") or {}))
     signature = draft_signature(params)
 
-    rows = _holdout_rows(db)
+    rows = _holdout_rows(db, body.get("question_ids") or [])
     current_metrics = _measure(rows, _effective_params(db))
     draft_metrics = _measure(rows, params)
     now = datetime.now(timezone.utc)

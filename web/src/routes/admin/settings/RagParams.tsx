@@ -24,6 +24,7 @@ import { useSession } from '../../../app/session'
 import { formatShortKst } from '../evaluation/kst'
 import { Card, SectionError, modalError } from './promptops/common'
 import { AbCompare } from './rag/AbCompare'
+import { EvalPickerDialog } from './eval-picker'
 import {
   applyDraft, evaluateDraft, fetchHistory, fetchParams, ragKeys, resetDraft, rollbackTo,
 } from './rag/api'
@@ -71,6 +72,9 @@ export function RagParams() {
   const [rollbackTarget, setRollbackTarget] = useState<RagHistoryEntry | null>(null)
   /** A/B 비교 결과를 비우기 위한 remount 열쇠 — 초기화가 누른 뒤 옛 초안 결과가 남지 않게 */
   const [abSeq, setAbSeq] = useState(0)
+  /** [초안 평가]는 문항 고르기 모달을 먼저 연다 — 무엇으로 재는지 보고 고른 뒤 실행한다 */
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [lastIds, setLastIds] = useState<string[]>([])
 
   const server = params.data
   // 서버가 준 초안(없으면 현행)을 편집 시작점으로 삼는다. 재조회로 초안을 덮어쓰지 않는다
@@ -83,8 +87,9 @@ export function RagParams() {
   }, [server, draft])
 
   const evaluate = useMutation({
-    mutationFn: (values: Values) => evaluateDraft(values),
-    onSuccess: (gate, values) => {
+    mutationFn: ({ values, ids }: { values: Values; ids: string[] }) => evaluateDraft(values, ids),
+    onSuccess: (gate, { values }) => {
+      // 평가에 실은 값 스냅샷 — 이후 초안을 고치면 stale 판정으로 재평가를 강제한다
       setEvaluated({ ...values })
       queryClient.setQueryData<RagParamsResponse>(ragKeys.params, (prev) =>
         prev ? { ...prev, gate } : prev,
@@ -290,7 +295,7 @@ export function RagParams() {
             primaryDisabledReason={applyBlocked}
             // ②단계 액션도 상태 바에 둔다 — ① 편집 → ② 초안 평가 → ③ 운영 반영이 한 줄이다(§1.2)
             secondaryLabel="초안 평가"
-            onSecondary={() => evaluate.mutate(draft!)}
+            onSecondary={() => setPickerOpen(true)}
             onReset={() => setResetOpen(true)}
             onPrimary={() => setApplyOpen(true)}
           />
@@ -321,6 +326,27 @@ export function RagParams() {
         gate={gate}
         evaluating={evaluate.isPending}
         evaluateError={evaluate.error}
+      />
+
+      {/* [초안 평가]가 먼저 여는 문항 고르기 — AD-008 과 같은 컴포넌트다.
+          여기는 검색만 돌아 LLM 콜이 없으므로 상한을 두지 않는다. 대신 문항 수를 줄이면
+          정확도·MRR 의 분모가 줄어 값이 거칠어진다는 것을 비용 줄에서 말한다.
+          기대 출처가 없는 문항은 이 평가에서 애초에 제외되므로 목록에서도 뺀다(scope='in') */}
+      <EvalPickerDialog
+        open={pickerOpen}
+        scope="in"
+        costHint={(n) =>
+          n === 0
+            ? '고른 문항으로만 검색 품질을 잽니다'
+            : `문항 ${n}건으로 현행·초안을 각각 검색합니다 — 문항이 적으면 정확도·MRR 이 거칠어집니다`}
+        initialIds={lastIds}
+        running={evaluate.isPending}
+        onClose={() => setPickerOpen(false)}
+        onRun={(ids) => {
+          setLastIds(ids)
+          setPickerOpen(false)
+          evaluate.mutate({ values: draft, ids })
+        }}
       />
 
       {/* ---------------- ⑤ 설정 이력 ---------------- */}

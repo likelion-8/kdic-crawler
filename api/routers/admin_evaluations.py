@@ -218,6 +218,38 @@ def active_questions(db, *, in_scope: bool, limit: int) -> list:
             and bool(_all_links(r.expected_links)) == in_scope][:limit]
 
 
+def holdout_rows_by_ids(db, ids: list, *, in_scope_only: bool = False) -> list:
+    """고른 문항 id -> holdout_rows 와 같은 모양 [{"question", "expected_sources"}].
+
+    AD-007 [초안 평가]가 쓴다 — 관리자가 목록 모달에서 체크한 문항으로만 검색 품질을 잰다.
+    ⚠ 문항 수를 줄이면 정확도·MRR 의 분모가 줄어 값이 거칠어진다. 게이트 임계값은 홀드아웃
+    전체를 전제로 정한 값이라, 소수 문항으로 통과·미달을 단정하면 안 된다(화면이 문항 수를
+    함께 보여줘 관리자가 그걸 알고 읽게 한다).
+    """
+    if not ids:
+        return []
+    _bootstrap_if_empty(db)
+    current = str(_current_version(db))
+    keys = []
+    for raw in ids:
+        try:
+            keys.append(uuid.UUID(str(raw)))
+        except (ValueError, AttributeError, TypeError):
+            continue
+    if not keys:
+        return []
+    rows = db.execute(
+        select(testset_items.c.question, testset_items.c.expected_links)
+        .where(testset_items.c.testset_version == current,
+               testset_items.c.excluded.is_(False),
+               testset_items.c.id.in_(keys))
+        .order_by(testset_items.c.question)
+    ).all()
+    out = [{"question": r.question, "expected_sources": _all_links(r.expected_links)}
+           for r in rows if (r.question or "").strip()]
+    return [r for r in out if r["expected_sources"]] if in_scope_only else out
+
+
 def questions_by_ids(db, ids: list) -> tuple:
     """고른 문항 id -> (인스코프, 범위외) 질문 목록. 현행 버전·미제외·질문 있는 것만.
 
