@@ -74,6 +74,10 @@ export interface PromptEvaluation {
   gate: PromptGate
 }
 
+/** 한 번에 고를 수 있는 문항 수 상한. 문항당 현행·초안 두 벌을 생성하므로 콜은 이것의 2배다.
+ *  서버 EVAL_PICK_MAX 와 같은 값 — 다르면 화면이 허용한 선택이 서버에서 400 이 된다. */
+export const EVAL_PICK_MAX = 12
+
 /** 편집 대상 4종. AD-008은 이걸 로컬(localStorage)에 들고 있다가 평가·게시 때 실어 보낸다.
  *  base_version·change_count·dirty 같은 파생값은 화면이 기준값과 비교해 스스로 계산하므로 보내지 않는다. */
 export interface PromptDraftContent {
@@ -109,10 +113,9 @@ export interface PromptVersion {
   emergency_candidate: boolean
 }
 
-/** 게시 직후 Smoke 결과 — 문항 수는 서버가 정한다(프론트는 세트 크기를 알지 않는다) */
+/** 게시 결과. 게시 직후 Smoke 는 2026-08-24 폐지 — 반영 전 확인은 [초안 평가]가 한다 */
 export interface PublishResult {
   version: string
-  smoke: { passed: number; total: number }
 }
 
 export interface ValidationResult {
@@ -221,9 +224,15 @@ export const savePromptDraft = (patch: Partial<PromptDraft>) =>
 export const discardPromptDraft = (reason: string) =>
   write<PromptDraft>('/api/admin/prompt/draft/discard', reason)
 
-/** [전후 비교] — 초안을 실어 보내 일시 평가한다. 서버 초안을 만들지도 바꾸지도 않는다 */
-export const evaluatePrompt = (draft: PromptDraftContent) =>
-  apiRequest<PromptEvaluation>('/api/admin/prompt/evaluate', { method: 'POST', body: { draft } })
+/** [전후 비교] — 초안을 실어 보내 일시 평가한다. 서버 초안을 만들지도 바꾸지도 않는다.
+ *  questions 를 안 보내면 서버가 평가셋(AD-006) 기본값을 쓴다 */
+export const evaluatePrompt = ({ draft, questionIds }: { draft: PromptDraftContent; questionIds?: string[] }) =>
+  apiRequest<PromptEvaluation>('/api/admin/prompt/evaluate', {
+    method: 'POST',
+    // 문항 id 만 보낸다 — 질문 문구를 보내면 화면이 들고 있던 옛 문구로 재게 되고,
+    // 인스코프/범위외 분류도 화면 몫이 된다. id 를 주면 서버가 현행 평가셋에서 다시 읽는다
+    body: questionIds?.length ? { draft, question_ids: questionIds } : { draft },
+  })
 
 export const fetchPromptVersions = (page: number, size: number) =>
   apiRequest<Page<PromptVersion>>(`/api/admin/prompt/versions?page=${page}&size=${size}`)

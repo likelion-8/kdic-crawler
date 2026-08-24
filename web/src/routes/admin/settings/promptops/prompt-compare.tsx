@@ -25,7 +25,8 @@ export interface BeforeAfterCardProps {
   onRun: () => void
 }
 
-export function BeforeAfterCard({ evaluation, baseVersion, running, error, onRun }: BeforeAfterCardProps) {
+export function BeforeAfterCard(props: BeforeAfterCardProps) {
+  const { evaluation, baseVersion, running, error, onRun } = props
   const [changedOnly, setChangedOnly] = useState(true)
   const [open, setOpen] = useState<string[]>([])
 
@@ -33,7 +34,7 @@ export function BeforeAfterCard({ evaluation, baseVersion, running, error, onRun
     return (
       <Card title="초안 평가 : 전후 답변 비교" icon={<GitCompareArrows />} wide>
         {running ? (
-          <Loading text="초안 평가를 실행하는 중…" detail="대표 질의 6건의 답변을 생성하는 중…" />
+          <Loading text="초안 평가를 실행하는 중…" detail="고른 문항의 답변을 생성하는 중…" />
         ) : (
           <EmptyState title="아직 초안 평가를 실행하지 않았습니다. 상태 바의 [초안 평가]로 실행합니다" />
         )}

@@ -320,7 +320,6 @@ ACTION_BY_JOB_TYPE = {
     "REINDEX": "재색인",
     "RECHUNK": "재청킹 작업",
     "REEMBED": "재임베딩 작업",
-    "SMOKE_EVAL": "스모크 평가 작업",
     "CHANGE_DETECT": "변경 감지 작업",   # 액션명에 "작업"이 있어야 활동 로그가 파이프라인 화면으로 라우팅한다
 }
 

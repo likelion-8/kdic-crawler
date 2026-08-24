@@ -4,7 +4,7 @@
  * lib/api/types.ts로 올려야 할 후보 — report의 shared_needed 참조.
  * 질문·답변·의견은 모두 마스킹된 저장본이다. 원문 복원 진입점은 만들지 않는다(Desc 2). */
 import { apiRequest } from '../../../lib/api/client'
-import type { Page } from '../../../lib/api/types'
+import type { Attachment, Page, Source, SubAnswer } from '../../../lib/api/types'
 import type { BusinessFunction, ErrorCode, Intent, QuestionType, TriageStatus } from '../../../lib/codes'
 import { TIMEZONE } from '../../../lib/constants'
 import { formatDate, formatTime } from '../../../lib/format'
@@ -73,8 +73,10 @@ export interface LogErrorDetail {
   root_cause: string | null
 }
 
-/** 답변을 낸 경로 — 모두 플래너 앞에서 끝나는 경로다(api/rag/sse.py 0-2 ~ 0-5) */
-export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2'
+/** 답변을 낸 경로 — 전부 검색·생성을 타지 않고 끝나 성격·근거가 없다(api/rag/sse.py 0-2 ~ 1-1).
+ *  clarify(업무 되묻기, 2026-08-24)만 플래너 뒤에서도 끝날 수 있다(첫 턴은 1-1, 후속 턴은 0-2.7).
+ *  그 경우에도 log_run 에 하위 질문을 넘기지 않아 intent 는 저장되지 않는다. */
+export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'clarify'
 
 /** rag_runs.observation 의 subs[].top[] 원소. 모양의 정본은 api/rag/observation.py */
 export interface ObservedChunk {
@@ -97,6 +99,20 @@ export interface ObservedSub {
 
 export interface RunObservation {
   subs: ObservedSub[]
+}
+
+/** 사용자가 챗봇에서 실제로 본 답변의 구성 — 본문 말고 그 아래 붙는 것들.
+ *
+ * 원천은 chat_messages(rag_runs 와 request_id 로 이어진다) — rag_runs 에는 answer 텍스트만
+ * 있어 출처·서류·하위 답변이 남지 않는다. 서버가 아직 안 내려주는 배포에서는 undefined 이고,
+ * 그때 화면은 지금처럼 본문 텍스트만 그린다(있으면 더 보여주고, 없으면 거짓말하지 않는다).
+ *
+ * 🔴 sub_answers 가 비어 있지 않으면 최상위 sources·attachments 는 빈 배열이다 — 근거가
+ * 전부 하위로 내려간다(챗봇 응답과 같은 불변식). 한쪽만 채우면 출처가 사라지거나 두 배가 된다. */
+export interface AnswerComposition {
+  sources: Source[]
+  attachments: Attachment[]
+  sub_answers: SubAnswer[]
 }
 
 export interface ConversationLogDetail extends ConversationLogRow {
@@ -132,6 +148,8 @@ export interface ConversationLogDetail extends ConversationLogRow {
   total_latency_ms: number | null
   answer_masked_preview: string
   answer_masked_full: string
+  /** 본문 아래 붙은 출처·서류·하위 답변. 서버가 안 주면 undefined — 본문만 그린다 */
+  answer_composition?: AnswerComposition | null
   feedback_detail: {
     vote: FeedbackVote
     at: string
@@ -239,8 +257,16 @@ export function fetchLogs(filters: LogFilters, page: number, size: number) {
   return apiRequest<Page<ConversationLogRow>>(`/api/admin/logs?${params.toString()}`)
 }
 
-export function fetchSummary() {
-  return apiRequest<LogSummary>('/api/admin/logs/summary')
+export function fetchSummary(filters: LogFilters) {
+  // 목록과 같은 기간을 넘긴다 — 스트립을 오늘로 고정하면 30일을 보는 중에도 숫자가 오늘 것이라
+  // 목록 건수와 나란히 서서 어느 쪽이 참인지 알 수 없다. 상태·피드백 등 나머지 필터는 넘기지
+  // 않는다: 스트립이 상태별 분해라 상태 필터를 걸면 고른 칸만 남고 나머지가 0 이 된다.
+  const { from, to } = periodRange(filters)
+  const params = new URLSearchParams()
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  const qs = params.toString()
+  return apiRequest<LogSummary>(`/api/admin/logs/summary${qs ? `?${qs}` : ''}`)
 }
 
 export function fetchLogDetail(requestId: string) {

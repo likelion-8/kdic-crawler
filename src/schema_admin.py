@@ -245,13 +245,15 @@ rate_limit_blocks = Table(
 evaluation_runs = Table(
     "evaluation_runs", admin_metadata,
     _uuid_pk(),
-    Column("target", String, nullable=False),                   # 무엇을 평가했나(RAG / 프롬프트 등)
-    # 실행 출처 4종(수동 실행 / 프롬프트 게시 게이트 / 파이프라인 후속 / RAG 파라미터 평가).
-    # 고정 코드값 사전이 아직 CM-DF-002 에 없어(E9) String 으로 두고 정본이 정해지면 맞춘다.
+    # 무엇을 평가했나. 실제로 넣는 값은 둘뿐이다 — '운영 설정'(평가셋 반영 재측정) · 'RAG'
+    # (RAG 파라미터 초안 평가 · 파이프라인 후속). 프롬프트 초안 평가는 무상태라 행을 남기지 않는다.
+    Column("target", String, nullable=False),
+    # 실행 출처. 넣는 값은 '파이프라인 후속' · 'RAG 파라미터 평가' 둘뿐이다 — '수동 실행'은
+    # 엔드포인트가 없고 '프롬프트 게시 게이트'는 게시 Smoke 폐지로 사라졌다(2026-08-24).
     Column("source", String),
     Column("testset_version", String),                          # 어떤 버전의 문항으로 쟀나(E3)
-    # ⚠️ 지표를 숫자 4컬럼으로 두지 않는다. 대상별로 축이 다르다(RAG=정확도/MRR/생성,
-    # 프롬프트=회귀/인용/중대 위반) — E1 이 [{label, value}] 배열을 요구하는 이유다.
+    # ⚠️ 지표를 숫자 4컬럼으로 두지 않는다. 축이 바뀔 수 있어 E1 이 [{label, value}] 배열을
+    # 요구한다. 현재 넣는 축은 한 종류다(정확도/MRR/생성).
     # 반올림까지 끝낸 문자열로 저장한다(서버가 표기를 확정, E1).
     Column("metrics", JSONB),
     # 게이트 판정 전문. 목록의 passed 와 상세의 기준별 판정이 어긋나면 안 되므로(E10)
@@ -377,7 +379,9 @@ prompt_versions = Table(
     # 금칙어·마스킹 규칙. 초안 객체 안에 함께 실려 오므로(M3) 게시본에도 함께 굳힌다 —
     # 따로 두면 "이 프롬프트가 게시될 때 어떤 가드레일이었나"를 되짚을 수 없다.
     Column("guardrails", JSONB),
-    # 게시 응답이 {version, smoke:{passed,total}} 이라(M4) 그 결과를 함께 남긴다.
+    # 옛 게시 Smoke 결과. 게시 직후 Smoke 는 2026-08-24 폐지해 새 게시는 채우지 않는다 —
+    # 지난 게시본의 판정 기록이 남아 있어 컬럼은 지우지 않는다(create_all 은 컬럼 삭제를
+    # 못 하고, 버전 목록의 '실패' 표기가 그 값으로 옛 기록을 그대로 보여 준다).
     Column("smoke_passed", Integer),
     Column("smoke_total", Integer),
     Column("published_by", String),
@@ -435,28 +439,14 @@ prompt_publish_requests = Table(
 )
 
 
-# ── 16. guardrail_rules — 금칙어·마스킹 규칙 ──
-# 초안·게시본 안에도 JSONB 로 함께 실리지만(M3) 규칙 자체를 행으로도 둔다. 검증
-# (POST /guardrails/masking/validate, M6)이 규칙 낱개를 대상으로 하고, 미통과 규칙이 섞인
-# PUT 을 400 으로 막으려면 "이 규칙이 검증을 통과했는가"를 규칙 단위로 들고 있어야 한다.
-#
-# ⚠️ 초안 JSONB 와 이 표가 어긋나지 않게 하는 것은 애플리케이션 책임이다(M3 가 지적한 동기화
-# 규칙). 정본은 초안 쪽이고 이 표는 검증 상태를 붙여 두는 곳으로 쓴다.
-guardrail_rules = Table(
-    "guardrail_rules", admin_metadata,
-    _uuid_pk(),
-    Column("kind", String, nullable=False),                     # 'blocklist' | 'masking'
-    Column("pattern", Text, nullable=False),                    # 금칙어 또는 정규식
-    Column("replacement", Text),                                # 마스킹 치환 문자열
-    # 정규식 문법 오류·과대 매칭을 **서버가 판정**한 결과다(M6). 화면이 이 값으로
-    # 저장 버튼을 막는다.
-    Column("validated", Boolean, nullable=False, server_default=text("false")),
-    Column("validation_message", Text),
-    Column("active", Boolean, nullable=False, server_default=text("true")),
-    Column("updated_by", String),
-    Column("updated_at", DateTime(timezone=True), nullable=False,
-           server_default=func.now(), onupdate=func.now()),
-)
+# ── 16. guardrail_rules — 2026-08-24 DROP ──
+# 금칙어·마스킹 규칙을 행으로도 두던 표다. 규칙 낱개 검증 상태를 붙여 두려던 자리였는데,
+# **읽는 코드도 쓰는 코드도 끝내 생기지 않았다**(DROP 시점 0행). 그 사이 추천 질문 저장 검증만
+# 이 표를 읽고 있어서, 관리자가 AD-008 에서 무엇을 등록하든 늘 통과했다 — 비어 있는 표를
+# 원천으로 삼은 탓이다. 금칙어·마스킹의 원천은 prompt_versions.guardrails(JSONB) 하나이고
+# 챗 경로·초안 평가·추천 질문 검사가 같은 함수로 그것을 읽는다(api/rag/answer.blocklist_match).
+# 규칙 낱개 검증 상태가 다시 필요해지면 그 JSONB 안에 필드로 넣는다 — 표를 되살리면 판정
+# 원천이 둘로 갈린다.
 
 
 # ─────────────────────────── 공용 ────────────────────────────────────────────
@@ -540,6 +530,11 @@ def main():
         conn.execute(text("ALTER TABLE prompt_versions ADD COLUMN IF NOT EXISTS reason text"))
         conn.execute(text("ALTER TABLE testset_items ADD COLUMN IF NOT EXISTS question_type varchar"))
         conn.execute(text("ALTER TABLE testset_items ADD COLUMN IF NOT EXISTS intent varchar"))
+        # guardrail_rules 정리(2026-08-24) — 쓰는 코드가 끝내 없어 늘 0행이었고, 그 빈 표를
+        # 원천으로 삼은 추천 질문 검사가 무엇을 등록해도 통과시켰다. create_all 은 표를 지우지
+        # 않으므로 여기서 멱등하게 떨군다. 되살릴 일이 생기면 표가 아니라 게시본 JSONB 안에서
+        # 해결한다(위 16번 주석).
+        conn.execute(text("DROP TABLE IF EXISTS guardrail_rules"))
         for name, table_name, cols in _NEW_INDEXES:
             conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON {table_name} ({cols})"))
         missing_indexes = _missing_indexes(conn)

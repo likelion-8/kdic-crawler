@@ -105,22 +105,30 @@ export const MOCK_SCENARIOS: ChatScenario[] = [
     },
   },
 
-  // --- Type 5. 역할 확인 되묻기 ---
+  // --- Type 5. 업무 확인 되묻기 (src/clarify.py) ---
+  // ⚠️ business_function 을 주지 않는다 — 업무를 몰라서 되묻는 턴이라 서버도 못 준다.
+  //    프론트는 이 값이 있을 때만 선택 칩을 남기므로(ChatPage.selectRole), 여기서 값을 주면
+  //    「미수령금 찾기」가 화면에 고정되는 어색한 표시가 생긴다.
+  // answer 에 되묻기 문구를 넣는 것도 서버와 같다 — 화면은 버리지만 대화 복원·로그가 읽는다.
   {
-    id: 'clarification',
-    // 역할이 답을 가르는 주제(수수료·반환)인데 역할 단서가 없을 때만 발동한다
-    triggers: ['수수료'],
-    answer: '',
+    id: 'clarification_business',
+    // 업무가 특정되지 않은 신청·링크성 질문. '신청'만 든 질문은 아래 민원 시나리오가 가져간다
+    triggers: ['링크'],
+    answer: '어떤 업무를 찾고 계신가요? 아래에서 골라주시면 바로 안내해 드릴게요.',
     sources: [],
     attachments: [],
     out_of_scope: false,
     response_type: 'CLARIFICATION',
-    intent: 'civil_petition',
-    business_function: '착오송금 반환 신청',
-    // 선택지는 서버가 준다(B-01) — 프론트 상수로 두면 다른 역할축에서 버튼이 그대로 남는다
     clarification: {
-      question: '어느 입장에서 궁금하신가요?',
-      options: [{ label: '잘못 보낸 사람(송금인)', value: 'sender' }, { label: '잘못 받은 사람(수취인)', value: 'receiver' }],
+      question: '어떤 업무를 찾고 계신가요? 아래에서 골라주시면 바로 안내해 드릴게요.',
+      // src/clarify.py CLARIFY_OPTIONS 와 같은 5개. value 없이 label 만 보낸다(클릭 = 업무명 전송)
+      options: [
+        { label: '착오송금 반환지원' },
+        { label: '예금보험금·가지급금' },
+        { label: '미수령금 찾기' },
+        { label: '은닉재산 신고' },
+        { label: '채무조정' },
+      ],
     },
   },
 

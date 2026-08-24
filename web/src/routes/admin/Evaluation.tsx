@@ -22,7 +22,7 @@ import { useSession } from '../../app/session'
 import { Card, SectionError, modalError } from './settings/promptops/common'
 import { GateModal } from './evaluation/GateModal'
 import { ItemEditor } from './evaluation/ItemEditor'
-import { formatCheckKst, formatShortKst } from './evaluation/kst'
+import { formatShortKst } from './evaluation/kst'
 import { RUN_SOURCES, RUN_TARGETS, applyChanges, evalKeys, fetchItems, fetchRuns, fetchSchedule } from './evaluation/api'
 import type { EvalItem, EvalItemInput, EvaluationRun } from './evaluation/api'
 
@@ -503,9 +503,6 @@ export function Evaluation() {
           <div className="flex flex-wrap items-center justify-end gap-3">
             {schedule.data && (
               <>
-                <p className="nums text-xs text-muted-foreground">
-                  다음 자동 확인 : {formatCheckKst(schedule.data.next_check_at)}
-                </p>
                 {/* 점수 비교는 같은 평가셋 버전끼리만 유효하다(Desc 1) → 현재 버전을 항상 보인다.
                     '왜 버전을 보이나'라는 규칙은 배지 옆 ⓘ로 접는다(카드 하단 중복 문구를 대체) */}
                 <span className="inline-flex items-center gap-0.5">

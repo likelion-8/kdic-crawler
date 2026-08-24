@@ -53,7 +53,7 @@ from api.deps import (CurrentAdmin, DbSession, get_current_admin,
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
 from api.routers.admin_logs import _to_kst_iso
 from schema import suggested_questions
-from schema_admin import (admin_activity_logs, guardrail_rules, ops_policy,
+from schema_admin import (admin_activity_logs, ops_policy,
                           query_cache, rate_limit_blocks)
 
 router = APIRouter(
@@ -572,18 +572,19 @@ def replace_suggested_questions(
 
 @router.post("/suggested-questions/validate")
 def validate_suggested_question(body: dict, admin: CurrentAdmin, db: DbSession):
-    del admin
+    """추천 질문 문구의 금칙어 검사(AD-009 저장 전).
+
+    🔴 판정 원천은 **AD-008 이 게시한 금칙어**다(prompt_versions.guardrails). 종전에는
+    guardrail_rules 테이블을 읽었는데 그 테이블에 쓰는 코드가 어디에도 없어 늘 비어 있었고,
+    관리자가 AD-008 에서 무엇을 등록하든 이 검사는 항상 통과했다(2026-08-24 실측: 0행).
+    챗 경로·초안 평가와 같은 함수를 써서 세 곳의 판정이 갈리지 않게 한다.
+    """
+    del admin, db
     text_value = str(body.get("text") or "").strip()
     if not text_value:
         return {"passed": False, "message": "추천 질문 문구를 입력해 주세요."}
-    patterns = db.execute(
-        select(guardrail_rules.c.pattern)
-        .where(guardrail_rules.c.kind == "blocklist",
-               guardrail_rules.c.active.is_(True))
-    ).scalars().all()
-    folded = unicodedata.normalize("NFKC", text_value).casefold()
-    for pattern in patterns:
-        if unicodedata.normalize("NFKC", pattern).casefold() in folded:
-            return {"passed": False,
-                    "message": f"금칙어 '{pattern}'가 포함되어 저장할 수 없습니다."}
+    from api.rag.answer import guardrail_hit
+    hit = guardrail_hit(unicodedata.normalize("NFKC", text_value), side="질문")
+    if hit:
+        return {"passed": False, "message": f"금칙어 '{hit}'가 포함되어 저장할 수 없습니다."}
     return {"passed": True, "message": ""}

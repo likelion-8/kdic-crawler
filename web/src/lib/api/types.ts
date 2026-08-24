@@ -46,11 +46,11 @@ export interface Attachment {
   kind: 'document' | 'link'
 }
 
-/** 역할 되묻기 (CB-005). **선택지까지 서버가 준다** — B-01 확정(2026-08-05).
+/** 되묻기 (CB-005). **선택지까지 서버가 준다** — B-01.
  *
- * 프론트 상수 2개(착오송금 송금인/수취인)로 박아두면 다른 역할축이 왔을 때
- * 질문만 바뀌고 버튼은 그대로 남는다. 역할축은 41개다(3제약 ③).
- * `options`가 비면 버튼을 그리지 않는다 — 하드코딩으로 되돌아가지 않기 위한 규칙이다. */
+ * 선택지를 프론트 상수로 박아두면 서버가 다른 축으로 되물을 때 질문만 바뀌고 버튼은
+ * 그대로 남는다. `options`가 비면 버튼을 그리지 않는다 — 하드코딩으로 되돌아가지 않기
+ * 위한 규칙이다. 현재 서버가 내려주는 축은 업무 5종(src/clarify.py). */
 export interface Clarification {
   question: string
   options: ClarificationOption[]

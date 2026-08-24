@@ -137,14 +137,16 @@ export function reauth(password: string) {
 
 // ---------------------------------------------------------------- 라벨 · 표기
 
-/** CM-DF-002 06절 job_type 6종. 실행 이력 '유형' 열 관측값(전체 재수집/선택 재수집/재적재)과 맞춘다 */
+/** CM-DF-002 06절 job_type 7종. 실행 이력 '유형' 열 관측값(전체 재수집/선택 재수집/재적재)과 맞춘다.
+ *  SMOKE_EVAL 은 이름만 옛 것이다(코드값이라 그대로 둔다) — 이 잡을 만드는 경로는 평가셋 반영
+ *  (AD-006 [반영])의 재측정 하나뿐이라 표기는 그 일을 말한다. */
 export const JOB_TYPE_LABEL: Record<JobType, string> = {
   FULL_RECRAWL: '전체 재수집',
   SELECTED_RECRAWL: '선택 재수집',
   REINDEX: '재적재',
   RECHUNK: '재청킹',
   REEMBED: '재임베딩',
-  SMOKE_EVAL: '적재 후 확인 평가',
+  SMOKE_EVAL: '평가셋 재측정',
   CHANGE_DETECT: '변경 감지',
 }
 

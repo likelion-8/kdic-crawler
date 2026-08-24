@@ -93,7 +93,7 @@ error        ApiError                  ← done 대신 온다
 |---|---|
 | `429` `과부하` | HTTP 429 |
 | `오류` `에러` | 부분 실패 — `error.user_message` + `fallback_sources` 2건 + [다시 시도] |
-| `수수료` | 역할 되묻기 — `clarification.question`만. answer·sources 없음 |
+| `링크` | 업무 되묻기 — `clarification` 5선택지. answer·sources 없음 |
 | `누구` `이름이` `모델` | 범위 외(정체성) |
 | `안녕` `고마워` `반가` | 범위 외(인사·잡담) |
 | `대출` `금리` `주식` | 범위 외(범위 밖 질문) |
@@ -138,7 +138,7 @@ error        ApiError                  ← done 대신 온다
 | POST | `/api/admin/jobs/{id}/cancel` | OPERATOR | 단계 상태를 그 시점으로 얼려 반환 |
 | POST | `/api/admin/jobs/{id}/retry` | OPERATOR | **새 job을 만든다**(활동 로그에 둘 다 남아야 함) |
 | POST | `/api/admin/jobs/{id}/rollback` | ADMIN | 긴급 롤백 → REINDEX job(`rollback_of`) |
-| GET | `/api/admin/evaluations/runs` | VIEWER | `page`·`size`·`sort` + 필터 `target=운영 설정\|RAG 초안\|프롬프트 초안` · `source=수동 실행\|프롬프트 게시 게이트\|파이프라인 후속\|RAG 파라미터 평가` (A-10·A-11 확정) |
+| GET | `/api/admin/evaluations/runs` | VIEWER | `page`·`size`·`sort` + 필터 `target=운영 설정\|RAG` · `source=파이프라인 후속\|RAG 파라미터 평가` (서버가 넣는 값만 — 2026-08-24 정리) |
 | GET | `/api/admin/evaluations/runs/{run_id}` | VIEWER | 게이트 판정 포함 |
 | GET | `/api/admin/activity/events` | VIEWER | 필터 `q`·`actor`·`result` |
 | GET | `/api/admin/activity/events/{id}` | VIEWER | 당시 스냅샷 포함 |
@@ -182,7 +182,7 @@ error        ApiError                  ← done 대신 온다
 | `business_function` | `retrieval.route_search_chunks`가 고른 업무 | 로깅·분석용. 프론트는 렌더 분기에 쓰지 않는다 |
 | `latency_ms` | `pipeline._rag_answer_traced()`의 `timings["total"]` | 초 → ms |
 | `response_type` | 없음 | 새로 붙여야 한다(§6 I-04) |
-| `clarification` | 없음 | 역할 되묻기는 아직 코드가 없다 |
+| `clarification` | `clarify.clarification_payload()` | 판정은 플래너·재작성기의 `needs_clarification` 필드 |
 | `error{}` | 없음 | 예외를 `{code, user_message, retryable, fallback_sources[]}`로 정규화하는 계층이 필요하다 |
 
 ### 구체적으로 어디를 자르면 되나
@@ -222,8 +222,9 @@ else:
 1. **`response_type` enum 전량 미정** (CB-DF-004 I-04). `codes.ts`는 `ANSWER|CLARIFICATION|FALLBACK|ERROR`
    4값으로 확정해 뒀는데 기획서엔 `FALLBACK|ERROR` 두 개만 언급된다. 정보성/민원성 구분은 `intent`로 한다.
 2. **대화 복원 경로 불일치** — `GET /api/conversation`(PRD-01) vs `/api/sessions/{id}`(CM-DF-003 04절).
-3. **`clarification` 옵션 출처 미정** (I-11). 목은 `{question}`만 주고 역할 버튼 라벨은 프론트 상수로 뒀다.
-   주제가 착오송금 말고도 있으면 서버가 `options[]`를 줘야 한다.
+3. ~~**`clarification` 옵션 출처 미정** (I-11)~~ → **해소.** 서버가 `question`과 `options[]`를
+   함께 준다(`src/clarify.py`). 업무 되묻기는 label만 보내고, 클릭하면 그 업무명이 그대로
+   다음 메시지로 전송된다.
 4. **`Page<T>` 봉투가 기획서에 없다.** 프론트가 정했다. 필드명(`items/total/page/size`)을 확정해 주기 바란다.
 5. **작업 진행 폴링 주기 미정** (10-ad-003-004 issue). 목은 4초/단계로 만들었다. SSE로 갈지 폴링일지 결정 필요.
 6. **`GET /api/admin/jobs`(이력 목록)가 04절 표에 없다.** AD-004 실행 이력 화면이 필요로 해서 목에 넣었다.

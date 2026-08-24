@@ -14,8 +14,12 @@
  *  - 내용은 항상 DOM에 남긴다(`sr-only` 사본). 접혀 있어도 `aria-describedby`로 가리킬 수 있어야
  *    "왜 이 스위치가 잠겼나"를 스크린리더가 읽는다.
  *  - 트리거는 44px 터치 타깃(CM-DF-004 09절). 아이콘만 14px로 두고 여백으로 넓힌다.
+ *
+ * 포털 위치: 기본은 body 인데, 네이티브 `<dialog showModal()>` 안에서는 그러면 안 된다 —
+ * 모달은 top layer 로 올라가고 body 로 나간 팝오버는 그 아래에 깔려 **아예 안 보인다**.
+ * 그래서 트리거의 가장 가까운 <dialog> 를 찾아 그 안으로 포털한다(없으면 body 그대로).
  */
-import { useId } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Info } from 'lucide-react'
 import { Popover } from 'radix-ui'
@@ -34,6 +38,10 @@ export interface InfoHintProps {
 export function InfoHint({ label, children, id, size = 'md' }: InfoHintProps) {
   const auto = useId()
   const bodyId = id ?? auto
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const [container, setContainer] = useState<HTMLElement | null>(null)
+  // 마운트 뒤에야 DOM 위치를 알 수 있다. dialog 밖이면 null → Portal 기본값(body)
+  useEffect(() => setContainer(triggerRef.current?.closest('dialog') ?? null), [])
 
   return (
     <>
@@ -43,13 +51,14 @@ export function InfoHint({ label, children, id, size = 'md' }: InfoHintProps) {
       </span>
       <Popover.Root>
         <Popover.Trigger
+          ref={triggerRef}
           type="button"
           aria-label={label}
           className="-my-2.5 -mx-1.5 inline-flex size-8 cursor-pointer items-center justify-center rounded-sm align-middle text-muted-foreground/70 transition-colors duration-200 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           <Info className={size === 'sm' ? 'size-3.5' : 'size-4'} aria-hidden="true" />
         </Popover.Trigger>
-        <Popover.Portal>
+        <Popover.Portal container={container ?? undefined}>
           <Popover.Content
             side="bottom"
             align="start"

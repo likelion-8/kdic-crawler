@@ -65,8 +65,6 @@ export interface RagGate {
   warning: string | null
   holdout_total: number
   holdout_passed: number
-  smoke_total: number
-  smoke_passed: number
   quantitative: QuantCompare | null
 }
 
@@ -126,8 +124,13 @@ export function fetchParams() {
 }
 
 /** [초안 평가] — 평가셋(홀드아웃 계열, 편집 반영) + A/B를 현재 인덱스에서 즉시 실행 (Desc 0 ②) */
-export function evaluateDraft(draft: Record<string, ParamValue>) {
-  return apiRequest<RagGate>(`${BASE}/evaluate`, { method: 'POST', body: { draft } })
+/** [초안 평가] — questionIds 를 주면 그 문항으로만 잰다(안 주면 홀드아웃 전체).
+ *  문구가 아니라 id 를 보낸다 — 화면이 들고 있던 옛 문구로 재는 것을 막는다 */
+export function evaluateDraft(draft: Record<string, ParamValue>, questionIds?: string[]) {
+  return apiRequest<RagGate>(`${BASE}/evaluate`, {
+    method: 'POST',
+    body: questionIds?.length ? { draft, question_ids: questionIds } : { draft },
+  })
 }
 
 /** [비교 실행] — 같은 질문으로 A/B 동시 검색. 결과를 저장하지 않는다(§1.5) */
@@ -136,6 +139,12 @@ export function abSearch(query: string, draft: Record<string, ParamValue>) {
 }
 
 /** [운영 반영] — 사유 필수. 무중단 즉시 적용, 실패 시 이전 버전 유지 (Desc 0 ③) */
+/** [초기화] — 편집 중인 초안을 서버에서도 버린다. 로컬만 되돌리면 게이트·정량 비교가 남고
+ *  새로고침에 초안이 되살아난다. 응답은 GET 과 같은 화면 전체 상태다 */
+export function resetDraft() {
+  return apiRequest<RagParamsResponse>(`${BASE}/reset`, { method: 'POST' })
+}
+
 export function applyDraft(draft: Record<string, ParamValue>, reason: string) {
   return apiRequest<RagParamsResponse>(`${BASE}/apply`, { method: 'POST', body: { draft }, reason })
 }

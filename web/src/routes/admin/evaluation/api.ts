@@ -17,14 +17,18 @@ export interface RunMetric {
   value: string
 }
 
-/** §2.3 '대상' 3종. 초안이 RAG인지 프롬프트인지가 지표 축을 가른다 */
-export type RunTarget = '운영 설정' | 'RAG 초안' | '프롬프트 초안'
-export const RUN_TARGETS: RunTarget[] = ['운영 설정', 'RAG 초안', '프롬프트 초안']
+/** '대상' — evaluation_runs.target 은 서버가 넣은 문자열 그대로 내려온다(매핑 없음).
+ *  넣는 곳이 세 군데뿐이라 값도 둘뿐이다 : '운영 설정'(평가셋 반영 재측정) · 'RAG'(RAG 파라미터
+ *  초안 평가 · 파이프라인 후속). '프롬프트 초안'은 어디서도 만들지 않는다 — 프롬프트 초안 평가는
+ *  무상태라 실행 행을 남기지 않는다(api/routers/admin_prompt.py). 없는 값을 필터에 두면 고르는
+ *  순간 영구 0건이라 뺐다(2026-08-24 실측: DB 실제 조합도 이 둘뿐). */
+export type RunTarget = '운영 설정' | 'RAG'
+export const RUN_TARGETS: RunTarget[] = ['운영 설정', 'RAG']
 
-/** '출처' 필터 옵션. 목록 응답에서 뽑으면 그 페이지 안에서만 만들어지므로 고정 사전을 쓴다(검증 D104) */
-export const RUN_SOURCES = [
-  '수동 실행', '프롬프트 게시 게이트', '파이프라인 후속', 'RAG 파라미터 평가',
-] as const
+/** '출처' 필터 옵션. 목록 응답에서 뽑으면 그 페이지 안에서만 만들어지므로 고정 사전을 쓴다(검증 D104).
+ *  '수동 실행'은 수동 실행 엔드포인트가 없어서, '프롬프트 게시 게이트'는 게시 Smoke 폐지로
+ *  생산 경로가 사라져서 뺐다. */
+export const RUN_SOURCES = ['파이프라인 후속', 'RAG 파라미터 평가'] as const
 
 /** 평가 실행 1건 — CM-DF-003 04절에 필드 정의가 없어 이 화면이 계약을 들고 있다 */
 export interface EvaluationRun {
@@ -37,9 +41,9 @@ export interface EvaluationRun {
   status: JobStatus
   item_count: number
   metrics: RunMetric[]
-  /** 게이트 판정 — 통과 건수·총 건수 모두 서버가 준다. 미달이어도 반영·게시를 막지
-   *  않는다(2026-08-19 경고 전환) — warning_reason 은 '무엇이 목표에 못 미쳤나'다 */
-  gate: { passed: boolean; smoke_passed: number; smoke_total: number; warning_reason?: string }
+  /** 게이트 판정. 미달이어도 반영·게시를 막지 않는다(2026-08-19 경고 전환) —
+   *  warning_reason 은 '무엇이 목표에 못 미쳤나'다 */
+  gate: { passed: boolean; warning_reason?: string }
   /** '판정 · 후속' 열의 후속 텍스트 — `→ 11:40 반영됨` · `→ 게시 v1.4` (§2.3) */
   follow_up?: string
   /** 이 실행이 쓴 평가셋 버전. 바뀐 지점에 '평가셋 vN부터' 구분 뱃지를 단다(Desc 1) */
@@ -91,9 +95,9 @@ export interface EvalItemValidation {
   item?: EvalItem
 }
 
-/** 헤더 '다음 자동 확인' — 정기 재측정(매주 월 04:00, AD-006 Desc 1 ③) */
+/** 헤더의 평가셋 버전 배지. 정기 재측정 시각은 내려받지 않는다 — 그것을 실행하는 스케줄러가
+ *  없어서 '다음 자동 확인'은 지키지 못하는 약속이었다(2026-08-24 제거). */
 export interface EvalSchedule {
-  next_check_at: string
   /** 현재 평가셋 버전. 이력 비교는 같은 버전끼리만 유효하다(Desc 1) */
   testset_version: number
 }
@@ -112,7 +116,7 @@ export interface EvalApplyRequest {
 
 /** 게이트 판정 상세 모달의 표 1행 (AD-006 §2.4) */
 export interface GateCriterion {
-  /** `Smoke 30문항` · `검색 정확도@5` 처럼 한글 표기가 정본 */
+  /** `검색 정확도@5` · `생성 성공률` 처럼 한글 표기가 정본 */
   label: string
   /** `0.92 이상` · `30/30` — 화면에서 수정 불가(CM-DF-004 05절) */
   target: string
@@ -135,9 +139,8 @@ export interface GateDetail {
   target: string
   source: string
   started_at: string
+  /** 그 실행이 판정에 쓴 기준 행. 과거 실행은 그때 저장된 기준을 그대로 보여 준다 */
   criteria: GateCriterion[]
-  /** 모달 하단 한 줄. 서버 문구 그대로 */
-  latest_smoke: string
   failed_items: GateFailedItem[]
 }
 

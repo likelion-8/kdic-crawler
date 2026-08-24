@@ -117,13 +117,23 @@ export function GateModal({ runId, onClose }: GateModalProps) {
         {detail && (
           <>
             {/* 표를 감싸던 액자를 걷어낸다 — 헤더 헤어라인과 행 구분선만으로 읽힌다 */}
-            <DataTable
-              caption="게이트 기준별 판정"
-              columns={CRITERIA_COLUMNS}
-              rows={detail.criteria}
-              rowKey={(r) => r.label}
-              rowState={(r) => (r.passed ? 'default' : 'danger')}
-            />
+            {/* 기준 기록이 없는 실행도 있다 — 기준을 함께 저장하기 전(2026-08-24 이전)에 돈
+                RAG 파라미터 평가다. 표의 일반 빈 문구는 '조건에 맞는 결과가 없습니다'라
+                필터 탓으로 읽히므로, 없는 이유를 적는다 */}
+            {detail.criteria.length === 0 ? (
+              <p className="text-[13px] text-muted-foreground">
+                이 실행에는 기준별 판정 기록이 없습니다. 판정 사유는 목록의 [판정 · 후속] 열에
+                남아 있습니다.
+              </p>
+            ) : (
+              <DataTable
+                caption="게이트 기준별 판정"
+                columns={CRITERIA_COLUMNS}
+                rows={detail.criteria}
+                rowKey={(r) => r.label}
+                rowState={(r) => (r.passed ? 'default' : 'danger')}
+              />
+            )}
 
             {detail.failed_items.length > 0 && (
               <section>
@@ -140,7 +150,6 @@ export function GateModal({ runId, onClose }: GateModalProps) {
               </section>
             )}
 
-            <p className="text-xs text-muted-foreground">최근 Smoke : {detail.latest_smoke}</p>
           </>
         )}
       </div>

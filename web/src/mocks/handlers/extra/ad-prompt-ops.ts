@@ -79,11 +79,6 @@ const BASE_PRINCIPLES: string[] = [
   '정체 질문에는 "예솜24"로 답하기',
 ]
 
-/** 게시 직후 Smoke 문항 수 — **서버가 정하는 값**이라 목이 들고 있는다.
- * 프론트 상수(lib/constants.ts)로 두면 서버가 세트를 바꿔도 화면 문구만 옛 숫자로 남는다.
- * 게이트 기준을 화면이 알면 안 된다는 규칙과 같은 이유다(handoff §6 E4) */
-const SMOKE_SET_SIZE = 30
-
 /** 시스템 프롬프트 전문 길이(CM-DF-003 06절 "778자"). 원칙 문구를 고치면 그 차이만큼 움직인다 */
 const BASE_CHAR_COUNT = 778
 const sumLength = (list: string[]) => list.reduce((n, t) => n + t.length, 0)
@@ -163,7 +158,9 @@ const BLOCKLIST: BlocklistRule[] = [
   { id: 'bw_02', pattern: '원금 손실 없음', type: '단어', scope: '답변', action: BLOCK_ACTION_ANSWER, active: true },
   {
     id: 'bw_03',
-    pattern: '비속어 기본 사전 (외부 사전)',
+    // '사전' 유형의 pattern 은 사람이 읽는 이름이다 — 실제 매칭은 서버 내장 사전이 한다
+    // (api/rag/blocklist_ko.py · LDNOOBW ko 기반). 화면에서 낱말을 편집하지 않는다
+    pattern: '비속어 기본 사전 (LDNOOBW ko 기반 · 코드 내장)',
     type: '사전',
     scope: '질문 + 답변',
     action: '질문이면 범위 외 안내 · 답변이면 차단',
@@ -171,10 +168,12 @@ const BLOCKLIST: BlocklistRule[] = [
   },
   {
     id: 'bw_04',
-    pattern: '\\d{6}[-]\\d{7} (주민번호 형태)',
+    // ⚠ 정규식 규칙의 pattern 은 순수 정규식이어야 한다 — 설명을 덧붙이면 그 문구까지
+    // 찾으므로 규칙이 조용히 죽는다(2026-08-24 정정: 종전 값에 '(주민번호 형태)'가 붙어 있었다)
+    pattern: '\\d{6}[-]\\d{7}',
     type: '정규식',
     scope: '질문',
-    action: '입력 즉시 경고(개인정보 입력 금지 안내)',
+    action: '주민번호 형태 · 입력 즉시 경고(개인정보 입력 금지 안내)',
     active: true,
   },
   { id: 'bw_05', pattern: '확정 수익', type: '단어', scope: '답변', action: BLOCK_ACTION_ANSWER, active: true },
@@ -186,10 +185,10 @@ const BLOCKLIST: BlocklistRule[] = [
   { id: 'bw_11', pattern: '불법 사금융', type: '단어', scope: '질문 + 답변', action: BLOCK_ACTION_ANSWER, active: false },
   {
     id: 'bw_12',
-    pattern: '\\d{2,6}[-]\\d{2,6}[-]\\d{2,8} (계좌번호 형태)',
+    pattern: '\\d{2,6}[-]\\d{2,6}[-]\\d{2,8}',
     type: '정규식',
     scope: '질문',
-    action: '입력 즉시 경고(개인정보 입력 금지 안내)',
+    action: '계좌번호 형태 · 입력 즉시 경고(개인정보 입력 금지 안내)',
     active: true,
   },
 ]
@@ -277,13 +276,20 @@ function promote(content: PromptDraftContent, version: string) {
 }
 
 /** 대표 질의 6건 회귀 판정. 목은 초안 내용을 실제로 돌려보지 않고 고정 결과를 준다 */
-function evaluate(): PromptEvaluation {
-  const improved = EVAL_ITEMS.filter((i) => i.verdict === 'IMPROVED').length
-  const regressed = EVAL_ITEMS.filter((i) => i.verdict === 'REGRESSED').length
+function evaluate(pickCount = 0): PromptEvaluation {
+  // 고른 문항 수만큼 항목을 만든다 — 목이 늘 6건을 돌려주면 선택이 반영되는지 안 보인다
+  const items = pickCount === 0
+    ? EVAL_ITEMS
+    : Array.from({ length: pickCount }, (_, i) => ({
+        ...EVAL_ITEMS[i % EVAL_ITEMS.length],
+        id: `ev${i + 1}`,
+      }))
+  const improved = items.filter((i) => i.verdict === 'IMPROVED').length
+  const regressed = items.filter((i) => i.verdict === 'REGRESSED').length
   return {
     ran_at: nowIso(),
-    summary: { total: EVAL_ITEMS.length, keep: EVAL_ITEMS.length - improved - regressed, improved, regressed },
-    items: EVAL_ITEMS,
+    summary: { total: items.length, keep: items.length - improved - regressed, improved, regressed },
+    items,
     gate: {
       passed: regressed === 0,
       source_attached: { passed: true, count: 6, total: 6 },
@@ -430,10 +436,13 @@ export const adPromptOpsHandlers = [
   http.post('/api/admin/prompt/evaluate', async ({ request }) => {
     const no = denied(request, 'EDITOR')
     if (no) return no
-    const body = (await request.json()) as WriteBody & DraftBody
+    const body = (await request.json()) as WriteBody & DraftBody & { question_ids?: string[] }
     if (!body.draft) return fail(400, '평가할 초안 내용이 필요합니다.')
+    // 고른 문항 수만큼 항목을 만든다 — 목이 늘 같은 6건을 돌려주면 '내가 고른 문항으로
+    // 재고 있다'가 검증되지 않는다. 문구는 id 를 알 수 없어 고정 예시를 돌려 쓴다
+    const asked = body.question_ids ?? []
     await delay(1_200)
-    return HttpResponse.json(evaluate())
+    return HttpResponse.json(evaluate(asked.length))
   }),
 
   http.get('/api/admin/prompt/versions', ({ request }) =>
@@ -465,13 +474,13 @@ export const adPromptOpsHandlers = [
     const target = versions.find((v) => v.version === params.version)
     if (!target) return fail(404, '해당 버전을 찾을 수 없습니다.')
     if (target.status === '현행') return fail(400, '이미 현행 버전입니다.')
-    // 2026-08-19 정책 변경: Smoke 미달 버전도 롤백을 막지 않는다 — 경고 표시는 화면 몫
+    // 미달·미평가 버전도 롤백을 막지 않는다(2026-08-19) — 경고 표시는 화면 몫
     for (const v of versions) v.status = v.version === target.version ? '현행' : '보관'
     target.emergency_candidate = false
     return HttpResponse.json(target)
   }),
 
-  /** 게시 — 즉시 Smoke 30문항 실행 후 전환.
+  /** 게시 — 새 버전을 저장하고 곧바로 현행으로 전환한다(게시 Smoke 는 2026-08-24 폐지).
    *  요청/승인 2단계는 없앴다(팀 결정 2026-08-04). 편집 권한자(EDITOR 이상)가 바로 게시한다 —
    *  회귀 게이트는 경고로만 인지시키고(2026-08-19 정책 변경), 사후 추적은 활동 로그와 긴급 롤백이 맡는다.
    *  ⚠ 백엔드도 이 권한으로 맞춰야 한다(구 계약은 ADMIN 전용 + publish-requests 승인 경로였다) */
@@ -495,7 +504,7 @@ export const adPromptOpsHandlers = [
       emergency_candidate: false,
     })
     promote(body.draft, published)
-    return HttpResponse.json({ version: published, smoke: { passed: SMOKE_SET_SIZE, total: SMOKE_SET_SIZE } })
+    return HttpResponse.json({ version: published })
   }),
 
   /** 마스킹 패턴 샘플 검증 — 판정은 경고 표시용이며 저장을 막지 않는다(2026-08-19 정책 변경, §2.11) */

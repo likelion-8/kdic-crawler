@@ -28,7 +28,7 @@ CLI 로 부를 수 있다. _measure 는 커밋하지 않아 apply(한 트랜잭�
 공유한다.
 
 ## 게이트 목표값은 서버가 못 박는다 (E4·E10)
-GATE_CRITERIA 가 정본이다(0.92↑/0.80↑/99.5%↑/10초↓/30of30). passed 와 기준별 판정을
+GATE_CRITERIA 가 정본이다(0.92↑/0.80↑/99.5%↑/10초↓). passed 와 기준별 판정을
 compute_gate 가 함께 계산해 evaluation_runs.gate(JSONB)에 담고, 목록·상세가 그 한 값을 읽는다.
 프론트 상수로 박으면 '관리자 화면에서 기준을 낮추는 우회'를 막는 설계가 무너진다.
 
@@ -81,9 +81,15 @@ GATE_CRITERIA = [
     ("generation_success_rate", "생성 성공률", "99.5% 이상", ">=", 0.995, _PCT),
     ("avg_latency_s", "평균 응답시간", "10초 이하", "<=", 10.0, _SEC),
 ]
-# Smoke 는 정확히 30문항 전부 통과여야 한다 — 5/5·29/29 처럼 total 이 30 미만이면 통과가 아니다.
-SMOKE_REQUIRED = 30
-SMOKE_TARGET = f"{SMOKE_REQUIRED}/{SMOKE_REQUIRED}"
+# 생성 축 측정 표본 크기. 전 문항 생성은 (OpenAI+HCX) 문항 수의 2배 콜이라 재측정 취지에
+# 맞지 않아 앞 N 문항만 잰다(2026-08-13). 검색 축은 전 문항이다.
+#
+# 종전 이름은 SMOKE_REQUIRED 였고 게이트에 'Smoke 30문항 전건 통과' 기준이 따로 있었는데
+# 2026-08-24 없앴다 — 같은 표본의 '생성 성공률'과 **같은 값을 두 번 센 것**이었다
+# (생성_성공률 = len(records)/N, smoke_passed = 그 len(records)). 임계값도 같았다:
+# 30문항에서 99.5% 이상은 30/30 뿐이다(29/30 = 96.7%). 게다가 활성 문항이 30건 미만이면
+# smoke_total < 30 이 되어 게이트가 영구 미달이었다(생성 성공률은 그 표본에서 정상 계산된다).
+GEN_SAMPLE = 30
 
 
 # ──────────────────────────────── 공용 헬퍼 ─────────────────────────────────
@@ -118,7 +124,7 @@ def _bootstrap_if_empty(db) -> None:
 
     2026-08-19 전환(팀 결정): 종전에는 골든셋(evaluation_dataset, 851)을 씨딩해 평가메뉴가
     골든셋 사본을 관리했다. 골든셋은 운영 라우팅의 1-NN 참조 전용으로 떼어내고, 평가·재측정·
-    Smoke·게이트는 전부 이 화면이 관리하는 홀드아웃 계열 하나로 통일한다 — 851 로 재면
+    게이트는 전부 이 화면이 관리하는 홀드아웃 계열 하나로 통일한다 — 851 로 재면
     참조셋과 겹쳐 자기참조 누수가 있던 문제도 함께 사라진다.
     비었을 때 한 번만 도는 지연 씨딩이라 조회/반영 진입에서 함께 부른다.
     """
@@ -196,10 +202,14 @@ def holdout_rows(db, *, in_scope_only: bool = False) -> list:
 
 
 def active_questions(db, *, in_scope: bool, limit: int) -> list:
-    """평가메뉴(AD-006) 현행 버전의 활성 문항 질문 목록 — AD-008 초안 평가·게시 Smoke 가
-    쓴다(2026-08-19). 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면에서 추가·수정한
+    """평가메뉴(AD-006) 현행 버전의 활성 문항 질문 목록. 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면에서 추가·수정한
     문항이 평가에 반영되지 않았다. in_scope 는 기대 출처 유무로 가른다(빈 출처 = 범위외).
-    질문 텍스트 정렬로 결정론적 순서를 보장한다(종전 question_id 정렬과 같은 목적)."""
+    질문 텍스트 정렬로 결정론적 순서를 보장한다(종전 question_id 정렬과 같은 목적).
+
+    빈 질문은 뺀다. 텍스트 정렬이라 빈 문자열이 맨 앞에 서고, 그러면 그게 평가 문항으로
+    뽑혀 LLM 을 빈 질문으로 부른다(2026-08-24 실측: AD-008 초안 평가의 범위외 2건 중 1건이
+    빈 문항이었다). 게이트 분모에도 들어가 판정을 부풀린다. 문항 자체를 지우는 것은
+    평가셋 편집(AD-006)의 일이고, 여기서는 평가에 쓰지 않는 것까지만 한다."""
     _bootstrap_if_empty(db)
     current = str(_current_version(db))
     rows = db.execute(
@@ -209,7 +219,74 @@ def active_questions(db, *, in_scope: bool, limit: int) -> list:
         .order_by(testset_items.c.question)
     ).all()
     return [r.question for r in rows
-            if bool(_all_links(r.expected_links)) == in_scope][:limit]
+            if (r.question or "").strip()
+            and bool(_all_links(r.expected_links)) == in_scope][:limit]
+
+
+def holdout_rows_by_ids(db, ids: list, *, in_scope_only: bool = False) -> list:
+    """고른 문항 id -> holdout_rows 와 같은 모양 [{"question", "expected_sources"}].
+
+    AD-007 [초안 평가]가 쓴다 — 관리자가 목록 모달에서 체크한 문항으로만 검색 품질을 잰다.
+    ⚠ 문항 수를 줄이면 정확도·MRR 의 분모가 줄어 값이 거칠어진다. 게이트 임계값은 홀드아웃
+    전체를 전제로 정한 값이라, 소수 문항으로 통과·미달을 단정하면 안 된다(화면이 문항 수를
+    함께 보여줘 관리자가 그걸 알고 읽게 한다).
+    """
+    if not ids:
+        return []
+    _bootstrap_if_empty(db)
+    current = str(_current_version(db))
+    keys = []
+    for raw in ids:
+        try:
+            keys.append(uuid.UUID(str(raw)))
+        except (ValueError, AttributeError, TypeError):
+            continue
+    if not keys:
+        return []
+    rows = db.execute(
+        select(testset_items.c.question, testset_items.c.expected_links)
+        .where(testset_items.c.testset_version == current,
+               testset_items.c.excluded.is_(False),
+               testset_items.c.id.in_(keys))
+        .order_by(testset_items.c.question)
+    ).all()
+    out = [{"question": r.question, "expected_sources": _all_links(r.expected_links)}
+           for r in rows if (r.question or "").strip()]
+    return [r for r in out if r["expected_sources"]] if in_scope_only else out
+
+
+def questions_by_ids(db, ids: list) -> tuple:
+    """고른 문항 id -> (인스코프, 범위외) 질문 목록. 현행 버전·미제외·질문 있는 것만.
+
+    AD-008 [초안 평가]가 쓴다 — 관리자가 평가셋 목록 모달에서 체크한 문항으로 재게 한다.
+    인스코프/범위외 판정은 **서버가** 한다(기대 출처 유무). 화면이 보낸 분류를 믿으면
+    판정 기준(근거를 써야 통과 / 안 써야 통과)이 화면 버그에 흔들린다.
+    """
+    if not ids:
+        return [], []
+    _bootstrap_if_empty(db)
+    current = str(_current_version(db))
+    keys = []
+    for raw in ids:
+        try:
+            keys.append(uuid.UUID(str(raw)))
+        except (ValueError, AttributeError, TypeError):
+            continue          # 모르는 id 는 조용히 버린다 — 목록이 바뀌었을 수 있다
+    if not keys:
+        return [], []
+    rows = db.execute(
+        select(testset_items.c.question, testset_items.c.expected_links)
+        .where(testset_items.c.testset_version == current,
+               testset_items.c.excluded.is_(False),
+               testset_items.c.id.in_(keys))
+        .order_by(testset_items.c.created_at.asc())
+    ).all()
+    in_scope, oos = [], []
+    for r in rows:
+        if not (r.question or "").strip():
+            continue
+        (in_scope if _all_links(r.expected_links) else oos).append(r.question)
+    return in_scope, oos
 
 
 def compute_gate(m: dict) -> dict:
@@ -231,19 +308,11 @@ def compute_gate(m: dict) -> dict:
         all_passed = all_passed and passed
         criteria.append({"label": label, "target": target, "result": fmt(val), "passed": passed})
 
-    sp, st = m.get("smoke_passed") or 0, m.get("smoke_total") or 0
-    # 🔴 정확히 30/30 이어야 통과. sp==st 로만 보면 1/1·5/5·29/29 도 통과가 되어 목표(30of30)가 무너진다.
-    smoke_ok = (sp == SMOKE_REQUIRED and st == SMOKE_REQUIRED)
-    all_passed = all_passed and smoke_ok
-    criteria.append({"label": "Smoke 30문항", "target": SMOKE_TARGET,
-                     "result": f"{sp}/{st}", "passed": smoke_ok})
-
     # 2026-08-19 게이트는 차단이 아니라 경고다 — 필드 이름도 warning_reason 이다(종전
     # blocked_reason). 값은 '무엇이 목표에 못 미쳤나'이지 '무엇을 막았나'가 아니다.
     shortfall = None if all_passed else \
         ", ".join(c["label"] for c in criteria if not c["passed"]) + " 미달"
-    return {"passed": all_passed, "criteria": criteria,
-            "smoke_passed": sp or 0, "smoke_total": st or 0, "warning_reason": shortfall}
+    return {"passed": all_passed, "criteria": criteria, "warning_reason": shortfall}
 
 
 def format_metrics(m: dict) -> list:
@@ -353,8 +422,6 @@ def _run_to_dict(row) -> dict:
         "metrics": row.metrics or [],
         "gate": {
             "passed": bool(gate.get("passed", False)),
-            "smoke_passed": gate.get("smoke_passed", 0) or 0,
-            "smoke_total": gate.get("smoke_total", 0) or 0,
             "warning_reason": gate.get("warning_reason"),
         },
         "follow_up": row.follow_up,
@@ -391,8 +458,9 @@ def get_gate(run_id: str, db: DbSession):
         "target": run.target,
         "source": run.source or "",
         "started_at": _to_kst_iso(run.started_at) or "",
+        # 과거 실행의 criteria 는 저장된 그대로 보여 준다 — 그때 'Smoke 30문항' 기준으로
+        # 판정했다면 그 줄이 남아 있는 것이 사실이다(지어내지도, 지우지도 않는다).
         "criteria": gate.get("criteria", []),
-        "latest_smoke": f"{gate.get('smoke_passed', 0) or 0}/{gate.get('smoke_total', 0) or 0}",
         "failed_items": failed_items,
     }
 
@@ -475,17 +543,14 @@ def validate_item(body: EvalItemInput, db: DbSession):
 
 @router.get("/schedule")
 def get_schedule(admin: CurrentAdmin, db: DbSession):
-    """정기 재측정 일정 -> {next_check_at, testset_version}. 프론트(evaluation/api.ts
-    fetchSchedule)가 AD-006 진입 즉시 부르는데 라우트가 없어 항상 404 였다(2026-08-13 실측).
-    일정 정본은 PRD-03 '운영 재측정 4시점'의 정기 축 — 매주 월 04:00 KST.
-    ⚠️ 스케줄러 프로세스는 아직 없다 — '계획된 다음 시각'이지 실행 보장이 아니다."""
+    """현재 평가셋 버전 -> {testset_version}. 화면 헤더의 버전 배지가 이 값을 쓴다.
+
+    종전에는 next_check_at(다음 월요일 04:00)도 함께 내려 화면이 '다음 자동 확인'으로 보여
+    줬는데, 그 시각에 재측정을 인큐하는 스케줄러가 없어 지키지 못하는 약속이었다 — 값과 표기를
+    함께 없앴다(2026-08-24). 정기 재측정을 실제로 돌리게 되면 그때 다시 내려준다."""
     del admin
     _bootstrap_if_empty(db)
-    kst = timezone(timedelta(hours=9))
-    nxt = datetime.now(kst).replace(hour=4, minute=0, second=0, microsecond=0)
-    while nxt <= datetime.now(kst) or nxt.weekday() != 0:   # 다음 월요일 04:00
-        nxt += timedelta(days=1)
-    return {"next_check_at": nxt.isoformat(), "testset_version": _current_version(db)}
+    return {"testset_version": _current_version(db)}
 
 
 # ──────────────────────────────── 반영(apply) ───────────────────────────────
@@ -672,11 +737,10 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
             for it in items]
 
     retr, per = eval_retrieval(rows, pipeline.K_CANDIDATES, rerank)
-    # 생성 축은 Smoke 표본(앞 30문항)만 실측한다 — 검색 축은 전 문항. 전량 생성은 851문항 기준
+    # 생성 축은 앞 GEN_SAMPLE 문항만 실측한다 — 검색 축은 전 문항. 전량 생성은 851문항 기준
     # (OpenAI+HCX) 1,702콜·1.5~3시간이라 재측정 취지(게이트 판정 기록)에 맞지 않는다(2026-08-13).
-    # compute_gate 의 smoke_passed/total 도 이 표본 기준이라 판정 의미는 동일하다.
     gen_summary, gen_records, _failed = evaluate_generation(
-        rows[:SMOKE_REQUIRED], load_page_urls(), rerank=rerank)
+        rows[:GEN_SAMPLE], load_page_urls(), rerank=rerank)
 
     # 문항별 결과 저장 — item_count·failed_items 의 원천(리뷰 지적). 검색 per-row 를 test_id 로 합친다.
     per_by_id = {p["test_id"]: p for p in per}
@@ -691,17 +755,11 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
                     "actual_top1": top5[0] if top5 else "",
                     "score": p.get("rr", 0.0)}))
 
-    # smoke: 앞 30문항의 생성 성공 여부. compute_gate 가 정확히 30/30 을 요구한다(30 미만이면 미달).
-    smoke_total = min(SMOKE_REQUIRED, len(rows))
-    ok_ids = {r["test_id"] for r in gen_records}
-    smoke_passed = sum(1 for r in rows[:smoke_total] if r["test_id"] in ok_ids)
-
     measured = {
         "retrieval_accuracy@5": retr.get("Recall@5"),
         "mrr": retr.get("MRR"),
         "generation_success_rate": gen_summary.get("생성_성공률"),
         "avg_latency_s": gen_summary.get("평균_응답시간_s"),
-        "smoke_passed": smoke_passed, "smoke_total": smoke_total,
     }
     gate = compute_gate(measured)
     db.execute(evaluation_runs.update().where(evaluation_runs.c.id == run.id).values(

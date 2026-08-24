@@ -67,6 +67,7 @@ from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
                               ConversationLogRow, LogExportRequest, LogExportResponse,
                               LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
+from schema import chat_messages
 from schema import feedback as feedback_table
 from schema import rag_runs
 
@@ -338,20 +339,37 @@ def list_logs(
 
 
 @router.get("/summary", response_model=LogSummary)
-def logs_summary(admin: CurrentAdmin, db: DbSession):
-    """오늘(KST) 집계. **목록 필터와 무관하게** 항상 오늘 기준이다(G1: '항상 오늘 기준').
+def logs_summary(
+    admin: CurrentAdmin,
+    db: DbSession,
+    # 화면이 고른 기간을 그대로 받는다(목록과 같은 KST 날짜 · logs/api.ts periodRange).
+    # 둘 다 없으면 오늘 — 진입 직후 기본 기간이 '오늘'이라 종전 동작과 같다.
+    from_: Optional[str] = Query(default=None, alias="from"),
+    to: Optional[str] = None,
+):
+    """선택한 기간(KST)의 상태·피드백 집계.
+
+    기간에 연동한다 — 스트립을 늘 오늘로 고정하면 30일을 보는 중에도 숫자가 오늘 것이라,
+    목록 406건 옆에 '4건'이 서서 어느 쪽이 참인지 알 수 없다. 상태·피드백 등 나머지 필터는
+    반영하지 않는다: 스트립 자체가 상태별 분해라 상태 필터를 걸면 고른 칸만 남고 나머지가
+    0 이 되어 분해의 뜻이 사라진다.
 
     VIEWER 도 볼 수 있는 유일한 대화 로그 엔드포인트다 — 숫자에는 대화 내용이 없다.
     """
     del admin  # 인증은 라우터 의존성이 했고, 집계에는 사용자별 데이터가 없다.
 
-    now = datetime.now(timezone.utc)
-    today_start = _kst_day_start(now.astimezone(KST).date())
+    start, end = _resolve_range(from_, to)
+    if start is None and end is None:
+        start = end = datetime.now(timezone.utc).astimezone(KST).date()
     # 목록과 **같은 모집단**을 세야 한다 — request_id 없는 행(CLI·Streamlit 기록)을 여기서만
-    # 세면 '오늘 3건'인데 목록은 0건이 되어, 운영자가 사라진 3건을 찾게 된다.
-    today = and_(rag_runs.c.created_at >= today_start,
-                 rag_runs.c.request_id.isnot(None),
-                 rag_runs.c.request_id != "")
+    # 세면 '3건'인데 목록은 0건이 되어, 운영자가 사라진 3건을 찾게 된다.
+    conds = [rag_runs.c.request_id.isnot(None), rag_runs.c.request_id != ""]
+    if start:
+        conds.append(rag_runs.c.created_at >= _kst_day_start(start))
+    if end:
+        # to 당일을 통째로 포함시킨다(모듈 주석 참고 · 목록 빌더와 같은 규칙)
+        conds.append(rag_runs.c.created_at < _kst_day_start(end) + timedelta(days=1))
+    today = and_(*conds)
 
     # 상태 3종을 한 번에 센다 — 질의 4번을 왕복하는 것보다 낫고, 합계가 부분합과
     # 어긋날 여지도 없앤다.
@@ -412,6 +430,43 @@ def _error_detail(row) -> dict:
         "fallback": ("제공됨" if spec["has_fallback"] else "없음") if spec else None,
         "failure_stage": row.failure_stage,
         "root_cause": row.root_cause,
+    }
+
+
+def _answer_composition(db, request_id: str) -> Optional[dict]:
+    """chat_messages 에서 이 답변의 구성(출처·서류·하위 답변)을 꺼낸다 — 없으면 None.
+
+    rag_runs 에는 answer 텍스트만 있어 "링크가 틀렸다"·"서류가 빠졌다" 민원을 확인할 방법이
+    없었다. 본문에는 URL 이 없다 — 출처·서류·신청 페이지는 시스템이 본문 뒤에 따로 붙이고
+    (assemble_*), 그 구조가 남는 곳은 대화 복원용 chat_messages 뿐이다.
+
+    행이 없는 경우: 대화 저장 이전 대화, 또는 세션이 지워진 건. 그때는 None 을 내려 화면이
+    본문만 그리게 한다 — 빈 배열을 내리면 '출처가 하나도 없었다'는 다른 뜻이 된다.
+
+    마스킹은 본문과 같은 규칙으로 하위 답변 텍스트에만 적용한다. 제목·URL 은 코퍼스에서 온
+    값이라 개인정보가 없고, URL 을 건드리면 링크가 깨진다.
+    """
+    row = db.execute(
+        select(chat_messages.c.sources, chat_messages.c.attachments,
+               chat_messages.c.sub_answers)
+        .where(and_(chat_messages.c.request_id == request_id,
+                    chat_messages.c.role == "assistant"))
+        .limit(1)
+    ).first()
+    if row is None:
+        return None
+    subs = []
+    for sub in (row.sub_answers or []):
+        subs.append({
+            "title": sub.get("title") or "",
+            "answer": mask_text(sub.get("answer")) or "",
+            "sources": sub.get("sources") or [],
+            "attachments": sub.get("attachments") or [],
+        })
+    return {
+        "sources": row.sources or [],
+        "attachments": row.attachments or [],
+        "sub_answers": subs,
     }
 
 
@@ -492,6 +547,8 @@ def get_log(request_id: str, request: Request, admin: CurrentAdmin, db: DbSessio
         # trace_id 자체가 없으면 langfuse=null. API_LANGFUSE_HOST 로 켠다(api/config.py).
         "langfuse": _langfuse(row.trace_id, settings.langfuse_host),
         "total_latency_ms": row.total_latency_ms,
+        # 사용자가 챗봇에서 실제로 본 구성(출처·서류·하위 답변) — 원천은 chat_messages
+        "answer_composition": _answer_composition(db, request_id),
         "answer_masked_preview": preview,
         "answer_masked_full": answer,
         "feedback_detail": None if row.vote is None else {

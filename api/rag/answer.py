@@ -433,39 +433,62 @@ def guardrail_hit(text: str, side: str = "질문") -> Optional[str]:
     그대로'로 동작했다. 편집 UI 가 받는 값이 실제 동작에 반영되지 않는 거짓 입력칸이었다):
       - active(행별)  꺼진 규칙은 건너뛴다 — 목록 전체 스위치와 별개다
       - scope         '질문'/'답변' 규칙은 해당 방향에서만, '질문 + 답변'은 양방향
-      - type          '정규식'은 re 매칭(IGNORECASE), '단어'·'사전'은 부분 문자열
+      - type          '정규식'은 re 매칭(IGNORECASE), '단어'는 부분 문자열,
+                      '사전'은 내장 비속어 사전(api/rag/blocklist_ko.py)을 켠다
     잘못된 정규식은 그 규칙만 건너뛴다(전체 실패-안전 원칙 유지). 문자열 항목(옛 형식)은
-    종전과 같이 '단어·양방향·활성'으로 취급한다."""
-    try:
-        import re as _re
+    종전과 같이 '단어·양방향·활성'으로 취급한다.
 
+    ⚠️ '사전' 행의 pattern 은 사람이 읽는 이름일 뿐 매칭에 쓰지 않는다(2026-08-24). 종전에는
+    그 이름을 문자열로 찾아서, 기본값 '비속어 기본 사전 (외부 사전)' 을 사용자가 통째로
+    입력하지 않는 한 영원히 걸리지 않는 이름뿐인 유형이었다."""
+    try:
         from runtime_config import get_prompt
-        block = (get_prompt("guardrails", None) or {}).get("blocklist") or {}
-        if not block.get("active", True):
-            return None
-        folded = str(text or "").casefold()
-        for item in block.get("items") or []:
-            if isinstance(item, str):
-                item = {"pattern": item}
-            if not item.get("active", True):
-                continue
-            scope = item.get("scope") or "질문 + 답변"
-            if scope != "질문 + 답변" and scope != side:
-                continue
-            w = str(item.get("pattern") or "").strip()
-            if not w:
-                continue
-            if item.get("type") == "정규식":
-                try:
-                    if _re.search(w, str(text or ""), _re.IGNORECASE):
-                        return w
-                except _re.error:
-                    logger.warning("금칙어 정규식 오류 — 규칙 건너뜀: %r", w)
-                continue
-            if w.casefold() in folded:
-                return w
+        return blocklist_match((get_prompt("guardrails", None) or {}).get("blocklist"), text, side)
     except Exception:  # noqa: BLE001
         logger.exception("guardrail_hit 실패 — 미적용으로 통과")
+    return None
+
+
+def blocklist_match(block: Optional[dict], text: str, side: str = "질문") -> Optional[str]:
+    """금칙어 목록 한 벌을 텍스트에 적용해 첫 적중 표현을 돌려준다.
+
+    게시본(guardrail_hit)과 초안 평가(AD-008 [초안 평가])가 **같은 함수**를 쓴다 — 종전에는
+    평가 쪽이 pattern 문자열을 그대로 `in` 으로 찾아, 정규식 규칙은 그 정규식 원문이 답변에
+    나올 때만 걸리고 '사전' 규칙은 아예 걸리지 않았다. 평가가 통과시킨 초안이 운영에서
+    막히는(또는 그 반대) 어긋남이 거기서 났다(2026-08-24).
+    """
+    import re as _re
+
+    block = block or {}
+    if not block.get("active", True):
+        return None
+    folded = str(text or "").casefold()
+    for item in block.get("items") or []:
+        if isinstance(item, str):
+            item = {"pattern": item}
+        if not item.get("active", True):
+            continue
+        scope = item.get("scope") or "질문 + 답변"
+        if scope != "질문 + 답변" and scope != side:
+            continue
+        if item.get("type") == "사전":
+            from api.rag import blocklist_ko
+            found = blocklist_ko.find(text)
+            if found:
+                return found
+            continue
+        w = str(item.get("pattern") or "").strip()
+        if not w:
+            continue
+        if item.get("type") == "정규식":
+            try:
+                if _re.search(w, str(text or ""), _re.IGNORECASE):
+                    return w
+            except _re.error:
+                logger.warning("금칙어 정규식 오류 — 규칙 건너뜀: %r", w)
+            continue
+        if w.casefold() in folded:
+            return w
     return None
 
 

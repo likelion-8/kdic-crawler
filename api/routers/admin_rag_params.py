@@ -11,6 +11,7 @@ RagHistoryEntry)에 응답 모양을 1:1로 맞춘다 — 처음 구현을 핸�
     POST /ab-search {query,draft}  현행(A) vs 초안(B) 검색 비교 -> AbSearchResponse
     POST /apply     {draft}+reason 운영 반영 -> RagParamsResponse(반영 후 전체 상태)
     GET  /history               버전 이력 -> Page<RagHistoryEntry>
+    POST /reset                 편집 중인 초안을 버린다 -> RagParamsResponse
     POST /history/{id}/rollback 그 시점 값으로 **초안만** 복원 -> {draft}
 
 ## 파라미터 메타는 서버가 정본이다
@@ -25,8 +26,8 @@ PARAM 목록의 key·label·control·범위를 서버가 내려주고 화면은 
 ## 평가는 검색 축 실측이다
 
 평가메뉴 현행 버전(testset_items — 홀드아웃 89 씨딩)의 기대 출처로 **현행(A)과 초안(B)을 둘 다** 재서
-hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 Smoke 는 이 화면의
-파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — smoke 0/0 + warning 으로 명시하고,
+hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 축은 이 화면의
+파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — warning 으로 명시하고,
 게이트 판정은 검색 두 축(정확도 0.92↑ · MRR 0.80↑)으로만 한다. 지어내지 않는다.
 
 ⚠️ 문항 수 × 2(A/B) 만큼 임베딩+pgvector 질의가 나가는 동기 작업(워밍업된 서버에서 1~2분).
@@ -46,7 +47,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import delete, func, insert, select, update
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin, write_activity_log
 from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
@@ -200,14 +201,14 @@ def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
                holdout_total: int = 0) -> dict:
     """화면의 RagGate 모양을 만든다. 평가 전이면 passed=false + warning_reason.
 
-    smoke 는 0/0 으로 명시한다 — 이 화면의 파라미터는 생성 품질을 직접 바꾸지 않아 생성
-    Smoke 를 재지 않는다(모듈 주석). 지어낸 30/30 을 넣으면 게이트가 거짓말을 한다.
+이 화면의 파라미터는 생성 품질을 직접 바꾸지 않아 생성 축을 재지 않는다(모듈 주석) —
+    지어낸 수치를 넣으면 게이트가 거짓말을 한다. 응답에도 그 자리를 두지 않는다.
     """
     if draft_metrics is None:
         return {"passed": False, "draft_signature": signature, "evaluated_at": None,
                 "warning_reason": "초안 평가를 먼저 실행해 주세요.", "warning": None,
                 "holdout_total": 0, "holdout_passed": 0,
-                "smoke_total": 0, "smoke_passed": 0, "quantitative": None}
+                "quantitative": None}
 
     acc, mrr = draft_metrics["retrieval_accuracy@5"], draft_metrics["mrr"]
     passed = acc >= GATE_ACCURACY and mrr >= GATE_MRR
@@ -239,13 +240,22 @@ def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
         if passed and regressed:
             warning = "게이트는 통과했지만 현행보다 낮아진 지표가 있습니다."
     if warning is None and passed:
-        warning = "생성 Smoke 는 이 평가에서 재지 않습니다(검색 축만 실측)."
+        warning = "생성 축은 이 평가에서 재지 않습니다(검색 축만 실측)."
 
     return {"passed": passed, "draft_signature": signature, "evaluated_at": evaluated_at,
             "warning_reason": shortfall, "warning": warning,
             "holdout_total": holdout_total,
             "holdout_passed": draft_metrics.get("holdout_passed", 0),
-            "smoke_total": 0, "smoke_passed": 0, "quantitative": quantitative}
+            # 이 게이트는 evaluation_runs.gate 에 그대로 저장돼 AD-006 [게이트 판정 상세]
+            # 모달이 읽는다. criteria 가 없으면 그 모달이 통째로 비어 '기록이 없다'처럼
+            # 보인다 — 실제로는 검색 축 두 기준으로 판정한 것이라 그 두 줄을 함께 남긴다.
+            "criteria": [
+                {"label": "검색 정확도@5", "target": f"{GATE_ACCURACY} 이상",
+                 "result": f"{acc:.3f}", "passed": acc >= GATE_ACCURACY},
+                {"label": "MRR", "target": f"{GATE_MRR} 이상",
+                 "result": f"{mrr:.3f}", "passed": mrr >= GATE_MRR},
+            ],
+            "quantitative": quantitative}
 
 
 def _stored_gate(db) -> dict:
@@ -267,20 +277,41 @@ def _stored_gate(db) -> dict:
 
 # ──────────────────────────────── 검색 실측 ─────────────────────────────────
 
-def _holdout_rows(db):
-    # 2026-08-19 전환: 문항 정본은 평가메뉴 현행 버전(testset_items) — admin_evaluations.
-    # holdout_rows 에 위임한다(in_scope_only=True 가 종전의 "빈 정답 문항 제외"와 동일:
-    # 범위외가 섞이면 정확도가 부당하게 깎인다. 2026-08-12 실측).
-    from api.routers.admin_evaluations import holdout_rows
-    rows = holdout_rows(db, in_scope_only=True)
+def _holdout_rows(db, ids=None):
+    """평가에 쓸 문항. ids 를 주면 그것만, 없으면 홀드아웃 전체.
+
+    문항 정본은 평가메뉴 현행 버전(testset_items)이다 — admin_evaluations 에 위임한다
+    (in_scope_only=True: 기대 출처가 없는 문항이 섞이면 정확도가 부당하게 깎인다. 2026-08-12 실측).
+    ids 는 관리자가 [초안 평가]에서 고른 문항이다 — 무엇으로 재는지 보고 고르게 하려는 것이고,
+    수를 줄이면 지표가 거칠어진다는 점은 화면이 문항 수로 함께 말한다.
+    """
+    from api.routers.admin_evaluations import holdout_rows, holdout_rows_by_ids
+    rows = (holdout_rows_by_ids(db, list(ids), in_scope_only=True) if ids
+            else holdout_rows(db, in_scope_only=True))
     if not rows:
-        raise BadRequestError("평가할 문항이 없습니다(평가셋 비어 있음).")
+        raise BadRequestError(
+            "평가할 문항이 없습니다 — 기대 출처가 있는 문항을 하나 이상 골라 주세요."
+            if ids else "평가할 문항이 없습니다(평가셋 비어 있음).")
     return rows
 
 
+def _search_ranked(query: str, params: dict, *, for_scoring: bool = False) -> tuple:
+    """실검색 -> (게이트 전 순위, 게이트 후 순위). 검색은 한 번만 돈다."""
+    from retrieval import route_search_chunks
+    k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
+    k_final = params.get("k_final", pipeline.K_FINAL)
+    threshold = params.get("min_top1_score", candidate_ranking.MIN_TOP1_SCORE)
+    candidates = route_search_chunks(query, k=k_candidates)
+    ranked = candidates if for_scoring else candidate_ranking.top_k_cut(candidates, k=k_final)
+    return ranked, candidate_ranking.gate_low_relevance(ranked, threshold=threshold)
+
+
 def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> list:
-    """초안/현행 파라미터로 실검색 -> 페이지 순위. eval_pipeline_retrieval 과 같은 규약
-    (chunk_id 의 '#' 앞이 page_id, 같은 페이지 첫 등장 = 최고 순위).
+    """초안/현행 파라미터로 실검색 -> [(page_id, score), ...] 페이지 순위.
+
+    eval_pipeline_retrieval 과 같은 규약(chunk_id 의 '#' 앞이 page_id, 같은 페이지 첫 등장 =
+    최고 순위). 점수는 그 페이지를 대표하는 청크(= 첫 등장 청크)의 점수다 — A/B 화면이
+    게이트 임계값과 나란히 보여줘야 관리자가 "왜 B가 비었나"를 스스로 읽는다.
 
     for_scoring=True 면 k_final 컷 **없이** 후보 전체(k_candidates)에서 페이지를 접는다 —
     기준선(0.922/0.806, retrieve_pages)이 그렇게 재기 때문이다. 컷 이후로 재면 페이지가
@@ -288,18 +319,15 @@ def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> lis
     (2026-08-12 실측). 컷은 LLM 에 넘길 근거 선택이지 검색 품질의 정의가 아니다.
     for_scoring=False(A/B 화면)는 LLM 이 실제로 받는 것을 보여줘야 하므로 컷을 유지한다.
     """
-    from retrieval import route_search_chunks
-    k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
-    k_final = params.get("k_final", pipeline.K_FINAL)
-    threshold = params.get("min_top1_score", candidate_ranking.MIN_TOP1_SCORE)
-    candidates = route_search_chunks(query, k=k_candidates)
-    ranked = candidates if for_scoring else candidate_ranking.top_k_cut(candidates, k=k_final)
-    top = candidate_ranking.gate_low_relevance(ranked, threshold=threshold)
-    pages = []
-    for cid, _score, _text in top:
+    _, top = _search_ranked(query, params, for_scoring=for_scoring)
+    pages: list = []
+    seen: set = set()
+    for cid, score, _text in top:
         page = cid.split("#")[0]
-        if page not in pages:
-            pages.append(page)
+        if page in seen:
+            continue
+        seen.add(page)
+        pages.append((page, float(score)))
     return pages
 
 
@@ -309,7 +337,7 @@ def _measure(rows, params: dict) -> dict:
     rr_sum = 0.0
     for r in rows:
         gold = set(r["expected_sources"] or [])
-        ranked5 = _search_pages(r["question"], params, for_scoring=True)[:5]
+        ranked5 = [page for page, _ in _search_pages(r["question"], params, for_scoring=True)[:5]]
         if gold & set(ranked5):
             hits += 1
         for i, page in enumerate(ranked5, 1):
@@ -354,7 +382,7 @@ def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession
     params = validate_params(dict(body.get("draft") or {}))
     signature = draft_signature(params)
 
-    rows = _holdout_rows(db)
+    rows = _holdout_rows(db, body.get("question_ids") or [])
     current_metrics = _measure(rows, _effective_params(db))
     draft_metrics = _measure(rows, params)
     now = datetime.now(timezone.utc)
@@ -391,6 +419,26 @@ def evaluate_draft(body: dict, request: Request, me: CurrentAdmin, db: DbSession
     return gate
 
 
+@router.post("/reset")
+def reset_draft(me: CurrentAdmin, db: DbSession):
+    """[초기화] — 편집 중인 초안을 **서버에서도** 버린다.
+
+    종전에는 화면이 로컬 상태만 현행값으로 되돌렸다. 초안 행(rag_param_versions status='draft')과
+    거기 매달린 평가·게이트는 그대로 남아, 게이트 배지와 정량 비교가 계속 떠 있고 새로고침하면
+    초안이 되살아났다 — 초기화가 초기화가 아니었다.
+
+    운영값(status='current')은 건드리지 않는다. 활동 로그도 남기지 않는다 — 초안은 서비스에
+    영향이 없어 게시·반영·롤백과 같은 감사 대상이 아니다(초안 저장도 기록하지 않는다).
+    """
+    _require_editor(me, "RAG 파라미터 초기화")
+    draft = _row(db, "draft")
+    if draft:
+        # 초안 행을 지우면 _stored_gate 도 자동으로 '평가 없음' 상태가 된다(draft is None).
+        db.execute(delete(rag_param_versions).where(rag_param_versions.c.id == draft.id))
+        db.commit()
+    return _full_response(db)
+
+
 @router.post("/ab-search")
 def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
     """[비교 실행] — 같은 질문을 A(현행)/B(초안)로 동시 검색. 결과를 저장하지 않는다(§1.5)."""
@@ -417,12 +465,20 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
                 f"플래너 {'On' if p['use_query_planner'] else 'Off'}"]
 
     def _column(label: str, p: dict, changed: list) -> dict:
-        pages = _search_pages(query, p)
+        _, top = _search_ranked(query, p)
+        pages: list = []
+        seen: set = set()
+        for cid, score, _text in top:
+            page = cid.split("#")[0]
+            if page in seen:
+                continue
+            seen.add(page)
+            pages.append((page, float(score)))
         return {
             "label": label, "chips": _chips(p), "changed_chips": changed,
             "hits": [{"rank": i + 1, "title": titles.get(pid, pid), "doc_id": pid,
-                      "score": 0.0, "is_answer": pid in gold}
-                     for i, pid in enumerate(pages[:5])],
+                      "score": round(score, 4), "is_answer": pid in gold}
+                     for i, (pid, score) in enumerate(pages[:5])],
         }
 
     changed = [c for a, c in zip(_chips(current), _chips(merged)) if a != c]

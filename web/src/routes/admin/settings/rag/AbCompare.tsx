@@ -185,8 +185,7 @@ export function AbCompare({ draft, gate, evaluating, evaluateError }: AbCompareP
             </p>
             {/* 게이트 결과는 색이 아니라 글자로도 남긴다 */}
             <p className="mt-2 text-sm">
-              게이트 : 홀드아웃 {gate.holdout_passed}/{gate.holdout_total} · Smoke {gate.smoke_passed}/
-              {gate.smoke_total} ·{' '}
+              게이트 : 홀드아웃 {gate.holdout_passed}/{gate.holdout_total} ·{' '}
               {gate.passed ? (
                 <ColorText tone="green">통과 ✓</ColorText>
               ) : (

@@ -33,8 +33,6 @@ class RunMetric(BaseModel):
 class RunGate(BaseModel):
     """목록 행의 게이트 요약. 상세(GateDetail)와 같은 값을 읽도록 evaluation_runs.gate 에서 온다."""
     passed: bool
-    smoke_passed: int = 0
-    smoke_total: int = 0
     # 목표에 못 미친 기준. 2026-08-19 게이트가 차단 -> 경고로 바뀌면서 blocked_reason
     # 에서 개명했다 — 이름이 '차단 사유'로 남아 있으면 나중에 이력을 보는 사람이
     # '그때 막혔었구나'로 읽는다(실제로는 막은 적이 없다).
@@ -44,8 +42,8 @@ class RunGate(BaseModel):
 class EvaluationRun(BaseModel):
     """평가 실행 1건. api.ts EvaluationRun 과 1:1."""
     run_id: str
-    target: str                             # '운영 설정' | 'RAG 초안' | '프롬프트 초안'
-    source: str                             # RUN_SOURCES(수동 실행 등)
+    target: str                             # '운영 설정' | 'RAG' (서버가 넣는 값)
+    source: str                             # '파이프라인 후속' | 'RAG 파라미터 평가'
     started_at: str                         # KST ISO
     finished_at: Optional[str] = None       # 실행 중이면 null
     status: str                             # JobStatus (RUNNING/DONE/FAILED)
@@ -69,7 +67,7 @@ class EvaluationRunList(BaseModel):
 
 class GateCriterion(BaseModel):
     """게이트 상세 표 1행. target/result 는 화면 표기 문자열 그대로(수정 불가, E4)."""
-    label: str                              # '검색 정확도@5' · 'Smoke 30문항'
+    label: str                              # '검색 정확도@5' · '생성 성공률'
     target: str                             # '0.92 이상' · '30/30' — 서버가 내려준다
     result: str
     passed: bool
@@ -91,7 +89,6 @@ class GateDetail(BaseModel):
     source: str
     started_at: str
     criteria: list[GateCriterion] = Field(default_factory=list)
-    latest_smoke: str = ""
     failed_items: list[GateFailedItem] = Field(default_factory=list)
 
 

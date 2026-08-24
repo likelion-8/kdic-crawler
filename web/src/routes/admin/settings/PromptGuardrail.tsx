@@ -2,9 +2,9 @@
  *
  * 3단계 골격은 기획서 12절 §2 그대로: ① 초안 편집 → ② 평가·회귀 → ③ 게시.
  * - 초안 수정은 서버에 쌓지 않는다. 로컬 상태 + localStorage에만 쌓이고(useLocalDraft),
- *   서버 쓰기는 [게시]·[게시 요청] 때뿐이다. 수정하는 순간 직전 평가가 무효화된다(§2.2).
- * - 게시는 회귀 게이트 3항목이 모두 ✓여야 열린다. EDITOR는 [게시 요청] → ADMIN 승인,
- *   ADMIN은 요청 없이 바로 [게시]('단독 게시'로 활동 로그에 기록, §2.9).
+ *   서버 쓰기는 [게시] 때뿐이다. 수정하는 순간 직전 평가가 무효화된다(§2.2).
+ * - 게시를 막는 조건은 권한뿐이다. 회귀 게이트 3항목(출처 부착·범위외 거절·금칙어)은 경고로만
+ *   알리고(2026-08-19), 요청/승인 2단계도 없어서 EDITOR 이상이면 바로 [게시]다(2026-08-04).
  * - 셸(GNB·헤더·설정 서브탭)은 AdminLayout이 그린다. 여기서 다시 그리지 않는다.
  * - ※로 시작하는 빨간 주석은 기획 주석이라 렌더하지 않는다(00-meta NOTATION). */
 import { useState } from 'react'
@@ -22,13 +22,14 @@ import {
   VersionHistoryCard,
 } from './promptops/prompt-cards'
 import { BeforeAfterCard } from './promptops/prompt-compare'
+import { EvalPickerDialog } from './eval-picker'
 import type {
-  BlocklistRule, MaskingRule, PromptDraft, PromptDraftContent, PromptEvaluation, PromptPrinciple,
-  PromptVersion,
+  BlocklistRule, MaskingRule, PromptDraft, PromptDraftContent, PromptEvaluation,
+  PromptPrinciple, PromptVersion,
 } from './promptops/api'
 import {
-  emergencyRollback, evaluatePrompt, fetchPromptDraft, promptKeys, publishPrompt, reauthenticate,
-  rollbackVersion,
+  EVAL_PICK_MAX, emergencyRollback, evaluatePrompt, fetchPromptDraft, promptKeys, publishPrompt,
+  reauthenticate, rollbackVersion,
 } from './promptops/api'
 import { contentOf, deriveDraft, useLocalDraft } from './promptops/useLocalDraft'
 
@@ -80,6 +81,12 @@ export function PromptGuardrail() {
     void qc.invalidateQueries({ queryKey: promptKeys.versions })
   }
 
+  /** [초안 평가]는 문항 고르기 모달을 먼저 연다 — 무엇으로 재는지 보고 고른 뒤 실행한다.
+   *  고른 id 는 다음에 열 때의 시작점으로만 남기고, 프롬프트 초안과 섞지 않는다(문항은
+   *  프롬프트 내용이 아니라 평가 설정이라 게시 payload·변경 건수에 들어가면 안 된다). */
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [lastIds, setLastIds] = useState<string[]>([])
+
   /** [초안 평가] — 로컬 초안을 실어 보내는 일시 평가. 서버 초안을 만들지도 바꾸지도 않는다 */
   const evaluate = useMutation({
     mutationFn: evaluatePrompt,
@@ -94,7 +101,7 @@ export function PromptGuardrail() {
       setEvaluation(null)
       closeAsk()
       refetchAll()
-      showToast(`${result.version}을(를) 게시했습니다 · Smoke ${result.smoke.passed}/${result.smoke.total} 통과`)
+      showToast(`${result.version}을(를) 게시했습니다`)
     },
   })
 
@@ -188,7 +195,7 @@ export function PromptGuardrail() {
           // (`초안 평가 : A/B 검색 비교` / `초안 평가 : 전후 답변 비교`).
           // 같은 동작에 두 이름을 붙이면 두 화면이 다른 물건처럼 보인다(사용자 지적).
           secondaryLabel="초안 평가"
-          onSecondary={() => evaluate.mutate(contentOf(draft))}
+          onSecondary={() => setPickerOpen(true)}
         />
       </div>
 
@@ -291,7 +298,22 @@ export function PromptGuardrail() {
         baseVersion={draft.base_version}
         running={evaluate.isPending}
         error={evaluate.error}
-        onRun={() => evaluate.mutate(contentOf(draft))}
+        onRun={() => setPickerOpen(true)}
+      />
+
+      <EvalPickerDialog
+        open={pickerOpen}
+        maxPicks={EVAL_PICK_MAX}
+        costHint={(n) =>
+          `문항당 현행·초안 두 벌을 생성하므로 답변 생성은 ${n * 2}회입니다`}
+        initialIds={lastIds}
+        running={evaluate.isPending}
+        onClose={() => setPickerOpen(false)}
+        onRun={(ids) => {
+          setLastIds(ids)
+          setPickerOpen(false)
+          evaluate.mutate({ draft: contentOf(draft), questionIds: ids })
+        }}
       />
 
       {/* 편집 모달은 열 때마다 새로 마운트해 현재 초안 값으로 초기화한다 */}
@@ -334,8 +356,7 @@ export function PromptGuardrail() {
         open={ask?.kind === 'publish'}
         title="이 초안을 게시할까요?"
         // 문항 수를 쓰지 않는다 — 게시 '전'이라 결과가 없고, 프론트가 박아 둔 숫자는 서버가
-        // Smoke 세트를 바꾸는 순간 거짓이 된다(판정 기준은 서버 몫 · handoff §6 E4)
-        impact={`게시하면 Smoke 검사가 실행된 뒤 ${draft.draft_version}으로 전환됩니다. Smoke 미달은 경고로 기록되며 전환을 막지 않습니다.${gatePassed ? '' : ' ⚠ 회귀 게이트를 통과하지 않은 초안입니다.'}`}
+        impact={`게시하면 ${draft.draft_version}이 곧바로 현행으로 전환됩니다. 문제가 있으면 [롤백]·[긴급 롤백]으로 되돌립니다.${gatePassed ? '' : ' ⚠ 회귀 게이트를 통과하지 않은 초안입니다.'}`}
         diff={<PublishDiff draft={draft} />}
         reason="required"
         error={modalError(publish.error)}
@@ -350,7 +371,7 @@ export function PromptGuardrail() {
       <ConfirmModal
         open={ask?.kind === 'rollback'}
         title={ask?.kind === 'rollback' ? `${ask.version.version} 버전으로 되돌릴까요?` : ''}
-        impact="선택한 버전을 새 초안으로 복원할 뿐 즉시 반영하지 않습니다. 회귀·Smoke를 다시 통과해야 현행이 됩니다."
+        impact="선택한 버전을 새 초안으로 복원할 뿐 즉시 반영하지 않습니다. [게시]를 해야 현행이 됩니다."
         reason="required"
         error={modalError(rollback.error)}
         confirmLabel="롤백"
@@ -365,7 +386,7 @@ export function PromptGuardrail() {
         open={ask?.kind === 'emergency'}
         variant="danger"
         title={ask?.kind === 'emergency' ? `${ask.version.version}(으)로 즉시 되돌릴까요?` : ''}
-        impact="회귀·Smoke를 기다리지 않고 현행 버전을 즉시 교체합니다. 되돌린 뒤 24시간 안에 회귀·Smoke를 사후 실행해 결과를 기록해야 합니다."
+        impact="회귀 평가를 기다리지 않고 현행 버전을 즉시 교체합니다. 되돌린 뒤 24시간 안에 회귀 평가를 사후 실행해 결과를 기록해야 합니다."
         reason="required"
         reauth
         error={modalError(emergency.error)}

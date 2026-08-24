@@ -13,7 +13,7 @@
 ## 엔드포인트 (화면이 실제로 부르는 것)
     GET  /prompt/draft                      게시본 기준값 -> PromptDraft
     POST /prompt/evaluate {draft}           전후 비교 실측 -> PromptEvaluation (무상태)
-    POST /prompt/publish  {draft,gate_passed}+reason -> PublishResult {version, smoke}
+    POST /prompt/publish  {draft,gate_passed}+reason -> PublishResult {version}
     GET  /prompt/versions?page&size         -> Page<PromptVersion>
     POST /prompt/versions/{v}/rollback      그 버전 내용으로 기준값 재구성 -> PromptDraft
     POST /prompt/versions/{v}/emergency-rollback  ADMIN+재인증 -> PromptVersion
@@ -29,16 +29,17 @@
     편집 목록에서 빼서 locked_principle 로 주고, 조립 시 서버가 **무조건 마지막 번호로
     다시 붙인다**(클라이언트가 빼고 보내도 살아남는다).
 
-## 평가(전후 비교)와 게시 Smoke — 실측이다
+## 평가(전후 비교) — 실측이다
 
-evaluate: 골든셋에서 인스코프 4문항 + 범위외 2문항을 뽑아, 같은 검색 근거로 현행(전)과
-초안(후) 프롬프트 각각 실제 생성한다(HCX 12콜, 동기 ~1분). 판정 축은 화면 게이트 그대로 —
-출처 부착(인스코프에서 [SOURCE_USED]) · 범위외 거절([NO_SOURCE]) · 가드레일(금칙어 0건).
-전{양호}→후{불량}이 REGRESSED 다. **서버에 아무것도 저장하지 않는다**(계약: 일시 평가).
+evaluate: 화면이 고른 평가셋(AD-006) 문항으로, 같은 검색 근거에서 현행(전)과 초안(후)
+프롬프트 각각 실제 생성한다(문항당 HCX 2콜). 판정 축은 화면 게이트 그대로 — 출처 부착
+(인스코프에서 근거 사용) · 범위외 거절 · 가드레일(금칙어 0건). 전{양호}→후{불량}이
+REGRESSED 다. **서버에 아무것도 저장하지 않는다**(계약: 일시 평가).
 
-publish: 초안 프롬프트로 Smoke 30문항을 실제 생성해(HCX 30콜, 동기 ~1-2분) 전건 통과면
-새 버전을 현행으로 활성화한다. Smoke 미달이어도 활성화하며 **경고로만 기록**한다(2026-08-19).
-gate_passed(클라이언트가 보낸 직전 평가 결과)는 진입 조건일 뿐 최종 판정은 Smoke 다.
+publish: 새 버전을 저장하고 곧바로 현행으로 활성화한다. 게시 직후 Smoke 30문항을 돌리던
+것은 2026-08-24 없앴다 — 요구사항에 없고, 미달이어도 게시를 막지 않아(2026-08-19) 판정에
+효력이 없었으며, HCX 30~60콜을 써서 한도에 걸리면 그 실패가 '품질 미달'로 기록됐다.
+gate_passed(클라이언트가 보낸 직전 평가 결과)도 진입 조건이 아니다 — 경고로만 남는다.
 
 ## 폴백
 
@@ -48,6 +49,7 @@ gate_passed(클라이언트가 보낸 직전 평가 결과)는 진입 조건일 
 """
 import logging
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -56,7 +58,7 @@ from sqlalchemy import func, insert, select, update
 
 from api.deps import (CurrentAdmin, DbSession, ReauthedAdmin, get_current_admin,
                       write_activity_log)
-from api.errors import BadRequestError, ForbiddenError, NotFoundError
+from api.errors import BadRequestError, ForbiddenError, NotFoundError, RateLimitError
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다).
 import prompt_builder
 import runtime_config
@@ -77,11 +79,7 @@ ACTION_PUBLISH = "프롬프트 게시"
 ACTION_ROLLBACK = "프롬프트 롤백"
 ACTION_EMERGENCY = "프롬프트 긴급 롤백"
 
-# Smoke 문항 수 — 서버가 정하는 값(화면 목도 "서버가 정한다"고 명시). 전건 통과만 활성화.
-SMOKE_TOTAL = 30
 # 전후 비교 평가 문항 수(인스코프/범위외). HCX 콜 수 = (IN+OOS)×2 라 작게 유지한다.
-EVAL_IN_SCOPE = 4
-EVAL_OUT_OF_SCOPE = 2
 
 # 잠금 원칙의 화면 표시 라벨. 실제 규칙 전문은 서버가 조립 시 붙인다(모듈 주석).
 LOCKED_LABEL = "답변 첫 줄 근거 사용 마커([SOURCE_USED]/[NO_SOURCE]) 표기 — 시스템 필수 규칙"
@@ -235,19 +233,70 @@ def _draft_to_content(db, draft: dict) -> dict:
             "few_shot": fewshots or base["few_shot"], "guardrails": guardrails}
 
 
-def _blockwords(guardrails: dict) -> list:
-    block = (guardrails or {}).get("blocklist") or {}
-    if not block.get("active", True):
-        return []
-    words = []
-    for item in block.get("items") or []:
-        w = item if isinstance(item, str) else (item.get("pattern") or "")
-        if str(w).strip():
-            words.append(str(w).strip())
-    return words
+def _blocklist_hit(guardrails: dict, text: str) -> Optional[str]:
+    """초안의 금칙어 목록을 답변 텍스트에 적용해 첫 적중 표현을 돌려준다.
+
+    🔴 판정은 챗 경로와 **같은 함수**(api.rag.answer.blocklist_match)로 한다. 종전에는 여기서
+    규칙의 pattern 문자열을 그대로 `in` 으로 찾아, 유형·적용 범위·행별 활성을 전부 무시했다 —
+    정규식 규칙은 그 정규식 원문이 답변에 나올 때만 걸리고, '사전' 규칙은 이름을 찾느라 절대
+    걸리지 않았다. 평가가 통과시킨 초안이 운영에서 막히는 어긋남이 거기서 났다(2026-08-24).
+    """
+    from api.rag.answer import blocklist_match
+    return blocklist_match((guardrails or {}).get("blocklist"), text, "답변")
 
 
 # ──────────────────────── 생성 실측 공통 ────────────────────────
+
+# 콜 사이 최소 간격(초). 0 으로 두면 12콜이 한꺼번에 나가 한도에 걸린다.
+_CALL_GAP_S = 1.5
+_last_call_at = 0.0
+
+
+def _pace() -> None:
+    """직전 HCX 콜로부터 _CALL_GAP_S 가 지나도록 기다린다(프로세스 내 단일 워커 기준)."""
+    global _last_call_at
+    wait = _CALL_GAP_S - (time.monotonic() - _last_call_at)
+    if wait > 0:
+        time.sleep(wait)
+    _last_call_at = time.monotonic()
+
+
+def _is_rate_limited(exc: Exception) -> bool:
+    """HCX(CLOVA Studio) 요청 한도 초과인가. SDK 예외 타입을 import 하지 않고 판별한다 —
+    langchain_naver 가 openai SDK 를 통해 던지므로 타입을 붙잡으면 그 의존성에 묶인다."""
+    if type(exc).__name__ == "RateLimitError":
+        return True
+    return getattr(exc, "status_code", None) == 429 or "429" in str(exc)
+
+
+def _call_with_retry(messages: list, *, seed: int | None):
+    """HCX 1콜 + 한도 초과 재시도.
+
+    [전후 비교]는 문항마다 현행·초안 두 벌을 생성해 (4+2)×2 콜을 연달아 쏜다. 쉬지 않고
+    보내면 CLOVA Studio 의 짧은 구간 한도에 걸리고, 무상태 API 라 그때까지 만든 생성이 통째로
+    버려진다. 그래서 (a) 콜 사이에 간격을 두고 (b) 걸리면 쉬었다 다시 부른다.
+    그래도 걸리면 429 를 그대로 올려 화면이 '잠시 후 다시' 라고 말하게 한다 — 조용히 빈
+    결과를 돌려주면 관리자가 게이트 판정을 사실로 믿는다.
+
+    ⚠ 한도 자체는 클라비가 준 키의 제공자 설정이라 여기서 알 수 없다. 간격·재시도 값은
+    실측으로 정한 것이고, 평가 문항이 늘면 다시 봐야 한다.
+    """
+    from llm_client import call_hyperclova
+    _pace()
+    delays = (5, 15)
+    for attempt in range(len(delays) + 1):
+        try:
+            return call_hyperclova(messages, deterministic=True, seed=seed)
+        except Exception as exc:  # noqa: BLE001 — 한도 초과만 재시도하고 나머지는 그대로 올린다
+            if not _is_rate_limited(exc) or attempt == len(delays):
+                if _is_rate_limited(exc):
+                    logger.warning("HCX 요청 한도 초과 — 재시도 %d회 후 포기", len(delays))
+                    raise RateLimitError(
+                        "답변 생성 요청 한도를 넘었습니다. 1~2분 뒤 다시 실행해 주세요."
+                    ) from exc
+                raise
+            time.sleep(delays[attempt])
+
 
 def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
               ) -> tuple[str, bool, list]:
@@ -261,7 +310,6 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
       함께 단일 검증 1콜(validate_answer, 모든 답변 대상)로 정렬했다(평가=운영 원칙)."""
     from candidate_ranking import gate_low_relevance, top_k_cut
     from citation import format_all_citations
-    from llm_client import call_hyperclova
     from retrieval import route_search_chunks
 
     top = gate_low_relevance(top_k_cut(route_search_chunks(question, k=20), k=5))
@@ -269,7 +317,7 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
     examples = "\n\n".join(f"질문: {ex['question']}\n답변: {ex['answer']}" for ex in few_shot)
     human = (f"{examples}\n\n--- 아래는 실제 질문입니다 ---\n\n"
              f"근거 자료:\n{context}\n\n질문: {question}\n답변:")
-    raw = call_hyperclova([("system", si), ("human", human)], deterministic=True, seed=seed)
+    raw = _call_with_retry([("system", si), ("human", human)], seed=seed)
     body, marker = prompt_builder.parse_marker(raw)
     # 🔴 근거가 비었으면(게이트가 걷어냄) 쓸 출처가 애초에 없다 — "근거를 썼다"가 될 수 없다.
     # 종전에는 마커 없는 응답이 True 로 들어와, 범위외 문항의 회귀 판정(not marker)이
@@ -289,13 +337,31 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
     return body, marker_used, sources
 
 
-def _eval_questions(db):
-    """전후 비교용 고정 문항 — 평가메뉴(AD-006) 현행 버전에서 인스코프 앞 N + 범위외 앞 M.
-    2026-08-19 전환: 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면 편집(추가·수정)이
-    반영되지 않았다. 이제 관리자가 보는 평가셋이 곧 평가 문항이다."""
-    from api.routers.admin_evaluations import active_questions
-    in_scope = active_questions(db, in_scope=True, limit=EVAL_IN_SCOPE)
-    oos = active_questions(db, in_scope=False, limit=EVAL_OUT_OF_SCOPE)
+# 한 번에 고를 수 있는 문항 수 상한. 문항당 현행·초안 두 벌을 생성하므로 콜 수는 이것의
+# 2배다 — 상한이 없으면 89문항을 골라 178콜을 쏘고 생성 한도에 걸린다.
+EVAL_PICK_MAX = 12
+
+
+def _eval_questions(db, ids) -> tuple:
+    """전후 비교에 쓸 (인스코프, 범위외) 문항 — 화면이 고른 평가셋(AD-006) 문항 id 로만 잰다.
+
+    기본값(앞 몇 건 자동 선택)은 두지 않는다. 서버가 알아서 집어 쓰던 종전 방식은 어느
+    문항으로 재는지 화면에 보이지 않아, 평가셋에 섞인 빈 문항·`asdf1234` 로 판정이 나가고
+    있었다(2026-08-24 실측). 무엇으로 재는지는 고른 사람이 안다.
+
+    인스코프/범위외 분류는 서버가 한다(기대 출처 유무) — 판정 기준이 반대라(근거를 써야
+    통과 / 안 써야 통과) 화면이 보낸 분류를 믿으면 판정이 화면 버그에 흔들린다.
+    """
+    if not ids:
+        raise BadRequestError("평가할 문항을 하나 이상 골라 주세요.")
+    if len(ids) > EVAL_PICK_MAX:
+        raise BadRequestError(
+            f"한 번에 고를 수 있는 문항은 {EVAL_PICK_MAX}건까지입니다. "
+            f"문항당 답변을 두 벌 생성하므로 그 이상은 생성 요청 한도에 걸립니다.")
+    from api.routers.admin_evaluations import questions_by_ids
+    in_scope, oos = questions_by_ids(db, list(ids))
+    if not in_scope and not oos:
+        raise BadRequestError("고른 문항을 찾을 수 없습니다. 평가셋 목록을 다시 불러와 주세요.")
     return in_scope, oos
 
 
@@ -333,11 +399,12 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
     _require_request_id(body)
     content = _draft_to_content(db, dict(body.get("draft") or {}))
     base = _effective(db)
-    blockwords = _blockwords(content["guardrails"])
 
-    in_scope, oos = _eval_questions(db)
+
+    in_scope, oos = _eval_questions(db, body.get("question_ids") or [])
     if not in_scope:
-        raise BadRequestError("평가 문항이 없습니다(evaluation_dataset 비어 있음).")
+        raise BadRequestError(
+            "안내 범위 안 문항이 없습니다 — 기대 출처가 있는 문항을 하나 이상 골라 주세요.")
 
     items = []
     src_ok = 0
@@ -348,18 +415,18 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
         for q in questions:
             b_body, b_marker, b_sources = _generate(q, base["system_instruction"], base["few_shot"])
             a_body, a_marker, a_sources = _generate(q, content["system_instruction"], content["few_shot"])
-            hits = [w for w in blockwords if w in a_body]
+            hit = _blocklist_hit(content["guardrails"], a_body)
             before_ok = b_marker if kind == "in" else (not b_marker)
-            after_ok = ((a_marker if kind == "in" else not a_marker) and not hits)
+            after_ok = ((a_marker if kind == "in" else not a_marker) and not hit)
             if before_ok and not after_ok:
                 # REGRESSED 후보만 seed 바꿔 1회 재생성 — 2연속 실패만 회귀 확정(flaky 흡수).
                 # seed 고정도 best-effort 라 잔여 비결정이 남는다(2026-08-13 리서치).
                 from llm_client import EVAL_SEED
                 a_body, a_marker, a_sources = _generate(
                     q, content["system_instruction"], content["few_shot"], seed=EVAL_SEED + 1)
-                hits = [w for w in blockwords if w in a_body]
-                after_ok = ((a_marker if kind == "in" else not a_marker) and not hits)
-            guard_hits += len(hits)
+                hit = _blocklist_hit(content["guardrails"], a_body)
+                after_ok = ((a_marker if kind == "in" else not a_marker) and not hit)
+            guard_hits += 1 if hit else 0
             if kind == "in":
                 if after_ok:
                     src_ok += 1
@@ -377,8 +444,8 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
             else:
                 verdict, note = "KEEP", (f"{axis} 유지" if after_ok else f"{axis} 전후 모두 미통과")
                 keep += 1
-            if hits:
-                note += f" · 금칙어 {len(hits)}건"
+            if hit:
+                note += f" · 금칙어 적중({hit})"
             items.append({
                 "id": f"ev{len(items)+1}", "question": q, "verdict": verdict, "note": note,
                 "before": {"answer": b_body, "sources": b_sources},
@@ -405,10 +472,14 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
 
 @router.post("/prompt/publish")
 def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """[게시] — 이 시점에 비로소 초안이 서버에 저장된다. Smoke 30문항을 새 프롬프트로 실측해
-    결과와 무관하게 현행으로 활성화한다(2026-08-19 정책 변경 — 게이트·Smoke 는 경고로만
-    남긴다. 종전에는 미달 시 '실패' 버전으로 기록하고 현행을 유지했다).
-    ⚠️ HCX 30콜, 동기 ~1-2분."""
+    """[게시] — 이 시점에 비로소 초안이 서버에 저장되고 새 버전이 현행이 된다.
+
+    게시 직후 Smoke 30문항을 돌리던 것은 없앴다(2026-08-24). 요구사항에 없고, 2026-08-19
+    정책 변경으로 미달이어도 게시를 막지 않아 판정에 효력이 없었으며, HCX 30~60콜을 써서
+    생성 요청 한도에 걸리면 그 실패가 '품질 미달'로 기록됐다. 반영 전 확인은 [초안 평가],
+    이상하면 [롤백]·[긴급 롤백]이 맡는다.
+
+    회귀 게이트도 게시를 막지 않는다(2026-08-19) — 경고로만 남긴다(활동 로그 detail)."""
     _require_editor(me, "프롬프트 게시")
     _require_request_id(body)
     reason = str(body.get("reason") or "").strip()
@@ -420,62 +491,28 @@ def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         logger.warning("프롬프트 게시: %s", gate_warning)
     content = _draft_to_content(db, dict(body.get("draft") or {}))
 
-    # Smoke 문항도 평가메뉴 현행 버전에서 뽑는다(2026-08-19 전환 — _eval_questions 와 동일).
-    from api.routers.admin_evaluations import active_questions
-    questions = active_questions(db, in_scope=True, limit=SMOKE_TOTAL)
-    if len(questions) < SMOKE_TOTAL:
-        raise BadRequestError(f"Smoke 문항이 부족합니다({len(questions)}/{SMOKE_TOTAL}).")
-
-    blockwords = _blockwords(content["guardrails"])
-
-    def _smoke_ok(q: str, *, seed: int | None = None) -> bool:
-        try:
-            a_body, marker, _src = _generate(
-                q, content["system_instruction"], content["few_shot"], seed=seed)
-        except Exception:  # noqa: BLE001 — 한 문항 호출 실패 = 그 문항 실패
-            logger.warning("smoke 호출 실패: %s", q, exc_info=True)
-            return False
-        return bool(marker) and not any(w in a_body for w in blockwords)
-
-    from llm_client import EVAL_SEED
-    passed = 0
-    for q in questions:
-        # 실패 문항만 seed 바꿔 1회 재시도(2연속 실패만 실패) — 문항당 p=0.97 이어도
-        # 30연속 통과율이 ~40%로 떨어지는 이항 함정을 흡수한다. 전건 통과 의미는 유지.
-        if _smoke_ok(q) or _smoke_ok(q, seed=EVAL_SEED + 1):
-            passed += 1
-
-    smoke_ok = passed == SMOKE_TOTAL
-    # 2026-08-19 정책 변경: Smoke 미달도 게시를 막지 않는다 — 항상 현행으로 활성화하고
-    # 미달 여부는 경고(활동 로그·응답 smoke 수치)로만 남긴다. 종전에는 미달 시 현행 유지였다.
-    activate = True
     new_version = (db.execute(select(func.max(prompt_versions.c.version))).scalar_one() or 0) + 1
     db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
                .values(is_current=False))
     db.execute(insert(prompt_versions).values(
-        version=new_version, is_current=activate,
+        version=new_version, is_current=True,
         system_instruction=content["system_instruction"],
         few_shot=content["few_shot"],
         no_evidence_notice=prompt_builder.NO_EVIDENCE_NOTICE,
         guardrails=content["guardrails"],
-        smoke_passed=passed, smoke_total=SMOKE_TOTAL,
         published_by=me.email, reason=reason,
     ))
     db.commit()
-    if activate:
-        runtime_config.invalidate("prompt")
+    runtime_config.invalidate("prompt")
 
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_PUBLISH,
-        target=f"프롬프트 {_vstr(new_version)}" + ("" if smoke_ok else " (Smoke 미달 — 경고, 활성화됨)"),
+        target=f"프롬프트 {_vstr(new_version)}",
         reason=reason,
-        detail={"version": new_version, "smoke": {"passed": passed, "total": SMOKE_TOTAL},
-                "activated": activate,
-                **({"gate_warnings": [w for w in [gate_warning,
-                    None if smoke_ok else f"Smoke {passed}/{SMOKE_TOTAL} 미달 상태로 활성화"] if w]}
-                   if (gate_warning or not smoke_ok) else {})},
+        detail={"version": new_version, "activated": True,
+                **({"gate_warnings": [gate_warning]} if gate_warning else {})},
     )
-    return {"version": _vstr(new_version), "smoke": {"passed": passed, "total": SMOKE_TOTAL}}
+    return {"version": _vstr(new_version)}
 
 
 @router.get("/prompt/versions")
@@ -484,17 +521,20 @@ def list_versions(admin: CurrentAdmin, db: DbSession, page: int = 1, size: int =
     rows = db.execute(
         select(prompt_versions).order_by(prompt_versions.c.version.desc())
     ).all()
-    # 긴급 롤백 후보 = 현행이 아닌 것 중 Smoke 를 통과했던 가장 최신 버전(직전 정상본).
-    candidate = next((r.version for r in rows
-                      if not r.is_current and (r.smoke_passed or 0) >= (r.smoke_total or 0)
-                      and r.smoke_total), None)
+    # 긴급 롤백 후보 = 현행이 아닌 가장 최신 버전(= 직전 버전).
+    # 종전에는 'Smoke 를 통과했던' 것으로 좁혔는데 게시 Smoke 를 없애(2026-08-24) 그 신호가
+    # 사라졌다. Smoke 를 계속 조건으로 두면 새 게시본은 smoke 값이 없어 후보가 영영 없어진다.
+    candidate = next((r.version for r in rows if not r.is_current), None)
     items = [{
         "version": _vstr(r.version),
         "created_at": _kst(r.created_at),
         "author": r.published_by or "",
         "reason": r.reason or "",
+        # '실패' 는 게시 Smoke 미달 버전을 뜻했다 — Smoke 를 없앤 뒤로는 나오지 않는다.
+        # 옛 게시본에는 그 값이 남아 있어 그때 기록은 그대로 '실패' 로 보여 준다.
         "status": ("현행" if r.is_current
-                   else "실패" if (r.smoke_passed or 0) < (r.smoke_total or 0) else "보관"),
+                   else "실패" if (r.smoke_total or 0) and (r.smoke_passed or 0) < r.smoke_total
+                   else "보관"),
         "emergency_candidate": r.version == candidate,
     } for r in rows]
     start = (page - 1) * size
@@ -505,7 +545,7 @@ def list_versions(admin: CurrentAdmin, db: DbSession, page: int = 1, size: int =
 def rollback_version(version: str, body: dict, request: Request,
                      me: CurrentAdmin, db: DbSession):
     """[이 버전으로 롤백] — 그 버전 내용을 기준값(PromptDraft)으로 돌려준다. 화면이 이걸
-    로컬 초안으로 얹어 검토·재게시한다 — 현행 전환은 게시(Smoke)를 다시 거쳐야 한다."""
+    로컬 초안으로 얹어 검토·재게시한다 — 현행 전환은 [게시]를 다시 거쳐야 한다."""
     _require_editor(me, "프롬프트 롤백")
     _require_request_id(body)
     reason = str(body.get("reason") or "").strip()
@@ -530,8 +570,8 @@ def rollback_version(version: str, body: dict, request: Request,
 @router.post("/prompt/versions/{version}/emergency-rollback")
 def emergency_rollback(version: str, body: dict, request: Request,
                        me: ReauthedAdmin, db: DbSession):
-    """긴급 롤백 — 지정 버전을 **즉시 현행으로 전환**한다(Smoke 재실행 없음 — 이미 통과한
-    게시본만 후보다). ADMIN + 서버 독립 재인증(me: ReauthedAdmin — 만료면 진입 전 403)."""
+    """긴급 롤백 — 지정 버전을 **즉시 현행으로 전환**한다.
+    ADMIN + 서버 독립 재인증(me: ReauthedAdmin — 만료면 진입 전 403)."""
     if me.role != "ADMIN":
         raise ForbiddenError(f"긴급 롤백에는 ADMIN 권한이 필요합니다. 현재 권한은 {me.role}입니다.")
     _require_request_id(body)
@@ -544,10 +584,6 @@ def emergency_rollback(version: str, body: dict, request: Request,
         raise NotFoundError("해당 버전을 찾을 수 없습니다.")
     if row.is_current:
         raise BadRequestError("이미 현행 버전입니다.")
-    if (row.smoke_passed or 0) < (row.smoke_total or 0):
-        # 2026-08-19 정책 변경: Smoke 미달 버전도 롤백을 막지 않는다 — 경고만 남긴다.
-        logger.warning("Smoke 미달 버전으로 긴급 롤백: %s", _vstr(n))
-
     before = db.execute(
         select(prompt_versions.c.version).where(prompt_versions.c.is_current)
     ).scalar()

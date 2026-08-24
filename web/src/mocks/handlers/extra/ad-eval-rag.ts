@@ -150,40 +150,27 @@ function validate(input: EvalItemInput, ignoreId?: string): EvalItemValidation {
   }
 }
 
-/** AD-006 §2.3 이력 표 — 목업 5행 + 상태 다양성(미달 · 실행 중) 3행.
- * '핵심 결과'는 **대상별로 지표 축이 다르므로**(§2.3) 서버가 라벨까지 완성해 내려준다.
+/** AD-006 §2.3 이력 표. '핵심 결과'는 서버가 라벨까지 완성해 내려준다 — 지표 축은 한 종류다
+ * (정확도·MRR·생성). 프롬프트 계열 축(회귀·인용·중대 위반)은 서버가 그런 실행 행을 만들지 않아 뺐다.
  * seed가 원지표(raw)를 함께 들고 있는 건 게이트 판정 상세(§2.4) 표를 같은 실행에서 만들기 위해서다. */
 interface RunSeed extends Omit<EvaluationRun, 'metrics'> {
   raw: { recall_at_5: number; mrr: number; generation_rate: number; avg_latency_ms: number }
-  /** 프롬프트 계열 지표 축 — 회귀 / 인용 / 중대 위반 */
-  prompt?: { regression: string; citation_rate: number; critical: number }
 }
 
-const PASSED_GATE = { passed: true, smoke_passed: 30, smoke_total: 30 }
+const PASSED_GATE = { passed: true }
 
 const runs: RunSeed[] = [
   {
-    run_id: 'run_20260803_0930', target: '운영 설정', source: '수동 실행',
+    run_id: 'run_20260803_0930', target: '운영 설정', source: '파이프라인 후속',
     started_at: '2026-08-03T09:30:00+09:00', finished_at: '2026-08-03T09:47:00+09:00', status: 'SUCCESS',
     item_count: 580, testset_version: 12, gate: PASSED_GATE,
     raw: { recall_at_5: 0.912, mrr: 0.784, generation_rate: 100, avg_latency_ms: 5_240 },
   },
   {
-    run_id: 'run_20260802_1810', target: '프롬프트 초안', source: '프롬프트 게시 게이트',
-    started_at: '2026-08-02T18:10:00+09:00', finished_at: '2026-08-02T18:29:00+09:00', status: 'SUCCESS',
-    item_count: 30, testset_version: 12,
-    gate: {
-      passed: false, smoke_passed: 27, smoke_total: 30,
-      warning_reason: 'Smoke 30문항 미달 (27/30)',
-    },
-    raw: { recall_at_5: 0.889, mrr: 0.741, generation_rate: 98.9, avg_latency_ms: 5_910 },
-    prompt: { regression: '5/6', citation_rate: 97.2, critical: 1 },
-  },
-  {
-    run_id: 'run_20260801_1400', target: 'RAG 초안', source: 'RAG 파라미터 평가',
+    run_id: 'run_20260801_1400', target: 'RAG', source: 'RAG 파라미터 평가',
     started_at: '2026-08-01T14:00:00+09:00', finished_at: null, status: 'RUNNING',
     item_count: 580, testset_version: 12,
-    gate: { passed: false, smoke_passed: 0, smoke_total: 30 },
+    gate: { passed: false },
     raw: { recall_at_5: 0, mrr: 0, generation_rate: 0, avg_latency_ms: 0 },
   },
   {
@@ -193,7 +180,7 @@ const runs: RunSeed[] = [
     raw: { recall_at_5: 0.922, mrr: 0.806, generation_rate: 100, avg_latency_ms: 5_200 },
   },
   {
-    run_id: 'run_20260729_1105', target: 'RAG 초안', source: 'RAG 파라미터 평가',
+    run_id: 'run_20260729_1105', target: 'RAG', source: 'RAG 파라미터 평가',
     started_at: '2026-07-29T11:05:00+09:00', finished_at: '2026-07-29T11:24:00+09:00', status: 'SUCCESS',
     item_count: 89, testset_version: 12, gate: PASSED_GATE, follow_up: '→ 11:40 반영됨',
     raw: { recall_at_5: 0.918, mrr: 0.801, generation_rate: 100, avg_latency_ms: 5_300 },
@@ -204,13 +191,6 @@ const runs: RunSeed[] = [
     // 평가셋 v12의 첫 재측정 = 구성이 바뀐 뒤 점수가 오른 실행(Desc 0)
     item_count: 89, testset_version: 12, gate: PASSED_GATE, improved_by_composition: true,
     raw: { recall_at_5: 0.921, mrr: 0.804, generation_rate: 100, avg_latency_ms: 5_180 },
-  },
-  {
-    run_id: 'run_20260724_1612', target: '프롬프트 초안', source: '프롬프트 게시 게이트',
-    started_at: '2026-07-24T16:12:00+09:00', finished_at: '2026-07-24T16:26:00+09:00', status: 'SUCCESS',
-    item_count: 6, testset_version: 11, gate: PASSED_GATE, follow_up: '→ 게시 v1.4',
-    raw: { recall_at_5: 0.915, mrr: 0.799, generation_rate: 100, avg_latency_ms: 5_400 },
-    prompt: { regression: '6/6', citation_rate: 99.6, critical: 0 },
   },
   {
     run_id: 'run_20260721_0400', target: '운영 설정', source: '파이프라인 후속',
@@ -225,13 +205,6 @@ const pct = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)}%`
 
 function metricsOf(run: RunSeed): RunMetric[] {
   if (run.status === 'RUNNING' || run.status === 'QUEUED') return []
-  if (run.prompt) {
-    return [
-      { label: '회귀', value: run.prompt.regression },
-      { label: '인용', value: pct(run.prompt.citation_rate) },
-      { label: '중대 위반', value: String(run.prompt.critical) },
-    ]
-  }
   return [
     { label: '정확도', value: run.raw.recall_at_5.toFixed(3) },
     { label: 'MRR', value: run.raw.mrr.toFixed(3) },
@@ -239,9 +212,9 @@ function metricsOf(run: RunSeed): RunMetric[] {
   ]
 }
 
-/** raw·prompt는 게이트 상세를 만들기 위한 서버 내부값이라 응답에서 뺀다 */
-function toRun({ raw, prompt, ...wire }: RunSeed): EvaluationRun {
-  return { ...wire, metrics: metricsOf({ ...wire, raw, prompt }) }
+/** raw는 게이트 상세를 만들기 위한 서버 내부값이라 응답에서 뺀다 */
+function toRun({ raw, ...wire }: RunSeed): EvaluationRun {
+  return { ...wire, metrics: metricsOf({ ...wire, raw }) }
 }
 
 /** AD-006 §2.4 목표 열 — CM-DF-004 05절이 정본이라 화면에서 못 고친다. 서버가 내려준다 */
@@ -255,12 +228,6 @@ function gateOf(runId: string): GateDetail | null {
     source: run.source,
     started_at: run.started_at,
     criteria: [
-      {
-        label: 'Smoke 30문항',
-        target: `${run.gate.smoke_total}/${run.gate.smoke_total}`,
-        result: `${run.gate.smoke_passed}/${run.gate.smoke_total}`,
-        passed: run.gate.smoke_passed >= run.gate.smoke_total,
-      },
       {
         label: '검색 정확도@5', target: '0.92 이상',
         result: run.raw.recall_at_5.toFixed(3), passed: run.raw.recall_at_5 >= 0.92,
@@ -278,7 +245,6 @@ function gateOf(runId: string): GateDetail | null {
         result: `${seconds.toFixed(1)}초`, passed: seconds <= 10,
       },
     ],
-    latest_smoke: '08-01 10:42 프롬프트 v1.5 게시 직후 자동 실행 → 30/30 통과 ✓',
     failed_items: run.gate.passed
       ? []
       : [
@@ -363,7 +329,7 @@ function mockSignature(draft: Record<string, ParamValue>): string {
 const EMPTY_GATE: RagGate = {
   passed: false, draft_signature: null, evaluated_at: null,
   warning_reason: '초안 평가를 먼저 실행해 주세요.',
-  warning: null, holdout_total: 89, holdout_passed: 0, smoke_total: 0, smoke_passed: 0,
+  warning: null, holdout_total: 89, holdout_passed: 0,
   quantitative: null,
 }
 let gate: RagGate = { ...EMPTY_GATE }
@@ -421,6 +387,16 @@ function hitsFor(alpha: number) {
   }))
 }
 
+/** 서버와 같은 규칙으로 A·B 한 열을 만든다 — 무관 질문 게이트는 top-1 이 임계값 미만이면
+ *  근거를 **통째로** 비운다(candidate_ranking.gate_low_relevance). 목이 이걸 흉내내지 않으면
+ *  임계값을 올려도 목에서는 계속 결과가 나와, 화면의 빈 상태·사유 문구가 검증되지 않는다. */
+function abColumn(label: string, chips: string[], changed: string[], threshold: number) {
+  const hits = hitsFor(threshold)
+  const top1 = hits.length > 0 ? hits[0].score : null
+  const gated = top1 !== null && top1 < threshold
+  return { label, chips, changed_chips: changed, hits: gated ? [] : hits }
+}
+
 // ---------------------------------------------------------------- 핸들러
 
 export const adEvalRagHandlers = [
@@ -438,13 +414,7 @@ export const adEvalRagHandlers = [
   }),
 
   http.get('/api/admin/evaluations/schedule', () => {
-    // 매주 월 04:00 정기 재측정(AD-006 Desc 1 ③) — 다음 월요일을 계산해 준다
-    const next = new Date()
-    next.setHours(4, 0, 0, 0)
-    do {
-      next.setDate(next.getDate() + 1)
-    } while (next.getDay() !== 1)
-    const body: EvalSchedule = { next_check_at: next.toISOString(), testset_version: testsetVersion }
+    const body: EvalSchedule = { testset_version: testsetVersion }
     return HttpResponse.json(body)
   }),
 
@@ -523,12 +493,32 @@ export const adEvalRagHandlers = [
     return HttpResponse.json(body)
   }),
 
+  // [초기화] — 서버에 저장된 초안과 거기 매달린 게이트를 버린다. 로컬만 되돌리면 게이트
+  // 배지·정량 비교가 남고 새로고침에 초안이 되살아난다(실서버는 draft 행을 지운다)
+  http.post('/api/admin/rag-params/reset', async ({ request }) => {
+    const no = denied(request, 'EDITOR')
+    if (no) return no
+    await delay(200)
+    gate = { ...EMPTY_GATE }
+    const body: RagParamsResponse = { params: RAG_PARAMS, current: currentValues, draft: null, gate }
+    return HttpResponse.json(body)
+  }),
+
   http.post('/api/admin/rag-params/evaluate', async ({ request }) => {
     const no = denied(request, 'EDITOR')
     if (no) return no
-    const body = (await request.json()) as { draft: Record<string, ParamValue>; request_id?: string }
+    const body = (await request.json()) as {
+      draft: Record<string, ParamValue>
+      request_id?: string
+      question_ids?: string[]
+    }
     if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
-    await delay(1400) // 홀드아웃 89문항 실행 — 로딩 상태를 볼 수 있는 시간
+    // 고른 문항이 있으면 그만큼만 잰다 — 없으면 홀드아웃 전체(기대 출처가 있는 것만)
+    const inScope = items.filter((i) => i.expected_source?.doc_id)
+    const picked = body.question_ids?.length
+      ? inScope.filter((i) => body.question_ids!.includes(i.item_id))
+      : inScope
+    await delay(1400) // 실행 시간 — 로딩 상태를 볼 수 있게
     const t = Number(body.draft.min_top1_score ?? currentValues.min_top1_score)
     const worse = t > Number(currentValues.min_top1_score)
     gate = {
@@ -538,7 +528,7 @@ export const adEvalRagHandlers = [
       warning_reason: null,
       // 게이트는 통과했지만 현행보다 낮아진 지표가 있으면 경고(§1.6)
       warning: worse ? 'A/B 비교 결과가 현행보다 낮습니다. 그래도 반영하려면 사유에 근거를 남겨 주세요' : null,
-      holdout_total: 89, holdout_passed: 89, smoke_total: 0, smoke_passed: 0,
+      holdout_total: picked.length, holdout_passed: picked.length,
       quantitative: {
         basis: '기준 : 링크 안내로 분류된 문항 59건 · 2026-07-28 측정. 융합 비중은 이 질의에만 영향하므로 분모가 전체 평가셋과 다릅니다',
         metrics: [
@@ -561,15 +551,13 @@ export const adEvalRagHandlers = [
     const baseChips = chipsOf(currentValues)
     const res: AbSearchResponse = {
       query: body.query,
-      a: {
-        label: 'A. 현행 운영값', chips: baseChips, changed_chips: [],
-        hits: hitsFor(Number(currentValues.min_top1_score)),
-      },
-      b: {
-        label: 'B. 초안 (편집 중)', chips: draftChips,
-        changed_chips: draftChips.filter((c) => !baseChips.includes(c)),
-        hits: hitsFor(Number(body.draft.min_top1_score ?? currentValues.min_top1_score)),
-      },
+      a: abColumn('A. 현행 운영값', baseChips, [], Number(currentValues.min_top1_score)),
+      b: abColumn(
+        'B. 초안 (편집 중)',
+        draftChips,
+        draftChips.filter((c) => !baseChips.includes(c)),
+        Number(body.draft.min_top1_score ?? currentValues.min_top1_score),
+      ),
     }
     return HttpResponse.json(res)
   }),
