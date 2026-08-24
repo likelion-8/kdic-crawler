@@ -105,11 +105,10 @@ export const MOCK_SCENARIOS: ChatScenario[] = [
     },
   },
 
-  // --- Type 5. 업무 확인 되묻기 (2026-08-24 구현분, src/clarify.py) ---
-  // 아래 '역할 확인 되묻기'와 같은 clarification 스키마를 쓰지만 축이 다르다.
+  // --- Type 5. 업무 확인 되묻기 (src/clarify.py) ---
   // ⚠️ business_function 을 주지 않는다 — 업무를 몰라서 되묻는 턴이라 서버도 못 준다.
-  //    프론트는 이 값이 있을 때만 역할 칩을 남기므로(ChatPage.selectRole), 여기서 값을 주면
-  //    「입장 · 미수령금 찾기」 같은 어색한 고정이 생긴다.
+  //    프론트는 이 값이 있을 때만 선택 칩을 남기므로(ChatPage.selectRole), 여기서 값을 주면
+  //    「미수령금 찾기」가 화면에 고정되는 어색한 표시가 생긴다.
   // answer 에 되묻기 문구를 넣는 것도 서버와 같다 — 화면은 버리지만 대화 복원·로그가 읽는다.
   {
     id: 'clarification_business',
@@ -130,27 +129,6 @@ export const MOCK_SCENARIOS: ChatScenario[] = [
         { label: '은닉재산 신고' },
         { label: '채무조정' },
       ],
-    },
-  },
-
-  // --- Type 5. 역할 확인 되묻기 ---
-  // ⚠️ 기획서(CB-005) 설계이나 백엔드 판정은 아직 없다 — 발동 조건 required_role 이 코퍼스에
-  //    없어서다(2026-08-24 팀 결정: 설계는 남기고 미구현으로 명기). 이 목만 단독으로 존재한다.
-  {
-    id: 'clarification',
-    // 역할이 답을 가르는 주제(수수료·반환)인데 역할 단서가 없을 때만 발동한다
-    triggers: ['수수료'],
-    answer: '',
-    sources: [],
-    attachments: [],
-    out_of_scope: false,
-    response_type: 'CLARIFICATION',
-    intent: 'civil_petition',
-    business_function: '착오송금 반환 신청',
-    // 선택지는 서버가 준다(B-01) — 프론트 상수로 두면 다른 역할축에서 버튼이 그대로 남는다
-    clarification: {
-      question: '어느 입장에서 궁금하신가요?',
-      options: [{ label: '잘못 보낸 사람(송금인)', value: 'sender' }, { label: '잘못 받은 사람(수취인)', value: 'receiver' }],
     },
   },
 

@@ -1,20 +1,20 @@
-/** 역할 확인 되묻기 — CB-005 / CB-DF-001 Type 5.
+/** 되묻기 — CB-005 / CB-DF-001 Type 5.
  *
  * 되묻기 단계에는 출처·서류·신청 페이지가 붙지 않는다(검색 전에 되묻기 때문).
- * 선택지는 **서버가 준다**(B-01 확정 2026-08-05) — 예전에는 착오송금 2개를 여기 상수로
- * 박아뒀는데, 역할축이 41개라 다른 축이 오면 질문만 바뀌고 버튼은 그대로 남는 버그가 된다. */
+ * 선택지는 **서버가 준다**(B-01) — 상수로 박아두면 선택지가 바뀌어도 질문만 바뀌고
+ * 버튼은 그대로 남는 버그가 된다. 현재 축은 업무(src/clarify.py CLARIFY_OPTIONS). */
 import type { ClarificationOption } from '../../lib/api/types'
 import { Button } from '../ui'
 import { Bubble, BubbleText } from './Bubble'
 
 export interface ClarificationMessageProps {
-  /** 되묻기 문구. 앞 문장은 주제마다 달라지는 서버 생성 문구다(CB-005 3.4) */
+  /** 되묻기 문구. 서버가 내려준 문구를 그대로 쓴다(CB-005) */
   question: string
-  /** 서버가 준 역할 선택지. 비면 버튼을 그리지 않는다 */
+  /** 서버가 준 선택지. 비면 버튼을 그리지 않는다 */
   options: ClarificationOption[]
   /** 보낸/받은 시각 — 없으면 시각을 그리지 않는다 */
   at?: string | number
-  /** 클릭한 역할 라벨을 그대로 일반 메시지로 보낸다 (CB-005 3.7-1) */
+  /** 클릭한 라벨을 그대로 일반 메시지로 보낸다 (CB-005) */
   onSelect: (label: string) => void
 }
 
