@@ -7,7 +7,7 @@
  *   ADMIN은 요청 없이 바로 [게시]('단독 게시'로 활동 로그에 기록, §2.9).
  * - 셸(GNB·헤더·설정 서브탭)은 AdminLayout이 그린다. 여기서 다시 그리지 않는다.
  * - ※로 시작하는 빨간 주석은 기획 주석이라 렌더하지 않는다(00-meta NOTATION). */
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { ReturnBand } from '../ReturnBand'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -86,12 +86,6 @@ export function PromptGuardrail() {
    *  프롬프트 내용이 아니라 평가 설정이라 게시 payload·변경 건수에 들어가면 안 된다). */
   const [pickerOpen, setPickerOpen] = useState(false)
   const [lastIds, setLastIds] = useState<string[]>([])
-  /** 처음 열 때 미리 체크할 기본값 — 서버가 평가셋에서 뽑은 문구만 준다(id 가 없다) */
-  const defaults = draftQuery.data?.eval_questions
-  const defaultQuestions = useMemo(
-    () => [...(defaults?.in_scope ?? []), ...(defaults?.out_of_scope ?? [])],
-    [defaults],
-  )
 
   /** [초안 평가] — 로컬 초안을 실어 보내는 일시 평가. 서버 초안을 만들지도 바꾸지도 않는다 */
   const evaluate = useMutation({
@@ -313,7 +307,6 @@ export function PromptGuardrail() {
         costHint={(n) =>
           `문항당 현행·초안 두 벌을 생성하므로 답변 생성은 ${n * 2}회입니다`}
         initialIds={lastIds}
-        initialQuestions={defaultQuestions}
         running={evaluate.isPending}
         onClose={() => setPickerOpen(false)}
         onRun={(ids) => {

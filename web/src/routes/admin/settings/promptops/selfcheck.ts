@@ -23,7 +23,6 @@ const BASE: PromptDraft = {
   ],
   locked_principle: null,
   char_count: 778,
-  eval_questions: { in_scope: ['보호 한도는?'], out_of_scope: ['오늘 날씨 어때'] },
   dirty: { prompt: false, fewshot: false, guardrail: false },
   fewshots: [{ id: 'fs_1', question: '보호 한도는?', answer: '5천만원입니다.' }],
   blocklist: {

@@ -226,16 +226,6 @@ const draft: PromptDraft = {
   blocklist: { active: true, items: BLOCKLIST },
   masking: { active: true, items: MASKING },
   evaluation: null,
-  // [초안 평가]가 쓰는 대표 질의 기본값 — 서버는 평가셋(AD-006) 활성 문항에서 뽑는다
-  eval_questions: {
-    in_scope: [
-      '예금자보호 한도가 얼마인가요?',
-      '착오송금 반환지원 신청 방법을 알려주세요',
-      '미수령금 조회는 어디서 하나요?',
-      '은닉재산 신고 포상금은 얼마인가요?',
-    ],
-    out_of_scope: ['오늘 날씨 어때', '대출 금리 알려줘'],
-  },
 }
 
 const versions: PromptVersion[] = [

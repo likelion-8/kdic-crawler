@@ -81,8 +81,6 @@ ACTION_EMERGENCY = "프롬프트 긴급 롤백"
 # Smoke 문항 수 — 서버가 정하는 값(화면 목도 "서버가 정한다"고 명시). 전건 통과만 활성화.
 SMOKE_TOTAL = 30
 # 전후 비교 평가 문항 수(인스코프/범위외). HCX 콜 수 = (IN+OOS)×2 라 작게 유지한다.
-EVAL_IN_SCOPE = 4
-EVAL_OUT_OF_SCOPE = 2
 
 # 잠금 원칙의 화면 표시 라벨. 실제 규칙 전문은 서버가 조립 시 붙인다(모듈 주석).
 LOCKED_LABEL = "답변 첫 줄 근거 사용 마커([SOURCE_USED]/[NO_SOURCE]) 표기 — 시스템 필수 규칙"
@@ -193,9 +191,6 @@ def build_draft_response(db, *, base: dict = None) -> dict:
         "char_count": len(base["system_instruction"]),
         "dirty": {"prompt": False, "fewshot": False, "guardrail": False},
         "evaluation": None,
-        # [초안 평가]가 쓰는 대표 질의 기본값. 화면이 이걸 초기값으로 보여주고 관리자가 고쳐
-        # 평가 때 되돌려 보낸다 — 종전에는 어느 문항으로 재는지 화면에 보이지도 않았다.
-        "eval_questions": _default_eval_questions(db),
     }
 
 
@@ -343,33 +338,23 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
     return body, marker_used, sources
 
 
-def _default_eval_questions(db) -> dict:
-    """대표 질의 기본값 — 평가메뉴(AD-006) 현행 버전에서 인스코프 앞 N + 범위외 앞 M.
-    관리자가 보는 평가셋이 곧 기본 문항이다(2026-08-19 전환)."""
-    from api.routers.admin_evaluations import active_questions
-    return {
-        "in_scope": active_questions(db, in_scope=True, limit=EVAL_IN_SCOPE),
-        "out_of_scope": active_questions(db, in_scope=False, limit=EVAL_OUT_OF_SCOPE),
-    }
-
-
 # 한 번에 고를 수 있는 문항 수 상한. 문항당 현행·초안 두 벌을 생성하므로 콜 수는 이것의
 # 2배다 — 상한이 없으면 89문항을 골라 178콜을 쏘고 생성 한도에 걸린다.
 EVAL_PICK_MAX = 12
 
 
 def _eval_questions(db, ids) -> tuple:
-    """전후 비교에 쓸 (인스코프, 범위외) 문항.
+    """전후 비교에 쓸 (인스코프, 범위외) 문항 — 화면이 고른 평가셋(AD-006) 문항 id 로만 잰다.
 
-    화면이 평가셋(AD-006) 문항 id 를 보내면 그 문항으로 잰다 — 관리자가 목록 모달에서
-    체크한 만큼 고를 수 있다. 안 보내면 기본값(인스코프 앞 4 + 범위외 앞 2).
+    기본값(앞 몇 건 자동 선택)은 두지 않는다. 서버가 알아서 집어 쓰던 종전 방식은 어느
+    문항으로 재는지 화면에 보이지 않아, 평가셋에 섞인 빈 문항·`asdf1234` 로 판정이 나가고
+    있었다(2026-08-24 실측). 무엇으로 재는지는 고른 사람이 안다.
 
     인스코프/범위외 분류는 서버가 한다(기대 출처 유무) — 판정 기준이 반대라(근거를 써야
     통과 / 안 써야 통과) 화면이 보낸 분류를 믿으면 판정이 화면 버그에 흔들린다.
     """
     if not ids:
-        default = _default_eval_questions(db)
-        return default["in_scope"], default["out_of_scope"]
+        raise BadRequestError("평가할 문항을 하나 이상 골라 주세요.")
     if len(ids) > EVAL_PICK_MAX:
         raise BadRequestError(
             f"한 번에 고를 수 있는 문항은 {EVAL_PICK_MAX}건까지입니다. "

@@ -32,10 +32,8 @@ export interface EvalPickerDialogProps {
   maxPicks?: number
   /** 선택 건수에 대한 비용 한 줄. 없으면 그리지 않는다 */
   costHint?: (count: number) => string
-  /** 기본 선택 — 다시 열 때 마지막 선택으로 시작한다 */
+  /** 다시 열 때 마지막 선택으로 시작한다. 처음에는 비어 있다 — 기본 선택을 두지 않는다 */
   initialIds?: string[]
-  /** 처음 열 때 문구로 맞춰 미리 체크할 문항(서버 기본값은 id 가 없어 문구밖에 없다) */
-  initialQuestions?: string[]
   running?: boolean
   onClose: () => void
   /** [평가 실행] — 고른 문항 id 를 넘긴다. 닫기는 호출부가 판단한다 */
@@ -48,7 +46,6 @@ export function EvalPickerDialog({
   maxPicks,
   costHint,
   initialIds = [],
-  initialQuestions = [],
   running = false,
   onClose,
   onRun,
@@ -63,18 +60,15 @@ export function EvalPickerDialog({
   const loaded = items.data
   const rows = (loaded?.items ?? []).filter((r) => scope === 'all' || Boolean(r.expected_source))
 
-  // 열 때마다 시작점으로 초기화한다. id 로 못 맞추는 값(서버 기본값은 문구만 준다)은 문구로 맞춘다.
+  // 열 때마다 마지막 선택으로 되돌린다 — 처음 열면 비어 있다(기본 선택 없음).
   // ⚠ 의존성은 items.data(캐시의 안정된 참조)여야 한다 — rows 는 매 렌더 새 배열이라
   //   setChecked → 리렌더 → 새 배열 → 다시 effect 로 무한 루프가 된다.
   useEffect(() => {
     if (!open) return
     const byId = new Set(initialIds)
-    const byText = new Set(initialQuestions)
     setChecked(
       Object.fromEntries(
-        (loaded?.items ?? [])
-          .filter((r) => byId.has(r.item_id) || byText.has(r.question))
-          .map((r) => [r.item_id, true]),
+        (loaded?.items ?? []).filter((r) => byId.has(r.item_id)).map((r) => [r.item_id, true]),
       ),
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 배열 리터럴 prop 은 참조가 매번 바뀐다
