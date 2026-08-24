@@ -377,7 +377,9 @@ prompt_versions = Table(
     # 금칙어·마스킹 규칙. 초안 객체 안에 함께 실려 오므로(M3) 게시본에도 함께 굳힌다 —
     # 따로 두면 "이 프롬프트가 게시될 때 어떤 가드레일이었나"를 되짚을 수 없다.
     Column("guardrails", JSONB),
-    # 게시 응답이 {version, smoke:{passed,total}} 이라(M4) 그 결과를 함께 남긴다.
+    # 옛 게시 Smoke 결과. 게시 직후 Smoke 는 2026-08-24 폐지해 새 게시는 채우지 않는다 —
+    # 지난 게시본의 판정 기록이 남아 있어 컬럼은 지우지 않는다(create_all 은 컬럼 삭제를
+    # 못 하고, 버전 목록의 '실패' 표기가 그 값으로 옛 기록을 그대로 보여 준다).
     Column("smoke_passed", Integer),
     Column("smoke_total", Integer),
     Column("published_by", String),

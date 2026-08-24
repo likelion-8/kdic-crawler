@@ -159,7 +159,7 @@ interface RunSeed extends Omit<EvaluationRun, 'metrics'> {
   prompt?: { regression: string; citation_rate: number; critical: number }
 }
 
-const PASSED_GATE = { passed: true, smoke_passed: 30, smoke_total: 30 }
+const PASSED_GATE = { passed: true }
 
 const runs: RunSeed[] = [
   {
@@ -172,10 +172,7 @@ const runs: RunSeed[] = [
     run_id: 'run_20260802_1810', target: '프롬프트 초안', source: '프롬프트 게시 게이트',
     started_at: '2026-08-02T18:10:00+09:00', finished_at: '2026-08-02T18:29:00+09:00', status: 'SUCCESS',
     item_count: 30, testset_version: 12,
-    gate: {
-      passed: false, smoke_passed: 27, smoke_total: 30,
-      warning_reason: 'Smoke 30문항 미달 (27/30)',
-    },
+    gate: { passed: false, warning_reason: '생성 성공률 미달' },
     raw: { recall_at_5: 0.889, mrr: 0.741, generation_rate: 98.9, avg_latency_ms: 5_910 },
     prompt: { regression: '5/6', citation_rate: 97.2, critical: 1 },
   },
@@ -183,7 +180,7 @@ const runs: RunSeed[] = [
     run_id: 'run_20260801_1400', target: 'RAG 초안', source: 'RAG 파라미터 평가',
     started_at: '2026-08-01T14:00:00+09:00', finished_at: null, status: 'RUNNING',
     item_count: 580, testset_version: 12,
-    gate: { passed: false, smoke_passed: 0, smoke_total: 30 },
+    gate: { passed: false },
     raw: { recall_at_5: 0, mrr: 0, generation_rate: 0, avg_latency_ms: 0 },
   },
   {
@@ -256,12 +253,6 @@ function gateOf(runId: string): GateDetail | null {
     started_at: run.started_at,
     criteria: [
       {
-        label: 'Smoke 30문항',
-        target: `${run.gate.smoke_total}/${run.gate.smoke_total}`,
-        result: `${run.gate.smoke_passed}/${run.gate.smoke_total}`,
-        passed: run.gate.smoke_passed >= run.gate.smoke_total,
-      },
-      {
         label: '검색 정확도@5', target: '0.92 이상',
         result: run.raw.recall_at_5.toFixed(3), passed: run.raw.recall_at_5 >= 0.92,
       },
@@ -278,7 +269,6 @@ function gateOf(runId: string): GateDetail | null {
         result: `${seconds.toFixed(1)}초`, passed: seconds <= 10,
       },
     ],
-    latest_smoke: '08-01 10:42 프롬프트 v1.5 게시 직후 자동 실행 → 30/30 통과 ✓',
     failed_items: run.gate.passed
       ? []
       : [

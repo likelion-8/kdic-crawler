@@ -81,9 +81,15 @@ GATE_CRITERIA = [
     ("generation_success_rate", "생성 성공률", "99.5% 이상", ">=", 0.995, _PCT),
     ("avg_latency_s", "평균 응답시간", "10초 이하", "<=", 10.0, _SEC),
 ]
-# Smoke 는 정확히 30문항 전부 통과여야 한다 — 5/5·29/29 처럼 total 이 30 미만이면 통과가 아니다.
-SMOKE_REQUIRED = 30
-SMOKE_TARGET = f"{SMOKE_REQUIRED}/{SMOKE_REQUIRED}"
+# 생성 축 측정 표본 크기. 전 문항 생성은 (OpenAI+HCX) 문항 수의 2배 콜이라 재측정 취지에
+# 맞지 않아 앞 N 문항만 잰다(2026-08-13). 검색 축은 전 문항이다.
+#
+# 종전 이름은 SMOKE_REQUIRED 였고 게이트에 'Smoke 30문항 전건 통과' 기준이 따로 있었는데
+# 2026-08-24 없앴다 — 같은 표본의 '생성 성공률'과 **같은 값을 두 번 센 것**이었다
+# (생성_성공률 = len(records)/N, smoke_passed = 그 len(records)). 임계값도 같았다:
+# 30문항에서 99.5% 이상은 30/30 뿐이다(29/30 = 96.7%). 게다가 활성 문항이 30건 미만이면
+# smoke_total < 30 이 되어 게이트가 영구 미달이었다(생성 성공률은 그 표본에서 정상 계산된다).
+GEN_SAMPLE = 30
 
 
 # ──────────────────────────────── 공용 헬퍼 ─────────────────────────────────
@@ -118,7 +124,7 @@ def _bootstrap_if_empty(db) -> None:
 
     2026-08-19 전환(팀 결정): 종전에는 골든셋(evaluation_dataset, 851)을 씨딩해 평가메뉴가
     골든셋 사본을 관리했다. 골든셋은 운영 라우팅의 1-NN 참조 전용으로 떼어내고, 평가·재측정·
-    Smoke·게이트는 전부 이 화면이 관리하는 홀드아웃 계열 하나로 통일한다 — 851 로 재면
+    게이트는 전부 이 화면이 관리하는 홀드아웃 계열 하나로 통일한다 — 851 로 재면
     참조셋과 겹쳐 자기참조 누수가 있던 문제도 함께 사라진다.
     비었을 때 한 번만 도는 지연 씨딩이라 조회/반영 진입에서 함께 부른다.
     """
@@ -196,8 +202,7 @@ def holdout_rows(db, *, in_scope_only: bool = False) -> list:
 
 
 def active_questions(db, *, in_scope: bool, limit: int) -> list:
-    """평가메뉴(AD-006) 현행 버전의 활성 문항 질문 목록 — AD-008 초안 평가·게시 Smoke 가
-    쓴다(2026-08-19). 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면에서 추가·수정한
+    """평가메뉴(AD-006) 현행 버전의 활성 문항 질문 목록. 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면에서 추가·수정한
     문항이 평가에 반영되지 않았다. in_scope 는 기대 출처 유무로 가른다(빈 출처 = 범위외).
     질문 텍스트 정렬로 결정론적 순서를 보장한다(종전 question_id 정렬과 같은 목적).
 
@@ -303,19 +308,11 @@ def compute_gate(m: dict) -> dict:
         all_passed = all_passed and passed
         criteria.append({"label": label, "target": target, "result": fmt(val), "passed": passed})
 
-    sp, st = m.get("smoke_passed") or 0, m.get("smoke_total") or 0
-    # 🔴 정확히 30/30 이어야 통과. sp==st 로만 보면 1/1·5/5·29/29 도 통과가 되어 목표(30of30)가 무너진다.
-    smoke_ok = (sp == SMOKE_REQUIRED and st == SMOKE_REQUIRED)
-    all_passed = all_passed and smoke_ok
-    criteria.append({"label": "Smoke 30문항", "target": SMOKE_TARGET,
-                     "result": f"{sp}/{st}", "passed": smoke_ok})
-
     # 2026-08-19 게이트는 차단이 아니라 경고다 — 필드 이름도 warning_reason 이다(종전
     # blocked_reason). 값은 '무엇이 목표에 못 미쳤나'이지 '무엇을 막았나'가 아니다.
     shortfall = None if all_passed else \
         ", ".join(c["label"] for c in criteria if not c["passed"]) + " 미달"
-    return {"passed": all_passed, "criteria": criteria,
-            "smoke_passed": sp or 0, "smoke_total": st or 0, "warning_reason": shortfall}
+    return {"passed": all_passed, "criteria": criteria, "warning_reason": shortfall}
 
 
 def format_metrics(m: dict) -> list:
@@ -425,8 +422,6 @@ def _run_to_dict(row) -> dict:
         "metrics": row.metrics or [],
         "gate": {
             "passed": bool(gate.get("passed", False)),
-            "smoke_passed": gate.get("smoke_passed", 0) or 0,
-            "smoke_total": gate.get("smoke_total", 0) or 0,
             "warning_reason": gate.get("warning_reason"),
         },
         "follow_up": row.follow_up,
@@ -463,8 +458,9 @@ def get_gate(run_id: str, db: DbSession):
         "target": run.target,
         "source": run.source or "",
         "started_at": _to_kst_iso(run.started_at) or "",
+        # 과거 실행의 criteria 는 저장된 그대로 보여 준다 — 그때 'Smoke 30문항' 기준으로
+        # 판정했다면 그 줄이 남아 있는 것이 사실이다(지어내지도, 지우지도 않는다).
         "criteria": gate.get("criteria", []),
-        "latest_smoke": f"{gate.get('smoke_passed', 0) or 0}/{gate.get('smoke_total', 0) or 0}",
         "failed_items": failed_items,
     }
 
@@ -744,11 +740,10 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
             for it in items]
 
     retr, per = eval_retrieval(rows, pipeline.K_CANDIDATES, rerank)
-    # 생성 축은 Smoke 표본(앞 30문항)만 실측한다 — 검색 축은 전 문항. 전량 생성은 851문항 기준
+    # 생성 축은 앞 GEN_SAMPLE 문항만 실측한다 — 검색 축은 전 문항. 전량 생성은 851문항 기준
     # (OpenAI+HCX) 1,702콜·1.5~3시간이라 재측정 취지(게이트 판정 기록)에 맞지 않는다(2026-08-13).
-    # compute_gate 의 smoke_passed/total 도 이 표본 기준이라 판정 의미는 동일하다.
     gen_summary, gen_records, _failed = evaluate_generation(
-        rows[:SMOKE_REQUIRED], load_page_urls(), rerank=rerank)
+        rows[:GEN_SAMPLE], load_page_urls(), rerank=rerank)
 
     # 문항별 결과 저장 — item_count·failed_items 의 원천(리뷰 지적). 검색 per-row 를 test_id 로 합친다.
     per_by_id = {p["test_id"]: p for p in per}
@@ -763,17 +758,11 @@ def _measure(db, run, *, rerank: bool = False) -> dict:
                     "actual_top1": top5[0] if top5 else "",
                     "score": p.get("rr", 0.0)}))
 
-    # smoke: 앞 30문항의 생성 성공 여부. compute_gate 가 정확히 30/30 을 요구한다(30 미만이면 미달).
-    smoke_total = min(SMOKE_REQUIRED, len(rows))
-    ok_ids = {r["test_id"] for r in gen_records}
-    smoke_passed = sum(1 for r in rows[:smoke_total] if r["test_id"] in ok_ids)
-
     measured = {
         "retrieval_accuracy@5": retr.get("Recall@5"),
         "mrr": retr.get("MRR"),
         "generation_success_rate": gen_summary.get("생성_성공률"),
         "avg_latency_s": gen_summary.get("평균_응답시간_s"),
-        "smoke_passed": smoke_passed, "smoke_total": smoke_total,
     }
     gate = compute_gate(measured)
     db.execute(evaluation_runs.update().where(evaluation_runs.c.id == run.id).values(

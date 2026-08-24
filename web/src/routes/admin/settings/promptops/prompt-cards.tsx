@@ -350,8 +350,8 @@ export function VersionHistoryCard({
                   >
                     롤백
                   </Button>
-                  {/* 2026-08-19 정책 변경: Smoke 미달 버전도 막지 않는다 — 권장 후보(직전
-                      정상본)가 아니면 경고 배지로만 인지시킨다(REQ-OPS-003) */}
+                  {/* 어느 버전으로든 긴급 롤백할 수 있다 — 권장 후보(직전 버전)가 아니면
+                      경고 배지로만 인지시킨다(REQ-OPS-003) */}
                   {canAdmin && (
                     <Button size="sm" onClick={() => onEmergencyRollback(v)}>
                       긴급 롤백

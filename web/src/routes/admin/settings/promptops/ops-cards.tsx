@@ -329,7 +329,7 @@ export function CachePurgeCard({
         disabledReason={canEditPolicy ? undefined : '관리자(ADMIN)만 바꿀 수 있습니다'}
         // '언제 자동으로 비우나'는 지금 상태(On/Off)가 아니라 규칙이다. 좁은 오른쪽 칸에서
         // 2~3줄로 감겨 토글과 아래 버튼 줄 사이를 벌린다 — 라벨 옆으로 접는다
-        hint="인덱스·RAG·프롬프트·가드레일·모델 버전이 바뀌면 관련 캐시를 자동으로 비웁니다. Smoke 테스트를 통과한 뒤 새 캐시를 활성화합니다."
+        hint="인덱스·RAG·프롬프트·가드레일·모델 버전이 바뀌면 관련 캐시를 자동으로 비웁니다. 이후 답변부터 새 캐시가 쌓입니다."
         onChange={onToggleAuto}
       />
       <p className="my-3 flex flex-wrap items-baseline gap-2 text-sm">

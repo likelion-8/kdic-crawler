@@ -599,8 +599,8 @@ function ModalImpact({
       <div className="space-y-3">
         {errorLine}
         <p className="text-[13px]">
-          긴급 롤백은 회귀·Smoke 없이 직전 정상 버전 하나로 되돌립니다. 되돌린 뒤 24시간 안에 회귀·Smoke를
-          사후 실행해 결과를 기록합니다. (REQ-OPS-003)
+          긴급 롤백은 회귀 평가를 기다리지 않고 직전 정상 버전 하나로 되돌립니다. 되돌린 뒤 24시간 안에
+          회귀 평가를 사후 실행해 결과를 기록합니다. (REQ-OPS-003)
         </p>
       </div>
     )

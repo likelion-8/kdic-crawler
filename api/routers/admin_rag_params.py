@@ -26,7 +26,7 @@ PARAM 목록의 key·label·control·범위를 서버가 내려주고 화면은 
 ## 평가는 검색 축 실측이다
 
 평가메뉴 현행 버전(testset_items — 홀드아웃 89 씨딩)의 기대 출처로 **현행(A)과 초안(B)을 둘 다** 재서
-hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 Smoke 는 이 화면의
+hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 축은 이 화면의
 파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — warning 으로 명시하고,
 게이트 판정은 검색 두 축(정확도 0.92↑ · MRR 0.80↑)으로만 한다. 지어내지 않는다.
 
@@ -240,12 +240,21 @@ def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
         if passed and regressed:
             warning = "게이트는 통과했지만 현행보다 낮아진 지표가 있습니다."
     if warning is None and passed:
-        warning = "생성 Smoke 는 이 평가에서 재지 않습니다(검색 축만 실측)."
+        warning = "생성 축은 이 평가에서 재지 않습니다(검색 축만 실측)."
 
     return {"passed": passed, "draft_signature": signature, "evaluated_at": evaluated_at,
             "warning_reason": shortfall, "warning": warning,
             "holdout_total": holdout_total,
             "holdout_passed": draft_metrics.get("holdout_passed", 0),
+            # 이 게이트는 evaluation_runs.gate 에 그대로 저장돼 AD-006 [게이트 판정 상세]
+            # 모달이 읽는다. criteria 가 없으면 그 모달이 통째로 비어 '기록이 없다'처럼
+            # 보인다 — 실제로는 검색 축 두 기준으로 판정한 것이라 그 두 줄을 함께 남긴다.
+            "criteria": [
+                {"label": "검색 정확도@5", "target": f"{GATE_ACCURACY} 이상",
+                 "result": f"{acc:.3f}", "passed": acc >= GATE_ACCURACY},
+                {"label": "MRR", "target": f"{GATE_MRR} 이상",
+                 "result": f"{mrr:.3f}", "passed": mrr >= GATE_MRR},
+            ],
             "quantitative": quantitative}
 
 

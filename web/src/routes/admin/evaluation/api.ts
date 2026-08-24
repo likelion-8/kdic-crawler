@@ -37,9 +37,9 @@ export interface EvaluationRun {
   status: JobStatus
   item_count: number
   metrics: RunMetric[]
-  /** 게이트 판정 — 통과 건수·총 건수 모두 서버가 준다. 미달이어도 반영·게시를 막지
-   *  않는다(2026-08-19 경고 전환) — warning_reason 은 '무엇이 목표에 못 미쳤나'다 */
-  gate: { passed: boolean; smoke_passed: number; smoke_total: number; warning_reason?: string }
+  /** 게이트 판정. 미달이어도 반영·게시를 막지 않는다(2026-08-19 경고 전환) —
+   *  warning_reason 은 '무엇이 목표에 못 미쳤나'다 */
+  gate: { passed: boolean; warning_reason?: string }
   /** '판정 · 후속' 열의 후속 텍스트 — `→ 11:40 반영됨` · `→ 게시 v1.4` (§2.3) */
   follow_up?: string
   /** 이 실행이 쓴 평가셋 버전. 바뀐 지점에 '평가셋 vN부터' 구분 뱃지를 단다(Desc 1) */
@@ -112,7 +112,7 @@ export interface EvalApplyRequest {
 
 /** 게이트 판정 상세 모달의 표 1행 (AD-006 §2.4) */
 export interface GateCriterion {
-  /** `Smoke 30문항` · `검색 정확도@5` 처럼 한글 표기가 정본 */
+  /** `검색 정확도@5` · `생성 성공률` 처럼 한글 표기가 정본 */
   label: string
   /** `0.92 이상` · `30/30` — 화면에서 수정 불가(CM-DF-004 05절) */
   target: string
@@ -135,9 +135,8 @@ export interface GateDetail {
   target: string
   source: string
   started_at: string
+  /** 그 실행이 판정에 쓴 기준 행. 과거 실행은 그때 저장된 기준을 그대로 보여 준다 */
   criteria: GateCriterion[]
-  /** 모달 하단 한 줄. 서버 문구 그대로 */
-  latest_smoke: string
   failed_items: GateFailedItem[]
 }
 
