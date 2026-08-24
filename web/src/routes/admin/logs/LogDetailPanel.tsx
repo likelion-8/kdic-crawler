@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router'
-import { Button } from '../../../components/ui'
+import { Button, InfoHint } from '../../../components/ui'
 import { Separator } from '@/components/shadcn/separator'
 import { INTENT_LABEL, QUESTION_TYPE_LABEL } from '../../../lib/codes'
 import {
@@ -12,7 +12,13 @@ import {
   LOG_STATUS_LABEL,
   formatMonthDayTime,
 } from './api'
-import type { ConversationLogDetail, LangfuseTrace, RunObservation, ServedFrom } from './api'
+import type {
+  AnswerComposition,
+  ConversationLogDetail,
+  LangfuseTrace,
+  RunObservation,
+  ServedFrom,
+} from './api'
 import { formatTime } from '../../../lib/format'
 import { QUERY_CACHE_TTL_H } from '../../../lib/constants'
 
@@ -83,7 +89,7 @@ function TraceLink({ trace }: { trace: LangfuseTrace | null }) {
 function EvidencePanel({ observation }: { observation: RunObservation }) {
   return (
     <div>
-      <SectionTitle>근거</SectionTitle>
+      <h4 className="mb-2 text-xs font-semibold text-muted-foreground">근거</h4>
       <ul className="space-y-3">
         {observation.subs.map((sub, i) => (
           <li key={i} className="text-[13px]">
@@ -106,14 +112,94 @@ function EvidencePanel({ observation }: { observation: RunObservation }) {
                 ))}
               </ul>
             )}
-            {/* 판정 null 은 '판정 안 함'이지 '아니오'가 아니다 — 단정 문구를 쓰지 않는다 */}
-            {sub.used_source === false && (
-              <p className="mt-1 text-xs text-muted-foreground">이 근거를 답변에 쓰지 않음</p>
-            )}
           </li>
         ))}
       </ul>
     </div>
+  )
+}
+
+/** 출처 카드 목록 — 챗봇의 '참고 출처'와 같은 것을 관리자 화면 밀도로 줄여 그린다 */
+function SourceList({ items }: { items: AnswerComposition['sources'] }) {
+  if (items.length === 0) return null
+  return (
+    <div className="mt-2">
+      <p className="text-xs font-medium text-muted-foreground">참고 출처 {items.length}건</p>
+      <ul className="mt-1 space-y-1">
+        {items.map((src) => (
+          <li key={src.page_id} className="text-[13px] leading-snug">
+            <span className="text-muted-foreground">{src.breadcrumb} · </span>
+            <a className="text-primary hover:underline" href={src.url} target="_blank" rel="noreferrer">
+              {src.title}
+              <span className="sr-only">새 창에서 열림</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** 필요 서류(document)와 신청 페이지(link) — 챗봇이 본문 뒤에 붙이는 두 섹션 그대로다 */
+function AttachmentList({ items }: { items: AnswerComposition['attachments'] }) {
+  const docs = items.filter((a) => a.kind === 'document')
+  const links = items.filter((a) => a.kind === 'link')
+  return (
+    <>
+      {[
+        { title: '필요 서류', rows: docs },
+        { title: '신청 페이지', rows: links },
+      ].map(({ title, rows }) =>
+        // 값이 비면 섹션 자체를 그리지 않는다 — 챗봇과 같은 규칙(CB-DF-003)
+        rows.length === 0 ? null : (
+          <div key={title} className="mt-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              {title} {rows.length}건
+            </p>
+            <ul className="mt-1 space-y-1">
+              {rows.map((a) => (
+                <li key={a.url} className="text-[13px] leading-snug">
+                  <a className="text-primary hover:underline" href={a.url} target="_blank" rel="noreferrer">
+                    {a.label}
+                    <span className="sr-only">새 창에서 열림</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+      )}
+    </>
+  )
+}
+
+/**
+ * 답변 구성 — 사용자가 챗봇에서 실제로 본 그대로.
+ *
+ * 종전에는 본문 텍스트 하나만 보여줘서, 민원이 "링크가 틀렸다"·"서류가 빠졌다"일 때 관리자가
+ * 확인할 방법이 없었다(본문에는 URL 이 없다 — 출처·서류는 시스템이 본문 뒤에 따로 붙인다).
+ * 복합 질문이면 하위 답변마다 근거가 따로 붙으므로 하위 단위로 나눠 그린다.
+ */
+function AnswerCompositionView({ comp }: { comp: AnswerComposition }) {
+  if (comp.sub_answers.length > 0) {
+    return (
+      <ol className="mt-3 space-y-3">
+        {comp.sub_answers.map((sub, i) => (
+          <li key={i} className="rounded-md border border-border p-3">
+            <p className="text-[13px] font-semibold">{sub.title}</p>
+            <p className="mt-1 text-[13px] leading-relaxed whitespace-pre-line">{sub.answer}</p>
+            <AttachmentList items={sub.attachments} />
+            <SourceList items={sub.sources} />
+          </li>
+        ))}
+      </ol>
+    )
+  }
+  return (
+    <>
+      <AttachmentList items={comp.attachments} />
+      <SourceList items={comp.sources} />
+    </>
   )
 }
 
@@ -258,42 +344,64 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
   const { classification: c } = detail
   const served = servedPathWithRule(detail)
   const path = servedPath(detail)
+  const subs = detail.observation?.subs ?? []
+  // 하위 질문마다 판정이 갈릴 수 있다. 최상위 source_used 는 그 OR 이라(observation.summarize)
+  // 복합 질문에서 '사용'만 적으면 안 쓴 하위가 가려진다 — 갈리면 '일부 사용'으로 적는다.
+  const usedFlags = subs.map((s) => s.used_source).filter((v): v is boolean => v !== null)
+  const usedCount = usedFlags.filter(Boolean).length
+  const mixedUse = usedFlags.length > 1 && usedCount > 0 && usedCount < usedFlags.length
+  // 분류로 읽히는 값 전부. 복합 질문은 성격·업무와 같은 줄에 선다 — 종전에는 하위가 몇 개로
+  // 나뉘었는지가 분류 어디에도 없어, 근거 구획을 펼쳐 보고서야 복합인 줄 알 수 있었다.
+  const labels = [
+    c.intent === null ? null : INTENT_LABEL[c.intent],
+    c.business_function,
+    c.question_type === null ? null : QUESTION_TYPE_LABEL[c.question_type],
+    subs.length > 1 ? `복합 질문 ${subs.length}개` : null,
+  ].filter(Boolean)
   return (
     // 질문·시각·요청 ID는 DetailModal 헤더가 그린다 — 여기서 두 번 쓰지 않는다
     <section aria-label="처리 과정">
       <div>
-        <SectionTitle>분류</SectionTitle>
-        {/* 값이 있는 것만 이어 붙인다 — 종전에는 성격·유형이 null 인 건에서 구분점만 남아
-            '·' 한 글자가 찍혔다. 비었으면 **어느 경로에 걸려 분류가 없는지**까지 적는다:
-            정보성/민원성 판정은 플래너가 하는데 이 넷은 그 앞에서 끝난다(2026-08-20) */}
-        <p className="text-[13px]">
-          {[
-            c.intent === null ? null : INTENT_LABEL[c.intent],
-            c.business_function,
-            c.question_type === null ? null : QUESTION_TYPE_LABEL[c.question_type],
-          ]
-            .filter(Boolean)
-            .join(' · ') ||
-            (served === null ? '분류 기록 없음' : `분류 기록 없음 — ${served}`)}
-        </p>
+        <SectionTitle>
+          분류
+          <InfoHint label="분류 값 설명" size="sm">
+            성격은 정보성 / 민원성 2값(쿼리 플래너 판정)입니다. 업무는 분류기가 코드에서 꺼져 있어
+            저장되지 않고, 유형도 웹 경로에는 원천이 없습니다. 하위 질문이 둘 이상으로 나뉘면 「복합
+            질문 N개」가 함께 섭니다. 검색·생성을 타지 않고 끝난 건은 성격이 저장되지 않아, 대신 그
+            경로(캐시 응답 · 가드레일 차단 · 범위 판정 Gate 1·2 · 업무 되묻기)를 적습니다.
+          </InfoHint>
+        </SectionTitle>
+        {/* 값이 있는 것만 이어 붙인다 — 성격·유형이 null 인 건에서 구분점만 남으면 '·' 한 글자가
+            찍힌다. 하나도 없으면 **어느 경로로 끝나 분류가 없는지**를 그 자리에 적는다 */}
+        <p className="text-[13px]">{labels.join(' · ') || served || '분류 기록 없음'}</p>
         <p className="mt-1.5 grid grid-cols-[120px_1fr] gap-2.5 text-[13px]">
           <span className="text-muted-foreground">출처 판정</span>
           <span>
-            {/* 백엔드가 원천 부재로 null 을 내린다(admin_logs.py:419-422) — '미사용' 단정은 거짓이 된다 */}
-            {/* 이유(어느 경로라서 없는지)는 바로 위 분류 줄이 말한다 — 여기서 되풀이하지 않는다 */}
-            {c.source_used === null ? '판정 원천 없음' : c.source_used ? '사용' : '미사용'}
+            {/* 백엔드가 원천 부재로 null 을 내린다(admin_logs.py) — '미사용' 단정은 거짓이 된다 */}
+            {c.source_used === null
+              ? '판정 원천 없음'
+              : mixedUse
+                ? `일부 사용 (하위 ${usedFlags.length}개 중 ${usedCount}개)`
+                : c.source_used
+                  ? '사용'
+                  : '미사용'}
             {c.marker === null ? '' : ` · 마커 [${c.marker}]`}
           </span>
         </p>
-        {/* 사후검증이 환각·동문서답을 잡아 본문을 표준 안내로 갈아끼운 건.
-            2026-08-20 마커 폐지 전에는 '표기 보정'(마커 어긋남)이라 불렀는데 이제 뜻이 다르다 */}
+        {/* 사후검증이 환각·동문서답을 잡아 본문을 표준 안내로 갈아끼운 건 */}
         {c.normalized && <p className="mt-1.5 text-xs text-muted-foreground">본문 교체</p>}
+        {/* 근거는 출처 판정의 하위다 — 무엇을 근거로 삼았고 그래서 썼는지/안 썼는지가 한 덩어리다.
+            들여쓰기와 왼쪽 선으로 종속을 보인다(별도 구획으로 떼면 두 판정이 남남처럼 읽힌다) */}
+        {detail.observation && (
+          <div className="mt-3 border-l-2 border-border pl-3">
+            <EvidencePanel observation={detail.observation} />
+          </div>
+        )}
       </div>
 
       {detail.observation && (
         <>
           <Separator className="my-4" />
-          <EvidencePanel observation={detail.observation} />
           <NextActions detail={detail} />
         </>
       )}
@@ -328,8 +436,15 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
       <Separator className="my-4" />
 
       <div>
-        <SectionTitle>답변 전문 (마스킹)</SectionTitle>
-        <p className="text-[13px] leading-relaxed">
+        <SectionTitle>
+          답변 전문 (마스킹)
+          <InfoHint label="답변 전문 설명" size="sm">
+            사용자가 챗봇에서 본 것과 같은 구성입니다 — 본문 뒤에 필요 서류 · 신청 페이지 · 참고
+            출처가 순서대로 붙습니다. 값이 없는 섹션은 그리지 않습니다. 본문·하위 답변은 마스킹된
+            저장본이며 원문 복원 진입점은 없습니다.
+          </InfoHint>
+        </SectionTitle>
+        <p className="text-[13px] leading-relaxed whitespace-pre-line">
           {expanded ? detail.answer_masked_full : detail.answer_masked_preview}
         </p>
         {/* 전문이 응답에 이미 담겨 있어 펼치기는 클라이언트 토글이다(11 §L3 제안) */}
@@ -341,6 +456,11 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
         >
           {expanded ? '접기▴' : '전체 펼치기▾'}
         </button>
+        {/* 서버가 구성을 안 내려주는 배포에서는 undefined — 그때는 본문만 그리고 없는 것을
+            지어내지 않는다(원천은 chat_messages, api.ts AnswerComposition 주석 참고) */}
+        {detail.answer_composition && (
+          <AnswerCompositionView comp={detail.answer_composition} />
+        )}
       </div>
 
       {detail.feedback_detail && (

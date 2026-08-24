@@ -4,7 +4,7 @@
  * lib/api/types.ts로 올려야 할 후보 — report의 shared_needed 참조.
  * 질문·답변·의견은 모두 마스킹된 저장본이다. 원문 복원 진입점은 만들지 않는다(Desc 2). */
 import { apiRequest } from '../../../lib/api/client'
-import type { Page } from '../../../lib/api/types'
+import type { Attachment, Page, Source, SubAnswer } from '../../../lib/api/types'
 import type { BusinessFunction, ErrorCode, Intent, QuestionType, TriageStatus } from '../../../lib/codes'
 import { TIMEZONE } from '../../../lib/constants'
 import { formatDate, formatTime } from '../../../lib/format'
@@ -101,6 +101,20 @@ export interface RunObservation {
   subs: ObservedSub[]
 }
 
+/** 사용자가 챗봇에서 실제로 본 답변의 구성 — 본문 말고 그 아래 붙는 것들.
+ *
+ * 원천은 chat_messages(rag_runs 와 request_id 로 이어진다) — rag_runs 에는 answer 텍스트만
+ * 있어 출처·서류·하위 답변이 남지 않는다. 서버가 아직 안 내려주는 배포에서는 undefined 이고,
+ * 그때 화면은 지금처럼 본문 텍스트만 그린다(있으면 더 보여주고, 없으면 거짓말하지 않는다).
+ *
+ * 🔴 sub_answers 가 비어 있지 않으면 최상위 sources·attachments 는 빈 배열이다 — 근거가
+ * 전부 하위로 내려간다(챗봇 응답과 같은 불변식). 한쪽만 채우면 출처가 사라지거나 두 배가 된다. */
+export interface AnswerComposition {
+  sources: Source[]
+  attachments: Attachment[]
+  sub_answers: SubAnswer[]
+}
+
 export interface ConversationLogDetail extends ConversationLogRow {
   classification: {
     /** 플래너를 안 탄 건은 null — 저장된 적이 없다는 뜻이지 '정보성'이 아니다 */
@@ -134,6 +148,8 @@ export interface ConversationLogDetail extends ConversationLogRow {
   total_latency_ms: number | null
   answer_masked_preview: string
   answer_masked_full: string
+  /** 본문 아래 붙은 출처·서류·하위 답변. 서버가 안 주면 undefined — 본문만 그린다 */
+  answer_composition?: AnswerComposition | null
   feedback_detail: {
     vote: FeedbackVote
     at: string

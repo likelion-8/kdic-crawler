@@ -198,6 +198,17 @@ export interface ConversationLogDetail extends ConversationLogRow {
   total_latency_ms: number | null
   answer_masked_preview: string
   answer_masked_full: string
+  /** 본문 뒤에 붙는 출처·서류·하위 답변. 원천은 chat_messages(rag_runs 와 request_id 로 이어진다) */
+  answer_composition?: {
+    sources: { page_id: string; breadcrumb: string; title: string; url: string }[]
+    attachments: { label: string; url: string; kind: 'document' | 'link' }[]
+    sub_answers: {
+      title: string
+      answer: string
+      sources: { page_id: string; breadcrumb: string; title: string; url: string }[]
+      attachments: { label: string; url: string; kind: 'document' | 'link' }[]
+    }[]
+  } | null
   feedback_detail: {
     vote: FeedbackVote
     at: string
@@ -236,6 +247,18 @@ const rows: ConversationLogRow[] = [
   {
     request_id: '8f2c-41ab', occurred_at: at('09:36'), question_masked: '예금보험금 신청 서류 알려주세요',
     intent: 'civil_petition', status: 'FAILED', feedback: null, source_count: null, latency_s: null, triage: 'NONE',
+  },
+  {
+    // 복합 질문 — 플래너가 둘로 나눠 하위마다 근거·출처가 따로 붙는다
+    request_id: 'e410-2f9b', occurred_at: at('09:34'), question_masked: '착오송금 신청 방법과 필요 서류는?',
+    intent: 'civil_petition', status: 'NORMAL', feedback: null, source_count: 3, latency_s: 12.4,
+    triage: 'NONE',
+  },
+  {
+    // 업무 되묻기 — 어느 업무인지 정해지지 않아 선택지로 되물었다. 검색·생성을 안 타 1초대
+    request_id: 'f733-6b02', occurred_at: at('09:33'), question_masked: '신청 링크 알려줘',
+    intent: null, status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.1,
+    triage: 'NONE',
   },
   {
     request_id: '2b58-0c14', occurred_at: at('09:31'), question_masked: '안녕',
@@ -310,6 +333,79 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
     },
     langfuse: null,
   },
+  // 업무 되묻기 — 분류 줄이 '업무 되묻기' 한 줄로만 뜨는 상태
+  'f733-6b02': {
+    served_from: 'clarify',
+    served_label: null,
+    observation: null,
+    classification: {
+      intent: null, business_function: null, question_type: null,
+      source_used: null, marker: null, normalized: false,
+    },
+    langfuse: null,
+    answer_masked_preview: '어떤 업무를 찾고 계신가요? 아래에서 골라주시면 바로 안내해 드릴게요.',
+    answer_masked_full: '어떤 업무를 찾고 계신가요? 아래에서 골라주시면 바로 안내해 드릴게요.',
+    // 되묻기 턴에는 출처·서류가 붙지 않는다(검색 전에 끝난다)
+    answer_composition: { sources: [], attachments: [], sub_answers: [] },
+  },
+  // 복합 질문 — 분류 줄에 '복합 질문 2개', 하위마다 답변·서류·출처가 따로 붙는다.
+  // 하위 판정이 갈려 출처 판정이 '일부 사용'으로 뜬다.
+  'e410-2f9b': {
+    classification: {
+      intent: 'civil_petition', business_function: '착오송금 반환 신청', question_type: 'fact',
+      source_used: true, marker: '혼재', normalized: false,
+    },
+    observation: {
+      subs: [
+        {
+          question: '착오송금 반환지원 신청 방법은 무엇인가요?',
+          intent: 'civil_petition',
+          top: [
+            { chunk_id: 'faq_msdr_apply#c1', page_id: 'faq_msdr_apply', score: 0.882 },
+            { chunk_id: 'kmrs_apply_mthd#c1', page_id: 'kmrs_apply_mthd', score: 0.804 },
+          ],
+          marker: true, used_source: true, kind: 'grounded', appropriate: true, normalized: false,
+        },
+        {
+          question: '착오송금 반환지원 신청에 필요한 서류는 무엇인가요?',
+          intent: 'civil_petition',
+          top: [{ chunk_id: 'sender_docs#c1', page_id: 'sender_docs', score: 0.641 }],
+          marker: false, used_source: false, kind: 'refusal', appropriate: true, normalized: false,
+        },
+      ],
+    },
+    langfuse: { id: 'tr_e4102f9b', url: 'https://langfuse.example.com/trace/tr_e4102f9b' },
+    total_latency_ms: 12400,
+    answer_masked_preview: '착오송금 반환지원은 온라인과 방문 두 가지 방법으로…',
+    answer_masked_full: '착오송금 반환지원은 온라인과 방문 두 가지 방법으로 신청할 수 있습니다.',
+    answer_composition: {
+      // 🔴 하위가 있으면 최상위 sources·attachments 는 빈 배열이다(챗봇 응답과 같은 불변식)
+      sources: [],
+      attachments: [],
+      sub_answers: [
+        {
+          title: '착오송금 반환지원 신청 방법은 무엇인가요?',
+          answer:
+            '온라인 신청은 공동인증서와 이체(송금)확인증을 준비해 진행하고, 방문 신청은 서울시 중구 청계천로 30 1층에서 접수합니다.',
+          sources: [{
+            page_id: 'faq_msdr_apply', breadcrumb: '착오송금 반환지원 > 자주 묻는 질문',
+            title: '착오송금 반환지원 자주 묻는 질문',
+            url: 'https://www.kdic.or.kr/msdr/faq.do',
+          }],
+          attachments: [{
+            label: '착오송금 반환지원 신청방법',
+            url: 'https://www.kdic.or.kr/msdr/apply_mthd.do', kind: 'link',
+          }],
+        },
+        {
+          title: '착오송금 반환지원 신청에 필요한 서류는 무엇인가요?',
+          answer: '안내해 드릴 수 있는 자료에서 해당 내용을 찾지 못했습니다.',
+          sources: [],
+          attachments: [],
+        },
+      ],
+    },
+  },
   '7d1a-93f2': {
     classification: {
       intent: 'civil_petition', business_function: '착오송금 반환 신청', question_type: 'fact',
@@ -322,6 +418,20 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
     feedback_detail: {
       vote: 'down', at: at('09:39'), reason_label: '내용이 부정확',
       comment: '필요 서류 목록이 실제 신청 페이지와 달라요',
+    },
+    // 👎 사유가 '서류 목록이 다르다'인 건 — 관리자가 실제로 나간 서류 링크를 여기서 확인한다
+    answer_composition: {
+      sources: [{
+        page_id: 'faq_msdr_apply', breadcrumb: '착오송금 반환지원 > 자주 묻는 질문',
+        title: '착오송금 반환지원 자주 묻는 질문',
+        url: 'https://www.kdic.or.kr/msdr/faq.do',
+      }],
+      attachments: [
+        { label: '착오송금 반환지원 신청서', url: 'https://www.kdic.or.kr/msdr/form1.do', kind: 'document' },
+        { label: '개인정보 수집·이용 동의서', url: 'https://www.kdic.or.kr/msdr/form2.do', kind: 'document' },
+        { label: '착오송금 반환지원 신청방법', url: 'https://www.kdic.or.kr/msdr/apply_mthd.do', kind: 'link' },
+      ],
+      sub_answers: [],
     },
   },
   '8f2c-41ab': {
@@ -389,6 +499,17 @@ function detailOf(row: ConversationLogRow): ConversationLogDetail {
     total_latency_ms: row.latency_s === null ? null : Math.round(row.latency_s * 1000),
     answer_masked_preview: '답변 미리보기…',
     answer_masked_full: ANSWER_FULL,
+    // 근거를 쓴 건에는 참고 출처가 붙는다. 서류·신청 페이지는 민원 답변에만 있어 여기선 비운다
+    answer_composition: {
+      sources: (row.source_count ?? 0) > 0
+        ? [{
+            page_id: 'dp_protlmts', breadcrumb: '예금자보호제도 > 보호한도',
+            title: '예금자보호 한도', url: 'https://www.kdic.or.kr/protect/limit.do',
+          }]
+        : [],
+      attachments: [],
+      sub_answers: [],
+    },
     feedback_detail: null,
     error: null,
     triage_reason: triageReasons[row.request_id] ?? null,
