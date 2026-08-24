@@ -27,7 +27,7 @@ PARAM 목록의 key·label·control·범위를 서버가 내려주고 화면은 
 
 평가메뉴 현행 버전(testset_items — 홀드아웃 89 씨딩)의 기대 출처로 **현행(A)과 초안(B)을 둘 다** 재서
 hit@5 비율·MRR 을 비교한다(quantitative 의 a/b 가 실측값). 생성 Smoke 는 이 화면의
-파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — smoke 0/0 + warning 으로 명시하고,
+파라미터가 생성 품질을 직접 바꾸지 않아 재지 않는다 — warning 으로 명시하고,
 게이트 판정은 검색 두 축(정확도 0.92↑ · MRR 0.80↑)으로만 한다. 지어내지 않는다.
 
 ⚠️ 문항 수 × 2(A/B) 만큼 임베딩+pgvector 질의가 나가는 동기 작업(워밍업된 서버에서 1~2분).
@@ -201,14 +201,14 @@ def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
                holdout_total: int = 0) -> dict:
     """화면의 RagGate 모양을 만든다. 평가 전이면 passed=false + warning_reason.
 
-    smoke 는 0/0 으로 명시한다 — 이 화면의 파라미터는 생성 품질을 직접 바꾸지 않아 생성
-    Smoke 를 재지 않는다(모듈 주석). 지어낸 30/30 을 넣으면 게이트가 거짓말을 한다.
+이 화면의 파라미터는 생성 품질을 직접 바꾸지 않아 생성 축을 재지 않는다(모듈 주석) —
+    지어낸 수치를 넣으면 게이트가 거짓말을 한다. 응답에도 그 자리를 두지 않는다.
     """
     if draft_metrics is None:
         return {"passed": False, "draft_signature": signature, "evaluated_at": None,
                 "warning_reason": "초안 평가를 먼저 실행해 주세요.", "warning": None,
                 "holdout_total": 0, "holdout_passed": 0,
-                "smoke_total": 0, "smoke_passed": 0, "quantitative": None}
+                "quantitative": None}
 
     acc, mrr = draft_metrics["retrieval_accuracy@5"], draft_metrics["mrr"]
     passed = acc >= GATE_ACCURACY and mrr >= GATE_MRR
@@ -246,7 +246,7 @@ def build_gate(*, current_metrics: dict = None, draft_metrics: dict = None,
             "warning_reason": shortfall, "warning": warning,
             "holdout_total": holdout_total,
             "holdout_passed": draft_metrics.get("holdout_passed", 0),
-            "smoke_total": 0, "smoke_passed": 0, "quantitative": quantitative}
+            "quantitative": quantitative}
 
 
 def _stored_gate(db) -> dict:

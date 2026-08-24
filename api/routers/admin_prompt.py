@@ -13,7 +13,7 @@
 ## 엔드포인트 (화면이 실제로 부르는 것)
     GET  /prompt/draft                      게시본 기준값 -> PromptDraft
     POST /prompt/evaluate {draft}           전후 비교 실측 -> PromptEvaluation (무상태)
-    POST /prompt/publish  {draft,gate_passed}+reason -> PublishResult {version, smoke}
+    POST /prompt/publish  {draft,gate_passed}+reason -> PublishResult {version}
     GET  /prompt/versions?page&size         -> Page<PromptVersion>
     POST /prompt/versions/{v}/rollback      그 버전 내용으로 기준값 재구성 -> PromptDraft
     POST /prompt/versions/{v}/emergency-rollback  ADMIN+재인증 -> PromptVersion
@@ -29,16 +29,17 @@
     편집 목록에서 빼서 locked_principle 로 주고, 조립 시 서버가 **무조건 마지막 번호로
     다시 붙인다**(클라이언트가 빼고 보내도 살아남는다).
 
-## 평가(전후 비교)와 게시 Smoke — 실측이다
+## 평가(전후 비교) — 실측이다
 
-evaluate: 골든셋에서 인스코프 4문항 + 범위외 2문항을 뽑아, 같은 검색 근거로 현행(전)과
-초안(후) 프롬프트 각각 실제 생성한다(HCX 12콜, 동기 ~1분). 판정 축은 화면 게이트 그대로 —
-출처 부착(인스코프에서 [SOURCE_USED]) · 범위외 거절([NO_SOURCE]) · 가드레일(금칙어 0건).
-전{양호}→후{불량}이 REGRESSED 다. **서버에 아무것도 저장하지 않는다**(계약: 일시 평가).
+evaluate: 화면이 고른 평가셋(AD-006) 문항으로, 같은 검색 근거에서 현행(전)과 초안(후)
+프롬프트 각각 실제 생성한다(문항당 HCX 2콜). 판정 축은 화면 게이트 그대로 — 출처 부착
+(인스코프에서 근거 사용) · 범위외 거절 · 가드레일(금칙어 0건). 전{양호}→후{불량}이
+REGRESSED 다. **서버에 아무것도 저장하지 않는다**(계약: 일시 평가).
 
-publish: 초안 프롬프트로 Smoke 30문항을 실제 생성해(HCX 30콜, 동기 ~1-2분) 전건 통과면
-새 버전을 현행으로 활성화한다. Smoke 미달이어도 활성화하며 **경고로만 기록**한다(2026-08-19).
-gate_passed(클라이언트가 보낸 직전 평가 결과)는 진입 조건일 뿐 최종 판정은 Smoke 다.
+publish: 새 버전을 저장하고 곧바로 현행으로 활성화한다. 게시 직후 Smoke 30문항을 돌리던
+것은 2026-08-24 없앴다 — 요구사항에 없고, 미달이어도 게시를 막지 않아(2026-08-19) 판정에
+효력이 없었으며, HCX 30~60콜을 써서 한도에 걸리면 그 실패가 '품질 미달'로 기록됐다.
+gate_passed(클라이언트가 보낸 직전 평가 결과)도 진입 조건이 아니다 — 경고로만 남는다.
 
 ## 폴백
 
@@ -78,8 +79,6 @@ ACTION_PUBLISH = "프롬프트 게시"
 ACTION_ROLLBACK = "프롬프트 롤백"
 ACTION_EMERGENCY = "프롬프트 긴급 롤백"
 
-# Smoke 문항 수 — 서버가 정하는 값(화면 목도 "서버가 정한다"고 명시). 전건 통과만 활성화.
-SMOKE_TOTAL = 30
 # 전후 비교 평가 문항 수(인스코프/범위외). HCX 콜 수 = (IN+OOS)×2 라 작게 유지한다.
 
 # 잠금 원칙의 화면 표시 라벨. 실제 규칙 전문은 서버가 조립 시 붙인다(모듈 주석).
@@ -473,10 +472,14 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
 
 @router.post("/prompt/publish")
 def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
-    """[게시] — 이 시점에 비로소 초안이 서버에 저장된다. Smoke 30문항을 새 프롬프트로 실측해
-    결과와 무관하게 현행으로 활성화한다(2026-08-19 정책 변경 — 게이트·Smoke 는 경고로만
-    남긴다. 종전에는 미달 시 '실패' 버전으로 기록하고 현행을 유지했다).
-    ⚠️ HCX 30콜, 동기 ~1-2분."""
+    """[게시] — 이 시점에 비로소 초안이 서버에 저장되고 새 버전이 현행이 된다.
+
+    게시 직후 Smoke 30문항을 돌리던 것은 없앴다(2026-08-24). 요구사항에 없고, 2026-08-19
+    정책 변경으로 미달이어도 게시를 막지 않아 판정에 효력이 없었으며, HCX 30~60콜을 써서
+    생성 요청 한도에 걸리면 그 실패가 '품질 미달'로 기록됐다. 반영 전 확인은 [초안 평가],
+    이상하면 [롤백]·[긴급 롤백]이 맡는다.
+
+    회귀 게이트도 게시를 막지 않는다(2026-08-19) — 경고로만 남긴다(활동 로그 detail)."""
     _require_editor(me, "프롬프트 게시")
     _require_request_id(body)
     reason = str(body.get("reason") or "").strip()
@@ -488,62 +491,28 @@ def publish(body: dict, request: Request, me: CurrentAdmin, db: DbSession):
         logger.warning("프롬프트 게시: %s", gate_warning)
     content = _draft_to_content(db, dict(body.get("draft") or {}))
 
-    # Smoke 문항도 평가메뉴 현행 버전에서 뽑는다(2026-08-19 전환 — _eval_questions 와 동일).
-    from api.routers.admin_evaluations import active_questions
-    questions = active_questions(db, in_scope=True, limit=SMOKE_TOTAL)
-    if len(questions) < SMOKE_TOTAL:
-        raise BadRequestError(f"Smoke 문항이 부족합니다({len(questions)}/{SMOKE_TOTAL}).")
-
-    blockwords = _blockwords(content["guardrails"])
-
-    def _smoke_ok(q: str, *, seed: int | None = None) -> bool:
-        try:
-            a_body, marker, _src = _generate(
-                q, content["system_instruction"], content["few_shot"], seed=seed)
-        except Exception:  # noqa: BLE001 — 한 문항 호출 실패 = 그 문항 실패
-            logger.warning("smoke 호출 실패: %s", q, exc_info=True)
-            return False
-        return bool(marker) and not any(w in a_body for w in blockwords)
-
-    from llm_client import EVAL_SEED
-    passed = 0
-    for q in questions:
-        # 실패 문항만 seed 바꿔 1회 재시도(2연속 실패만 실패) — 문항당 p=0.97 이어도
-        # 30연속 통과율이 ~40%로 떨어지는 이항 함정을 흡수한다. 전건 통과 의미는 유지.
-        if _smoke_ok(q) or _smoke_ok(q, seed=EVAL_SEED + 1):
-            passed += 1
-
-    smoke_ok = passed == SMOKE_TOTAL
-    # 2026-08-19 정책 변경: Smoke 미달도 게시를 막지 않는다 — 항상 현행으로 활성화하고
-    # 미달 여부는 경고(활동 로그·응답 smoke 수치)로만 남긴다. 종전에는 미달 시 현행 유지였다.
-    activate = True
     new_version = (db.execute(select(func.max(prompt_versions.c.version))).scalar_one() or 0) + 1
     db.execute(update(prompt_versions).where(prompt_versions.c.is_current)
                .values(is_current=False))
     db.execute(insert(prompt_versions).values(
-        version=new_version, is_current=activate,
+        version=new_version, is_current=True,
         system_instruction=content["system_instruction"],
         few_shot=content["few_shot"],
         no_evidence_notice=prompt_builder.NO_EVIDENCE_NOTICE,
         guardrails=content["guardrails"],
-        smoke_passed=passed, smoke_total=SMOKE_TOTAL,
         published_by=me.email, reason=reason,
     ))
     db.commit()
-    if activate:
-        runtime_config.invalidate("prompt")
+    runtime_config.invalidate("prompt")
 
     write_activity_log(
         db, request, actor=me.email, actor_role=me.role, action=ACTION_PUBLISH,
-        target=f"프롬프트 {_vstr(new_version)}" + ("" if smoke_ok else " (Smoke 미달 — 경고, 활성화됨)"),
+        target=f"프롬프트 {_vstr(new_version)}",
         reason=reason,
-        detail={"version": new_version, "smoke": {"passed": passed, "total": SMOKE_TOTAL},
-                "activated": activate,
-                **({"gate_warnings": [w for w in [gate_warning,
-                    None if smoke_ok else f"Smoke {passed}/{SMOKE_TOTAL} 미달 상태로 활성화"] if w]}
-                   if (gate_warning or not smoke_ok) else {})},
+        detail={"version": new_version, "activated": True,
+                **({"gate_warnings": [gate_warning]} if gate_warning else {})},
     )
-    return {"version": _vstr(new_version), "smoke": {"passed": passed, "total": SMOKE_TOTAL}}
+    return {"version": _vstr(new_version)}
 
 
 @router.get("/prompt/versions")
@@ -552,17 +521,20 @@ def list_versions(admin: CurrentAdmin, db: DbSession, page: int = 1, size: int =
     rows = db.execute(
         select(prompt_versions).order_by(prompt_versions.c.version.desc())
     ).all()
-    # 긴급 롤백 후보 = 현행이 아닌 것 중 Smoke 를 통과했던 가장 최신 버전(직전 정상본).
-    candidate = next((r.version for r in rows
-                      if not r.is_current and (r.smoke_passed or 0) >= (r.smoke_total or 0)
-                      and r.smoke_total), None)
+    # 긴급 롤백 후보 = 현행이 아닌 가장 최신 버전(= 직전 버전).
+    # 종전에는 'Smoke 를 통과했던' 것으로 좁혔는데 게시 Smoke 를 없애(2026-08-24) 그 신호가
+    # 사라졌다. Smoke 를 계속 조건으로 두면 새 게시본은 smoke 값이 없어 후보가 영영 없어진다.
+    candidate = next((r.version for r in rows if not r.is_current), None)
     items = [{
         "version": _vstr(r.version),
         "created_at": _kst(r.created_at),
         "author": r.published_by or "",
         "reason": r.reason or "",
+        # '실패' 는 게시 Smoke 미달 버전을 뜻했다 — Smoke 를 없앤 뒤로는 나오지 않는다.
+        # 옛 게시본에는 그 값이 남아 있어 그때 기록은 그대로 '실패' 로 보여 준다.
         "status": ("현행" if r.is_current
-                   else "실패" if (r.smoke_passed or 0) < (r.smoke_total or 0) else "보관"),
+                   else "실패" if (r.smoke_total or 0) and (r.smoke_passed or 0) < r.smoke_total
+                   else "보관"),
         "emergency_candidate": r.version == candidate,
     } for r in rows]
     start = (page - 1) * size
@@ -573,7 +545,7 @@ def list_versions(admin: CurrentAdmin, db: DbSession, page: int = 1, size: int =
 def rollback_version(version: str, body: dict, request: Request,
                      me: CurrentAdmin, db: DbSession):
     """[이 버전으로 롤백] — 그 버전 내용을 기준값(PromptDraft)으로 돌려준다. 화면이 이걸
-    로컬 초안으로 얹어 검토·재게시한다 — 현행 전환은 게시(Smoke)를 다시 거쳐야 한다."""
+    로컬 초안으로 얹어 검토·재게시한다 — 현행 전환은 [게시]를 다시 거쳐야 한다."""
     _require_editor(me, "프롬프트 롤백")
     _require_request_id(body)
     reason = str(body.get("reason") or "").strip()
@@ -598,8 +570,8 @@ def rollback_version(version: str, body: dict, request: Request,
 @router.post("/prompt/versions/{version}/emergency-rollback")
 def emergency_rollback(version: str, body: dict, request: Request,
                        me: ReauthedAdmin, db: DbSession):
-    """긴급 롤백 — 지정 버전을 **즉시 현행으로 전환**한다(Smoke 재실행 없음 — 이미 통과한
-    게시본만 후보다). ADMIN + 서버 독립 재인증(me: ReauthedAdmin — 만료면 진입 전 403)."""
+    """긴급 롤백 — 지정 버전을 **즉시 현행으로 전환**한다.
+    ADMIN + 서버 독립 재인증(me: ReauthedAdmin — 만료면 진입 전 403)."""
     if me.role != "ADMIN":
         raise ForbiddenError(f"긴급 롤백에는 ADMIN 권한이 필요합니다. 현재 권한은 {me.role}입니다.")
     _require_request_id(body)
@@ -612,10 +584,6 @@ def emergency_rollback(version: str, body: dict, request: Request,
         raise NotFoundError("해당 버전을 찾을 수 없습니다.")
     if row.is_current:
         raise BadRequestError("이미 현행 버전입니다.")
-    if (row.smoke_passed or 0) < (row.smoke_total or 0):
-        # 2026-08-19 정책 변경: Smoke 미달 버전도 롤백을 막지 않는다 — 경고만 남긴다.
-        logger.warning("Smoke 미달 버전으로 긴급 롤백: %s", _vstr(n))
-
     before = db.execute(
         select(prompt_versions.c.version).where(prompt_versions.c.is_current)
     ).scalar()

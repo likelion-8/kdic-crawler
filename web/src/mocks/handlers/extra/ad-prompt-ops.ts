@@ -79,11 +79,6 @@ const BASE_PRINCIPLES: string[] = [
   '정체 질문에는 "예솜24"로 답하기',
 ]
 
-/** 게시 직후 Smoke 문항 수 — **서버가 정하는 값**이라 목이 들고 있는다.
- * 프론트 상수(lib/constants.ts)로 두면 서버가 세트를 바꿔도 화면 문구만 옛 숫자로 남는다.
- * 게이트 기준을 화면이 알면 안 된다는 규칙과 같은 이유다(handoff §6 E4) */
-const SMOKE_SET_SIZE = 30
-
 /** 시스템 프롬프트 전문 길이(CM-DF-003 06절 "778자"). 원칙 문구를 고치면 그 차이만큼 움직인다 */
 const BASE_CHAR_COUNT = 778
 const sumLength = (list: string[]) => list.reduce((n, t) => n + t.length, 0)
@@ -475,13 +470,13 @@ export const adPromptOpsHandlers = [
     const target = versions.find((v) => v.version === params.version)
     if (!target) return fail(404, '해당 버전을 찾을 수 없습니다.')
     if (target.status === '현행') return fail(400, '이미 현행 버전입니다.')
-    // 2026-08-19 정책 변경: Smoke 미달 버전도 롤백을 막지 않는다 — 경고 표시는 화면 몫
+    // 미달·미평가 버전도 롤백을 막지 않는다(2026-08-19) — 경고 표시는 화면 몫
     for (const v of versions) v.status = v.version === target.version ? '현행' : '보관'
     target.emergency_candidate = false
     return HttpResponse.json(target)
   }),
 
-  /** 게시 — 즉시 Smoke 30문항 실행 후 전환.
+  /** 게시 — 새 버전을 저장하고 곧바로 현행으로 전환한다(게시 Smoke 는 2026-08-24 폐지).
    *  요청/승인 2단계는 없앴다(팀 결정 2026-08-04). 편집 권한자(EDITOR 이상)가 바로 게시한다 —
    *  회귀 게이트는 경고로만 인지시키고(2026-08-19 정책 변경), 사후 추적은 활동 로그와 긴급 롤백이 맡는다.
    *  ⚠ 백엔드도 이 권한으로 맞춰야 한다(구 계약은 ADMIN 전용 + publish-requests 승인 경로였다) */
@@ -505,7 +500,7 @@ export const adPromptOpsHandlers = [
       emergency_candidate: false,
     })
     promote(body.draft, published)
-    return HttpResponse.json({ version: published, smoke: { passed: SMOKE_SET_SIZE, total: SMOKE_SET_SIZE } })
+    return HttpResponse.json({ version: published })
   }),
 
   /** 마스킹 패턴 샘플 검증 — 판정은 경고 표시용이며 저장을 막지 않는다(2026-08-19 정책 변경, §2.11) */

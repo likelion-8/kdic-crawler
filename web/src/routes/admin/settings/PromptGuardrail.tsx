@@ -101,7 +101,7 @@ export function PromptGuardrail() {
       setEvaluation(null)
       closeAsk()
       refetchAll()
-      showToast(`${result.version}을(를) 게시했습니다 · Smoke ${result.smoke.passed}/${result.smoke.total} 통과`)
+      showToast(`${result.version}을(를) 게시했습니다`)
     },
   })
 
@@ -356,8 +356,7 @@ export function PromptGuardrail() {
         open={ask?.kind === 'publish'}
         title="이 초안을 게시할까요?"
         // 문항 수를 쓰지 않는다 — 게시 '전'이라 결과가 없고, 프론트가 박아 둔 숫자는 서버가
-        // Smoke 세트를 바꾸는 순간 거짓이 된다(판정 기준은 서버 몫 · handoff §6 E4)
-        impact={`게시하면 Smoke 검사가 실행된 뒤 ${draft.draft_version}으로 전환됩니다. Smoke 미달은 경고로 기록되며 전환을 막지 않습니다.${gatePassed ? '' : ' ⚠ 회귀 게이트를 통과하지 않은 초안입니다.'}`}
+        impact={`게시하면 ${draft.draft_version}이 곧바로 현행으로 전환됩니다. 문제가 있으면 [롤백]·[긴급 롤백]으로 되돌립니다.${gatePassed ? '' : ' ⚠ 회귀 게이트를 통과하지 않은 초안입니다.'}`}
         diff={<PublishDiff draft={draft} />}
         reason="required"
         error={modalError(publish.error)}
@@ -372,7 +371,7 @@ export function PromptGuardrail() {
       <ConfirmModal
         open={ask?.kind === 'rollback'}
         title={ask?.kind === 'rollback' ? `${ask.version.version} 버전으로 되돌릴까요?` : ''}
-        impact="선택한 버전을 새 초안으로 복원할 뿐 즉시 반영하지 않습니다. 회귀·Smoke를 다시 통과해야 현행이 됩니다."
+        impact="선택한 버전을 새 초안으로 복원할 뿐 즉시 반영하지 않습니다. [게시]를 해야 현행이 됩니다."
         reason="required"
         error={modalError(rollback.error)}
         confirmLabel="롤백"
@@ -387,7 +386,7 @@ export function PromptGuardrail() {
         open={ask?.kind === 'emergency'}
         variant="danger"
         title={ask?.kind === 'emergency' ? `${ask.version.version}(으)로 즉시 되돌릴까요?` : ''}
-        impact="회귀·Smoke를 기다리지 않고 현행 버전을 즉시 교체합니다. 되돌린 뒤 24시간 안에 회귀·Smoke를 사후 실행해 결과를 기록해야 합니다."
+        impact="회귀 평가를 기다리지 않고 현행 버전을 즉시 교체합니다. 되돌린 뒤 24시간 안에 회귀 평가를 사후 실행해 결과를 기록해야 합니다."
         reason="required"
         reauth
         error={modalError(emergency.error)}

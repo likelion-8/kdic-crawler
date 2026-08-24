@@ -65,8 +65,6 @@ export interface RagGate {
   warning: string | null
   holdout_total: number
   holdout_passed: number
-  smoke_total: number
-  smoke_passed: number
   quantitative: QuantCompare | null
 }
 

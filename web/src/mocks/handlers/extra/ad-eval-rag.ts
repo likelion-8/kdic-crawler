@@ -363,7 +363,7 @@ function mockSignature(draft: Record<string, ParamValue>): string {
 const EMPTY_GATE: RagGate = {
   passed: false, draft_signature: null, evaluated_at: null,
   warning_reason: '초안 평가를 먼저 실행해 주세요.',
-  warning: null, holdout_total: 89, holdout_passed: 0, smoke_total: 0, smoke_passed: 0,
+  warning: null, holdout_total: 89, holdout_passed: 0,
   quantitative: null,
 }
 let gate: RagGate = { ...EMPTY_GATE }
@@ -568,7 +568,7 @@ export const adEvalRagHandlers = [
       warning_reason: null,
       // 게이트는 통과했지만 현행보다 낮아진 지표가 있으면 경고(§1.6)
       warning: worse ? 'A/B 비교 결과가 현행보다 낮습니다. 그래도 반영하려면 사유에 근거를 남겨 주세요' : null,
-      holdout_total: picked.length, holdout_passed: picked.length, smoke_total: 0, smoke_passed: 0,
+      holdout_total: picked.length, holdout_passed: picked.length,
       quantitative: {
         basis: '기준 : 링크 안내로 분류된 문항 59건 · 2026-07-28 측정. 융합 비중은 이 질의에만 영향하므로 분모가 전체 평가셋과 다릅니다',
         metrics: [

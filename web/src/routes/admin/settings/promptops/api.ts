@@ -113,10 +113,9 @@ export interface PromptVersion {
   emergency_candidate: boolean
 }
 
-/** 게시 직후 Smoke 결과 — 문항 수는 서버가 정한다(프론트는 세트 크기를 알지 않는다) */
+/** 게시 결과. 게시 직후 Smoke 는 2026-08-24 폐지 — 반영 전 확인은 [초안 평가]가 한다 */
 export interface PublishResult {
   version: string
-  smoke: { passed: number; total: number }
 }
 
 export interface ValidationResult {
