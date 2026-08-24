@@ -5,20 +5,29 @@ cross-encoder 재정렬(rerank)은 그 앞에 끼울 수 있는 선택 단계로
 비활성이다(아래). 그래서 파일명을 reranker→candidate_ranking으로 바꿔 실제 역할(후보 선별,
 재정렬은 옵션)을 반영한다.
 
-── 리랭킹(rerank) 현재 상태: 비활성 (pipeline.py의 USE_RERANKER=False, 2026-07-23) ──
-세 가지를 나눠서 읽을 것. 섞으면 "품질까지 결론났다"로 잘못 읽힌다.
+── 리랭킹(rerank) 현재 상태: 비활성 (pipeline.py의 USE_RERANKER=False, 2026-08-24 GPU 재측정 후에도 유지) ──
 
-  운영값       Off — 확정.
-  CPU 실용성   부적합 — 확정. 현 설정(k=20, max_length=8192, CPU)에서 질문당 27~210초가
-               걸렸고, 2026-07-30 재측정에서도 문항당 약 96초였다. 실서비스에 못 쓴다.
-  품질 효과    판정 보류 — 확정 아님. 2026-07-23 6문항 측정은 Recall@5 개선 0·MRR
-               0.71→0.64(하락)였는데, 2026-07-30 재측정에서는 검색 품질이 개선되는 것으로
-               나와 방향이 엇갈렸다. 표본이 작아 어느 쪽도 결론으로 쓸 수 없다.
+2026-08-24 GPU(L4) 환경에서 held-out 세트(testset_pipeline.jsonl, 79문항)로 Off·BAAI/bge-reranker-v2-m3·
+dragonkue/bge-reranker-v2-m3-ko 세 조건 실측(결과: results/pipeline_holdout/retrieval_rerank_*.json).
 
-즉 지금 Off인 직접 사유는 "품질에 도움이 안 돼서"가 아니라 "CPU에서 속도를 감당할 수 없어서"다.
-품질 효용은 GPU 환경에서 held-out 세트 전체로 다시 판정한다(비교 조건표는 저장소 루트
-README.md 2.4절). 그때까지 코드는 보존한다 — 재도입은 USE_RERANKER를 True로 바꾸면 된다.
-top_k_cut()은 리랭크 여부와 무관하게 최종 상위 k를 자를 때 계속 쓰인다.
+  Recall@5(=K_FINAL, 운영 최종 컨텍스트 크기와 동일 지표)   Off 0.956 · BAAI 0.945(↓) · dragonkue 0.956(동률)
+  Recall@1 / MRR                                          Off 0.650/0.857 · dragonkue 0.793/0.946(↑ 크게 개선)
+  속도(79문항 전체)                                        Off 427s · BAAI 1595s · dragonkue 1611s
+                                                           (문항당 +8~9초 — CPU 때 27~210초보단 개선됐지만 여전히 부담)
+
+Recall@1·MRR은 dragonkue가 크게 낫지만, 운영이 실제로 쓰는 K_FINAL=5 기준 지표(Recall@5)는 리랭킹을
+켜도 그대로거나 더 나쁨 — 즉 리랭커는 top-5 "안에서의 순서"만 바꿀 뿐 top-5에 못 들던 정답을 새로
+끌어오지 못한다. 문항당 +8~9초 비용 대비 K_FINAL=5 기준 실질 이득이 없어 Off 유지가 맞다는 결론.
+
+부수 발견(버그): gate_low_relevance의 MIN_TOP1_SCORE=0.35는 bi-encoder 점수 기준 튜닝값인데, 리랭킹을
+켜면 이 게이트가 리랭커가 새로 매긴 점수에 그대로 적용된다. dragonkue는 원점수 스케일이 훨씬 낮아서
+(예: 질문 "예금자 한 명이 한 금융회사에서 보호받을 수 있는 한도는 얼마인가요?"에서 정답 페이지가 1위인데
+점수 0.0985 < 0.35) 정답을 올바르게 찾고도 게이트가 근거를 통째로 삭제하는 경우가 다수 발생(context_hit
+실패 22건 중 18건이 이 패턴). 리랭커를 향후 재도입할 경우 MIN_TOP1_SCORE를 그 모델의 점수 분포로
+반드시 재보정해야 한다 — 안 그러면 어떤 리랭커를 붙이든 이 문제가 조용히 정답률을 깎는다.
+
+RERANK_MODEL은 재도입 시 후보 우선순위를 위해 dragonkue/bge-reranker-v2-m3-ko로 바꿔뒀다(순수 랭킹
+품질은 이쪽이 더 좋음). top_k_cut()은 리랭크 여부와 무관하게 최종 상위 k를 자를 때 계속 쓰인다.
 ────────────────────────────────────────────────────────────────────────────────
 
 bi-encoder(retrieval.py의 Dense/BM25)는 질문·문서를 따로 인코딩해 코사인 유사도·단어
@@ -37,14 +46,16 @@ rerank()로 재정렬한 뒤 top_k_cut(..., k=5)로 최종 5개만 남긴다(기
 """
 from observability import observe
 
-RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
+RERANK_MODEL = "dragonkue/bge-reranker-v2-m3-ko"
 _reranker = {}
 
 
 def _get_reranker():
     if "model" not in _reranker:
+        import torch
         from sentence_transformers import CrossEncoder
-        _reranker["model"] = CrossEncoder(RERANK_MODEL, max_length=8192, device="cpu")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        _reranker["model"] = CrossEncoder(RERANK_MODEL, max_length=8192, device=device)
     return _reranker["model"]
 
 
