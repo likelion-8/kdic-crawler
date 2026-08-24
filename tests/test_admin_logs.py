@@ -457,7 +457,11 @@ def test_a_failed_run_without_an_intent_still_renders(db_session, test_prefix, d
 def _summary(db):
     """라우터의 집계 함수를 그대로 부른다 — HTTP 를 태우지 않고 숫자만 본다."""
     from api.routers.admin_logs import logs_summary
-    return logs_summary(SimpleNamespace(role="ADMIN", email="test_t@demo", name="t"), db)
+    # from/to 는 목록과 같은 기간을 받으려고 뒤에 생긴 인자다(2026-08-24). 직접 호출은
+    # FastAPI 가 값을 채워 주지 않으므로 None 을 명시한다 — 기본값(Query 객체)을 그대로
+    # 두면 '기간 형식이 올바르지 않습니다' 로 400 이 난다.
+    return logs_summary(SimpleNamespace(role="ADMIN", email="test_t@demo", name="t"), db,
+                        None, None)
 
 
 if __name__ == "__main__":

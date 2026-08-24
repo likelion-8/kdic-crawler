@@ -72,7 +72,10 @@ def test_signature_is_order_independent_but_value_sensitive():
 def test_gate_before_evaluation_is_blocked():
     gate = build_gate()
     assert gate["passed"] is False and gate["warning_reason"]
-    assert gate["smoke_total"] == 0     # 생성 Smoke 는 재지 않는다 — 30/30 을 지어내지 않는다
+    # Smoke 는 없앴다(2026-08-24). 평가 전에는 기준 줄도 없다 — 재지 않은 것을 기준으로
+    # 적으면 AD-006 [게이트 판정 상세] 가 '판정한 적 있는 실행'처럼 보인다.
+    assert "smoke_total" not in gate and "smoke_passed" not in gate
+    assert "criteria" not in gate
 
 
 def test_gate_passes_only_when_both_axes_clear():
@@ -82,6 +85,10 @@ def test_gate_passes_only_when_both_axes_clear():
                     signature="sig", evaluated_at="t", holdout_total=89)
     assert ok["passed"] is True
     assert ok["quantitative"]["improved"] == 2      # 두 축 모두 현행보다 나아짐(실측 a/b)
+    # 판정에 쓴 기준을 함께 남긴다 — 이 두 줄이 evaluation_runs.gate 에 저장돼 AD-006
+    # [게이트 판정 상세] 모달이 읽는다. 없으면 그 모달이 통째로 빈 표가 된다(2026-08-24).
+    assert [c["label"] for c in ok["criteria"]] == ["검색 정확도@5", "MRR"]
+    assert all(c["passed"] for c in ok["criteria"])
     low = build_gate(current_metrics={"retrieval_accuracy@5": 0.93, "mrr": 0.81},
                      draft_metrics={"retrieval_accuracy@5": 0.93, "mrr": 0.79,
                                     "holdout_passed": 83},

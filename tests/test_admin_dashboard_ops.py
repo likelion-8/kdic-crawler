@@ -358,14 +358,32 @@ def test_suggestions_replace_commits_before_audit_and_returns_null_clicks(monkey
     assert captured["action"] == admin_ops.ACTION_SUGGESTIONS_REPLACE
 
 
-def test_suggestion_validation_checks_active_blocklist():
-    db = FakeDb([Result(["수익 보장"])])
-    result = admin_ops.validate_suggested_question(
+def test_suggestion_validation_reads_the_published_blocklist(monkeypatch):
+    """판정 원천은 AD-008 게시본이다.
+
+    2026-08-24 정정 — 종전에는 guardrail_rules 테이블을 읽었는데 그 표에 **쓰는 코드가 어디에도
+    없어** 늘 0행이었다. 관리자가 AD-008 에서 무엇을 등록하든 이 검사는 통과했다. 지금은 챗
+    경로와 같은 함수(api.rag.answer.guardrail_hit)를 쓴다 — 이 테스트가 깨지면 원천이 다시
+    갈린 것이다.
+    """
+    import runtime_config
+    monkeypatch.setattr(
+        runtime_config, "get_prompt",
+        lambda _k, _d: {"blocklist": {"active": True,
+                                      "items": [{"pattern": "수익 보장", "type": "단어",
+                                                 "scope": "질문 + 답변", "active": True}]}})
+    blocked = admin_ops.validate_suggested_question(
         {"text": "수익 보장 상품이 있나요?", "business_function": "예금자보호제도"},
-        _admin(role="EDITOR"), db,
+        _admin(role="EDITOR"), FakeDb([]),
     )
-    assert result["passed"] is False
-    assert "수익 보장" in result["message"]
+    assert blocked["passed"] is False
+    assert "수익 보장" in blocked["message"]
+
+    passing = admin_ops.validate_suggested_question(
+        {"text": "예금자보호 한도는 얼마인가요?", "business_function": "예금자보호제도"},
+        _admin(role="EDITOR"), FakeDb([]),
+    )
+    assert passing["passed"] is True
 
 
 def test_suggestion_limits_are_enforced():

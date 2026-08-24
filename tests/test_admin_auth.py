@@ -307,8 +307,10 @@ def test_target_summary_is_built_by_the_server():
     from api.routers.admin_pipeline import _resolve_targets
     assert _resolve_targets(_FakeDb(), "FULL_RECRAWL", ["a", "b"]) == ("선택 2페이지", 2)
     assert _resolve_targets(_FakeDb(_Result(scalar=58)), "FULL_RECRAWL", []) == ("전체 58페이지", 58)
-    # 평가는 단위가 페이지가 아니라 문항이다.
-    assert _resolve_targets(_FakeDb(_Result(scalar=89)), "SMOKE_EVAL", []) == ("평가 89문항", 89)
+    # SMOKE_EVAL 은 2026-08-24 부터 만들 수 있는 타입이 아니다(평가셋 반영이 run 을 만들어
+    # targets[0] 에 실어 인큐하는 잡이라, 그 run 없이 만들면 워커가 마감할 대상이 없다).
+    from api.routers.admin_pipeline import JOB_TYPES
+    assert "SMOKE_EVAL" not in JOB_TYPES
 
 
 def test_estimated_minutes_never_reads_as_instant():
