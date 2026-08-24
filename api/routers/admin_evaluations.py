@@ -199,7 +199,12 @@ def active_questions(db, *, in_scope: bool, limit: int) -> list:
     """평가메뉴(AD-006) 현행 버전의 활성 문항 질문 목록 — AD-008 초안 평가·게시 Smoke 가
     쓴다(2026-08-19). 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면에서 추가·수정한
     문항이 평가에 반영되지 않았다. in_scope 는 기대 출처 유무로 가른다(빈 출처 = 범위외).
-    질문 텍스트 정렬로 결정론적 순서를 보장한다(종전 question_id 정렬과 같은 목적)."""
+    질문 텍스트 정렬로 결정론적 순서를 보장한다(종전 question_id 정렬과 같은 목적).
+
+    빈 질문은 뺀다. 텍스트 정렬이라 빈 문자열이 맨 앞에 서고, 그러면 그게 평가 문항으로
+    뽑혀 LLM 을 빈 질문으로 부른다(2026-08-24 실측: AD-008 초안 평가의 범위외 2건 중 1건이
+    빈 문항이었다). 게이트 분모에도 들어가 판정을 부풀린다. 문항 자체를 지우는 것은
+    평가셋 편집(AD-006)의 일이고, 여기서는 평가에 쓰지 않는 것까지만 한다."""
     _bootstrap_if_empty(db)
     current = str(_current_version(db))
     rows = db.execute(
@@ -209,7 +214,42 @@ def active_questions(db, *, in_scope: bool, limit: int) -> list:
         .order_by(testset_items.c.question)
     ).all()
     return [r.question for r in rows
-            if bool(_all_links(r.expected_links)) == in_scope][:limit]
+            if (r.question or "").strip()
+            and bool(_all_links(r.expected_links)) == in_scope][:limit]
+
+
+def questions_by_ids(db, ids: list) -> tuple:
+    """고른 문항 id -> (인스코프, 범위외) 질문 목록. 현행 버전·미제외·질문 있는 것만.
+
+    AD-008 [초안 평가]가 쓴다 — 관리자가 평가셋 목록 모달에서 체크한 문항으로 재게 한다.
+    인스코프/범위외 판정은 **서버가** 한다(기대 출처 유무). 화면이 보낸 분류를 믿으면
+    판정 기준(근거를 써야 통과 / 안 써야 통과)이 화면 버그에 흔들린다.
+    """
+    if not ids:
+        return [], []
+    _bootstrap_if_empty(db)
+    current = str(_current_version(db))
+    keys = []
+    for raw in ids:
+        try:
+            keys.append(uuid.UUID(str(raw)))
+        except (ValueError, AttributeError, TypeError):
+            continue          # 모르는 id 는 조용히 버린다 — 목록이 바뀌었을 수 있다
+    if not keys:
+        return [], []
+    rows = db.execute(
+        select(testset_items.c.question, testset_items.c.expected_links)
+        .where(testset_items.c.testset_version == current,
+               testset_items.c.excluded.is_(False),
+               testset_items.c.id.in_(keys))
+        .order_by(testset_items.c.created_at.asc())
+    ).all()
+    in_scope, oos = [], []
+    for r in rows:
+        if not (r.question or "").strip():
+            continue
+        (in_scope if _all_links(r.expected_links) else oos).append(r.question)
+    return in_scope, oos
 
 
 def compute_gate(m: dict) -> dict:

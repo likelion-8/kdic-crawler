@@ -7,7 +7,7 @@
  *   ADMIN은 요청 없이 바로 [게시]('단독 게시'로 활동 로그에 기록, §2.9).
  * - 셸(GNB·헤더·설정 서브탭)은 AdminLayout이 그린다. 여기서 다시 그리지 않는다.
  * - ※로 시작하는 빨간 주석은 기획 주석이라 렌더하지 않는다(00-meta NOTATION). */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ReturnBand } from '../ReturnBand'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -22,9 +22,10 @@ import {
   VersionHistoryCard,
 } from './promptops/prompt-cards'
 import { BeforeAfterCard } from './promptops/prompt-compare'
+import { EvalPickerDialog } from './promptops/eval-picker'
 import type {
-  BlocklistRule, MaskingRule, PromptDraft, PromptDraftContent, PromptEvaluation, PromptPrinciple,
-  PromptVersion,
+  BlocklistRule, EvalPick, MaskingRule, PromptDraft, PromptDraftContent, PromptEvaluation,
+  PromptPrinciple, PromptVersion,
 } from './promptops/api'
 import {
   emergencyRollback, evaluatePrompt, fetchPromptDraft, promptKeys, publishPrompt, reauthenticate,
@@ -79,6 +80,23 @@ export function PromptGuardrail() {
     void qc.invalidateQueries({ queryKey: promptKeys.draft })
     void qc.invalidateQueries({ queryKey: promptKeys.versions })
   }
+
+  /** 이 실행에 쓸 문항. null 이면 서버 기본값(평가셋 AD-006 앞 6건)을 쓴다.
+   *  프롬프트 초안과 섞지 않는다 — 문항은 프롬프트 내용이 아니라 평가 설정이라, 게시
+   *  payload 나 변경 건수에 들어가면 '프롬프트를 고쳤다'고 거짓말하게 된다. */
+  const [picks, setPicks] = useState<EvalPick[] | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const defaults = draftQuery.data?.eval_questions
+  /** 기본값을 화면에 보여줄 형태로 — 기본값에는 item_id 가 없다(서버가 문구만 준다).
+   *  useMemo 로 참조를 고정한다: 이 값이 모달의 초기화 effect 의 의존성이라, 매 렌더 새
+   *  배열이면 effect 가 매번 다시 돌아 무한 루프가 된다 */
+  const defaultPicks = useMemo<EvalPick[]>(() => [
+    ...(defaults?.in_scope ?? []).map((q) => ({ item_id: '', question: q, in_scope: true })),
+    ...(defaults?.out_of_scope ?? []).map((q) => ({ item_id: '', question: q, in_scope: false })),
+  ], [defaults])
+  const effectivePicks = picks ?? defaultPicks
+  /** 고른 게 없으면 빈 배열 — 서버가 기본값을 쓴다(기본값에는 id 가 없어 보낼 것도 없다) */
+  const pickedIds = (picks ?? []).map((p) => p.item_id).filter(Boolean)
 
   /** [초안 평가] — 로컬 초안을 실어 보내는 일시 평가. 서버 초안을 만들지도 바꾸지도 않는다 */
   const evaluate = useMutation({
@@ -188,7 +206,7 @@ export function PromptGuardrail() {
           // (`초안 평가 : A/B 검색 비교` / `초안 평가 : 전후 답변 비교`).
           // 같은 동작에 두 이름을 붙이면 두 화면이 다른 물건처럼 보인다(사용자 지적).
           secondaryLabel="초안 평가"
-          onSecondary={() => evaluate.mutate(contentOf(draft))}
+          onSecondary={() => evaluate.mutate({ draft: contentOf(draft), questionIds: pickedIds })}
         />
       </div>
 
@@ -291,7 +309,21 @@ export function PromptGuardrail() {
         baseVersion={draft.base_version}
         running={evaluate.isPending}
         error={evaluate.error}
-        onRun={() => evaluate.mutate(contentOf(draft))}
+        onRun={() => evaluate.mutate({ draft: contentOf(draft), questionIds: pickedIds })}
+        picks={effectivePicks}
+        picksAreDefault={picks === null}
+        onPick={() => setPickerOpen(true)}
+        onPicksReset={() => setPicks(null)}
+      />
+
+      <EvalPickerDialog
+        open={pickerOpen}
+        selected={effectivePicks}
+        onClose={() => setPickerOpen(false)}
+        onApply={(next) => {
+          setPicks(next)
+          setPickerOpen(false)
+        }}
       />
 
       {/* 편집 모달은 열 때마다 새로 마운트해 현재 초안 값으로 초기화한다 */}

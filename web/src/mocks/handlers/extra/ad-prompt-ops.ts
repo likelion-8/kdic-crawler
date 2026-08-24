@@ -226,6 +226,16 @@ const draft: PromptDraft = {
   blocklist: { active: true, items: BLOCKLIST },
   masking: { active: true, items: MASKING },
   evaluation: null,
+  // [초안 평가]가 쓰는 대표 질의 기본값 — 서버는 평가셋(AD-006) 활성 문항에서 뽑는다
+  eval_questions: {
+    in_scope: [
+      '예금자보호 한도가 얼마인가요?',
+      '착오송금 반환지원 신청 방법을 알려주세요',
+      '미수령금 조회는 어디서 하나요?',
+      '은닉재산 신고 포상금은 얼마인가요?',
+    ],
+    out_of_scope: ['오늘 날씨 어때', '대출 금리 알려줘'],
+  },
 }
 
 const versions: PromptVersion[] = [
@@ -277,13 +287,18 @@ function promote(content: PromptDraftContent, version: string) {
 }
 
 /** 대표 질의 6건 회귀 판정. 목은 초안 내용을 실제로 돌려보지 않고 고정 결과를 준다 */
-function evaluate(): PromptEvaluation {
-  const improved = EVAL_ITEMS.filter((i) => i.verdict === 'IMPROVED').length
-  const regressed = EVAL_ITEMS.filter((i) => i.verdict === 'REGRESSED').length
+function evaluate(asked: string[] = []): PromptEvaluation {
+  // 화면이 문항을 고쳐 보내면 그 문항명으로 항목을 만든다 — 목이 늘 같은 6건을 돌려주면
+  // '내가 고친 질의로 재고 있다'가 검증되지 않는다. 답변 본문은 고정 예시를 돌려 쓴다
+  const items = asked.length === 0
+    ? EVAL_ITEMS
+    : asked.map((question, i) => ({ ...EVAL_ITEMS[i % EVAL_ITEMS.length], id: `ev${i + 1}`, question }))
+  const improved = items.filter((i) => i.verdict === 'IMPROVED').length
+  const regressed = items.filter((i) => i.verdict === 'REGRESSED').length
   return {
     ran_at: nowIso(),
-    summary: { total: EVAL_ITEMS.length, keep: EVAL_ITEMS.length - improved - regressed, improved, regressed },
-    items: EVAL_ITEMS,
+    summary: { total: items.length, keep: items.length - improved - regressed, improved, regressed },
+    items,
     gate: {
       passed: regressed === 0,
       source_attached: { passed: true, count: 6, total: 6 },
@@ -430,10 +445,17 @@ export const adPromptOpsHandlers = [
   http.post('/api/admin/prompt/evaluate', async ({ request }) => {
     const no = denied(request, 'EDITOR')
     if (no) return no
-    const body = (await request.json()) as WriteBody & DraftBody
+    const body = (await request.json()) as WriteBody & DraftBody & {
+      questions?: { in_scope?: string[]; out_of_scope?: string[] }
+    }
     if (!body.draft) return fail(400, '평가할 초안 내용이 필요합니다.')
+    // 화면이 고친 대표 질의를 그대로 쓴다(안 보내면 기본값). 서버도 같은 규칙이다
+    const asked = [
+      ...(body.questions?.in_scope ?? []),
+      ...(body.questions?.out_of_scope ?? []),
+    ].filter((q) => q.trim())
     await delay(1_200)
-    return HttpResponse.json(evaluate())
+    return HttpResponse.json(evaluate(asked))
   }),
 
   http.get('/api/admin/prompt/versions', ({ request }) =>

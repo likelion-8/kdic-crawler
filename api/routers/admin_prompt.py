@@ -193,6 +193,9 @@ def build_draft_response(db, *, base: dict = None) -> dict:
         "char_count": len(base["system_instruction"]),
         "dirty": {"prompt": False, "fewshot": False, "guardrail": False},
         "evaluation": None,
+        # [초안 평가]가 쓰는 대표 질의 기본값. 화면이 이걸 초기값으로 보여주고 관리자가 고쳐
+        # 평가 때 되돌려 보낸다 — 종전에는 어느 문항으로 재는지 화면에 보이지도 않았다.
+        "eval_questions": _default_eval_questions(db),
     }
 
 
@@ -340,13 +343,41 @@ def _generate(question: str, si: str, few_shot: list, *, seed: int | None = None
     return body, marker_used, sources
 
 
-def _eval_questions(db):
-    """전후 비교용 고정 문항 — 평가메뉴(AD-006) 현행 버전에서 인스코프 앞 N + 범위외 앞 M.
-    2026-08-19 전환: 종전에는 골든셋(evaluation_dataset)을 직접 읽어 화면 편집(추가·수정)이
-    반영되지 않았다. 이제 관리자가 보는 평가셋이 곧 평가 문항이다."""
+def _default_eval_questions(db) -> dict:
+    """대표 질의 기본값 — 평가메뉴(AD-006) 현행 버전에서 인스코프 앞 N + 범위외 앞 M.
+    관리자가 보는 평가셋이 곧 기본 문항이다(2026-08-19 전환)."""
     from api.routers.admin_evaluations import active_questions
-    in_scope = active_questions(db, in_scope=True, limit=EVAL_IN_SCOPE)
-    oos = active_questions(db, in_scope=False, limit=EVAL_OUT_OF_SCOPE)
+    return {
+        "in_scope": active_questions(db, in_scope=True, limit=EVAL_IN_SCOPE),
+        "out_of_scope": active_questions(db, in_scope=False, limit=EVAL_OUT_OF_SCOPE),
+    }
+
+
+# 한 번에 고를 수 있는 문항 수 상한. 문항당 현행·초안 두 벌을 생성하므로 콜 수는 이것의
+# 2배다 — 상한이 없으면 89문항을 골라 178콜을 쏘고 생성 한도에 걸린다.
+EVAL_PICK_MAX = 12
+
+
+def _eval_questions(db, ids) -> tuple:
+    """전후 비교에 쓸 (인스코프, 범위외) 문항.
+
+    화면이 평가셋(AD-006) 문항 id 를 보내면 그 문항으로 잰다 — 관리자가 목록 모달에서
+    체크한 만큼 고를 수 있다. 안 보내면 기본값(인스코프 앞 4 + 범위외 앞 2).
+
+    인스코프/범위외 분류는 서버가 한다(기대 출처 유무) — 판정 기준이 반대라(근거를 써야
+    통과 / 안 써야 통과) 화면이 보낸 분류를 믿으면 판정이 화면 버그에 흔들린다.
+    """
+    if not ids:
+        default = _default_eval_questions(db)
+        return default["in_scope"], default["out_of_scope"]
+    if len(ids) > EVAL_PICK_MAX:
+        raise BadRequestError(
+            f"한 번에 고를 수 있는 문항은 {EVAL_PICK_MAX}건까지입니다. "
+            f"문항당 답변을 두 벌 생성하므로 그 이상은 생성 요청 한도에 걸립니다.")
+    from api.routers.admin_evaluations import questions_by_ids
+    in_scope, oos = questions_by_ids(db, list(ids))
+    if not in_scope and not oos:
+        raise BadRequestError("고른 문항을 찾을 수 없습니다. 평가셋 목록을 다시 불러와 주세요.")
     return in_scope, oos
 
 
@@ -386,9 +417,10 @@ def evaluate_prompt(body: dict, me: CurrentAdmin, db: DbSession):
     base = _effective(db)
     blockwords = _blockwords(content["guardrails"])
 
-    in_scope, oos = _eval_questions(db)
+    in_scope, oos = _eval_questions(db, body.get("question_ids") or [])
     if not in_scope:
-        raise BadRequestError("평가 문항이 없습니다(evaluation_dataset 비어 있음).")
+        raise BadRequestError(
+            "안내 범위 안 문항이 없습니다 — 기대 출처가 있는 문항을 하나 이상 골라 주세요.")
 
     items = []
     src_ok = 0

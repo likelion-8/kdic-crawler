@@ -4,10 +4,10 @@
 import { useState } from 'react'
 import { GitCompareArrows } from 'lucide-react'
 import { AnswerMessage } from '../../../../components/chat'
-import { Badge, ColorText, EmptyState, Loading, Toggle } from '../../../../components/ui'
+import { Badge, Button, ColorText, EmptyState, Loading, Toggle } from '../../../../components/ui'
 import { cn } from '@/lib/utils'
 import { Card, SectionError, linkClass } from './common'
-import type { EvalVerdict, PromptEvaluation } from './api'
+import type { EvalPick, EvalVerdict, PromptEvaluation } from './api'
 
 /** 판정 표기 — Description 4 "유지 ✓ / 개선 △ / 회귀 ✗" 원문 */
 const VERDICT: Record<EvalVerdict, { label: string; tone: 'green' | 'orange' | 'red' }> = {
@@ -23,17 +23,98 @@ export interface BeforeAfterCardProps {
   error: unknown
   /** 실패 후 재시도 전용 — 실행 버튼([초안 평가])은 상태 바가 갖는다(§2.2 우측 버튼 3개) */
   onRun: () => void
+  /** 이 실행에 쓸 문항 */
+  picks: EvalPick[]
+  /** 기본값(서버가 평가셋에서 뽑은 앞 6건)을 쓰는 중인가 */
+  picksAreDefault: boolean
+  /** [문항 고르기] — 평가셋 목록 모달을 연다 */
+  onPick: () => void
+  /** 기본값으로 되돌리기 */
+  onPicksReset: () => void
 }
 
-export function BeforeAfterCard({ evaluation, baseVersion, running, error, onRun }: BeforeAfterCardProps) {
+/** 고른 문항 요약 — 무엇으로 재는지 카드에서 바로 읽히게 한다.
+ *
+ * 종전에는 서버가 평가셋 앞 6건을 자동으로 집어 썼고 화면에 보이지 않았다. 그래서 평가셋에
+ * 섞인 빈 문항으로 판정이 나가도 아무도 몰랐다(2026-08-24 실측). 문항 편집은 여기서 하지
+ * 않는다 — 그건 평가셋(AD-006)의 일이고, 두 곳에서 고치면 정본이 흐려진다. */
+function QuestionSummary({ picks, isDefault, onPick, onReset, disabled }: {
+  picks: EvalPick[]
+  isDefault: boolean
+  onPick: () => void
+  onReset: () => void
+  disabled: boolean
+}) {
+  const inScope = picks.filter((p) => p.in_scope).length
+  return (
+    <div className="mb-4 rounded-md border border-border p-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-[13px] font-semibold">
+          평가 문항 {picks.length}건
+          <span className="ml-1.5 font-normal text-muted-foreground">
+            범위 안 {inScope} · 범위 밖 {picks.length - inScope}
+            {isDefault && ' · 기본값'}
+          </span>
+        </h4>
+        <div className="flex items-center gap-2">
+          {!isDefault && (
+            <button type="button" className={linkClass} onClick={onReset} disabled={disabled}>
+              기본값으로
+            </button>
+          )}
+          <Button size="sm" variant="secondary" onClick={onPick} disabled={disabled}>
+            문항 고르기
+          </Button>
+        </div>
+      </div>
+      {picks.length === 0 ? (
+        <p className="text-xs text-muted-foreground">고른 문항이 없습니다</p>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {picks.map((p) => (
+            <li key={p.item_id || p.question} className="flex items-start gap-2 text-[13px]">
+              <span
+                className={cn(
+                  'mt-0.5 shrink-0 text-xs',
+                  p.in_scope ? 'text-success-fg' : 'text-warning',
+                )}
+              >
+                {p.in_scope ? '범위 안' : '범위 밖'}
+              </span>
+              <span className="min-w-0 break-keep">{p.question}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-xs text-muted-foreground">
+        기본값은 평가셋(AD-006)의 활성 문항 앞 6건입니다. 문항당 현행·초안 두 벌을 생성하므로
+        답변 생성은 선택 건수의 2배이며, 짧은 시간에 여러 번 실행하면 생성 요청 한도에 걸릴 수
+        있습니다.
+      </p>
+    </div>
+  )
+}
+
+export function BeforeAfterCard(props: BeforeAfterCardProps) {
+  const { evaluation, baseVersion, running, error, onRun } = props
   const [changedOnly, setChangedOnly] = useState(true)
   const [open, setOpen] = useState<string[]>([])
+  const summary_ = (
+    <QuestionSummary
+      picks={props.picks}
+      isDefault={props.picksAreDefault}
+      onPick={props.onPick}
+      onReset={props.onPicksReset}
+      disabled={running}
+    />
+  )
 
   if (!evaluation) {
     return (
       <Card title="초안 평가 : 전후 답변 비교" icon={<GitCompareArrows />} wide>
+        {summary_}
         {running ? (
-          <Loading text="초안 평가를 실행하는 중…" detail="대표 질의 6건의 답변을 생성하는 중…" />
+          <Loading text="초안 평가를 실행하는 중…" detail={`문항 ${props.picks.length}건의 답변을 생성하는 중…`} />
         ) : (
           <EmptyState title="아직 초안 평가를 실행하지 않았습니다. 상태 바의 [초안 평가]로 실행합니다" />
         )}
@@ -60,6 +141,7 @@ export function BeforeAfterCard({ evaluation, baseVersion, running, error, onRun
 
   return (
     <Card title="초안 평가 : 전후 답변 비교" icon={<GitCompareArrows />} wide>
+      {summary_}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
           대표 질의 {summary.total}건 · 유지 {summary.keep} · 개선 {summary.improved} · 회귀{' '}
