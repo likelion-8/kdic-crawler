@@ -579,15 +579,23 @@ export const adPipelineLogsHandlers = [
   }),
 
   // 요약 스트립은 필터와 무관하게 항상 '오늘' 기준이다(11 §H2 대응)
-  http.get('/api/admin/logs/summary', () => {
-    const today = rows.filter((r) => r.occurred_at.slice(0, 10) === KST_TODAY)
+  // 스트립은 기간에 연동한다(from·to 는 목록과 같은 KST 날짜). 둘 다 없으면 오늘 —
+  // 나머지 필터는 반영하지 않는다(스트립이 상태별 분해라 상태를 걸면 나머지 칸이 0 이 된다)
+  http.get('/api/admin/logs/summary', ({ request }) => {
+    const url = new URL(request.url)
+    const from = url.searchParams.get('from') || KST_TODAY
+    const to = url.searchParams.get('to') || KST_TODAY
+    const inRange = rows.filter((r) => {
+      const day = r.occurred_at.slice(0, 10)
+      return day >= from && day <= to
+    })
     const body: LogSummary = {
-      total: today.length,
-      normal: today.filter((r) => r.status === 'NORMAL').length,
-      out_of_scope: today.filter((r) => r.status === 'OUT_OF_SCOPE').length,
-      failed: today.filter((r) => r.status === 'FAILED').length,
-      feedback_up: today.filter((r) => r.feedback === 'up').length,
-      feedback_down: today.filter((r) => r.feedback === 'down').length,
+      total: inRange.length,
+      normal: inRange.filter((r) => r.status === 'NORMAL').length,
+      out_of_scope: inRange.filter((r) => r.status === 'OUT_OF_SCOPE').length,
+      failed: inRange.filter((r) => r.status === 'FAILED').length,
+      feedback_up: inRange.filter((r) => r.feedback === 'up').length,
+      feedback_down: inRange.filter((r) => r.feedback === 'down').length,
     }
     return HttpResponse.json(body)
   }),

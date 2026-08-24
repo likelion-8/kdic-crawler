@@ -257,8 +257,16 @@ export function fetchLogs(filters: LogFilters, page: number, size: number) {
   return apiRequest<Page<ConversationLogRow>>(`/api/admin/logs?${params.toString()}`)
 }
 
-export function fetchSummary() {
-  return apiRequest<LogSummary>('/api/admin/logs/summary')
+export function fetchSummary(filters: LogFilters) {
+  // 목록과 같은 기간을 넘긴다 — 스트립을 오늘로 고정하면 30일을 보는 중에도 숫자가 오늘 것이라
+  // 목록 건수와 나란히 서서 어느 쪽이 참인지 알 수 없다. 상태·피드백 등 나머지 필터는 넘기지
+  // 않는다: 스트립이 상태별 분해라 상태 필터를 걸면 고른 칸만 남고 나머지가 0 이 된다.
+  const { from, to } = periodRange(filters)
+  const params = new URLSearchParams()
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  const qs = params.toString()
+  return apiRequest<LogSummary>(`/api/admin/logs/summary${qs ? `?${qs}` : ''}`)
 }
 
 export function fetchLogDetail(requestId: string) {

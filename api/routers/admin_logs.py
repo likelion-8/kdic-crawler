@@ -339,20 +339,37 @@ def list_logs(
 
 
 @router.get("/summary", response_model=LogSummary)
-def logs_summary(admin: CurrentAdmin, db: DbSession):
-    """오늘(KST) 집계. **목록 필터와 무관하게** 항상 오늘 기준이다(G1: '항상 오늘 기준').
+def logs_summary(
+    admin: CurrentAdmin,
+    db: DbSession,
+    # 화면이 고른 기간을 그대로 받는다(목록과 같은 KST 날짜 · logs/api.ts periodRange).
+    # 둘 다 없으면 오늘 — 진입 직후 기본 기간이 '오늘'이라 종전 동작과 같다.
+    from_: Optional[str] = Query(default=None, alias="from"),
+    to: Optional[str] = None,
+):
+    """선택한 기간(KST)의 상태·피드백 집계.
+
+    기간에 연동한다 — 스트립을 늘 오늘로 고정하면 30일을 보는 중에도 숫자가 오늘 것이라,
+    목록 406건 옆에 '4건'이 서서 어느 쪽이 참인지 알 수 없다. 상태·피드백 등 나머지 필터는
+    반영하지 않는다: 스트립 자체가 상태별 분해라 상태 필터를 걸면 고른 칸만 남고 나머지가
+    0 이 되어 분해의 뜻이 사라진다.
 
     VIEWER 도 볼 수 있는 유일한 대화 로그 엔드포인트다 — 숫자에는 대화 내용이 없다.
     """
     del admin  # 인증은 라우터 의존성이 했고, 집계에는 사용자별 데이터가 없다.
 
-    now = datetime.now(timezone.utc)
-    today_start = _kst_day_start(now.astimezone(KST).date())
+    start, end = _resolve_range(from_, to)
+    if start is None and end is None:
+        start = end = datetime.now(timezone.utc).astimezone(KST).date()
     # 목록과 **같은 모집단**을 세야 한다 — request_id 없는 행(CLI·Streamlit 기록)을 여기서만
-    # 세면 '오늘 3건'인데 목록은 0건이 되어, 운영자가 사라진 3건을 찾게 된다.
-    today = and_(rag_runs.c.created_at >= today_start,
-                 rag_runs.c.request_id.isnot(None),
-                 rag_runs.c.request_id != "")
+    # 세면 '3건'인데 목록은 0건이 되어, 운영자가 사라진 3건을 찾게 된다.
+    conds = [rag_runs.c.request_id.isnot(None), rag_runs.c.request_id != ""]
+    if start:
+        conds.append(rag_runs.c.created_at >= _kst_day_start(start))
+    if end:
+        # to 당일을 통째로 포함시킨다(모듈 주석 참고 · 목록 빌더와 같은 규칙)
+        conds.append(rag_runs.c.created_at < _kst_day_start(end) + timedelta(days=1))
+    today = and_(*conds)
 
     # 상태 3종을 한 번에 센다 — 질의 4번을 왕복하는 것보다 낫고, 합계가 부분합과
     # 어긋날 여지도 없앤다.

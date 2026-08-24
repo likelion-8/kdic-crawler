@@ -145,8 +145,19 @@ export function ConversationLogs() {
     enabled: canViewDetail && rangeError === undefined,
   })
 
-  // 스트립은 필터와 무관하게 항상 '오늘' 기준이다(11 §H2 — 라벨 '오늘 대화'를 원문대로 두기 위한 선택)
-  const summary = useQuery({ queryKey: [...logsQueryKey, 'summary'], queryFn: fetchSummary })
+  // 스트립은 기간 필터에 연동한다. 나머지 필터(성격·상태·피드백·처리·검색)는 반영하지 않는다 —
+  // 스트립 자체가 상태별 분해라 상태를 걸면 고른 칸만 남고 나머지가 0 이 된다.
+  const summary = useQuery({
+    queryKey: [...logsQueryKey, 'summary', filters.period, filters.from, filters.to],
+    queryFn: () => fetchSummary(filters),
+    enabled: rangeError === undefined,
+  })
+  /** 스트립 첫 칸 라벨 — 어느 기간의 숫자인지 값 옆에서 바로 읽히게 한다 */
+  const summaryLabel =
+    filters.period === 'today' ? '오늘 대화'
+      : filters.period === '7d' ? '7일 대화'
+        : filters.period === '30d' ? '30일 대화'
+          : '선택 기간 대화'
 
   const detail = useQuery({
     queryKey: [...logsQueryKey, 'detail', selectedId],
@@ -351,7 +362,7 @@ export function ConversationLogs() {
         className={
           summary.data ? 'grid grid-cols-2 divide-x overflow-hidden rounded-md border bg-card sm:grid-cols-3 xl:grid-cols-5' : undefined
         }
-        aria-label="오늘 요약"
+        aria-label={`${summaryLabel} 요약`}
       >
         {summary.isPending ? (
           <Loading text="요약을 불러오는 중…" />
@@ -363,10 +374,11 @@ export function ConversationLogs() {
           </ErrorNote>
         ) : (
           <>
+            {/* 기간은 이미 고른 값이라 건드리지 않는다 — 상태·피드백만 푼다 */}
             <SummaryCell
-              label="오늘 대화"
+              label={summaryLabel}
               value={`${summary.data.total}건`}
-              onClick={() => patch({ period: 'today', status: '', feedback: '' })}
+              onClick={() => patch({ status: '', feedback: '' })}
             />
             <SummaryCell
               label="정상"
