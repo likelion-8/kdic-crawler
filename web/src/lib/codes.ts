@@ -85,13 +85,19 @@ export const ROLE_RANK: Record<Role, number> = { VIEWER: 0, OPERATOR: 1, EDITOR:
 export const hasRole = (mine: Role | undefined, need: Role) =>
   mine !== undefined && ROLE_RANK[mine] >= ROLE_RANK[need]
 
-export type JobErrorCode = 'STAGE_TIMEOUT' | 'JOB_TIMEOUT' | 'SOURCE_ERROR' | 'RESOURCE_ERROR' | 'INTERNAL'
+/** CM-DF-002 06절의 5종에 STAGE_FAILED 를 더한 것 — 기획서에 없지만 **워커가 실제로 내는
+ *  유일한 코드**다(src/worker.py run_job 의 StageFailed 핸들러). 빠져 있어서 실패 상세가
+ *  통째로 크래시했다(2026-08-25 QA). 서버가 이 목록 밖 값을 보내도 화면은 살아야 하므로
+ *  읽을 때는 항상 jobErrorMessage()/jobErrorAutoRetry() 를 쓴다 — 직접 인덱싱하지 말 것. */
+export type JobErrorCode =
+  | 'STAGE_TIMEOUT' | 'JOB_TIMEOUT' | 'SOURCE_ERROR' | 'RESOURCE_ERROR' | 'INTERNAL' | 'STAGE_FAILED'
 export const JOB_ERROR_MESSAGE: Record<JobErrorCode, string> = {
   STAGE_TIMEOUT: '{단계} 처리 중 5분간 진행이 없어 중단했습니다',
   JOB_TIMEOUT: '허용 시간을 넘겨 중단했습니다',
   SOURCE_ERROR: '원본 사이트에 접근하지 못했습니다',
   RESOURCE_ERROR: '처리에 필요한 자원이 부족했습니다',
   INTERNAL: '처리 중 오류가 발생했습니다',
+  STAGE_FAILED: '{단계} 처리 중 오류가 발생했습니다',
 }
 /** 1이면 [재시도] 노출 */
 export const JOB_ERROR_RETRY: Record<JobErrorCode, 0 | 1> = {
@@ -100,7 +106,16 @@ export const JOB_ERROR_RETRY: Record<JobErrorCode, 0 | 1> = {
   SOURCE_ERROR: 1,
   RESOURCE_ERROR: 1,
   INTERNAL: 0,
+  // 워커에는 자동 재시도 경로가 없다 — 실패하면 그 자리에서 끝난다(worker.run_job)
+  STAGE_FAILED: 0,
 }
+
+/** 계약 밖 코드가 와도 undefined 를 돌려주지 않는다. 서버는 JobError.code 를 str 로 두고
+ *  있어(api/schemas/pipeline.py) 타입만으로는 못 막는다 — 실제로 STAGE_FAILED 가 새서
+ *  `JOB_ERROR_MESSAGE[code].replace(...)` 가 화면을 통째로 날렸다(2026-08-25 QA). */
+export const jobErrorMessage = (code: string, stage: string) =>
+  (JOB_ERROR_MESSAGE[code as JobErrorCode] ?? JOB_ERROR_MESSAGE.INTERNAL).replace('{단계}', stage)
+export const jobErrorAutoRetry = (code: string) => JOB_ERROR_RETRY[code as JobErrorCode] ?? 0
 
 // --- 07. 활동 로그 ---
 export type ActivityResult = '성공' | '실패' | '거부됨'

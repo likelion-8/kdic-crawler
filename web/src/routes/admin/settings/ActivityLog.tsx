@@ -25,7 +25,7 @@ import {
   useToast,
 } from '../../../components/ui'
 import type { Column } from '../../../components/ui'
-import { apiRequest, isApiRequestError } from '../../../lib/api/client'
+import { apiDownload, apiRequest, isApiRequestError } from '../../../lib/api/client'
 import type { Page } from '../../../lib/api/types'
 import { hasRole } from '../../../lib/codes'
 import { formatDate, formatMonthDayTime, formatTime } from '../../../lib/format'
@@ -129,16 +129,17 @@ export function ActivityLog() {
 
   const exporting = useMutation({
     mutationFn: (reason: string) =>
-      apiRequest<{ export_id: string }>('/api/admin/activity/exports', {
+      // CSV 를 그 자리에서 받아 저장한다. 종전에는 접수증만 받고 파일이 안 생겼다(2026-08-25 QA)
+      apiDownload('/api/admin/activity/exports', {
         method: 'POST',
         reason,
         // 내보내기 대상은 '현재 필터 결과'다 (Description 2)
         body: { filter: Object.fromEntries(params) },
       }),
-    onSuccess: () => {
+    onSuccess: ({ rows }) => {
       setExportOpen(false)
       setExportError(null)
-      showToast('내보내기를 시작했습니다')
+      showToast(`${rows.toLocaleString()}건을 파일로 저장했습니다`)
     },
     onError: (error: Error) => {
       // 실패는 토스트가 아니라 화면 안에 남긴다 (CM-DF-001 07.4절)

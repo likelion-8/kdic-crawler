@@ -105,8 +105,9 @@ class RateLimitMiddleware:
     한계를 분명히 해둔다:
     - 프로세스 메모리에 카운트를 둔다. uvicorn 워커를 N개 띄우면 실질 한도가 N배가 된다.
     - 서버를 재시작하면 카운트가 초기화된다(차단 목록은 DB 라 유지된다).
-    - 세션별 30분 한도(session_per_30min)는 미들웨어가 세션 id 를 모른다(요청 본문에 있다)
-      — 정책 값은 저장·표시되지만 집행은 후속 과제다.
+    - 세션별 30분 한도(session_per_30min)는 여기서 못 잰다 — 미들웨어는 세션 id 를 모른다
+      (요청 본문에 있다). 세션 id 를 아는 챗 라우터가 api/ops_policy.check_session_quota 로
+      집행한다(2026-08-25 QA 이후).
     즉 남용을 늦추는 최소 장치이지 정확한 쿼터가 아니다. 정확한 제한이 필요해지면
     Redis 등 공유 저장소 기반으로 이 클래스만 갈아끼우면 된다.
 
@@ -124,8 +125,8 @@ class RateLimitMiddleware:
         self.window_s = 60.0
         self._hits = defaultdict(deque)  # client key -> 최근 요청 시각들
         self._last_sweep = 0.0
-        # AD-009 운영 정책 연동 상태 (전부 실패-안전 — DB 가 죽어도 기본값으로 동작)
-        self._policy = {"at": 0.0, "value": None}         # ops_policy 30초 TTL 캐시
+        # AD-009 운영 정책 연동 상태 (전부 실패-안전 — DB 가 죽어도 기본값으로 동작).
+        # 정책 캐시 자체는 api/ops_policy.py 가 들고 있다.
         self._blocks = {"at": 0.0, "value": {}}           # 활성 차단 {key: expires_ts} 10초 TTL
         self._day = None                                  # 일일 카운터 리셋 기준일(KST)
         self._day_hits = defaultdict(int)                 # key -> 오늘 요청 수
@@ -159,7 +160,6 @@ class RateLimitMiddleware:
         for k in v_stale:
             del self._violations[k]
 
-    _POLICY_TTL_S = 30.0
     _BLOCKS_TTL_S = 10.0
     _BURST_WINDOW_S = 10.0
     _VIOLATION_WINDOW_S = 600.0   # PRD-03: 10분 내 위반 3회 → 10분 차단
@@ -167,26 +167,13 @@ class RateLimitMiddleware:
     _BLOCK_MINUTES = 10
 
     def _get_policy(self, now):
-        """ops_policy 최신 행 -> {ip_per_min, ip_per_day, burst_per_10s}. 30초 TTL."""
-        if now - self._policy["at"] < self._POLICY_TTL_S and self._policy["value"]:
-            return self._policy["value"]
-        value = {"ip_per_min": 10, "ip_per_day": 300, "burst_per_10s": 3}  # AD-009 기본값
-        try:
-            from sqlalchemy import select
-            from db import get_session
-            from schema_admin import ops_policy
-            with get_session() as session:
-                row = session.execute(
-                    select(ops_policy).order_by(ops_policy.c.version.desc()).limit(1)).first()
-            if row is not None and row.policy:
-                for k in ("ip_per_min", "ip_per_day"):
-                    if row.policy.get(k) is not None:
-                        value[k] = row.policy[k]
-                # burst_per_10s 는 읽기 전용 상수(admin_ops READ_ONLY_POLICY_FIELDS)라 기본값 유지
-        except Exception:  # noqa: BLE001 — 정책을 못 읽으면 기본값으로 제한한다
-            logger.exception("ops_policy 조회 실패 — 기본 한도로 동작")
-        self._policy = {"at": now, "value": value}
-        return value
+        """정책 읽기는 api/ops_policy.get_policy 한 곳이다(30초 TTL).
+
+        종전에는 이 클래스 안에만 캐시가 있어서, 미들웨어가 볼 수 없는 값
+        (session_per_30min · over_limit_message)은 저장만 되고 아무도 읽지 않았다
+        (2026-08-25 QA). 밖으로 뺀 뒤 챗 라우터도 같은 정책을 본다."""
+        from api.ops_policy import get_policy
+        return get_policy(now)
 
     def _active_block_until(self, key, now):
         """rate_limit_blocks 활성 차단 만료 monotonic 시각 | None. 10초 TTL 캐시."""
@@ -319,7 +306,10 @@ class RateLimitMiddleware:
                     status_code=429,
                     content=build_error_body(
                         code="LLM_RATE_LIMIT",
-                        user_message="요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        # 문구는 AD-009 에서 관리자가 편집한다(over_limit_message). 종전에는
+                        # 여기 박혀 있어 화면에서 고쳐도 사용자는 옛 문구를 봤다(2026-08-25 QA)
+                        user_message=str(policy.get("over_limit_message")
+                                         or "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
                         retryable=False, fallback_sources=[], request_id=request_id),
                     headers={"Retry-After": "60"})
                 await response(scope, receive, send)

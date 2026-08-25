@@ -38,10 +38,11 @@ from sqlalchemy import func, or_, select
 from api.deps import (CurrentAdmin, DbSession, RESULT_SUCCESS, RISKY_ACTIONS,
                       get_current_admin, write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
+from api.export_csv import csv_response, guard_export_size
 from api.schemas.activity import (ActivityEventDetail, ActivityEventList,
                                   ActivityEventRow, ActivityExportRequest,
-                                  ActivityExportResponse, ActivityOverview,
-                                  ActivitySnapshot, RiskyOpList, RiskyOpRow)
+                                  ActivityOverview, ActivitySnapshot,
+                                  RiskyOpList, RiskyOpRow)
 from schema_admin import admin_activity_logs
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,9 @@ KST = timezone(timedelta(hours=9))
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 
-# 보관 기간. 이 값이 지난 행은 별도 정리 작업이 지운다(아직 없다 — 현황 숫자만 미리 보여 준다).
+# 보관 기간. 이 값이 지난 행은 src/housekeeping.py 가 지운다(워커 루프가 하루 한 번 tick).
+# 운영 정책 auto_purge 가 꺼져 있으면 지우지 않는다. 두 파일의 값이 갈리면 화면의
+# '삭제 예정'과 실제 삭제 시점이 어긋나므로 tests/test_housekeeping.py 가 대조한다.
 RETENTION_DAYS = 90
 # '이번 주 삭제 예정'의 창. 화면 문구가 주 단위라 7일로 둔다.
 PURGE_WINDOW_DAYS = 7
@@ -293,13 +296,24 @@ def get_activity_event(event_id: str, admin: CurrentAdmin, db: DbSession):
     )
 
 
-@router.post("/exports", response_model=ActivityExportResponse)
+# CSV 열 머리글 — 목록 화면이 보여주는 것과 같은 순서다. 스냅샷(before/after)은 넣지 않는다:
+# 자유 텍스트 JSON 이라 한 칸에 넣으면 표가 못 읽게 되고, 필요한 사람은 상세로 본다.
+ACTIVITY_CSV_HEADER = ("발생시각(KST)", "행위자", "권한", "작업", "대상", "결과", "사유",
+                       "request_id", "IP")
+
+
+@router.post("/exports")
 def export_activity_events(body: ActivityExportRequest, request: Request,
                            admin: CurrentAdmin, db: DbSession):
-    """내보내기 접수. 기록을 파일로 빼가는 행위라 ADMIN 만 할 수 있다.
+    """현재 필터 결과를 CSV 파일로 만들어 그대로 내려준다. ADMIN 전용.
 
-    지금은 대상 건수를 세어 접수증만 돌려준다 — 실제 파일 생성·다운로드는 별도 작업이다.
-    화면도 접수 후 토스트만 띄우고 파일을 기다리지 않는다(ActivityLog.tsx exporting).
+    2026-08-25 QA 전까지는 건수만 센 접수증(status=QUEUED)을 돌려주고 그 QUEUED 를 파일로
+    바꾸는 주체가 없었다 — 화면은 성공 토스트를 띄우는데 받는 파일이 없었다. 비동기 export
+    작업을 만드는 대신 이 요청 안에서 만들어 내려준다(근거는 api/export_csv.py 모듈 주석).
+
+    ⚠️ 응답이 JSON 이 아니라 파일이라 response_model 을 뗐다. 프론트도 apiRequest 가 아니라
+       apiDownload 로 부른다(web/src/lib/api/client.ts). 접수 기록(활동 로그)은 그대로 남긴다 —
+       기록을 파일로 빼간 사실 자체가 감사 대상이다.
     """
     if admin.role not in EXPORT_ROLES:
         raise ForbiddenError(
@@ -310,8 +324,8 @@ def export_activity_events(body: ActivityExportRequest, request: Request,
         raise BadRequestError("사유를 입력해 주세요.")
 
     # 현재 필터 결과가 대상이다(AD-011 Description 2). 같은 빌더를 써서 화면에 보이는
-    # 건수와 접수증의 건수가 어긋나지 않게 한다.
-    _, total_query = build_activity_event_queries(
+    # 건수와 파일의 건수가 어긋나지 않게 한다.
+    rows_query, total_query = build_activity_event_queries(
         q=str(body.filter.get("q", "")).strip(),
         action=str(body.filter.get("action", "")).strip(),
         actor=str(body.filter.get("actor", "")).strip(),
@@ -319,10 +333,12 @@ def export_activity_events(body: ActivityExportRequest, request: Request,
         from_date=body.filter.get("from"),
         sort="occurred_at:desc",
     )
-    estimated_rows = db.execute(total_query).scalar_one()
+    total = db.execute(total_query).scalar_one()
+    guard_export_size(total)   # 상한 초과는 자르지 않고 400 (export_csv 모듈 주석)
 
     export_id = f"exp_{uuid.uuid4().hex[:12]}"
-    logger.info("활동 로그 내보내기 접수: %s (%s건, 요청자 %s)", export_id, estimated_rows, admin.email)
+    events = [_row_to_event(row) for row in db.execute(rows_query).all()]
+    logger.info("활동 로그 내보내기: %s (%s건, 요청자 %s)", export_id, len(events), admin.email)
     write_activity_log(
         db, request,
         actor=admin.email,
@@ -333,13 +349,18 @@ def export_activity_events(body: ActivityExportRequest, request: Request,
         reason=body.reason.strip(),
         detail={
             "export_id": export_id,
-            "estimated_rows": estimated_rows,
+            "rows": len(events),
             "filter": dict(body.filter),
             "export_request_id": body.request_id.strip(),
         },
     )
-    return ActivityExportResponse(
-        export_id=export_id, status="QUEUED", estimated_rows=estimated_rows)
+    return csv_response(
+        filename=f"activity-log-{export_id}.csv",
+        header=ACTIVITY_CSV_HEADER,
+        rows=[(e.occurred_at, e.actor, e.actor_role, e.action, e.target, e.result,
+               e.reason or "", e.request_id, e.ip) for e in events],
+        export_id=export_id,
+    )
 
 
 # "제목 (page_id)" 형태로 저장된 target 을 되돌리는 규칙. 쓰는 쪽이 그 형식을 쓴다

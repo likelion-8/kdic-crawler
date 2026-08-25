@@ -80,6 +80,17 @@ class Settings(BaseSettings):
     # 그 비용을 물지 않게 한다. 개발 중 재시작이 잦으면 False 로 끄면 된다.
     warmup_on_startup: bool = True
 
+    # --- 파이프라인 워커 ---------------------------------------------------
+    # AD-004 가 만든 잡(재수집·재적재·변경 감지·평가 재측정)을 실제로 돌리는 주체.
+    # 코드는 예전부터 src/worker.py 에 있었지만 손으로 띄우는 방법뿐이라, 아무도 안 띄우면
+    # 잡이 QUEUED 에 영원히 남았다(2026-08-25 QA). API 프로세스가 스레드 하나로 함께
+    # 돌려 기본값만으로 '만들면 돈다'가 되게 한다.
+    #
+    # ⚠️ 잡은 무겁다(재크롤·임베딩 수 분). 워커를 따로 프로세스로 띄워 분리하고 싶으면
+    #    API_WORKER_IN_PROCESS=false 로 끄고 `python src/worker.py` 를 상주시킨다.
+    #    claim_next 가 FOR UPDATE SKIP LOCKED 라 둘을 같이 켜도 잡이 중복 실행되지는 않는다.
+    worker_in_process: bool = True
+
     # --- 관측(Langfuse) ---------------------------------------------------
     # rag_runs.trace_id 로 완성 URL 을 만들어 대화 로그 상세에 링크로 내보낸다(AD-005 G5).
     # 프론트가 Langfuse 호스트를 알 이유가 없어 서버가 URL 을 완성한다 — 조각으로 주면 배포

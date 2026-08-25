@@ -114,6 +114,8 @@ export interface ChatRequest {
  * `sources`·`attachments`(복합 질문이면 `sub_answers` 안의 것)로 그린다. */
 export type ChatStreamEvent =
   | { event: 'accepted'; data: { request_id: string; session_id: string } }
+  /** 복합 질문일 때만, 하위 질문마다 1회. 본문이 아니라 진행 상태라 done.answer 에 안 이어붙는다 */
+  | { event: 'progress'; data: { index: number; total: number; question: string } }
   | { event: 'answer_delta'; data: { text: string } }
   | { event: 'done'; data: ChatResponse }
   | { event: 'error'; data: ApiError }

@@ -3,7 +3,7 @@
  * 관리자 대화 로그 API는 CM-DF-003 04절에 없어 여기서 정했다(11 §3 제안 시그니처).
  * lib/api/types.ts로 올려야 할 후보 — report의 shared_needed 참조.
  * 질문·답변·의견은 모두 마스킹된 저장본이다. 원문 복원 진입점은 만들지 않는다(Desc 2). */
-import { apiRequest } from '../../../lib/api/client'
+import { apiDownload, apiRequest } from '../../../lib/api/client'
 import type { Attachment, Page, Source, SubAnswer } from '../../../lib/api/types'
 import type { BusinessFunction, ErrorCode, Intent, QuestionType, TriageStatus } from '../../../lib/codes'
 import { TIMEZONE } from '../../../lib/constants'
@@ -303,10 +303,11 @@ export function setLogTriage(requestId: string, triage: TriageStatus, reason: st
   })
 }
 
-/** 내보내기 — 사실 자체가 활동 로그(AD-011)에 남는다 */
+/** 내보내기 — CSV 파일을 그 자리에서 받아 저장한다. 내보낸 사실 자체는 활동 로그(AD-011)에 남는다.
+ *  (종전에는 접수증만 받고 파일이 안 생겼다 — 2026-08-25 QA) */
 export function exportLogs(filters: LogFilters) {
   const { from, to } = periodRange(filters)
-  return apiRequest<{ export_id: string; estimated_rows: number }>('/api/admin/logs/exports', {
+  return apiDownload('/api/admin/logs/exports', {
     method: 'POST',
     // 내보내기 대상은 화면에 보이는 현재 필터 결과다 — fetchLogs가 보내는 조건과 같아야 한다
     body: {

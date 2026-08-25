@@ -1,5 +1,6 @@
 /** 진행 스텝 (파이프라인 단계 표시) — CM-DF-001 08절.
- * 단계 6종 고정: 수집 → 변환 → 청킹 → 검증 → 색인 → 반영. 이름·순서를 바꾸지 않는다.
+ * 단계 이름·순서 정본은 lib/constants.ts PIPELINE_STEPS 다(현재 7종:
+ * 수집 → 변환 → 청킹 → 검증 → 게이트 → 색인 → 반영). 여기서 다시 세지 않는다.
  * 상태 기호 4종: ✓ 완료 · ◐ 진행 중 · ✗ 실패 · ○ 대기. 작업 전체 상태 5종(CM-DF-004 04절)과 구분한다.
  * 시각은 원형 스텝 + 연결선(lucide Check/Loader2/X + 상태색)으로 그리되,
  * 기획서 고정 기호는 마크업에 유지하고 상태는 한글 텍스트로 병기한다(CM-DF-004 09절).
@@ -84,7 +85,8 @@ export interface PipelineStepTextProps {
   step: number
 }
 
-/** 사후 화면(실패 상세 등)용 — '6단계 중 5번째'처럼 위치를 글로만 알린다(09절 규칙 3) */
+/** 사후 화면(실패 상세 등)용 — '7단계 중 5번째'처럼 위치를 글로만 알린다(09절 규칙 3).
+ *  건수는 PIPELINE_STEPS 에서 세므로 단계가 늘어도 문구가 따라온다 */
 export function PipelineStepText({ step }: PipelineStepTextProps) {
   return (
     <span className="text-xs text-muted-foreground">

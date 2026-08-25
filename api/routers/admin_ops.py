@@ -51,6 +51,8 @@ from sqlalchemy import delete, func, insert, select, update
 from api.deps import (CurrentAdmin, DbSession, get_current_admin,
                       require_reauth, write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
+# 모듈 이름이 테이블 이름(schema_admin.ops_policy)과 겹쳐 별칭으로 들여온다
+from api import ops_policy as ops_policy_cache
 from api.routers.admin_logs import _to_kst_iso
 from schema import suggested_questions
 from schema_admin import (admin_activity_logs, ops_policy,
@@ -204,6 +206,8 @@ def update_ops_policy(body: dict, request: Request, admin: CurrentAdmin, db: DbS
         updated_by=admin.email,
     ))
     db.commit()
+    # 집행 쪽 30초 TTL 캐시를 즉시 무효화한다 — 안 하면 "저장했는데 그대로네"가 30초 이어진다
+    ops_policy_cache.reset_cache()
 
     # write_activity_log가 스스로 commit 하므로 정책 버전 INSERT를 먼저 확정한다.
     write_activity_log(

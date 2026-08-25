@@ -137,6 +137,9 @@ export function ChatPage() {
   const [items, setItems] = useState<ChatItem[]>([])
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState<PendingTurn | null>(null)
+  /** 복합 질문 진행 상태(progress 이벤트). 단일 질문에서는 계속 null 이라 아무것도 안 그린다.
+   *  종전에는 하위가 셋이어도 화면이 '생각 중'만 보여, 왜 오래 걸리는지 알 수 없었다(2026-08-25 QA) */
+  const [progress, setProgress] = useState<{ index: number; total: number; question: string } | null>(null)
   const [confirmNewChat, setConfirmNewChat] = useState(false)
   /** 열려 있는 피드백 사유 폼 수. 답변마다 위젯이 따로 있어 여러 개가 동시에 열릴 수 있다 */
   const [openFeedbackForms, setOpenFeedbackForms] = useState(0)
@@ -254,6 +257,7 @@ export function ChatPage() {
     }
     setDraft('')
     setPending({ question: text, retries, userItemId, answerItemId })
+    setProgress(null)
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -265,6 +269,9 @@ export function ChatPage() {
           acceptedRequestId = request_id
           adoptSession(session_id)
         },
+
+        // 복합 질문일 때만 온다. 답변 본문이 아니라 진행 상태라 items 를 건드리지 않는다
+        onProgress: setProgress,
 
         onDelta: (chunk) =>
           setItems((list) => {
@@ -364,6 +371,7 @@ export function ChatPage() {
     ).finally(() => {
       abortRef.current = null
       setPending(null)
+      setProgress(null)
     })
   }
 
@@ -636,6 +644,17 @@ export function ChatPage() {
               {pending && !streamingStarted && (
                 <li>
                   <TypingIndicator />
+                </li>
+              )}
+
+              {/* 복합 질문 진행 줄 — 첫 델타가 오면 TypingIndicator 는 사라지지만 하위 질문은
+                  계속 이어지므로, 스트리밍 중에도 남겨 둔다(2026-08-25 QA) */}
+              {pending && progress && (
+                <li>
+                  <p className="px-1 text-xs text-muted-foreground" role="status">
+                    {`질문을 ${progress.total}개로 나눠 답하는 중 · ${progress.index}/${progress.total}`}
+                    <span className="ml-1.5 opacity-80">{progress.question}</span>
+                  </p>
                 </li>
               )}
             </ol>

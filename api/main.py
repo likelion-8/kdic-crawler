@@ -19,6 +19,7 @@ app.add_middleware() 는 나중에 추가한 것이 바깥쪽이다. 아래 등�
   잡아먹히지 않는다.
 """
 import logging
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -26,6 +27,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import get_settings
 from api.errors import register_exception_handlers
+from api.export_csv import EXPORT_HEADERS
 from api.middleware import REQUEST_ID_HEADER, RateLimitMiddleware, RequestIDMiddleware
 
 logger = logging.getLogger(__name__)
@@ -66,8 +68,31 @@ async def lifespan(app: FastAPI):
         except Exception:
             logger.exception("RAG 워밍업 실패 — chat 불가 상태로 기동한다(/api/health 가 degraded 를 알린다)")
 
+    # 파이프라인 워커를 같은 프로세스의 데몬 스레드로 띄운다. 종전에는 실행 주체가 없어
+    # AD-004 가 만든 잡이 QUEUED 에서 안 움직였다(2026-08-25 QA). 스레드로 두는 이유:
+    # 잡은 블로킹 IO·CPU 라 이벤트 루프에서 돌리면 SSE 스트리밍이 멈춘다.
+    # ⚠️ uvicorn --workers N 이면 워커도 N 개가 된다. 중복 실행은 claim_next 의
+    #    FOR UPDATE SKIP LOCKED 가 막지만, 모델이 N 벌 올라가므로 --workers 1 을 유지할 것.
+    worker_stop = threading.Event()
+    worker_thread = None
+    if settings.worker_in_process:
+        from worker import poll_forever
+        worker_thread = threading.Thread(
+            target=poll_forever, kwargs={"stop": worker_stop},
+            name="pipeline-worker", daemon=True)
+        worker_thread.start()
+        logger.info("파이프라인 워커 스레드 기동 (API_WORKER_IN_PROCESS=false 로 끌 수 있다)")
+    else:
+        logger.warning("파이프라인 워커가 꺼져 있다 — `python src/worker.py` 를 따로 띄우지 "
+                       "않으면 재수집·재적재·변경 감지 잡이 QUEUED 에서 안 움직인다")
+
     yield
 
+    worker_stop.set()
+    if worker_thread is not None:
+        # 잡 하나가 수 분 걸릴 수 있어 끝까지 기다리지 않는다 — 데몬 스레드라 프로세스가
+        # 죽을 때 함께 사라진다. 폴링 대기 중이면 이 join 안에서 깔끔히 빠져나온다.
+        worker_thread.join(timeout=5)
     logger.info("%s 종료", settings.app_name)
 
 
@@ -102,7 +127,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
         # 이게 없으면 브라우저 JS 가 응답 헤더의 request_id 를 못 읽는다.
         # 사용자가 오류 화면의 id 를 알려줄 수 있게 하려면 필요하다.
-        expose_headers=[REQUEST_ID_HEADER],
+        # EXPORT_HEADERS 는 CSV 내보내기의 파일명·건수 — 빠지면 파일은 받아지는데
+        # 이름이 'download' 가 되고 몇 건 받았는지 화면이 못 말한다.
+        expose_headers=[REQUEST_ID_HEADER, *EXPORT_HEADERS],
     )
 
     app.add_middleware(RequestIDMiddleware)

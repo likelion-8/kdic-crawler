@@ -115,6 +115,72 @@ export async function apiRequest<T>(path: string, init: ApiRequestInit = {}): Pr
   return (await res.json()) as T
 }
 
+/** 파일을 내려받는 쓰기 요청. 응답 본문이 JSON 이 아니라 파일이라 apiRequest 와 갈랐다.
+ *
+ * 종전 내보내기는 서버가 접수증(`{export_id, status:"QUEUED"}`)만 주고 파일을 만드는 주체가
+ * 없어서, 화면은 성공 토스트를 띄우는데 받는 파일이 없었다(2026-08-25 QA). 이제 서버가
+ * CSV 를 그대로 내려주고 여기서 브라우저 저장까지 시킨다.
+ *
+ * 오류(JSON)일 때의 처리는 apiRequest 와 같은 toApiError 를 쓴다 — 문구는 서버가 준다.
+ * 돌려주는 값은 실제 저장된 파일명과 행 수라, 호출부가 "N건을 파일로 저장했습니다"까지
+ * 말할 수 있다(접수만 했다는 애매한 문구 대신).
+ */
+export async function apiDownload(
+  path: string,
+  init: ApiRequestInit = {},
+): Promise<{ filename: string; rows: number }> {
+  const { method = 'POST', body, reason, signal } = init
+  const given = typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {}
+  const payload = {
+    ...given,
+    request_id: typeof given.request_id === 'string' ? given.request_id : crypto.randomUUID(),
+    ...(reason === undefined ? {} : { reason }),
+  }
+
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: { Accept: 'text/csv, application/json', 'Content-Type': 'application/json' },
+      signal,
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    })
+  } catch (e) {
+    if (signal?.aborted) throw e
+    throw new ApiRequestError(0, {
+      code: 'INTERNAL',
+      user_message: NETWORK_MESSAGE,
+      retryable: true,
+      fallback_sources: [],
+      request_id: '',
+    })
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) expireSession()
+    throw new ApiRequestError(res.status, await toApiError(res))
+  }
+  touchIdle()
+
+  // 파일명은 서버가 Content-Disposition 으로 준다. 교차 출처라 CORS expose_headers 에
+  // 올라가 있어야 읽힌다(api/main.py) — 못 읽으면 브라우저가 'download' 로 저장한다.
+  const filename =
+    /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'export.csv'
+  const rows = Number(res.headers.get('X-Export-Rows') ?? 0)
+
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  // 클릭 대상이 문서에 붙어 있어야 파이어폭스가 다운로드를 시작한다
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+  return { filename, rows }
+}
+
 async function toApiError(res: Response): Promise<ApiError> {
   const body = (await res.json().catch(() => null)) as Partial<ApiError> | null
   if (body && typeof body.user_message === 'string') {

@@ -35,6 +35,7 @@ import { isApiRequestError } from '../../lib/api/client'
 import type { ApiError } from '../../lib/api/types'
 import type { JobType } from '../../lib/codes'
 import { hasRole } from '../../lib/codes'
+import { PIPELINE_STEPS } from '../../lib/constants'
 import { markReauthed, needsReauth, useSession } from '../../app/session'
 import { ChangedPagesCard } from './pipeline/ChangedPagesCard'
 import { JobFailureDetail, jobFailureMeta, jobFailureTitle } from './pipeline/JobFailureDetail'
@@ -346,8 +347,8 @@ export function Pipeline() {
               {running.status === 'RUNNING' ? '실행 중' : '대기 중 (실행 시작 대기)'}
               {/* 교체·실패 정책은 지금 상태가 아니라 규칙이라 접는다 */}
               <InfoHint label="인덱스 교체 정책 설명" size="sm">
-                6단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면 기존 인덱스를 그대로
-                유지하고, 성공하면 캐시를 비웁니다.
+                {PIPELINE_STEPS.length}단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면
+                기존 인덱스를 그대로 유지하고, 성공하면 캐시를 비웁니다.
               </InfoHint>
             </p>
             {canRun && isJobActive(running) && (
@@ -360,19 +361,19 @@ export function Pipeline() {
           </>
         ) : (
           // 진행 중 작업이 없어도 **단계 그림을 기본으로 보여준다**(2026-08-04 사용자 요청).
-          // 회색 빈 상자만 뜨면 이 화면의 주인공(6단계 파이프라인)이 평소엔 아예 안 보이고,
+          // 회색 빈 상자만 뜨면 이 화면의 주인공(파이프라인 단계)이 평소엔 아예 안 보이고,
           // 무엇이 어떤 순서로 도는지도 실행 중에만 알 수 있었다. 전부 '대기'로 그린다.
           // 진행 중 작업이 없을 때의 카피는 기획서에 없어 프론트가 썼다
           <>
             <div className="border-y py-3.5">
-              {/* states를 비우면 PipelineSteps가 6단계를 전부 '대기'로 그린다 */}
+              {/* states를 비우면 PipelineSteps가 전 단계를 '대기'로 그린다 */}
               <PipelineSteps states={[]} />
             </div>
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               진행 중인 작업이 없습니다
               <InfoHint label="인덱스 교체 정책 설명" size="sm">
-                6단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면 기존 인덱스를 그대로
-                유지하고, 성공하면 캐시를 비웁니다.
+                {PIPELINE_STEPS.length}단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면
+                기존 인덱스를 그대로 유지하고, 성공하면 캐시를 비웁니다.
               </InfoHint>
             </p>
           </>

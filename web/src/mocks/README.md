@@ -64,12 +64,18 @@ PRD-01 B-2 API 인벤토리는 이 기능을 `GET /api/conversation`이라 적�
 
 ```
 accepted     {request_id, session_id}
+progress     {index, total, question}  ← 복합 질문일 때만. 하위 질문마다 1회, 그 하위 델타 앞에
 answer_delta {text}                    ← 여러 번. 글자 단위(목은 8자씩 50~80ms 간격)
 done         ChatResponse 전문
 error        ApiError                  ← done 대신 온다
 ```
 
-이 4종이 전부다. `sources`·`attachments` 이벤트는 2026-08-05에 없앴다 — 근거 사용 판정이
+이 5종이 전부다. `progress`는 2026-08-25에 더했다 — 복합 질문이 하위 3개로 나뉘어 수십 초가
+걸려도 화면이 '생각 중'만 보여 진행을 알 수 없었다(QA). **본문이 아니라 진행 상태이므로
+`done.answer`에 이어붙지 않는다** — 아래 불변식(`answer_delta` 합 == `done.answer`)의 대상이
+아니다. 단일 질문에서는 한 번도 오지 않는다.
+
+`sources`·`attachments` 이벤트는 2026-08-05에 없앴다 — 근거 사용 판정이
 스트리밍이 끝난 뒤에 확정돼 어차피 `done`과 같은 시점에 나갔다. 출처는 `done`의
 `sources`·`attachments`(복합 질문이면 `sub_answers` 안의 것)로 그린다.
 

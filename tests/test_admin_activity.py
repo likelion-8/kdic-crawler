@@ -6,6 +6,8 @@ DB·네트워크 없이 돈다. 검사 대상은 세 가지다.
     2) KST 변환이 양쪽 끝에서 맞는가          — 틀리면 새벽 기록이 전날로 밀린다
     3) action 어휘가 화면 링크 규칙에 걸리는가 — 틀리면 [연결 보기]가 엉뚱한 화면으로 간다
 """
+import csv
+import io
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +26,7 @@ from api.deps import ACTION_BY_JOB_TYPE, RESULT_DENIED, RESULT_SUCCESS
 from api.errors import BadRequestError
 from api.routers import admin_activity, admin_change_requests
 from api.routers.admin_activity import (ACTION_ACTIVITY_EXPORT,
+                                        ACTIVITY_CSV_HEADER,
                                         build_activity_event_queries,
                                         build_snapshot, export_activity_events,
                                         parse_snapshot_value, router,
@@ -290,9 +293,34 @@ class _ScalarResult:
         return self.value
 
 
+class _ExportRowsResult:
+    """rows_query 결과 — _row_to_event 가 읽는 컬럼만 가진 행 2개."""
+
+    def all(self):
+        return [
+            SimpleNamespace(id="11111111-1111-1111-1111-111111111111",
+                            occurred_at=datetime(2026, 8, 1, 0, 30, tzinfo=timezone.utc),
+                            actor="admin@demo", actor_role="ADMIN", action="로그인",
+                            target="관리자 콘솔", result="성공", reason=None,
+                            request_id="req-1", ip="10.0.0.1"),
+            SimpleNamespace(id="22222222-2222-2222-2222-222222222222",
+                            occurred_at=datetime(2026, 8, 1, 1, 0, tzinfo=timezone.utc),
+                            actor="ops@demo", actor_role="OPERATOR", action="재적재 실행",
+                            # 따옴표·줄바꿈이 들어간 값이 CSV 를 깨지 않는지 함께 본다
+                            target='재적재 "전체"\n대상', result="성공", reason="정기 점검",
+                            request_id="req-2", ip="10.0.0.2"),
+        ]
+
+
 class _ExportDb:
+    """첫 execute 는 total(count), 두 번째는 행 목록 — 라우터가 부르는 순서 그대로다."""
+
+    def __init__(self):
+        self.calls = 0
+
     def execute(self, _statement):
-        return _ScalarResult(7)
+        self.calls += 1
+        return _ScalarResult(2) if self.calls == 1 else _ExportRowsResult()
 
 
 def test_activity_export_writes_an_audit_log(monkeypatch):
@@ -315,19 +343,34 @@ def test_activity_export_writes_an_audit_log(monkeypatch):
 
     response = export_activity_events(body, request, admin, db)
 
-    assert response.status == "QUEUED"
-    assert response.estimated_rows == 7
+    # 접수증이 아니라 CSV 파일을 돌려준다(2026-08-25 QA — 종전에는 QUEUED 만 주고 파일이 없었다)
+    assert response.headers["content-type"].startswith("text/csv")
+    export_id = response.headers["x-export-id"]
+    assert response.headers["content-disposition"] == f'attachment; filename="activity-log-{export_id}.csv"'
+    assert response.headers["x-export-rows"] == "2"
+
+    csv_text = response.body.decode("utf-8")
+    assert csv_text.startswith("\ufeff"), "엑셀이 UTF-8 로 읽게 하는 BOM"
+    parsed = list(csv.reader(io.StringIO(csv_text[1:])))
+    assert parsed[0] == list(ACTIVITY_CSV_HEADER)
+    assert len(parsed) == 3, "머리글 1 + 데이터 2"
+    assert parsed[1][1] == "admin@demo"
+    # 시각은 목록과 같은 KST ISO 다 — UTC 로 나가면 표를 여는 사람이 9시간 어긋나게 읽는다
+    assert parsed[1][0] == "2026-08-01T09:30:00+09:00"
+    # 따옴표·줄바꿈이 든 값도 한 칸으로 살아 있어야 한다
+    assert parsed[2][4] == '재적재 "전체"\n대상'
+
     assert captured == {
         "actor": "test_admin@example.com",
         "actor_role": "ADMIN",
         "action": ACTION_ACTIVITY_EXPORT,
         # CM-DF-002 07절: 대상은 '이름 + (ID)' — ID 단독 노출 금지(2026-08-13 정합)
-        "target": f"활동 로그 · 현재 필터 ({response.export_id})",
+        "target": f"활동 로그 · 현재 필터 ({export_id})",
         "result": RESULT_SUCCESS,
         "reason": "테스트 감사 자료 확인",
         "detail": {
-            "export_id": response.export_id,
-            "estimated_rows": 7,
+            "export_id": export_id,
+            "rows": 2,
             "filter": {"action": "로그인", "from": "2026-08-01"},
             "export_request_id": "test_req_activity_export",
         },

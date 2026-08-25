@@ -10,6 +10,8 @@
 3 은 실 DB 가 필요해서 conftest.py 의 db_session/test_prefix/db_cleanup 을 쓴다.
 DATABASE_URL 이 없으면 실패가 아니라 skip 이다.
 """
+import csv
+import io
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -27,8 +29,9 @@ if str(ROOT) not in sys.path:
 from api.deps import get_current_admin, get_db
 from api.errors import BadRequestError
 from api.main import create_app
-from api.routers.admin_logs import (_kst_day_start, _status_out, _to_kst_iso,
-                                    build_log_queries)
+from api.export_csv import MAX_EXPORT_ROWS
+from api.routers.admin_logs import (LOG_CSV_HEADER, _kst_day_start, _status_out,
+                                    _to_kst_iso, build_log_queries)
 
 
 # ---------------------------------------------------------------- 가짜 DB · 관리자
@@ -115,15 +118,49 @@ def test_viewer_can_read_the_summary():
     }
 
 
-def test_export_is_admin_only():
+def test_export_is_admin_only_and_returns_a_csv_file():
+    """ADMIN 만 부를 수 있고, 접수증이 아니라 CSV 파일이 내려온다(2026-08-25 QA).
+
+    종전에는 `{export_id, status:"QUEUED"}` 만 돌려주고 그 QUEUED 를 파일로 바꾸는 주체가
+    없어서, 화면은 성공 토스트를 띄우는데 받는 파일이 없었다."""
     body = {"request_id": str(uuid.uuid4()), "from": "", "to": ""}
     for role in ("VIEWER", "OPERATOR", "EDITOR"):
         with _client(role) as client:
             assert client.post("/api/admin/logs/exports", json=body).status_code == 403
-    with _client("ADMIN", _FakeDb(_Result(scalar=7))) as client:
+
+    row = SimpleNamespace(
+        request_id="req-1", created_at=datetime(2026, 8, 11, 1, 30, tzinfo=timezone.utc),
+        question="예금자보호 한도는?", intent="informational", status="SUCCESS",
+        total_latency_ms=1_234, observation=None, triage="NONE", vote="up")
+    db = _FakeDb(_Result(scalar=1), _Result(rows=[row]))
+    with _client("ADMIN", db) as client:
         response = client.post("/api/admin/logs/exports", json=body)
+
     assert response.status_code == 200
-    assert response.json()["estimated_rows"] == 7
+    assert response.headers["content-type"].startswith("text/csv")
+    assert response.headers["x-export-rows"] == "1"
+    export_id = response.headers["x-export-id"]
+    assert response.headers["content-disposition"] == (
+        f'attachment; filename="conversation-log-{export_id}.csv"')
+
+    text = response.content.decode("utf-8")
+    assert text.startswith("\ufeff"), "엑셀이 UTF-8 로 읽게 하는 BOM"
+    parsed = list(csv.reader(io.StringIO(text[1:])))
+    assert parsed[0] == list(LOG_CSV_HEADER)
+    # 시각은 목록과 같은 KST — UTC 로 나가면 표를 여는 사람이 9시간 어긋나게 읽는다
+    assert parsed[1][0] == "2026-08-11T10:30:00+09:00"
+    assert parsed[1][1] == "req-1"
+    assert parsed[1][7] == "1.23", "응답시간은 초 단위 소수 둘째 자리"
+
+
+def test_export_refuses_when_over_the_row_cap():
+    """상한을 넘으면 앞부분만 잘라 내려보내지 않고 400 — 잘린 파일은 받는 쪽에서 알 수 없다."""
+    body = {"request_id": str(uuid.uuid4()), "from": "", "to": ""}
+    db = _FakeDb(_Result(scalar=MAX_EXPORT_ROWS + 1))
+    with _client("ADMIN", db) as client:
+        response = client.post("/api/admin/logs/exports", json=body)
+    assert response.status_code == 400
+    assert str(MAX_EXPORT_ROWS) in response.json()["user_message"].replace(",", "")
 
 
 def test_summary_is_declared_before_the_detail_route():

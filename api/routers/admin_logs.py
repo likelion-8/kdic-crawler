@@ -61,10 +61,11 @@ from sqlalchemy import and_, func, select, update
 from api.deps import (CurrentAdmin, DbSession, SettingsDep, get_current_admin,
                       write_activity_log)
 from api.errors import BadRequestError, ForbiddenError, NotFoundError
+from api.export_csv import csv_response, guard_export_size
 from api.masking import mask_text
 from api.rag import observation
 from api.schemas.logs import (ConversationLogDetail, ConversationLogList,
-                              ConversationLogRow, LogExportRequest, LogExportResponse,
+                              ConversationLogRow, LogExportRequest,
                               LogSummary)
 # src/ 는 flat import 다 — api/__init__.py 가 sys.path 에 넣어 준다(admin_activity.py 와 동일).
 from schema import chat_messages
@@ -621,17 +622,24 @@ def patch_log(request_id: str, body: dict, request: Request, admin: CurrentAdmin
     return _row_to_log(fresh)
 
 
-@router.post("/exports", response_model=LogExportResponse)
-def export_logs(body: dict, request: Request, admin: CurrentAdmin, db: DbSession):
-    """내보내기 접수. 데이터를 파일로 빼가는 행위라 ADMIN 만 할 수 있다.
+# CSV 열 머리글 — 목록 화면과 같은 순서. 질문은 마스킹된 값(mask_text)이 나간다.
+# 답변 본문은 넣지 않는다: rag_runs 에 저장하지 않고, 이 파일의 용도는 '어떤 질의가 어떻게
+# 처리됐나'의 표다.
+LOG_CSV_HEADER = ("발생시각(KST)", "request_id", "질문(마스킹)", "의도", "상태",
+                  "피드백", "출처 수", "응답시간(초)", "처리 상태")
 
-    지금은 대상 건수를 세어 접수증만 돌려준다 — 실제 파일 생성·다운로드는 별도 작업이다
-    (형식·파일명·건수 상한이 아직 정해지지 않았다, L6). 화면도 접수 후 토스트만 띄우고
-    파일을 기다리지 않는다. activity/exports 와 같은 방식이다.
+
+@router.post("/exports")
+def export_logs(body: dict, request: Request, admin: CurrentAdmin, db: DbSession):
+    """현재 필터 결과를 CSV 파일로 만들어 그대로 내려준다. ADMIN 전용.
+
+    2026-08-25 QA 전까지는 건수만 센 접수증(status=QUEUED)을 돌려주고 그 QUEUED 를 파일로
+    바꾸는 주체가 없었다. activity/exports 와 같은 방식으로 이 요청 안에서 만들어 내려준다
+    (근거는 api/export_csv.py 모듈 주석).
 
     ⚠️ activity/exports 와 달리 `reason` 을 요구하지 않는다 — 프론트의 exportLogs 가
     reason 을 보내지 않기 때문이다(logs/api.ts). 요구하면 화면이 400 만 받는다.
-    request_id(멱등키)는 apiRequest 가 모든 쓰기 요청에 자동으로 넣어 준다(C2).
+    request_id(멱등키)는 apiRequest·apiDownload 가 모든 쓰기 요청에 자동으로 넣어 준다(C2).
     """
     _require(admin, EXPORT_ROLES, "대화 로그 내보내기")
     # 본문을 dict 로 받는 이유: LogExportRequest 에 request_id 필드가 없어서(화면 계약에
@@ -641,9 +649,9 @@ def export_logs(body: dict, request: Request, admin: CurrentAdmin, db: DbSession
         raise BadRequestError("request_id가 필요합니다.")
     filters = LogExportRequest.model_validate(body)
 
-    # 화면에 보이는 현재 필터 결과가 대상이다(G6). 목록과 같은 빌더를 써서 두 건수가
-    # 어긋나지 않게 한다.
-    _, total_query = build_log_queries(
+    # 화면에 보이는 현재 필터 결과가 대상이다(G6). 목록과 같은 빌더를 써서 화면 건수와
+    # 파일 건수가 어긋나지 않게 한다.
+    rows_query, total_query = build_log_queries(
         q=filters.q.strip(),
         status=filters.status.strip(),
         intent=filters.intent.strip(),
@@ -652,16 +660,25 @@ def export_logs(body: dict, request: Request, admin: CurrentAdmin, db: DbSession
         to_raw=filters.to or None,
         sort="occurred_at:desc",
     )
-    estimated_rows = db.execute(total_query).scalar_one()
+    total = db.execute(total_query).scalar_one()
+    guard_export_size(total)   # 상한 초과는 자르지 않고 400 (export_csv 모듈 주석)
 
     export_id = f"exp_{uuid.uuid4().hex[:12]}"
-    logger.info("대화 로그 내보내기 접수: %s (%s건, 요청자 %s)",
-                export_id, estimated_rows, admin.email)
-    # PRD-03 AD-005 감사: "조회·검색·내보내기 자체를 활동 로그 이벤트로 기록" — activity/exports
-    # 와 동일한 접수 기록. reason 은 화면 계약에 없어 비운다(위 docstring).
+    logs = [_row_to_log(row) for row in db.execute(rows_query).all()]
+    logger.info("대화 로그 내보내기: %s (%s건, 요청자 %s)", export_id, len(logs), admin.email)
+    # PRD-03 AD-005 감사: "조회·검색·내보내기 자체를 활동 로그 이벤트로 기록".
+    # reason 은 화면 계약에 없어 비운다(위 docstring).
     write_activity_log(db, request, actor=admin.email, actor_role=admin.role,
                        action="대화 로그 내보내기",
                        target=f"대화 로그 · 현재 필터 ({export_id})",
-                       detail={"export_id": export_id, "estimated_rows": estimated_rows,
+                       detail={"export_id": export_id, "rows": len(logs),
                                "filter": {k: v for k, v in body.items() if k != "request_id"}})
-    return {"export_id": export_id, "status": "QUEUED", "estimated_rows": estimated_rows}
+    return csv_response(
+        filename=f"conversation-log-{export_id}.csv",
+        header=LOG_CSV_HEADER,
+        rows=[(r["occurred_at"], r["request_id"], r["question_masked"], r["intent"] or "",
+               r["status"], r["feedback"] or "", r["source_count"] if r["source_count"] is not None else "",
+               r["latency_s"] if r["latency_s"] is not None else "", r["triage"])
+              for r in logs],
+        export_id=export_id,
+    )

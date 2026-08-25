@@ -142,8 +142,9 @@ export const MOCK_JOBS: PipelineJob[] = [
       { name: '색인', status: 'SKIPPED' },
       { name: '반영', status: 'SKIPPED' },
     ],
-    // JOB_ERROR_RETRY[SOURCE_ERROR] === 1 → 화면에 [재시도]가 뜬다
-    error: { code: 'SOURCE_ERROR', stage: '수집', detail: 'fins.kdic.or.kr 응답 없음 (연결 시간 초과 3회)' },
+    // 워커가 실제로 내는 유일한 코드는 STAGE_FAILED 다(src/worker.py run_job). 목이 기획서의
+    // SOURCE_ERROR 를 쓰고 있어서 백엔드 없이 개발하면 실패 상세 크래시가 안 보였다(2026-08-25 QA)
+    error: { code: 'STAGE_FAILED', stage: '수집', detail: 'fins.kdic.or.kr 응답 없음 (연결 시간 초과 3회)' },
   },
   {
     id: 'job_20260802_2000', type: 'REINDEX', status: 'CANCELLED', targets: [], reason: '임베딩 모델 교체 검토 중 중단',
