@@ -124,8 +124,9 @@ def _stream_one(prompt):
 
 
 def chat_event_stream(message: str, session_id: str, request_id: str):
-    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 가드레일 → 질의 캐시 → Gate 1
-    → Gate 2 → 쿼리 플래너(분해+intent) → 하위질문마다 (준비 → 토큰 스트리밍, 마커 제거) → done.
+    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 가드레일 → Gate 1 → [후속 턴:
+    재작성 → 되묻기] → 질의 캐시 → Gate 2 → 쿼리 플래너(분해+intent) → 하위질문마다
+    (준비 → 토큰 스트리밍, 마커 제거) → done.
 
     sources/attachments 는 별도 이벤트로 보내지 않고 done 에 실린다(사유는 파일 맨 끝 주석).
     실패하면 done 대신 error 가 나가고 스트림이 끝난다."""
@@ -156,10 +157,43 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
+    # 0-2.3) Gate 1 — 파이프라인의 결정론적 룰 필터(정규화 + 고정 규칙, LLM 없음). 인사·감사·
+    #      노이즈·정체성·보안우회·개인정보 직접조회·명백한 타 분야 단일 질문만 '확실할 때'
+    #      EXIT 로 즉시 고정 응답한다(precision ≈ 100% 목표 — 애매하면 CONTINUE).
+    #      2026-08-25: 재작성(0-2.5)·캐시(0-3) **앞**으로 옮겼다(종전 2026-08-19 순서는
+    #      가드레일 → 캐시 → Gate 1). 이유 둘 — (1) 후속 턴에서 "감사합니다"·"ㅋㅋ"·인젝션
+    #      시도가 Gate 1 에 닿기 전에 재작성 LLM 을 한 번 불렀다(감사 인사를 독립 질문으로
+    #      펴려는 낭비 콜이고, 인젝션 문장이 어떤 LLM 에도 닿기 전에 막히는 게 맞다).
+    #      (2) 캐시보다 뒤에 둘 실익이 없었다 — Gate 1 EXIT 질문은 애초에 캐시 적재 대상이
+    #      아니고(5-2 적격: 범위 내·성공), Gate 1 은 정규식 몇 개라 DB 왕복인 캐시보다 싸다.
+    #      결과는 동일하고 비용만 준다. **원문(message)** 을 본다 — 규칙이 전부 정확 일치·
+    #      키워드 조합·보호단어 검사라 파편 문장("그거는요?")을 오차단할 구멍이 없고, 인사·
+    #      노이즈는 재작성할 대상이 아니다. EXIT 처리는 가드레일 거절과 같은 골격이다(질문은
+    #      위에서 저장 완료 → 고정 응답 저장 → answer_delta·done). 웹 경로는 ambient trace 가
+    #      없어(record_trace docstring) Gate 1 결과를 record_trace 메타데이터로 남긴다.
+    from gate1 import run_gate1
+    g1 = run_gate1(message)
+    if g1.action == "EXIT":
+        resp = answer.fixed_gate_response(g1, session_id, request_id, _elapsed_ms(started))
+        logger.info("[%s] Gate1 EXIT: %s (%s)", request_id, g1.label, g1.rule_id)
+        from observability import record_trace
+        record_trace("web_chat", input={"question": message},
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
+                     metadata={"request_id": request_id, "session_id": session_id,
+                               "latency_ms": resp.latency_ms, "exit_at": "gate1",
+                               "gate1_label": g1.label, "gate1_rule_id": g1.rule_id,
+                               "gate1_reason": g1.reason})
+        answer.log_run(message, resp, [], resp.latency_ms,
+                       served_from="gate1", served_label=g1.label)
+        conversation.save_assistant_message(session_id, request_id, resp)
+        yield _sse("answer_delta", {"text": resp.answer})
+        yield _sse("done", resp.model_dump())
+        return
+
     # 0-2.5) 멀티턴 재작성(2026-08-19, src/query_rewriter.py) — 이전 턴이 있으면 후속 질문을
     #      독립 질문으로 편다("그거 신청 기한은?" → "착오송금 반환지원 신청 기한은 언제인가요?").
-    #      가드레일(원문 금칙어) **뒤**, 캐시·게이트 **앞**이 자리다: 이후 전 단계(캐시 키·
-    #      Gate 1/2 판정·분해·검색·캐시 적재)가 독립 질문 기준으로 일관되게 돈다 — 특히
+    #      가드레일·Gate 1(원문 기준) **뒤**, 캐시·Gate 2 **앞**이 자리다: 이후 전 단계(캐시 키·
+    #      Gate 2 판정·분해·검색·캐시 적재)가 독립 질문 기준으로 일관되게 돈다 — 특히
     #      Gate 2 는 도메인 신호 없는 파편 문장("그거는요?")을 범위외로 오차단할 수 있어,
     #      재작성 없이는 멀티턴이 게이트에 막힌다. 실패·무이력은 원문 그대로(fail-open).
     #      저장(위 0-1)·rag_runs 로그는 사용자가 실제 쓴 원문(message)을 유지하고, 재작성문은
@@ -197,8 +231,9 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
-    # 0-3) 질의 캐시 — 2026-08-19 팀 결정: 턴 수 제한 없이 모든 질문에 대해 조회한다(가드레일
-    #      → 캐시 → Gate 1 순서로 재편하면서, '단일 턴(첫 턴)' 적격 제한을 없앴다). 예전에는
+    # 0-3) 질의 캐시 — 2026-08-19 팀 결정: 턴 수 제한 없이 모든 질문에 대해 조회한다('단일 턴
+    #      (첫 턴)' 적격 제한을 없앴다. 당시 순서는 가드레일 → 캐시 → Gate 1 이었고 2026-08-25
+    #      에 Gate 1 을 앞으로 옮겼다 — 사유는 0-2.3). 예전에는
     #      대화 맥락에 따라 뜻이 달라질 수 있는 후속 질문에 캐시를 잘못 돌려줄 위험 때문에
     #      첫 턴에서만 봤지만, 이제는 그 위험을 감수하고 모든 턴에서 캐시를 먼저 본다.
     #      관리자 답변 매핑(curated_get, AD-009)은 이 개편과 함께 서빙 경로에서 제거했다
@@ -217,33 +252,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
-    # 0-4) Gate 1 — 파이프라인의 결정론적 룰 필터(정규화 + 고정 규칙, LLM 없음). 2026-08-19
-    #      가드레일·캐시 다음 순서로 이식됐다(팀 결정 — 캐시가 먼저 보고, 캐시에도 없는
-    #      질문만 Gate 1 이 본다). 인사·감사·노이즈·정체성·보안우회·개인정보 직접조회·명백한
-    #      타 분야 단일 질문만 '확실할 때' EXIT 로 즉시 고정 응답한다(precision ≈ 100% 목표 —
-    #      애매하면 CONTINUE). EXIT 처리는 가드레일 거절과 같은 골격이다(질문은 위에서 저장
-    #      완료 → 고정 응답 저장 → answer_delta·done). 웹 경로는 ambient trace 가 없어
-    #      (record_trace docstring) Gate 1 결과를 record_trace 메타데이터로 남긴다.
-    from gate1 import run_gate1
-    g1 = run_gate1(query)
-    if g1.action == "EXIT":
-        resp = answer.fixed_gate_response(g1, session_id, request_id, _elapsed_ms(started))
-        logger.info("[%s] Gate1 EXIT: %s (%s)", request_id, g1.label, g1.rule_id)
-        from observability import record_trace
-        record_trace("web_chat", input={"question": message},
-                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
-                     metadata={"request_id": request_id, "session_id": session_id,
-                               "latency_ms": resp.latency_ms, "exit_at": "gate1",
-                               "gate1_label": g1.label, "gate1_rule_id": g1.rule_id,
-                               "gate1_reason": g1.reason})
-        answer.log_run(message, resp, [], resp.latency_ms,
-                       served_from="gate1", served_label=g1.label)
-        conversation.save_assistant_message(session_id, request_id, resp)
-        yield _sse("answer_delta", {"text": resp.answer})
-        yield _sse("done", resp.model_dump())
-        return
-
-    # 0-5) Gate 2 — 임베딩 유사도 기반 도메인 판정(참조 사전 config/gate2_reference.json +
+    # 0-4) Gate 2 — 임베딩 유사도 기반 도메인 판정(참조 사전 config/gate2_reference.json +
     #      data/gate2_cache/*.npy, LLM 없음). Gate 1이 놓친 out-of-domain 중 참조 사전과의
     #      최댓값 유사도(개별 문장 벡터, centroid 아님)로 '확실하다'고 판단되는 경우만 추가로
     #      EXIT시킨다(정밀도 우선 — 애매하면 CONTINUE, src/gate2.py 참고). 참조 벡터 캐시가

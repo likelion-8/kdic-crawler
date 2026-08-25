@@ -226,7 +226,8 @@ def rag_answer(query):
     CLI 경로는 웹(api/rag/sse.py)과 달리 가드레일·질의 캐시가 없다 — 그래서 Gate 1(결정론적
     룰 필터) 앞에 다른 단계를 둘 필요가 없고, 진입하자마자 바로 돈다. Gate 1이 CONTINUE면
     바로 이어서 Gate 2(임베딩 유사도 도메인 판정)를 돈다 — 웹 경로(api/rag/sse.py)와 같은
-    순서(가드레일·캐시 다음 Gate 1 → Gate 2)다. 둘 중 하나라도 EXIT면 검색·LLM을 아예 타지
+    상대 순서(Gate 1 → Gate 2. 웹은 그 사이에 재작성·캐시가 끼고, 2026-08-25부터 Gate 1 이
+    가드레일 바로 뒤다)다. 둘 중 하나라도 EXIT면 검색·LLM을 아예 타지
     않고 고정 응답을 그대로 돌려준다(순수 삽입 — 둘 다 CONTINUE면 아래 기존 흐름이 그대로
     이어진다). @observe 로 열린 이 trace 아래에 gate1_rulebase → gate2_embedding 순으로
     span 을 남긴다(Gate 1이 EXIT하면 Gate 2는 아예 평가되지 않으므로 span도 남지 않는다)."""
