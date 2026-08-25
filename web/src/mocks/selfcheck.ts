@@ -86,7 +86,7 @@ async function collectSse(message: string) {
   assert.ok(!events.some((e) => e.name === 'answer_delta'), '되묻기엔 답변 델타가 없다')
   const clar = events.at(-1)!.data.clarification
   assert.equal(clar.question, '어떤 업무를 찾고 계신가요? 아래에서 골라주시면 바로 안내해 드릴게요.')
-  assert.equal(clar.options.length, 5, '업무 선택지는 5개다')
+  assert.equal(clar.options.length, 6, '업무 선택지는 6개다(src/clarify.py CLARIFY_OPTIONS 와 같은 수)')
   // 업무를 몰라서 묻는 턴이라 business_function 이 없어야 한다(있으면 역할 칩이 고정된다)
   assert.equal(events.at(-1)!.data.business_function, undefined)
 }
