@@ -74,7 +74,7 @@ import json
 import logging
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -609,6 +609,43 @@ def _running_stage(session, job_id) -> str:
     return next((s.get("name", "") for s in steps if s.get("status") == "RUNNING"), "")
 
 
+# 기동 시 '고아 RUNNING' 으로 볼 나이. 잡은 길어야 수 분이라 1시간이면 넉넉하다.
+# 시간을 두는 이유: 워커를 두 개 띄웠을 때(API 안 스레드 + 손으로 띄운 프로세스) 방금 시작한
+# 남의 잡을 뺏지 않기 위해서다. created_at 기준이라 그 창 안의 잡은 건드리지 않는다.
+STALE_RUNNING_H = 1
+
+
+def reclaim_stale_jobs(session) -> int:
+    """워커가 집은 뒤 죽어 RUNNING 에 박힌 잡을 실패로 마감한다. 마감한 건수를 돌려준다.
+
+    실제로 있었던 일(2026-08-25 QA): CHANGE_DETECT 잡이 `수집:RUNNING` 인 채로 하루 넘게
+    남아 있었다. 동시 실행 1개 규칙(admin_pipeline ACTIVE_STATUSES)이 QUEUED 와 RUNNING 을
+    같이 보므로, 이 한 행이 이후의 모든 작업 생성을 409 로 막는다 — 화면에는 '실행 중'으로
+    보여서 무엇이 막고 있는지도 알기 어렵다.
+
+    run_job 의 단계 밖 예외 핸들러로는 못 잡는다. 예외가 아니라 프로세스가 사라진 것이라
+    아무 코드도 실행되지 않는다. 그래서 **다음 워커가 기동할 때** 치운다.
+
+    CANCELLED 로 두지 않고 FAILED 로 두는 이유: 사람이 취소한 게 아니고, 실패로 둬야
+    화면에 [재시도] 와 실패 상세가 뜬다.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=STALE_RUNNING_H)
+    rows = session.execute(
+        select(pipeline_jobs.c.id, pipeline_jobs.c.steps)
+        .where(pipeline_jobs.c.status == "RUNNING",
+               pipeline_jobs.c.created_at < cutoff)).all()
+    for row in rows:
+        stage = next((s.get("name", "") for s in (row.steps or [])
+                      if s.get("status") == "RUNNING"), "")
+        _finish(session, row.id, "FAILED", skip_remaining=True,
+                error={"code": "INTERNAL", "stage": stage,
+                       "detail": "워커가 중단돼 진행이 끊겼습니다. 다시 시도해 주세요."},
+                index_impact=("부분 반영 가능성 — 재실행 필요" if stage in ("색인", "반영")
+                              else "색인 변경 없음(반영 전 중단)"))
+        logger.warning("고아 잡 마감: %s @%s — 워커 중단 추정", row.id, stage or "?")
+    return len(rows)
+
+
 def poll_once() -> bool:
     """대기 중인 잡을 하나 집어 처리한다. 집을 잡이 없으면 False."""
     with get_session() as session:
@@ -628,6 +665,12 @@ def poll_forever(stop=None, interval: float = POLL_INTERVAL_S) -> None:
 
     루프는 어떤 예외로도 죽지 않는다 — 죽으면 그때부터 조용히 아무것도 안 하는 상태가 되고,
     그게 정확히 이번 QA 가 잡아낸 모양이다."""
+    try:
+        with get_session() as session:
+            reclaim_stale_jobs(session)
+    except Exception:  # noqa: BLE001 — 정리 실패가 기동을 막지는 않는다
+        logger.exception("고아 잡 정리 실패 — 잡이 남아 있으면 새 작업이 409 로 막힌다")
+
     while stop is None or not stop.is_set():
         try:
             poll_once()
