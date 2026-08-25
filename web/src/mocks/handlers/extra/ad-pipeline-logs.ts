@@ -26,6 +26,18 @@ function fail(status: number, message: string) {
   )
 }
 
+/** CSV 첨부파일 응답 — 서버(api/export_csv.py)와 같은 모양이라야 apiDownload 가 목에서도 돈다.
+ *  BOM 은 엑셀이 UTF-8 로 읽게 하는 표시다(윈도우에서 없으면 한글이 깨진다). */
+function csvFile(filename: string, lines: string[], rows: number) {
+  return new HttpResponse('\uFEFF' + lines.join('\r\n') + '\r\n', {
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'X-Export-Rows': String(rows),
+    },
+  })
+}
+
 /** handlers/admin.ts와 같은 개발용 스위치 — 헤더가 없으면 ADMIN으로 본다 */
 const roleOf = (request: Request): Role => (request.headers.get('x-mock-role') as Role | null) ?? 'ADMIN'
 
@@ -626,13 +638,19 @@ export const adPipelineLogsHandlers = [
     return HttpResponse.json(row)
   }),
 
-  // 내보내기 — 사실 자체가 활동 로그에 남는다(AD-005 Desc 0)
+  // 내보내기 — CSV 파일을 그대로 내려준다(2026-08-25 QA 이후). 사실 자체는 활동 로그에 남는다(AD-005 Desc 0)
   http.post('/api/admin/logs/exports', async ({ request }) => {
     const no = denied(request, 'ADMIN')
     if (no) return no
     const body = (await request.json()) as { request_id?: string }
     if (!body.request_id) return fail(400, 'request_id가 필요합니다.')
     await delay(500)
-    return HttpResponse.json({ export_id: nextId('exp'), status: 'QUEUED', estimated_rows: rows.length })
+    const header = '발생시각(KST),request_id,질문(마스킹),의도,상태,피드백,출처 수,응답시간(초),처리 상태'
+    const lines = rows.map((r) =>
+      [r.occurred_at, r.request_id, r.question_masked, r.intent ?? '', r.status, r.feedback ?? '',
+       r.source_count ?? '', r.latency_s ?? '', r.triage]
+        .map((v) => `"${String(v).replaceAll('"', '""')}"`)
+        .join(','))
+    return csvFile(`conversation-log-${nextId('exp')}.csv`, [header, ...lines], rows.length)
   }),
 ]

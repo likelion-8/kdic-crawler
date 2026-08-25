@@ -11,6 +11,7 @@ import uuid
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
+from api.ops_policy import check_session_quota
 from api.rag import sse
 from api.schemas.chat import ChatRequest, ChatResponse
 
@@ -34,6 +35,10 @@ router = APIRouter(prefix="/api", tags=["chat"])
 def chat(req: ChatRequest):
     # session_id: 요청에 있으면 그대로(대화 이어가기), 없으면 새로 발급해 응답 done 에 실어준다.
     session_id = req.session_id or uuid.uuid4().hex
+    # AD-009 세션별 30분 한도. IP 한도는 미들웨어가 재지만 세션 id 는 여기서만 알 수 있어
+    # (요청 본문) 집행 지점이 여기다 — 종전에는 정책이 저장만 되고 아무도 안 읽었다.
+    # 429 는 errors.py 핸들러가 공통 봉투로 만들어 준다.
+    check_session_quota(session_id)
     # request_id: 이 '답변' 하나의 식별자(피드백 대상). 미들웨어의 요청추적 request_id 와 별개.
     request_id = uuid.uuid4().hex
     stream = sse.chat_event_stream(req.message, session_id, request_id)

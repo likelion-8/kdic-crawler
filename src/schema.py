@@ -322,7 +322,7 @@ pipeline_jobs = Table(
     Column("reason", Text),                           # 실행 사유
     Column("created_by", String, nullable=False),     # 실행자 email
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
-    # 6단계(수집·변환·청킹·검증·색인·반영) 진행상황 [{name,status,elapsed_ms?,count?}]. 항상
+    # 7단계(수집·변환·청킹·검증·게이트·색인·반영) 진행상황 [{name,status,elapsed_ms?,count?}]. 항상
     # 통째로 읽고 쓰므로 별도 테이블로 안 쪼갠다. 생성 시 6개 전부 QUEUED 로 초기화한다.
     Column("steps", JSONB, nullable=False),
     Column("error", JSONB),                           # 실행 실패 시 {code(JobErrorCode), stage, detail}

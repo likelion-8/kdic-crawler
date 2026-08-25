@@ -9,7 +9,7 @@
  *
  * 폼은 사람 입력 8키(page_id·source_url·business_function·sub_category·page_title·required·note·summary)다.
  * "자동 수집값(수집일 · 본문 · 서식/이동 링크 · 이미지 · 해시)은 폼에 없습니다"(ⓘ 각주 3).
- * 미리보기는 운영에 영향 없는 앞 4단계까지만 실행하고, 5·6단계는 [적재] 뒤에 이어서 보여준다(A-5·A-8). */
+ * 미리보기는 운영에 영향 없는 앞 4단계까지만 실행하고, 나머지 단계는 [적재] 뒤에 이어서 보여준다(A-5·A-8). */
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
@@ -32,6 +32,7 @@ import { useSession } from '../../../app/session'
 import { apiRequest } from '../../../lib/api/client'
 import type { Page } from '../../../lib/api/types'
 import { BUSINESS_FUNCTIONS, hasRole } from '../../../lib/codes'
+import { PIPELINE_STEPS } from '../../../lib/constants'
 import type { BusinessFunction } from '../../../lib/codes'
 import type {
   ChangeRequestView,
@@ -45,8 +46,13 @@ import type {
 /** 진행 중 작업을 따라가는 주기. 관리자 job 구독 계약이 없어(10 issue G-9) 3초 폴링으로 정했다 */
 const JOB_POLL_MS = 3_000
 
-/** 6단계 중 앞 4단계만 실행된 상태 — 미리보기가 준비된 직후 (A-5) */
-const PREVIEW_STEPS: StepState[] = ['done', 'done', 'done', 'done', 'waiting', 'waiting']
+/** 앞 4단계(수집·변환·청킹·검증)만 실행된 상태 — 미리보기가 준비된 직후 (A-5).
+ *  나머지는 PIPELINE_STEPS 길이에 맞춰 '대기'로 채운다 — 단계가 하나 늘었을 때(게이트,
+ *  2026-08-14) 여기만 6개로 남아 있었다. PipelineSteps 가 모자란 자리를 '대기'로 봐줘서
+ *  화면은 멀쩡했지만, 상수를 보고 세는 사람이 6단계로 읽었다. */
+const PREVIEW_DONE_STEPS = 4
+const PREVIEW_STEPS: StepState[] = PIPELINE_STEPS.map((_, i) =>
+  i < PREVIEW_DONE_STEPS ? 'done' : 'waiting')
 
 const STEP_STATE: Record<JobStep['status'], StepState> = {
   QUEUED: 'waiting',
@@ -251,7 +257,7 @@ export function NewPageForm({ candidateId = null, onClose }: NewPageFormProps) {
     },
   })
 
-  // ---- 승인 후 5·6단계 진행 (A-8). 화면을 떠났다 와도 job_id로 같은 상태를 복원한다 ----
+  // ---- 승인 후 나머지 단계 진행 (A-8). 화면을 떠났다 와도 job_id로 같은 상태를 복원한다 ----
   const jobQuery = useQuery({
     queryKey: ['ingest-job', jobId],
     enabled: jobId !== null,
@@ -417,8 +423,8 @@ export function NewPageForm({ candidateId = null, onClose }: NewPageFormProps) {
                   '승인 후 상태 줄'과 버튼이 밀린다 — 제목 옆으로 접는다 */}
               <InfoHint label="파이프라인 단계 설명" size="sm">
                 {jobId === null
-                  ? '미리보기는 운영에 영향이 없는 앞 4단계까지만 실행합니다. 5·6단계는 [적재] 전까지 비활성(○)이고, 적재하면 활성화되어 진행이 이어서 표시됩니다. 단계 구성과 기호는 파이프라인 화면(AD-004)과 같습니다.'
-                  : '6단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면 기존 인덱스를 그대로 유지하고, 성공하면 캐시를 비웁니다.'}
+                  ? `미리보기는 운영에 영향이 없는 앞 ${PREVIEW_DONE_STEPS}단계까지만 실행합니다. 나머지 단계는 [적재] 전까지 비활성(○)이고, 적재하면 활성화되어 진행이 이어서 표시됩니다. 단계 구성과 기호는 파이프라인 화면(AD-004)과 같습니다.`
+                  : `${PIPELINE_STEPS.length}단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면 기존 인덱스를 그대로 유지하고, 성공하면 캐시를 비웁니다.`}
               </InfoHint>
             </h2>
             <PipelineSteps states={job ? job.steps.map((s) => STEP_STATE[s.status]) : PREVIEW_STEPS} />

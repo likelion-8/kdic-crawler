@@ -46,7 +46,8 @@ async function collectSse(message: string) {
 }
 
 // 1. 정보성 답변 — accepted → answer_delta 여러 번 → done.
-// 출처는 done에만 실린다. 이벤트 4종(accepted·answer_delta·done·error) 외엔 오면 안 된다.
+// 출처는 done에만 실린다. 이벤트 5종(accepted·progress·answer_delta·done·error) 외엔 오면 안 된다.
+// progress 는 복합 질문 전용이라 여기(단일 질문)에는 오지 않아야 한다.
 {
   const events = await collectSse('예금자보호 한도가 얼마인가요?')
   assert.equal(events[0].name, 'accepted')
@@ -56,6 +57,7 @@ async function collectSse(message: string) {
     events.every((e) => ['accepted', 'answer_delta', 'done', 'error'].includes(e.name)),
     '서버가 보내지 않는 이벤트를 목이 보내고 있다',
   )
+  assert.ok(!events.some((e) => e.name === 'progress'), '단일 질문에는 진행 이벤트가 없다')
   const done = events.at(-1)!
   assert.equal(done.name, 'done')
   assert.equal(done.data.out_of_scope, false)
@@ -152,7 +154,7 @@ async function collectSse(message: string) {
   assert.ok(body.user_message.includes('OPERATOR'))
 }
 
-// 11. 파이프라인 — 6단계 · 시간이 지나면 진행 · 동시 실행 1개
+// 11. 파이프라인 — 7단계(게이트 포함) · 시간이 지나면 진행 · 동시 실행 1개
 {
   const created = await (await post('/api/admin/jobs', { type: 'REINDEX', request_id: 'j1', reason: '자체 점검' })).json()
   assert.equal(created.steps.length, 7, '게이트 단계 신설(2026-08-14) — worker STEPS 와 같아야 한다')
@@ -227,6 +229,26 @@ async function collectSse(message: string) {
       `답변 본문에 URL·전화번호가 있으면 안 된다 (${s.id ?? '시나리오'}): ${hit?.[0]}`,
     )
   }
+}
+
+// 14-b. 복합 질문 진행 — 하위마다 progress 가 오고, 델타를 이어붙이면 done.answer 그대로다.
+// progress 는 본문이 아니라 진행 상태라 이 불변식의 대상이 아니다(mocks/README §3).
+{
+  // '신청'·'서류'·'방법'은 앞선 시나리오(민원)의 트리거라 먼저 걸린다 — 복합 트리거만 쓴다
+  const events = await collectSse('보호 한도 그리고 처리 기간은?')
+  const progress = events.filter((e) => e.name === 'progress')
+  assert.ok(progress.length > 1, '복합 질문은 하위마다 progress 를 보낸다')
+  assert.equal(progress[0].data.index, 1)
+  assert.equal(progress[0].data.total, progress.length, 'total 은 하위 질문 수와 같다')
+  assert.deepEqual(
+    progress.map((e) => e.data.index),
+    progress.map((_, i) => i + 1),
+    'index 는 1부터 빠짐없이 올라간다',
+  )
+  const done = events.at(-1)!
+  assert.equal(done.name, 'done')
+  const streamed = events.filter((e) => e.name === 'answer_delta').map((e) => e.data.text).join('')
+  assert.equal(streamed, done.data.answer, '델타 합 == done.answer (progress 는 안 섞인다)')
 }
 
 // 15. 대화 복원 — 복합 질문의 하위 답변이 살아서 온다.

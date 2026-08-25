@@ -1,5 +1,5 @@
 /** AD-004 B-8 — 실행 이력의 실패 행을 열었을 때의 상세 패널 (Description ❸).
- * "실패 상세는 멈춘 지점을 '6단계 중 5번째'처럼 글로만 알려 같은 그림을 두 번 그리지 않습니다" (❷)
+ * "실패 상세는 멈춘 지점을 '7단계 중 5번째'처럼 글로만 알려 같은 그림을 두 번 그리지 않습니다" (❷)
  *  → 여기서는 PipelineSteps(그림)를 쓰지 않고 PipelineStepText만 쓴다.
  * "화면에는 정해진 문구만 노출하고 예외 원문은 보여주지 않습니다" (❸)
  *  → error.detail(예외 원문)은 렌더하지 않고 CM-DF-002 06절 JOB_ERROR_MESSAGE만 쓴다. */
@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Copy, History, RotateCcw } from 'lucide-react'
 import { Button, Notice, PipelineStepText } from '../../../components/ui'
-import { JOB_ERROR_MESSAGE, JOB_ERROR_RETRY } from '../../../lib/codes'
+import { jobErrorAutoRetry, jobErrorMessage } from '../../../lib/codes'
 import { PIPELINE_STEPS } from '../../../lib/constants'
 import {
   JOB_TYPE_LABEL,
@@ -53,9 +53,10 @@ export function JobFailureDetail({
   const [copyFailed, setCopyFailed] = useState(false)
   const code = job.error?.code ?? 'INTERNAL'
   const stage = job.error?.stage ?? job.steps.find((s) => s.status === 'FAILED')?.name ?? ''
-  // {단계} 자리 치환 — STAGE_TIMEOUT만 자리표시자를 가진다
-  const reasonText = JOB_ERROR_MESSAGE[code].replace('{단계}', stage)
-  const autoRetryText = JOB_ERROR_RETRY[code]
+  // {단계} 자리 치환은 헬퍼 안에서 한다. 모르는 코드는 INTERNAL 문구로 떨어진다 —
+  // 여기서 직접 인덱싱하면 계약 밖 코드 하나에 화면이 통째로 죽는다(2026-08-25 QA)
+  const reasonText = jobErrorMessage(code, stage)
+  const autoRetryText = jobErrorAutoRetry(code)
     ? '1회 자동으로 다시 시도했으나 실패했습니다'
     : `없음(${code}은 재시도 대상이 아님)`
   // `수집 58 · 변환 58 · 청킹 494 · 색인 단계에서 중단` — 건수는 서버가 줄 때만 붙인다(B-8)

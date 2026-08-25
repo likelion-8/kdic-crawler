@@ -81,9 +81,21 @@ function sseStream(scenario: ChatScenario, sessionId: string, slow: boolean): Re
 
       // Type 5 되묻기 — 검색 전에 되묻으므로 answer_delta가 없다
       if (!scenario.clarification) {
-        for (const piece of chunkText(scenario.answer)) {
-          await sleep(slow ? SLOW_DELTA_MS : DELTA_MIN_MS + Math.random() * (DELTA_MAX_MS - DELTA_MIN_MS))
-          send('answer_delta', { text: piece })
+        // 복합 질문은 하위마다 progress를 먼저 보내고 그 하위 본문만 흘린다(서버 api/rag/sse.py와 동일).
+        // 이어붙이면 scenario.answer 그대로라 '델타 합 == done.answer' 불변식이 유지된다.
+        const subs = scenario.sub_answers
+        const segments = subs
+          ? subs.map((sub, i) => ({
+              progress: { index: i + 1, total: subs.length, question: sub.title },
+              text: (i > 0 ? '\n\n' : '') + `${sub.title}\n${sub.answer}`,
+            }))
+          : [{ progress: null, text: scenario.answer }]
+        for (const segment of segments) {
+          if (segment.progress) send('progress', segment.progress)
+          for (const piece of chunkText(segment.text)) {
+            await sleep(slow ? SLOW_DELTA_MS : DELTA_MIN_MS + Math.random() * (DELTA_MAX_MS - DELTA_MIN_MS))
+            send('answer_delta', { text: piece })
+          }
         }
         // sources·attachments 이벤트는 보내지 않는다 — 서버도 보내지 않는다(api/rag/sse.py,
         // 2026-08-05). 근거 사용 판정이 스트리밍 뒤에 끝나 done과 같은 시점이 되므로 실익이

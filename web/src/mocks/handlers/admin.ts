@@ -9,7 +9,7 @@
  * - 요청 헤더 `x-mock-role: VIEWER|OPERATOR|EDITOR|ADMIN` → 그 역할로 간주(403 화면 개발용).
  *   헤더가 없으면 로그인한 역할, 로그인 전이면 ADMIN.
  * - `POST /api/admin/login` 은 비밀번호 `wrong` 이면 실패한다. 5회(LOGIN_FAIL_LOCK_COUNT) 실패 시 잠김.
- * - 파이프라인 작업은 생성 후 실제로 시간이 지나면서 단계가 진행된다(단계당 4초, 6단계=24초).
+ * - 파이프라인 작업은 생성 후 실제로 시간이 지나면서 단계가 진행된다(단계당 4초, 7단계=28초).
  *   폴링 화면을 목만으로 개발할 수 있다.
  */
 import { HttpResponse, delay, http } from 'msw'
@@ -57,6 +57,18 @@ function fail(status: number, message: string) {
   )
 }
 
+/** CSV 첨부파일 응답 — 서버(api/export_csv.py)와 같은 모양이라야 apiDownload 가 목에서도 돈다.
+ *  BOM 은 엑셀이 UTF-8 로 읽게 하는 표시다(윈도우에서 없으면 한글이 깨진다). */
+function csvFile(filename: string, lines: string[], rows: number) {
+  return new HttpResponse('\uFEFF' + lines.join('\r\n') + '\r\n', {
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'X-Export-Rows': String(rows),
+    },
+  })
+}
+
 /** 로그인 상태. 헤더 x-mock-role이 있으면 그 값이 이긴다. */
 let currentRole: Role = 'ADMIN'
 let currentEmail = 'admin@demo'
@@ -98,7 +110,7 @@ const loginFails: Record<string, number> = {}
 
 // ---------------------------------------------------------------- 파이프라인 작업 진행
 
-/** 단계 하나에 걸리는 시간. 6단계 = 24초면 폴링 UI를 한 화면에서 다 볼 수 있다. */
+/** 단계 하나에 걸리는 시간. 7단계 = 28초면 폴링 UI를 한 화면에서 다 볼 수 있다. */
 const STEP_MS = 4_000
 const liveJobs = new Map<string, PipelineJob>()
 
@@ -440,7 +452,9 @@ export const adminHandlers = [
     return HttpResponse.json({ ...event, snapshot: { before: { list_state: '최신' }, after: { list_state: '적용 대기' } } })
   }),
 
-  // 내보내기 자체도 활동 로그에 남는 이벤트다(PRD-01 B-2)
+  // 내보내기 자체도 활동 로그에 남는 이벤트다(PRD-01 B-2).
+  // 서버는 접수증이 아니라 CSV 파일을 그대로 내려준다(2026-08-25 QA 이후) — 목도 같은 모양이라야
+  // 백엔드 없이 개발할 때 '토스트는 뜨는데 파일이 없다'가 재현된다
   http.post('/api/admin/activity/exports', async ({ request }) => {
     const no = denied(request, 'ADMIN')
     if (no) return no
@@ -448,7 +462,12 @@ export const adminHandlers = [
     const bad = missingWriteFields(body)
     if (bad) return bad
     await delay(400)
-    return HttpResponse.json({ export_id: nextId('exp'), status: 'QUEUED', estimated_rows: MOCK_ACTIVITY_EVENTS.length })
+    const header = '발생시각(KST),행위자,권한,작업,대상,결과,사유,request_id,IP'
+    const lines = MOCK_ACTIVITY_EVENTS.map((e) =>
+      [e.occurred_at, e.actor, e.actor_role, e.action, e.target, e.result, e.reason ?? '', e.request_id, e.ip]
+        .map((v) => `"${String(v).replaceAll('"', '""')}"`)
+        .join(','))
+    return csvFile(`activity-log-${nextId('exp')}.csv`, [header, ...lines], MOCK_ACTIVITY_EVENTS.length)
   }),
 
   // ---- 초안 자동 저장 (DRAFT_AUTOSAVE_MS = 10초 주기) ----

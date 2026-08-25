@@ -29,7 +29,7 @@ router 에 dependencies=[Depends(get_current_admin)] 가 붙어 있어, 여기 �
   계속 409 를 맞는다.
 - 목록 정렬이 기능 계약이다. 프론트는 "진행 중 작업은 항상 1페이지"라고 가정하고 page=1
   에서만 active job 을 찾는다(Pipeline.tsx:120-125). 정렬이 깨지면 폴링이 조용히 오작동한다.
-- steps 는 6단계(수집·변환·청킹·검증·색인·반영)를 생성 시 전부 QUEUED 로 초기화한다.
+- steps 는 7단계(수집·변환·청킹·검증·게이트·색인·반영)를 생성 시 전부 QUEUED 로 초기화한다.
   안 채우면 진행 표시가 빈 채로 뜬다.
 
 ## sync def 로 쓸 것
@@ -117,7 +117,9 @@ KST = timezone(timedelta(hours=9))
 
 
 def _initial_steps():
-    """생성 시 6단계를 전부 QUEUED 로 초기화. 안 채우면 프론트 진행바가 빈 채로 뜬다."""
+    """생성 시 전 단계를 QUEUED 로 초기화. 안 채우면 프론트 진행바가 빈 채로 뜬다.
+
+    단계 목록은 worker.STEPS 를 그대로 쓴다 — 여기 따로 적으면 단계가 늘 때 어긋난다."""
     return [{"name": name, "status": "QUEUED"} for name in PIPELINE_STEPS]
 
 

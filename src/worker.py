@@ -43,7 +43,7 @@
 갱신하므로 실행 후 git diff 로 무엇이 바뀌었는지 사람이 검토할 수 있다(의도된 동작 —
 코퍼스 변경은 리뷰 가능한 커밋으로 남기는 것이 팀 방식이다).
 
-## 6단계(수집·변환·청킹·검증·색인·반영)와 그동안 못 채우던 값
+## 7단계(수집·변환·청킹·검증·게이트·색인·반영)와 그동안 못 채우던 값
 
 단계 이름 정본은 constants.ts PIPELINE_STEPS. 재적재 계열은 수집이 없으므로 SKIPPED 로
 표시한다(JobStep.status 어휘에 SKIPPED 가 있다 — api/schemas/pipeline.py). 각 단계가 끝날
@@ -84,6 +84,7 @@ for p in (str(ROOT), str(ROOT / "src")):
 
 from sqlalchemy import select, text, update  # noqa: E402
 
+import housekeeping  # noqa: E402
 from db import get_engine, get_session  # noqa: E402
 from schema import pipeline_jobs, search_index_versions  # noqa: E402
 
@@ -582,8 +583,63 @@ def run_job(session, job) -> None:
         )
         logger.error("잡 실패: %s @%s — %s", job.id, exc.stage, exc.detail)
         return
+    except Exception as exc:  # noqa: BLE001
+        # 단계 **밖**에서 터진 것(DB 끊김, _finish 직전 예외 등). _run_stage 가 감싸는 범위가
+        # 아니라 여기까지 그냥 올라오는데, 그대로 두면 잡이 RUNNING 에 영원히 남는다 —
+        # 화면에는 '실행 중'으로 보이고 워커는 다음 잡으로 넘어가 버린다(2026-08-25 QA
+        # 'QUEUED 고착'의 이웃 증상). 실패로 마감해 사람이 재시도할 수 있게 한다.
+        stage = _running_stage(session, job.id)
+        _finish(session, job.id, "FAILED", skip_remaining=True,
+                error={"code": "INTERNAL", "stage": stage,
+                       "detail": f"{type(exc).__name__}: {exc}"})
+        logger.exception("잡 실패(단계 밖 예외): %s", job.id)
+        return
     _finish(session, job.id, "SUCCESS")
     logger.info("잡 완료: %s", job.id)
+
+
+def _running_stage(session, job_id) -> str:
+    """지금 RUNNING 인 단계 이름 — 단계 밖 예외의 실패 지점을 화면에 남기기 위한 최선의 추정."""
+    try:
+        steps = list(session.execute(
+            select(pipeline_jobs.c.steps).where(pipeline_jobs.c.id == job_id)
+        ).scalar_one() or [])
+    except Exception:  # noqa: BLE001 — 세션까지 망가진 경우
+        return ""
+    return next((s.get("name", "") for s in steps if s.get("status") == "RUNNING"), "")
+
+
+def poll_once() -> bool:
+    """대기 중인 잡을 하나 집어 처리한다. 집을 잡이 없으면 False."""
+    with get_session() as session:
+        job = claim_next(session)
+        if job is None:
+            return False
+        run_job(session, job)
+        return True
+
+
+def poll_forever(stop=None, interval: float = POLL_INTERVAL_S) -> None:
+    """상주 루프. `stop`(threading.Event)이 서면 다음 폴링을 기다리다 빠져나온다.
+
+    API 프로세스 안에서도 이 함수를 쓴다(api/main.py lifespan) — 워커를 따로 띄우는 걸
+    잊으면 잡이 QUEUED 에서 영원히 안 움직였다(2026-08-25 QA). claim_next 가
+    FOR UPDATE SKIP LOCKED 라 상주 워커를 별도로 함께 띄워도 같은 잡을 두 번 집지 않는다.
+
+    루프는 어떤 예외로도 죽지 않는다 — 죽으면 그때부터 조용히 아무것도 안 하는 상태가 되고,
+    그게 정확히 이번 QA 가 잡아낸 모양이다."""
+    while stop is None or not stop.is_set():
+        try:
+            poll_once()
+            # 보관기간 파기(AD-009 auto_purge). 하루 한 번만 실제로 돈다 — 상주 프로세스가
+            # 이미 여기 하나 있어서 크론을 새로 들이지 않았다(src/housekeeping.py 주석)
+            housekeeping.tick()
+        except Exception:  # noqa: BLE001
+            logger.exception("워커 폴링 예외 — 다음 주기에 계속한다")
+        if stop is None:
+            time.sleep(interval)
+        elif stop.wait(interval):
+            return
 
 
 def main() -> None:
@@ -595,14 +651,10 @@ def main() -> None:
     get_engine()   # 기동 시 접속 검증 — DB 가 없으면 여기서 바로 죽는 게 조용히 도는 것보다 낫다
     logger.info("워커 기동 (폴링 %ds, %s)", POLL_INTERVAL_S, "1회 모드" if args.once else "상주")
 
-    while True:
-        with get_session() as session:
-            job = claim_next(session)
-            if job is not None:
-                run_job(session, job)
-        if args.once:
-            break
-        time.sleep(POLL_INTERVAL_S)
+    if args.once:
+        poll_once()
+    else:
+        poll_forever()
 
 
 if __name__ == "__main__":

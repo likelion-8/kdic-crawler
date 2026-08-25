@@ -178,7 +178,8 @@ export function ConversationLogs() {
 
   const exporting = useMutation({
     mutationFn: () => exportLogs(filters),
-    onSuccess: () => showToast('내보내기를 시작했습니다'),
+    // 파일이 실제로 저장된 뒤에 뜨는 토스트다 — '시작했습니다'는 접수증만 받던 시절 문구였다
+    onSuccess: ({ rows }) => showToast(`${rows.toLocaleString()}건을 파일로 저장했습니다`),
   })
 
   const columns: Column<ConversationLogRow>[] = [

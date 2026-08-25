@@ -5,6 +5,7 @@
 switch 하므로, event 줄이 없으면 이름이 'message' 가 되어 **모든 이벤트가 조용히 버려진다.**
 
   event: accepted      data: {request_id, session_id}
+  event: progress      data: {index, total, question}   ← 복합 질문일 때만, 하위마다 1회
   event: answer_delta  data: {text}                     ← 여러 번(내부 마커 제거됨)
   event: done          data: ChatResponse 전문           ← 프론트가 최종으로 신뢰
   event: error         data: ApiError                    ← done 대신 온다
@@ -339,6 +340,12 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
             yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
             return
         sub_plans.append(sp)
+
+        # 복합이면 "지금 몇 번째 하위 질문인지"를 알린다(2026-08-25 QA). 종전에는 하위가 셋이든
+        # 하나든 화면이 똑같이 '생각 중'만 보여, 수십 초가 걸리는 이유를 알 수 없었다.
+        # answer_delta 와 달리 done.answer 에 이어붙이지 않는다 — 본문이 아니라 진행 상태다.
+        if composite:
+            yield _sse("progress", {"index": i + 1, "total": len(plan_items), "question": q})
 
         # 복합이면 하위 답변 사이에 구분자를 넣는다(스트림·done.answer 양쪽에 동일 반영).
         if composite and i > 0:

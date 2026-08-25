@@ -227,8 +227,3 @@ class LogExportRequest(BaseModel):
     q: str = ""
 
 
-class LogExportResponse(BaseModel):
-    """내보내기 접수 응답. 내보내기 '사실'은 활동 로그(AD-011)에 남는다(api.ts 주석)."""
-
-    export_id: str
-    estimated_rows: int

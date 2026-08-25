@@ -76,12 +76,6 @@ class ActivityExportRequest(BaseModel):
     filter: dict = {}
 
 
-class ActivityExportResponse(BaseModel):
-    export_id: str
-    status: str
-    estimated_rows: int
-
-
 class RiskyOpRow(BaseModel):
     """'오늘의 위험 작업' 한 줄(AD-010). 정본은 settings/access/api.ts 의 RiskyOp.
 

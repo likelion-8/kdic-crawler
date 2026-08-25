@@ -14,6 +14,8 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 export interface ChatStreamHandlers {
   onAccepted?(d: { request_id: string; session_id: string }): void
   onDelta?(text: string): void
+  /** 복합 질문 진행 상태 — 하위 질문마다 1회. 단일 질문에서는 오지 않는다 */
+  onProgress?(p: { index: number; total: number; question: string }): void
   onDone?(res: ChatResponse): void
   onError?(err: ApiError): void
   /** 델타가 30초간 없어 일괄 표시로 전환됨 — 화면은 '답변 생성 중'만 유지한다 */
@@ -111,6 +113,9 @@ export async function streamChat(
         switch (ev.event) {
           case 'accepted':
             handlers.onAccepted?.(ev.data)
+            break
+          case 'progress':
+            handlers.onProgress?.(ev.data)
             break
           case 'answer_delta':
             if (painting) handlers.onDelta?.(ev.data.text)
