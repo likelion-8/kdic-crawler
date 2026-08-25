@@ -227,6 +227,16 @@ def run_gate1(raw_text: str, config_path=None) -> Gate1Result:
         if rule_text == "" and set(stripped.split()) & words:
             return _exit(label, reason)
 
+    # 5-1) 욕설 — 공백으로 나눈 낱말 전부가 욕설 단어 목록에 속할 때만(정중 wrapper 목록과
+    #      안 겹쳐서 위 인사/감사 루프의 "rule_text 가 비면" 조건으로는 "씨발 병신아" 같은
+    #      두 단어 조합을 못 잡는다 — 그래서 wrapper 여부와 무관하게 낱말 단위로 직접 검사).
+    #      한 낱말이라도 목록 밖이면(정상 질문+욕설 혼합 등) CONTINUE — 정밀도 우선 원칙 유지.
+    abuse = cfg.labels.get("FIXED_ABUSE")
+    if abuse:
+        tokens = stripped.split()
+        if tokens and set(tokens) <= abuse["words"]:
+            return _exit("FIXED_ABUSE", "abuse")
+
     # 6) 봇 정체성/도움 — 전체 문장(wrapper 유지)이 정형 표현과 일치. wrapper 를 뗀 rule_text 가
     #    아니라 stripped 로 비교한다("사용 방법 알려줘"의 '알려줘'가 wrapper 로 잘리면 안 되므로).
     for label, reason in (("FIXED_BOT_INTRO", "bot_intro"), ("FIXED_BOT_HELP", "bot_help")):
