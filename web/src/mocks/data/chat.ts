@@ -121,13 +121,14 @@ export const MOCK_SCENARIOS: ChatScenario[] = [
     response_type: 'CLARIFICATION',
     clarification: {
       question: '어떤 업무를 찾고 계신가요? 아래에서 골라주시면 바로 안내해 드릴게요.',
-      // src/clarify.py CLARIFY_OPTIONS 와 같은 5개. value 없이 label 만 보낸다(클릭 = 업무명 전송)
+      // src/clarify.py CLARIFY_OPTIONS 와 같은 6개. value 없이 label 만 보낸다(클릭 = 업무명 전송)
       options: [
         { label: '착오송금 반환지원' },
         { label: '예금보험금·가지급금' },
         { label: '미수령금 찾기' },
         { label: '은닉재산 신고' },
         { label: '채무조정' },
+        { label: '예금자보호제도' },
       ],
     },
   },
