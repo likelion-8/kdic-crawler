@@ -44,6 +44,15 @@ def _unique_page_ids(chunks):
     return seen
 
 
+def _top_business(chunks):
+    """top-1 페이지의 업무(business_function). **서류와 신청 링크가 같은 기준을 보게 하는
+    단일 출처**다 — 종전에는 링크만 top-1 업무를 보고 서류는 top-k 전 페이지를 훑어서,
+    한쪽은 착오송금인데 다른 쪽은 예금자보호 자료가 붙는 어긋남이 났다."""
+    if not chunks:
+        return None
+    return _load_page_docs().get(chunks[0][0].split("#")[0], {}).get("business_function")
+
+
 def build_procedure_section(chunks):
     """절차 안내(신청 대상·기한·단계). 근거 청크 본문을 그대로 이어붙인다 — 절차 정보는
     corpus에 별도 구조화 필드가 아니라 본문 텍스트 안에 이미 서술돼 있고(예: "1. 착오송금인은
@@ -70,8 +79,20 @@ def build_document_section(chunks):
     정보가 통째로 사라진다(sender_docs: 신청서양식 · 금융거래정보 제공 요구(동의)서 ·
     본인 신청서 샘플 …). 2건 이상이 묶일 때만 대표 이름을 page_title 로 두고 개별 서류명은
     labels 로 함께 넘긴다 — 호출부(웹 카드 부제 · CLI 한 줄)가 그것을 그린다.
-    1건이면 종전과 똑같이 label 하나만 넘어간다(labels 없음)."""
+    1건이면 종전과 똑같이 label 하나만 넘어간다(labels 없음).
+
+    2026-08-26: **top-1 페이지의 업무에 속한 페이지만 본다**(_top_business). 검색 top5 에는
+    다른 업무 페이지가 자주 섞이는데(testset intent=civil_petition 80건 실측 58.8%),
+    종전에는 그 페이지의 서류까지 전부 걷어 왔다. 실물 두 가지 —
+      · "예금보험금 위임장 양식은 어디서 다운로드 받나요?" → 안내자료 다운로드(예금자보호
+        게시판) 공지 첨부 29건이 붙어 카드 부제가 1307자가 됐다.
+      · "대리인이 예금보험금을 대신 수령하려면 어떤 서류가 필요한가요?" → 착오송금인
+        구비서류 12건이 붙었다(길이 문제가 아니라 오답이다).
+    80건 중 23건(28.7%)의 서류 섹션이 달라지고, 달라지는 방향은 전부 '다른 업무 서류가
+    떨어져 나가는' 쪽이다. 적용 후 부제 최대 길이는 1307자 → 47자.
+    (라벨 개수 상한은 두지 않았다 — 임의 임계값 없이 이 규칙만으로 길이가 정리된다.)"""
     docs = _load_page_docs()
+    top_bf = _top_business(chunks)
     groups, order, seen = {}, [], set()
 
     def _collect(page_id, page_title, label, url):
@@ -86,6 +107,10 @@ def build_document_section(chunks):
 
     for page_id in _unique_page_ids(chunks):
         d = docs.get(page_id, {})
+        # top_bf 가 None 이면(메타 결손) 거르지 않는다 — 그 경우 신청 링크도 비어
+        # build_civil_petition_answer 가 서류 섹션을 통째로 생략한다.
+        if top_bf is not None and d.get("business_function") != top_bf:
+            continue
         title = d.get("page_title")
         for a in d.get("attachments", []):
             _collect(page_id, title, a.get("text"), a.get("url"))
@@ -147,11 +172,7 @@ def build_link_section(chunks):
     """신청 페이지 CTA — 가장 관련도 높은(top-1) 페이지의 업무에 해당하는 공식 신청 진입점
     **하나만** 돌려준다. 종전처럼 근거 페이지 전부를 CTA로 내보내지 않는다 — 근거 페이지
     목록은 참고 출처(sources)가 이미 보여준다."""
-    if not chunks:
-        return []
-    top_page = chunks[0][0].split("#")[0]
-    bf = _load_page_docs().get(top_page, {}).get("business_function")
-    link = OFFICIAL_APPLY_LINKS.get(bf)
+    link = OFFICIAL_APPLY_LINKS.get(_top_business(chunks))
     return [dict(link)] if link else []
 
 
