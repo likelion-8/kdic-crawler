@@ -76,6 +76,16 @@ const content = (): PromptDraftContent => structuredClone({
   const restored = content()
   restored.blocklist.items = [restored.blocklist.items[1], restored.blocklist.items[0]]
   assert.equal(countChanges(BASE, restored).guardrail, 0, '규칙 목록은 순서에 의미가 없다')
+
+  const rescoped = content()
+  rescoped.blocklist.items[0] = { ...rescoped.blocklist.items[0], scope: '질문 + 답변' }
+  assert.equal(countChanges(BASE, rescoped).guardrail, 1, '적용 범위 변경 = 1건')
+
+  // '사전' 행의 disabled 는 빈 배열도 '바뀐 행'으로 센다 — 그래서 BlocklistDialog는 끈 표제어가
+  // 없으면 키 자체를 지운다(setDisabled). 안 그러면 열었다 닫기만 해도 변경 1건이 붙는다
+  const emptied = content()
+  emptied.blocklist.items[0] = { ...emptied.blocklist.items[0], disabled: [] }
+  assert.equal(countChanges(BASE, emptied).guardrail, 1, '빈 disabled 도 변경으로 센다')
 }
 
 // ② 복구 / 폐기 판정 — base_version이 같을 때만 되살린다

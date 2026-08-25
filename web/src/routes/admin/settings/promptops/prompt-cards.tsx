@@ -15,9 +15,10 @@ import { Input } from '../../../../components/shadcn/input'
 import { formatDate, formatMonthDayTime } from '../../../../lib/format'
 import { Card, EditDialog, SectionError, linkClass } from './common'
 import type {
-  BlocklistRule, FewshotExample, MaskingRule, PromptDraft, PromptPrinciple, PromptVersion,
+  BlocklistRule, DictionaryEntry, FewshotExample, GuardrailScope, MaskingRule, PromptDraft,
+  PromptPrinciple, PromptVersion,
 } from './api'
-import { fetchPromptVersions, promptKeys, validateMasking } from './api'
+import { fetchGuardrailDictionary, fetchPromptVersions, promptKeys, validateMasking } from './api'
 
 /** CM-DF-004 06절 입력 제한 — 시스템 프롬프트 최대 8,000자 (constants.ts에 없어 여기 둔다) */
 const SYSTEM_PROMPT_MAX = 8000
@@ -394,7 +395,7 @@ export function GuardrailCard({
 }: GuardrailCardProps) {
   const notAllowed = canEdit ? undefined : '편집자(EDITOR) 이상만 수정할 수 있습니다'
   return (
-    <Card title="가드레일 규칙" icon={<Shield />} dirty={draft.dirty.guardrail} meta="질문·답변 양방향 적용">
+    <Card title="가드레일 규칙" icon={<Shield />} dirty={draft.dirty.guardrail} meta="적용 범위는 규칙마다">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2">
         <Toggle
           label="금칙어 목록"
@@ -466,7 +467,7 @@ export function GuardrailListCard({ draft, onEditBlocklist, onEditMasking }: Gua
       title="가드레일 규칙"
       icon={<Shield />}
       dirty={draft.dirty.guardrail}
-      meta="질문·답변 양방향 적용"
+      meta="적용 범위는 규칙마다"
       actions={
         <>
           <Button size="sm" onClick={onEditBlocklist}>
@@ -540,11 +541,63 @@ export function BlocklistDialog({ open, items, canEdit, onSave, onClose }: Block
   const visible = keyword.trim() ? rows.filter((r) => r.pattern.includes(keyword.trim())) : rows
   /** 제외를 물어볼 행 — 지운 규칙은 다시 입력할 수밖에 없다 */
   const [removing, setRemoving] = useState<BlocklistRule | null>(null)
+  /** 사전 안을 들여다볼 행. '사전' 유형에만 있다 */
+  const [opened, setOpened] = useState<BlocklistRule | null>(null)
+
+  const patch = (id: string, next: Partial<BlocklistRule>) =>
+    setRows(rows.map((x) => (x.id === id ? { ...x, ...next } : x)))
+
+  /** 끈 표제어가 없으면 키 자체를 지운다 — 빈 배열을 남기면 바꾼 것 없이 '변경 1건'이 뜬다 */
+  const setDisabled = (id: string, disabled: string[]) =>
+    setRows(rows.map((x) => {
+      if (x.id !== id) return x
+      const { disabled: _prev, ...rest } = x
+      return disabled.length ? { ...rest, disabled } : rest
+    }))
 
   const columns: Column<BlocklistRule>[] = [
-    { key: 'pattern', header: '단어 · 패턴', render: (r) => r.pattern },
+    {
+      key: 'pattern',
+      header: '단어 · 패턴',
+      // '사전' 행의 pattern 은 사람이 읽는 이름일 뿐이라, 무엇을 막고 있는지는 열어 봐야 안다
+      render: (r) =>
+        r.type === '사전' ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span>{r.pattern}</span>
+            <Button size="sm" onClick={() => setOpened(r)}>
+              사전 보기{r.disabled?.length ? ` (${r.disabled.length} 끔)` : ''}
+            </Button>
+          </div>
+        ) : (
+          r.pattern
+        ),
+    },
     { key: 'type', header: '유형', width: '76px', render: (r) => r.type },
-    { key: 'scope', header: '적용 범위', width: '96px', render: (r) => r.scope },
+    {
+      key: 'scope',
+      header: '적용 범위',
+      width: '124px',
+      // 추가할 때만 고를 수 있고 그 뒤로는 못 바꾸던 값이었다(2026-08-25) — 질문 쪽 오탐을
+      // 끄려면 규칙을 지웠다 다시 넣는 수밖에 없었다. 동작은 범위에서 파생한다(추가 폼과 같다)
+      render: (r) => (
+        <select
+          className={selectClass}
+          value={r.scope}
+          aria-label={`${r.pattern} 적용 범위`}
+          disabled={!canEdit}
+          onChange={(e) => {
+            const scope = e.target.value as GuardrailScope
+            patch(r.id, { scope, action: BLOCK_ACTION_BY_SCOPE[scope] })
+          }}
+        >
+          {BLOCK_SCOPES.map((sc) => (
+            <option key={sc} value={sc}>
+              {sc}
+            </option>
+          ))}
+        </select>
+      ),
+    },
     { key: 'action', header: '동작', render: (r) => r.action },
     {
       key: 'active',
@@ -558,7 +611,7 @@ export function BlocklistDialog({ open, items, canEdit, onSave, onClose }: Block
   return (
     <EditDialog
       open={open}
-      title={`금칙어 목록 편집 · ${rows.length}건 · 적용 : 질문 + 답변`}
+      title={`금칙어 목록 편집 · ${rows.length}건`}
       tools={
         <>
           <Input
@@ -680,6 +733,18 @@ export function BlocklistDialog({ open, items, canEdit, onSave, onClose }: Block
         )}
       />
 
+      {opened && (
+        <DictionaryDialog
+          rule={opened}
+          canEdit={canEdit}
+          onSave={(disabled) => {
+            setDisabled(opened.id, disabled)
+            setOpened(null)
+          }}
+          onClose={() => setOpened(null)}
+        />
+      )}
+
       {/* 지운 규칙은 다시 입력할 수밖에 없다 — [취소]로 통째로 버릴 수는 있어도
           이 한 줄만 살릴 방법은 없으므로 지우기 전에 묻는다(2026-08-04 사용자 지시).
           사유는 받지 않는다 — 저장 시점(가드레일 게시)에 한 번에 남는다 */}
@@ -702,6 +767,110 @@ export function BlocklistDialog({ open, items, canEdit, onSave, onClose }: Block
         }}
         onCancel={() => setRemoving(null)}
       />
+    </EditDialog>
+  )
+}
+
+// ------------------------------------------------------------- 사전 보기 모달
+
+export interface DictionaryDialogProps {
+  rule: BlocklistRule
+  canEdit: boolean
+  /** 끈 표제어만 돌려준다 — 사전 본문은 서버 코드(api/rag/blocklist_ko.py)가 정본이라
+   *  화면이 낱말을 만들거나 지우지 않는다. 더할 낱말은 「단어」 유형 규칙으로 넣는다 */
+  onSave: (disabled: string[]) => void
+  onClose: () => void
+}
+
+/** 「사전」 유형이 무엇을 막고 있는지 열어 보고, 오탐 나는 표제어를 끈다.
+ *  종전에는 이름만 보이는 스위치라 무엇이 걸리는지 모르는 채 켜고 꺼야 했다(2026-08-25). */
+export function DictionaryDialog({ rule, canEdit, onSave, onClose }: DictionaryDialogProps) {
+  const query = useQuery({ queryKey: promptKeys.dictionary, queryFn: fetchGuardrailDictionary })
+  const [off, setOff] = useState<string[]>(rule.disabled ?? [])
+  const [keyword, setKeyword] = useState('')
+
+  const entries = query.data?.entries ?? []
+  const visible = keyword.trim() ? entries.filter((e) => e.word.includes(keyword.trim())) : entries
+  const isOff = (word: string) => off.includes(word)
+  const toggle = (word: string) =>
+    setOff(isOff(word) ? off.filter((w) => w !== word) : [...off, word])
+
+  const columns: Column<DictionaryEntry>[] = [
+    { key: 'word', header: '표제어', width: '160px', render: (e) => e.word },
+    { key: 'mode', header: '매칭', width: '96px', render: (e) => e.mode },
+    {
+      key: 'note',
+      header: '비고',
+      // 셀은 줄바꿈하지 않는다(DataTable) — 사유가 길면 표가 통째로 넓어져 표제어가 가로
+      // 스크롤 밖으로 밀린다. 무엇을 끄는지 보면서 눌러야 하므로 여기서 잘라 둔다
+      render: (e) =>
+        e.note ? (
+          <span className="block max-w-75 truncate text-muted-foreground" title={e.note}>
+            {e.note}
+          </span>
+        ) : (
+          ''
+        ),
+    },
+    {
+      key: 'state',
+      header: '사용',
+      width: '64px',
+      render: (e) =>
+        isOff(e.word) ? <ColorText tone="red">OFF</ColorText> : <ColorText tone="green">ON</ColorText>,
+    },
+  ]
+
+  return (
+    <EditDialog
+      open
+      title={`내장 비속어 사전 · ${entries.length}개${off.length ? ` · 끔 ${off.length}개` : ''}`}
+      tools={
+        <Input
+          className="h-8 w-55"
+          type="search"
+          value={keyword}
+          placeholder="예: 병신"
+          aria-label="표제어 검색"
+          onChange={(e) => setKeyword(e.target.value)}
+        />
+      }
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            취소
+          </Button>
+          <Button variant="primary" disabled={!canEdit} onClick={() => onSave(off)}>
+            저장
+          </Button>
+        </>
+      }
+      onClose={onClose}
+    >
+      {/* 여기서 할 수 있는 일의 경계를 먼저 말한다 — 낱말 추가를 찾다 못 찾는 것을 막는다 */}
+      <Notice tone="info" variant="block">
+        사전 본문은 서버 코드가 정본이라 여기서 낱말을 더하거나 지울 수 없습니다. 오탐이 나는 표제어를
+        [중지]로 끄면 이 규칙에서만 빠집니다. 막을 표현을 더하려면 금칙어 목록에 「단어」·「정규식」 규칙으로
+        추가하세요. 질문·답변 중 어느 쪽을 검사할지는 금칙어 목록의 [적용 범위]에서 정합니다.
+      </Notice>
+
+      {query.isPending && <Loading />}
+      {query.isError && <SectionError error={query.error} onRetry={() => void query.refetch()} />}
+      {query.isSuccess && (
+        <DataTable
+          caption="내장 비속어 사전"
+          columns={columns}
+          rows={visible}
+          rowKey={(e) => e.word}
+          rowState={(e) => (isOff(e.word) ? 'disabled' : 'default')}
+          empty={<EmptyState title="조건에 맞는 표제어가 없습니다" />}
+          actions={(e) => (
+            <Button size="sm" disabled={!canEdit} onClick={() => toggle(e.word)}>
+              {isOff(e.word) ? '사용' : '중지'}
+            </Button>
+          )}
+        />
+      )}
     </EditDialog>
   )
 }

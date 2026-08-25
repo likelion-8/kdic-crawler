@@ -66,6 +66,30 @@ def test_legacy_string_items_keep_working(rules):
     assert guardrail_hit("몰빵 투자", side="답변") == "몰빵"
 
 
+def test_dictionary_type_uses_builtin_dictionary(rules):
+    # '사전' 행의 pattern 은 이름일 뿐이다 — 매칭은 내장 사전이 한다
+    rules["items"] = [{"pattern": "비속어 기본 사전", "type": "사전",
+                       "scope": "질문 + 답변", "active": True}]
+    assert guardrail_hit("씨발 이게 뭐야", side="질문") == "씨발"
+    assert guardrail_hit("보호 한도가 얼마인가요", side="질문") is None
+
+
+def test_dictionary_scope_answer_only_lets_rude_questions_through(rules):
+    # 정상 질문 뒤에 욕을 붙이는 사용자 — 질문은 받고 답변만 검사한다(2026-08-25 관리자 설정)
+    rules["items"] = [{"pattern": "비속어 기본 사전", "type": "사전",
+                       "scope": "답변", "active": True}]
+    assert guardrail_hit("보호 한도가 얼마야 씨발", side="질문") is None
+    assert guardrail_hit("씨발 그건 안 됩니다", side="답변") == "씨발"
+
+
+def test_dictionary_disabled_words_are_skipped(rules):
+    # 화면(「사전 보기」)에서 끈 표제어는 그 규칙에서만 빠지고, 나머지 사전은 그대로 산다
+    rules["items"] = [{"pattern": "비속어 기본 사전", "type": "사전", "scope": "질문",
+                       "active": True, "disabled": ["병신"]}]
+    assert guardrail_hit("병신 같은 안내", side="질문") is None
+    assert guardrail_hit("씨발 같은 안내", side="질문") == "씨발"
+
+
 def test_list_level_switch_still_wins(rules):
     rules["active"] = False
     rules["items"] = [{"pattern": "수익 보장", "scope": "질문 + 답변", "active": True}]
