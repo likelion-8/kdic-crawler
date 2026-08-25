@@ -346,6 +346,20 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
             full_parts.append(sep)
             yield _sse("answer_delta", {"text": sep})
 
+        # 2-1) Gate3 EXIT — 검색 관련도가 낮아 prepare_sub 가 이미 고정응답으로 확정했다.
+        #      HCX 스트리밍(_stream_one)·마커 판정(_MarkerStripper)·finalize_sub(사후검증
+        #      validate_answer·재생성·source_precheck 전부 포함)를 하나도 타지 않는다 —
+        #      이 하위 질문에 관한 한 LLM 호출이 0회다. 고정응답을 그대로 answer_delta 로
+        #      한 번에 흘리고 다음 하위 질문으로 넘어간다(복합 질문 중 일부만 Gate3여도 나머지
+        #      하위는 아래 평소 경로를 그대로 탄다).
+        if sp.fixed_response is not None:
+            full_parts.append(sp.fixed_response)
+            yield _sse("answer_delta", {"text": sp.fixed_response})
+            sub, used = answer.finalize_gate3_exit(sp)
+            finalized.append(sub)
+            used_flags.append(used)
+            continue
+
         # 3) 토큰 스트리밍 + 마커 제거 + 토큰 간 타임아웃
         stripper = _MarkerStripper()
         body_parts = []
@@ -414,10 +428,17 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
                   "gate1_label": g1.label, "gate1_reason": g1.reason,  # CONTINUE 도 기록(오탐 모니터링)
                   "sub_questions": [sp.question for sp in sub_plans]})
 
+    # served_from="gate3": 단일 질문(비복합)이 통째로 Gate3 EXIT일 때만 표시한다. 복합 질문은
+    # 하위 질문마다 통과/EXIT가 섞일 수 있어(일부만 Gate3) 최상위 한 칸짜리 served_from으로
+    # 뭉뚱그리면 "Gate3만 탔다"는 거짓 신호가 된다 — 그 정보는 observation.build()가 하위별로
+    # 이미 담는다(sub.exit_at/retrieval_top1_score/retrieval_threshold).
+    served_from = ("gate3" if (not composite and len(sub_plans) == 1
+                               and sub_plans[0].exit_at == "gate3") else None)
+
     # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에
     # 남길 피드백(POST /api/feedback)의 연결 열쇠다 — 없으면 피드백을 붙일 곳이 사라진다.
     # log_rag_run 은 내부에서 예외를 삼키므로(실패-안전) 답변 전달을 막지 않는다.
-    answer.log_run(message, resp, sub_plans, latency_ms, trace_id=trace_id)
+    answer.log_run(message, resp, sub_plans, latency_ms, trace_id=trace_id, served_from=served_from)
 
     # 답변을 저장한다(대화 복원용). 출처·범위외 판정이 확정된 뒤여야 하므로 여기가 맞다.
     conversation.save_assistant_message(session_id, request_id, resp)

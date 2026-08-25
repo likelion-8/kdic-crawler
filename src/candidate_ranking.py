@@ -99,10 +99,36 @@ def gate_low_relevance(top, threshold=None):
 
     threshold 를 기본 인자에 박지 않고 None 으로 두는 이유: 기본 인자는 **import 시점에 한 번**
     평가된다. MIN_TOP1_SCORE 를 그대로 쓰면 관리자 화면(AD-007)이 값을 바꿔도 프로세스를
-    재시작하기 전까지 반영되지 않는다. 호출 시점에 풀어야 한다."""
+    재시작하기 전까지 반영되지 않는다. 호출 시점에 풀어야 한다.
+
+    ⚠️ 2026-08-25(Gate3 도입): 이 함수 자체는 더는 웹·CLI 답변 경로에서 호출되지 않는다
+    (아래 gate3_exit 로 대체 — HCX/OpenAI 호출 전에 원본 Dense 점수로 조기 종료한다). 기존
+    호출부·테스트가 남아 있을 수 있어 삭제하지 않고 그대로 둔다."""
     if threshold is None:
         from runtime_config import get_param
         threshold = get_param("min_top1_score", MIN_TOP1_SCORE)
     if top and top[0][1] < threshold:
         return []
     return top
+
+
+def gate3_exit(candidates, threshold=None) -> bool:
+    """Gate3 판정 — candidates(route_search_chunks 가 돌려준 **원본** 1차 후보, rerank 전)의
+    top-1 점수가 threshold **이하**이거나 candidates 가 비면 True(EXIT).
+
+    ⚠️ 반드시 rerank() 호출 **전**의 candidates 에 대해서만 판정할 것. rerank()는 점수를
+    cross-encoder 로짓으로 덮어써 스케일이 달라지므로(MIN_TOP1_SCORE 는 dense 코사인
+    원값 기준), 재정렬된 리스트에 이 임계값을 적용하면 의미가 없다.
+
+    ⚠️ use_type_routing(admin 파라미터)이 켜져 있으면 candidates 가 Hybrid/RRF/linear-fusion
+    점수일 수 있다(retrieval.route_search_chunks 참고) — 이 경우 호출부가 아예 이 함수를
+    부르지 말고 Gate3 를 건너뛰어야 한다(MIN_TOP1_SCORE 는 dense 전용 임계값).
+
+    gate_low_relevance 와 비교연산자가 다르다(`<=` vs `<`) — 요구사항이 "0.35 이하"로 명시돼
+    경계값(정확히 threshold)도 EXIT 로 판정한다."""
+    if threshold is None:
+        from runtime_config import get_param
+        threshold = get_param("min_top1_score", MIN_TOP1_SCORE)
+    if not candidates:
+        return True
+    return candidates[0][1] <= threshold
