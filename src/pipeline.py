@@ -23,15 +23,15 @@ import os
 from query_decomposer import decompose_query
 from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent, classify_question_type
-from retrieval import DEFAULT_DENSE_MODEL, RoutedRetriever, route_search_chunks
-from candidate_ranking import gate_low_relevance, rerank, top_k_cut
+from retrieval import DEFAULT_DENSE_MODEL, USE_TYPE_ROUTING, RoutedRetriever, route_search_chunks
+from candidate_ranking import MIN_TOP1_SCORE, gate3_exit, gate_low_relevance, rerank, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
 from gate1 import run_gate1
 from gate2 import run_gate2
 from prompt_builder import (
-    assemble_civil_petition_answer, assemble_informational_answer,
-    build_civil_petition_prompt, build_informational_prompt,
+    NO_RELEVANT_EVIDENCE_MESSAGE, assemble_civil_petition_answer,
+    assemble_informational_answer, build_civil_petition_prompt, build_informational_prompt,
 )
 from llm_client import call_hyperclova
 from observability import (
@@ -104,15 +104,28 @@ def _answer_one(query, timings, intent=None):
     with measure_time(timings, "retrieval", accumulate=True):
         candidates = route_search_chunks(query, k=get_param("k_candidates", K_CANDIDATES))
 
+    # Gate3(2026-08-25) — 원본 dense 후보(rerank 전!)의 top-1이 임계값 이하(또는 후보 없음)면
+    # HCX·사후검증을 아예 안 부르고 즉시 고정응답으로 끝낸다. api/rag/answer.py.prepare_sub 와
+    # 정확히 같은 정책·같은 순서(검색 → Gate3 판정 → 통과 시에만 rerank)다 — 반드시 rerank()
+    # 호출 **전** candidates 로 판정해야 한다(rerank가 점수를 cross-encoder 로짓으로 덮어써
+    # MIN_TOP1_SCORE 스케일과 달라진다). use_type_routing 이 켜져 있으면 candidates 가
+    # Hybrid/RRF 점수일 수 있어 Gate3 를 건너뛴다(dense 전용 임계값이므로).
+    hybrid_routing = get_param("use_type_routing", USE_TYPE_ROUTING)
+    if not hybrid_routing:
+        threshold = get_param("min_top1_score", MIN_TOP1_SCORE)
+        if gate3_exit(candidates, threshold):
+            return NO_RELEVANT_EVIDENCE_MESSAGE
+
     with measure_time(timings, "reranking", accumulate=True):
         # 전역 USE_RERANKER 를 default 로 넘기는 이유: eval_pipeline_generation.py 가
         # `pipeline.USE_RERANKER = args.rerank` 로 전역을 덮어써 A/B 를 돌린다. DB 에 이
         # 파라미터가 없는 동안은 그 덮어쓰기가 계속 이긴다(runtime_config 모듈 주석 참고).
         reranked = rerank(query, candidates) if get_param("use_reranker", USE_RERANKER) else candidates
-        # 무관 질문 게이트(2026-08-10) — api/rag/answer.py 와 동일 동작 유지.
-        # 게이트에 걸리면 근거 없이 informational 경로로 통일한다(civil 조립은 근거가 있어야
-        # 의미가 있고, 빈 근거 civil 프롬프트는 few-shot leak 이력이 있다).
-        top = gate_low_relevance(top_k_cut(reranked, k=get_param("k_final", K_FINAL)))
+        top = top_k_cut(reranked, k=get_param("k_final", K_FINAL))
+        # use_type_routing 이 켜져 Gate3 를 건너뛴 경로에서만 top 이 비어 있을 수 있다(정상
+        # Gate3 통과 경로는 candidates 가 이미 비지 않았음을 확인했으므로 top 도 항상 비지
+        # 않는다). civil 조립은 근거가 있어야 의미가 있으므로(빈 근거 civil 프롬프트는
+        # few-shot leak 이력이 있다) informational 경로로 통일한다.
         if not top:
             intent = "informational"
 

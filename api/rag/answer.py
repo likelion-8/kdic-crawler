@@ -21,14 +21,14 @@ from typing import NamedTuple, Optional
 from query_decomposer import decompose_query
 from query_planner import plan_query, USE_QUERY_PLANNER
 from query_classifier import classify_intent
-from retrieval import route_search_chunks
-from candidate_ranking import gate_low_relevance, top_k_cut
+from retrieval import USE_TYPE_ROUTING, route_search_chunks
+from candidate_ranking import MIN_TOP1_SCORE, gate3_exit, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
 from llm_client import call_hyperclova
-from prompt_builder import (OUT_OF_SCOPE_MESSAGE, _strip_no_source_marker,
-                            build_civil_petition_prompt, build_informational_prompt,
-                            strip_urls, with_retry_notice)
+from prompt_builder import (NO_RELEVANT_EVIDENCE_MESSAGE, OUT_OF_SCOPE_MESSAGE,
+                            _strip_no_source_marker, build_civil_petition_prompt,
+                            build_informational_prompt, strip_urls, with_retry_notice)
 from runtime_config import get_param
 from source_check import validate_answer
 from source_precheck import classify as precheck_classify
@@ -74,13 +74,23 @@ _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
 @dataclass
 class SubPlan:
     """하위 질문 하나의 'LLM 직전까지' 준비물. sse.py 가 prompt 로 토큰을 스트리밍하고,
-    끝난 뒤 top/civil/evidence 로 출처·서류·근거재확인을 처리한다."""
+    끝난 뒤 top/civil/evidence 로 출처·서류·근거재확인을 처리한다.
+
+    Gate3(검색 관련도 게이트)가 EXIT 로 판정하면 prompt 는 None 이다 — LLM 을 아예 안 부르므로
+    준비할 필요가 없다. 그 경우 fixed_response 가 채워지고, 호출부(sse.py)는 finalize_sub 를
+    타지 않고 fixed_response 를 그대로 확정 답변으로 쓴다."""
     question: str
     intent: str
-    top: list                      # [(chunk_id, score, text), ...]
-    prompt: list                   # [(role, content), ...]
+    top: list                      # [(chunk_id, score, text), ...] — Gate3 EXIT 면 []
+    prompt: Optional[list]         # [(role, content), ...] — Gate3 EXIT 면 None(LLM 미호출)
     civil: Optional[dict] = None   # build_civil_petition_answer 결과({procedure,documents,links}) 또는 None
     evidence: str = ""             # 근거 재확인(recheck)용 텍스트
+    # Gate3(검색 관련도) EXIT 전용 필드. None 이면 Gate3 를 통과(또는 건너뜀)한 정상 경로다.
+    fixed_response: Optional[str] = None   # 확정 답변(HCX 미호출) — NO_RELEVANT_EVIDENCE_MESSAGE
+    exit_at: Optional[str] = None          # "gate3" | None
+    gate3_reason: Optional[str] = None     # "no_candidates" | "low_retrieval_relevance"
+    retrieval_top1_score: Optional[float] = None   # Gate3 판정에 쓴 원본 dense top-1(없으면 None)
+    retrieval_threshold: Optional[float] = None    # 판정 당시 threshold(관측용 — 나중에 바뀌어도 고정)
     # 아래 obs_* 는 finalize_sub 가 적고 observation.build 가 읽는 관측용 판정이다. 여기 둔 이유는
     # log_run 이 이미 sub_plans 를 받고 있어 이음매를 넓히지 않아도 값이 건너가기 때문이다.
     # 판정을 안 한 경우 None 을 유지한다 — false 로 적으면 '근거 미사용'이라는 거짓이 된다.
@@ -129,19 +139,42 @@ def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
     pipeline._answer_one 의 검색~프롬프트 단계와 동일하다(리랭커 off).
 
     intent: 쿼리 플래너(plan)가 이미 판단한 값을 넘기면 그대로 쓴다. None이면(플래너 Off 폴백)
-    여기서 classify_intent 로 분류한다."""
+    여기서 classify_intent 로 분류한다.
+
+    실행 순서(Gate3, 2026-08-25): route_search_chunks → **원본** 후보 top-1로 Gate3 판정 →
+    통과 시에만 top_k_cut → 프롬프트 조립. 이 순서를 지켜야 하는 이유는 gate3_exit 판정이
+    반드시 재정렬 전 원본 dense 점수를 봐야 하기 때문이다(candidate_ranking.gate3_exit
+    docstring). 이 함수는 리랭커를 쓰지 않으므로(웹 경로는 애초에 rerank 를 안 부른다) 순서
+    위반 위험은 크지 않지만, CLI 경로(pipeline._answer_one)와 같은 패턴을 유지한다."""
     if intent is None:
         intent = classify_intent(q)
     # 관리자 화면(AD-007)이 바꾼 값을 쓰되, DB 가 비면 위 상수로 떨어진다. 모듈 최상단이
     # 아니라 여기서 부르는 것이 중요하다 — 위에서 읽어 두면 import 시점에 값이 굳는다.
     candidates = route_search_chunks(q, k=get_param("k_candidates", K_CANDIDATES))
-    top = gate_low_relevance(top_k_cut(candidates, k=get_param("k_final", K_FINAL)))
-    if not top:
-        # 무관 질문 게이트에 걸림 — 저점수 청크를 근거로 주면 환각 소재가 되므로 근거 없이
-        # 인사 응대/범위외 거절 프롬프트로 보낸다(NO_EVIDENCE_NOTICE). civil_petition 조립은
-        # 근거가 있어야 의미가 있으므로 informational 경로로 통일한다.
-        return SubPlan(question=q, intent=intent, top=[],
-                       prompt=build_informational_prompt(q, []), civil=None, evidence="")
+
+    # Gate3 — 원본 dense 후보의 top-1이 임계값 이하(또는 후보 없음)면 HCX·OpenAI 를 아예
+    # 타지 않고 즉시 고정응답으로 끝낸다(기존엔 여기서 근거만 비우고 LLM 에게 "거절문을
+    # 그대로 답하라"고 한 번 더 시켰다 — 판정이 이미 난 걸 다시 물어보는 비용 낭비였다).
+    # use_type_routing 이 켜져 있으면(admin 파라미터, 기본 Off) candidates 가 Hybrid/RRF
+    # 점수일 수 있어 dense 전용 임계값을 적용하지 않고 Gate3 자체를 건너뛴다 — 그 경로는
+    # 기존 gate_low_relevance 도 taken 하지 않으므로(리랭커·유형라우팅 on이면 게이트가 사실상
+    # 무력화된다는 candidate_ranking.MIN_TOP1_SCORE 경고와 동일 전제) 통과로 취급하고 아래
+    # 기존 흐름을 그대로 탄다.
+    hybrid_routing = get_param("use_type_routing", USE_TYPE_ROUTING)
+    if not hybrid_routing:
+        threshold = get_param("min_top1_score", MIN_TOP1_SCORE)
+        if gate3_exit(candidates, threshold):
+            reason = "no_candidates" if not candidates else "low_retrieval_relevance"
+            logger.info("Gate3 EXIT(%s): %r top1=%s threshold=%s", reason, q,
+                       candidates[0][1] if candidates else None, threshold)
+            return SubPlan(
+                question=q, intent=intent, top=[], prompt=None, civil=None, evidence="",
+                fixed_response=NO_RELEVANT_EVIDENCE_MESSAGE, exit_at="gate3",
+                gate3_reason=reason,
+                retrieval_top1_score=(candidates[0][1] if candidates else None),
+                retrieval_threshold=threshold, obs_used_source=False)
+
+    top = top_k_cut(candidates, k=get_param("k_final", K_FINAL))
     if intent == "civil_petition":
         civil = build_civil_petition_answer(top)
         prompt = build_civil_petition_prompt(q, civil)
@@ -151,6 +184,13 @@ def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
         prompt = build_informational_prompt(q, top)
         evidence = "\n\n".join(text for _, _, text in top)
     return SubPlan(question=q, intent=intent, top=top, prompt=prompt, civil=civil, evidence=evidence)
+
+
+def finalize_gate3_exit(sp: SubPlan) -> tuple[SubAnswer, bool]:
+    """Gate3 EXIT SubPlan을 SubAnswer로 감싼다. finalize_sub 와 짝을 이루는 함수지만 HCX·
+    OpenAI 어느 쪽도 부르지 않는다 — prepare_sub 가 이미 만들어 둔 고정응답을 그대로
+    확정한다. used=False 고정(근거를 안 썼으므로 sources/attachments 는 항상 빈 배열)."""
+    return SubAnswer(title=sp.question, answer=sp.fixed_response, sources=[], attachments=[]), False
 
 
 def _build_sources(top: list) -> list[SourceItem]:

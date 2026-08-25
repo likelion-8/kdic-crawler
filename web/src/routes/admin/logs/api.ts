@@ -73,10 +73,16 @@ export interface LogErrorDetail {
   root_cause: string | null
 }
 
-/** 답변을 낸 경로 — 전부 검색·생성을 타지 않고 끝나 성격·근거가 없다(api/rag/sse.py 0-2 ~ 1-1).
- *  clarify(업무 되묻기, 2026-08-24)만 플래너 뒤에서도 끝날 수 있다(첫 턴은 1-1, 후속 턴은 0-2.7).
- *  그 경우에도 log_run 에 하위 질문을 넘기지 않아 intent 는 저장되지 않는다. */
-export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'clarify'
+/** 답변을 낸 경로. cache·guardrail·gate1·gate2·clarify 다섯은 전부 검색·생성을 타지 않고
+ *  끝나 성격·근거가 없다(api/rag/sse.py 0-2 ~ 1-1). clarify(업무 되묻기, 2026-08-24)만 플래너
+ *  뒤에서도 끝날 수 있다(첫 턴은 1-1, 후속 턴은 0-2.7) — 그 경우에도 log_run 에 하위 질문을
+ *  넘기지 않아 intent 는 저장되지 않는다.
+ *
+ *  gate3(검색 관련도 게이트, 2026-08-25)만 다르다 — **검색은 실제로 돈다.** 플래너 뒤,
+ *  하위 질문별로 route_search_chunks 를 부른 뒤 원본 top-1 점수로 판정해 생성만 건너뛰므로,
+ *  observation 이 null 이 아니라 실제 점수(subs[].retrieval_top1_score)를 담고 내려온다 —
+ *  다른 넷과 같은 취급으로 "관측 없음"이라 읽으면 안 된다. */
+export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'gate3' | 'clarify'
 
 /** rag_runs.observation 의 subs[].top[] 원소. 모양의 정본은 api/rag/observation.py */
 export interface ObservedChunk {
@@ -95,6 +101,15 @@ export interface ObservedSub {
   kind: string | null
   appropriate: boolean | null
   normalized: boolean | null
+  /** "gate3" 면 이 하위 질문이 검색 관련도 게이트에서 끝났다는 뜻(top 이 비어도 '검색 실패'가
+   *  아니라 '점수가 낮아 스스로 멈췄다'는 뜻) — EvidencePanel 이 이 값으로 문구를 가른다. */
+  exit_at: string | null
+  /** "no_candidates" | "low_retrieval_relevance". exit_at 이 "gate3"일 때만 채워진다 */
+  gate3_reason: string | null
+  /** Gate3 판정에 쓴 원본 dense top-1 점수. 후보 자체가 없었으면 null */
+  retrieval_top1_score: number | null
+  /** 판정 당시 임계값(관리자가 나중에 바꿔도 이 값은 고정) */
+  retrieval_threshold: number | null
 }
 
 export interface RunObservation {
@@ -136,8 +151,10 @@ export interface ConversationLogDetail extends ConversationLogRow {
    */
   observation: RunObservation | null
   /**
-   * 이 답변을 낸 경로. 넷 다 **플래너(분해+intent 판정) 앞에서 끝난 건**이라 성격·유형·근거가
-   * 없다 — 분류가 비는 이유가 곧 이 값이다. 평소 경로와 2026-08-20 이전 대화는 null.
+   * 이 답변을 낸 경로. cache·guardrail·gate1·gate2 는 **플래너(분해+intent 판정) 앞에서 끝난
+   * 건**이라 성격·유형·근거가 없다 — 분류가 비는 이유가 곧 이 값이다. gate3 는 플래너 **뒤**
+   * (하위 질문 단위)에서 검색까지 마친 뒤 끝난 건이라 observation 이 채워져 있다(ServedFrom
+   * 주석 참고). 평소 경로와 2026-08-20 이전 대화는 null.
    */
   served_from: ServedFrom | null
   /** 그 경로에서 걸린 규칙 이름(Gate 1 의 FIXED_GREETING 등). 원시 식별자다 */
