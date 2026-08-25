@@ -60,8 +60,14 @@ function sections(sources: Source[], attachments: Attachment[], prefix: string):
         <ol className={LIST}>
           {documents.map((d) => (
             <li key={`${d.url}-${d.label}`}>
-              {/* 부제는 목업 원문 고정 — 서식 직링크가 POST 전용이라 페이지로 보낸다(CB-003 마커 2) */}
-              <SourceCard title={d.label} subtitle="서식 다운로드 페이지로 이동" url={d.url} />
+              {/* 부제 기본값은 목업 원문 고정 — 서식 직링크가 POST 전용이라 페이지로 보낸다
+                  (CB-003 마커 2). 여러 서류가 한 페이지로 묶였으면(labels) 그 자리에 개별
+                  서류명을 적는다 — 카드는 한 장이고 무엇이 필요한지는 남는다. */}
+              <SourceCard
+                title={d.label}
+                subtitle={d.labels?.length ? d.labels.join(' · ') : '서식 다운로드 페이지로 이동'}
+                url={d.url}
+              />
             </li>
           ))}
         </ol>

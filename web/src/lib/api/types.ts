@@ -44,6 +44,10 @@ export interface Attachment {
   label: string
   url: string
   kind: 'document' | 'link'
+  /** 여러 서류가 같은 다운로드 페이지로 묶였을 때의 개별 서류명 목록.
+   *  이때 `label`은 그 페이지 이름이다. 1건짜리 서류엔 없다 — 없으면 기존 부제를 쓴다.
+   *  (서버: src/civil_petition.py build_document_section) */
+  labels?: string[]
 }
 
 /** 되묻기 (CB-005). **선택지까지 서버가 준다** — B-01.
