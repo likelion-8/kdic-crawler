@@ -23,7 +23,7 @@ def test_payload_matches_schema_contract():
 def test_option_labels_name_a_business():
     """클릭된 label 이 다음 턴 메시지가 된다 — label 만 보고 업무를 알 수 없으면
     판정기가 다시 '업무 미정'으로 보아 되묻기가 무한 반복된다."""
-    businesses = ("착오송금", "예금보험금", "미수령금", "은닉재산", "채무조정")
+    businesses = ("착오송금", "예금보험금", "미수령금", "은닉재산", "채무조정", "예금자보호")
     for o in CLARIFY_OPTIONS:
         assert any(b in o["label"] for b in businesses), o["label"]
 

@@ -96,36 +96,31 @@ class SubPlan:
 
 
 class Plan(NamedTuple):
-    """플래너 1콜의 결과 전부. items 는 [(하위질문, intent|None), ...].
+    """플래너 1콜의 결과. items 는 [(하위질문, intent|None), ...].
 
-    needs_clarification 을 튜플 목록과 함께 돌려주는 이유: 같은 한 콜에서 나온 값이라
-    호출부가 두 번 부를 수 없다(부르면 LLM 콜이 2배가 된다)."""
+    2026-08-25 에 needs_clarification 필드를 뺐다 — 업무 되묻기 판정이 게이트 앞
+    (query_rewriter.triage_query)으로 옮겨가 이 콜에서 나오지 않는다(query_planner.QueryPlan
+    docstring)."""
     items: list
-    needs_clarification: bool = False
 
 
 def plan(query: str) -> Plan:
-    """분해·intent·업무 되묻기 판정을 한 콜로. pipeline._rag_answer_traced 와 동일 로직으로,
-    웹 SSE 경로도 같은 쿼리 플래너를 쓰게 한다(두 경로 동작 일치).
+    """분해·intent 를 한 콜로. pipeline._rag_answer_traced 와 동일 로직으로, 웹 SSE 경로도
+    같은 쿼리 플래너를 쓰게 한다(두 경로 동작 일치).
 
-    USE_QUERY_PLANNER면 query_planner.plan_query() 한 콜(structured output)로 셋을 함께
+    USE_QUERY_PLANNER면 query_planner.plan_query() 한 콜(structured output)로 둘을 함께
     얻는다. 단일이면 원본 질문으로 검색하고(pipeline 과 동일: 재질문판 문구로 검색 안 함)
     intent만 플래너 결과를 쓴다. False면 기존 decompose_query 로 나누고 intent 는 prepare_sub 에서
-    분류하도록 None 을 넘긴다 — 그 경로엔 되묻기 판정이 없으므로 False 로 둔다(폴백은 기존
-    동작 유지가 원칙).
-
-    되묻기가 필요하다고 나와도 items 는 평소대로 채워 돌려준다 — 호출부(sse)가 되묻기로
-    전환하면 쓰이지 않고, 전환하지 않기로 하면 그대로 답변에 쓸 수 있어야 한다."""
+    분류하도록 None 을 넘긴다."""
     if get_param("use_query_planner", USE_QUERY_PLANNER):
         p = plan_query(query)
         items = p["items"] or [{"question": query, "intent": "informational"}]
-        clarify_needed = bool(p.get("needs_clarification"))
         if p["should_split"] and len(items) > 1:
-            return Plan([(it["question"], it["intent"]) for it in items], clarify_needed)
-        return Plan([(query, items[0]["intent"])], clarify_needed)
+            return Plan([(it["question"], it["intent"]) for it in items])
+        return Plan([(query, items[0]["intent"])])
     subs = decompose_query(query)
     subs = subs if subs and len(subs) > 1 else [query]
-    return Plan([(q, None) for q in subs], False)
+    return Plan([(q, None) for q in subs])
 
 
 def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:

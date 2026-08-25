@@ -168,6 +168,27 @@ const LINK: Attachment = { label: '착오송금 반환지원 신청방법', url:
   assert.ok(html.includes('착오송금 반환지원'))
   assert.ok(html.includes('미수령금 찾기'))
   assert.ok(!html.includes('참고 출처'))
+  // 답하기 전에는 버튼이 살아 있고 선택 표시가 없다 — 속성으로 본다(클래스 disabled:opacity-50 과 구분)
+  assert.ok(!/\sdisabled=""/.test(html))
+  assert.ok(!html.includes('aria-pressed'))
+}
+
+// 10-1. 답한 되묻기 — 버튼 전부 비활성, 고른 것만 aria-pressed=true (위로 스크롤해 다시 누르는 것 방지)
+{
+  const html = renderToStaticMarkup(
+    <ClarificationMessage
+      question="어떤 업무를 찾고 계신가요?"
+      options={[{ label: '착오송금 반환지원' }, { label: '미수령금 찾기' }]}
+      onSelect={() => {}}
+      answered
+      selectedLabel="미수령금 찾기"
+    />,
+  )
+  const buttons = html.match(/<button[^>]*>/g) ?? []
+  assert.equal(buttons.length, 2)
+  assert.ok(buttons.every((b) => /\sdisabled=""/.test(b)))
+  assert.ok(buttons.filter((b) => b.includes('aria-pressed="true"')).length === 1)
+  assert.ok(buttons.filter((b) => b.includes('aria-pressed="false"')).length === 1)
 }
 
 // 11. AI 고지는 말풍선 '안' 맨 아래, 피드백·시각은 말풍선 '바깥' 아래 한 줄 (CB-002 마커 3/8)

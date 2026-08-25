@@ -527,7 +527,7 @@ export function ChatPage() {
             // aria-live는 스트리밍 답변(AnswerMessage) 한 곳에만 둔다 — 목록에 걸면 라이브 영역이
             // 중첩돼 사용자 자신의 말풍선까지 낭독되고 답변이 두 번 읽힌다. 오류는 Bubble이 role="alert".
             <ol className="flex flex-col gap-6" aria-busy={pending !== null}>
-              {items.map((item) => {
+              {items.map((item, index) => {
                 if (item.kind === 'user') {
                   return (
                     <li className="min-w-0" key={item.id}>
@@ -536,6 +536,15 @@ export function ChatPage() {
                   )
                 }
                 if (item.kind === 'clarification') {
+                  // 답한 되묻기 = 뒤에 턴이 하나라도 있다. 바로 다음 사용자 메시지가 선택지 라벨과
+                  // 같으면 버튼으로 답한 것 — 그 버튼만 채움색으로 남긴다(자유 입력으로 답했으면
+                  // 표시 없이 전부 비활성). 전송 중(pending)에는 마지막 되묻기도 잠가 중복 클릭을 막는다.
+                  const next = items[index + 1]
+                  const answered = next !== undefined
+                  const selectedLabel =
+                    next?.kind === 'user' && item.options.some((o) => o.label === next.text)
+                      ? next.text
+                      : undefined
                   return (
                     <li className="min-w-0" key={item.id}>
                       <ClarificationMessage
@@ -543,6 +552,9 @@ export function ChatPage() {
                         options={item.options}
                         at={item.at}
                         onSelect={selectOption}
+                        answered={answered}
+                        selectedLabel={selectedLabel}
+                        disabled={pending !== null || inputLocked}
                       />
                     </li>
                   )

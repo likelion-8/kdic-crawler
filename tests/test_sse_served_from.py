@@ -86,9 +86,10 @@ def test_gate2_exit_records_the_path_without_the_internal_category(captured, mon
     assert captured == [("gate2", None)]
 
 
-# ── 업무 되묻기 — 판정이 플래너 콜에 얹힌 뒤(2026-08-21) ──────────────────────────
-# 핵심 규약: **턴당 판정은 한 번**이다. 이력이 있으면 재작성기(0-2.7), 없으면 플래너(1-1).
-# 둘 다 보면 재작성기가 "필요 없음"이라 한 것을 플래너가 뒤집어 이중 되묻기가 된다.
+# ── 업무 되묻기 — 판정이 게이트 앞 질문 정리 콜 한 곳으로 모인 뒤(2026-08-25) ──────
+# 핵심 규약: **판정은 질문 정리(0-2.5) 한 곳**이고, 첫 턴·후속 턴이 같은 경로를 돈다.
+# 종전에는 첫 턴만 플래너(Gate 2 뒤)가 판정해, 업무 명사가 빠진 질문은 Gate 2 가 먼저
+# EXIT 시켜 되묻기가 아예 안 나갔다 — 그게 이 배치의 이유다.
 
 def _gates_open(monkeypatch):
     _no_cache(monkeypatch)
@@ -100,26 +101,66 @@ def _gates_open(monkeypatch):
     monkeypatch.setattr(sse.answer, "clarification_response", lambda *a: _resp())
 
 
-def test_planner_clarification_fires_on_first_turn(captured, monkeypatch):
-    """첫 턴(이력 없음)은 플래너 판정으로 되묻는다 — 정규식 프리스크린 없이."""
+def _triage(monkeypatch, needs_clarification, standalone=None, rewritten=False):
+    seen = []
+
+    def _fake(query, history):
+        seen.append((query, list(history)))
+        return SimpleNamespace(rewritten=rewritten,
+                               standalone_question=standalone or query,
+                               needs_clarification=needs_clarification)
+    monkeypatch.setattr("query_rewriter.triage_query", _fake)
+    return seen
+
+
+def test_clarification_fires_on_the_first_turn(captured, monkeypatch):
+    """첫 턴(이력 없음)에도 질문 정리가 돌고 그 판정으로 되묻는다."""
     _gates_open(monkeypatch)
-    monkeypatch.setattr(sse.answer, "plan",
-                        lambda _q: sse.answer.Plan([("얼마까지 가능해?", "informational")], True))
+    seen = _triage(monkeypatch, needs_clarification=True)
 
-    list(sse.chat_event_stream("얼마까지 가능해?", "sess", "req"))
+    list(sse.chat_event_stream("신청 방법 알려줘", "sess", "req"))
 
+    assert seen == [("신청 방법 알려줘", [])], "무이력이라고 건너뛰면 첫 턴 되묻기가 죽는다"
     assert captured == [("clarify", None)]
 
 
-def test_planner_clarification_is_skipped_when_the_rewriter_already_judged(captured, monkeypatch):
-    """이력이 있으면 재작성기 판정이 최종 — 플래너가 true 를 줘도 되묻지 않는다(이중 판정 금지)."""
+def test_clarification_fires_on_a_follow_up_turn(captured, monkeypatch):
+    """후속 턴도 같은 판정기·같은 경로 — 첫 턴과 갈리는 분기가 없다."""
     _gates_open(monkeypatch)
-    monkeypatch.setattr(sse.conversation, "recent_messages",
-                        lambda _s: [("user", "착오송금 반환 기한은?"), ("assistant", "2개월입니다")])
-    monkeypatch.setattr("query_rewriter.rewrite_followup", lambda *a: SimpleNamespace(
-        rewritten=False, standalone_question="신청 링크 알려줘", needs_clarification=False))
+    history = [("user", "착오송금 반환 기한은?"), ("assistant", "2개월입니다")]
+    monkeypatch.setattr(sse.conversation, "recent_messages", lambda _s: history)
+    seen = _triage(monkeypatch, needs_clarification=True)
+
+    list(sse.chat_event_stream("다른 업무는요?", "sess", "req"))
+
+    assert seen == [("다른 업무는요?", history)]
+    assert captured == [("clarify", None)]
+
+
+def test_clarification_runs_before_gate2(captured, monkeypatch):
+    """되묻기가 Gate 2 **앞**이라는 것이 이번 배치의 요점이다 — 업무 명사가 빠진 질문은
+    Gate 2 가 범위외로 오차단하므로(실측 s_id 0.536 < s_ood 0.668), 뒤에 두면 못 나간다."""
+    _no_cache(monkeypatch)
+    monkeypatch.setattr("gate1.run_gate1", lambda _q: SimpleNamespace(
+        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched"))
+    monkeypatch.setattr("gate2.run_gate2", lambda _q: SimpleNamespace(
+        action="EXIT", s_id=0.536, s_ood=0.668, threshold=0.66,
+        nearest_out_cluster_id="human_agent_proxy_request",
+        nearest_out_category="개인정보상담요청", reason="out_of_domain"))
+    monkeypatch.setattr(sse.answer, "clarification_response", lambda *a: _resp())
+    _triage(monkeypatch, needs_clarification=True)
+
+    list(sse.chat_event_stream("신청 방법 알려줘", "sess", "req"))
+
+    assert captured == [("clarify", None)], "Gate 2 가 먼저 EXIT 시키면 되묻기가 죽는다"
+
+
+def test_no_clarification_reaches_the_answer_path(captured, monkeypatch):
+    """판정이 false 면 평소대로 답변 경로로 내려간다."""
+    _gates_open(monkeypatch)
+    _triage(monkeypatch, needs_clarification=False)
     monkeypatch.setattr(sse.answer, "plan",
-                        lambda _q: sse.answer.Plan([("신청 링크 알려줘", "civil_petition")], True))
+                        lambda _q: sse.answer.Plan([("신청 링크 알려줘", "civil_petition")]))
 
     reached = []
 
@@ -138,8 +179,18 @@ def test_planner_clarification_is_skipped_when_the_rewriter_already_judged(captu
     assert captured == [], "이 턴은 되묻기가 아니므로 clarify 로 기록되면 안 된다"
 
 
-def test_plan_carries_the_clarification_flag_from_the_planner_call():
-    """같은 한 콜에서 나온 값이라 items 와 함께 돌아와야 한다 — 두 번 부르면 LLM 콜이 2배."""
-    from api.rag.answer import Plan
-    assert Plan([("q", "informational")], True).needs_clarification is True
-    assert Plan([("q", "informational")]).needs_clarification is False, "기본값은 되묻지 않음"
+def test_triage_failure_passes_through_without_clarifying(captured, monkeypatch):
+    """질문 정리 콜이 실패한 턴은 판정 없이 지나간다(fail-open) — 백업 판정기는 없다."""
+    _gates_open(monkeypatch)
+    monkeypatch.setattr("query_rewriter.triage_query", lambda *a: None)
+    monkeypatch.setattr(sse.answer, "plan",
+                        lambda _q: sse.answer.Plan([("신청 링크 알려줘", "civil_petition")]))
+    monkeypatch.setattr(sse.answer, "prepare_sub",
+                        lambda *a: (_ for _ in ()).throw(RuntimeError("여기서 멈춘다")))
+    monkeypatch.setattr(sse.answer, "log_failed_run", lambda *a, **kw: None)
+    monkeypatch.setattr(sse.answer, "error_from_exception",
+                        lambda *a: SimpleNamespace(model_dump=lambda: {}))
+
+    list(sse.chat_event_stream("신청 링크 알려줘", "sess", "req"))
+
+    assert captured == []

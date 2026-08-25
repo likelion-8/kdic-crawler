@@ -55,17 +55,15 @@ class PlanItem(BaseModel):
 
 
 class QueryPlan(BaseModel):
-    """쿼리 플래너 결과 — 분해 여부 + (하위 질문, intent) 목록 + 업무 되묻기 판정.
+    """쿼리 플래너 결과 — 분해 여부 + (하위 질문, intent) 목록.
 
-    needs_clarification 은 2026-08-21 에 이 콜로 옮겨온 판정이다. 종전에는 첫 턴만
-    clarify.first_turn_candidate() 정규식으로 후보를 추려 별도 LLM 콜(triage_first_turn)을
-    붙였는데, 정규식이 문지기라 힌트 낱말이 없는 질문("얼마까지 가능해?")은 판정을 아예
-    못 받고 코퍼스 편향대로 착오송금으로 단정 답변이 나갔다(실측 5건). 이 콜은 모든 질문에
-    어차피 1회 도므로 필드 하나를 얹으면 +0콜로 전 질문이 판정을 받는다."""
+    2026-08-21 에 업무 되묻기 판정(needs_clarification)을 이 콜에 얹었다가 2026-08-25 에
+    다시 뺐다. 이 콜은 Gate 2 **뒤**라, 업무 명사가 빠진 질문("신청 방법 알려줘")은 Gate 2 가
+    먼저 범위외로 EXIT 시켜 판정 기회 자체가 없었다(실측 s_id 0.536 < s_ood 0.668). 판정은
+    게이트 앞에서 도는 query_rewriter.triage_query 한 곳으로 모았다 — 사유·대가는
+    query_rewriter 모듈 docstring "왜 첫 턴에도 부르는가"."""
     should_split: bool = Field(description="서로 다른 정보 요구가 여러 개면 true")
     items: List[PlanItem]
-    needs_clarification: bool = Field(
-        description="어느 업무에 대한 질문인지 정해지지 않아 업무를 되물어야 하면 true")
 
 
 # 분해 규칙(query_decomposer.SYSTEM_INSTRUCTION 요지) + intent 규칙(intent_llm_common.SYSTEM_PROMPT
@@ -76,7 +74,7 @@ class QueryPlan(BaseModel):
 # 검색이 그 낱말에 끌려갔다 — 실측: 원문 검색은 지급명령 근거를 찾는데(top: receiver_attention)
 # 재작성 검색은 예금보험금·제도 페이지로 밀려 근거를 잃음. 주어 보완은 원문 표현으로만 하도록
 # 제한(하위 질문 문구 = 검색 질의라는 사실을 지시에 명시).
-SYSTEM_PROMPT = """당신은 예금보험공사(KDIC) 챗봇의 질의 분석기입니다. 사용자 질문 하나를 받아 세 가지를 동시에 판단합니다. 질문에 답하지 말고 분석만 하세요.
+SYSTEM_PROMPT = """당신은 예금보험공사(KDIC) 챗봇의 질의 분석기입니다. 사용자 질문 하나를 받아 두 가지를 동시에 판단합니다. 질문에 답하지 말고 분석만 하세요.
 
 [작업1 복합 질문 분해]
 - 서로 다른 정보 요구가 여러 개면 should_split=true, 각 요구를 독립 검색 가능한 하위 질문으로 나눕니다.
@@ -92,19 +90,9 @@ SYSTEM_PROMPT = """당신은 예금보험공사(KDIC) 챗봇의 질의 분석기
 - informational: 제도·개념·정의·사실·수치를 알고 싶어 함 (무엇인가/한도/감면율/대상 상품/처리·지급 기간/포상금 개념 등).
 - civil_petition: 신청·신고·접수·조회·반환·수령 등 절차를 실행하려 함. 필요한 서류·방법·절차·신청 자격·신청 기한을 묻는 것도 포함.
 
-[작업3 업무 되묻기 판단]
-예금보험공사가 다루는 업무: 착오송금 반환지원 / 예금보험금·가지급금 / 미수령금 찾기 / 은닉재산 신고 / 채무조정 / 예금자보호제도.
-- 질문이 특정 업무를 전제하는데(신청·접수·링크·절차·서류·자격·처리 결과·기한·금액·한도·대상 등) 어느 업무인지 질문에 정해져 있지 않으면 needs_clarification=true 입니다.
-- 작업1에서 주어를 채운 하위 질문은 이미 업무가 정해진 것으로 봅니다. 예: "착오송금 반환 기한이랑 신청 링크 좀" → 뒤 하위 질문에 "착오송금"을 채울 수 있으므로 needs_clarification=false 입니다.
-- 업무를 특정하지 않아도 답할 수 있는 일반 질문(제도 개념·기관 소개 등)이면 needs_clarification=false 입니다.
-- 확실하지 않으면 needs_clarification=false 입니다 — 되묻기가 잦으면 사용자를 번거롭게 합니다.
-- needs_clarification=true 여도 작업1·2는 평소대로 채웁니다(호출부가 되묻기로 전환하면 그 값은 쓰이지 않습니다).
-
 [예시]
 - "미수령금 수령과 착오송금 반환신청은 뭐가 다른가요?" → should_split=true, items=["미수령금 수령은 무엇인가요?"(informational), "착오송금 반환신청은 무엇인가요?"(informational)] — 비교형은 두 대상의 근거 문서가 달라 반드시 나눕니다.
-- "착오송금 반환까지 얼마나 걸리나요?" → should_split=false — 요구가 하나면 나누지 않습니다.
-- "신청 링크 알려줘" → needs_clarification=true — 어느 업무의 신청인지 질문에도 없고 채울 근거도 없습니다.
-- "얼마까지 가능해?" → needs_clarification=true — 착오송금 한도인지 예금자보호 한도인지 정해지지 않았습니다."""
+- "착오송금 반환까지 얼마나 걸리나요?" → should_split=false — 요구가 하나면 나누지 않습니다."""
 
 _openai = {}
 # 2026-08-04(query_classifier와 동일 처리): 모델마다 temperature 지원이 다르다. gpt-5.4-mini는 0
@@ -139,8 +127,7 @@ def _parse(client, model, messages):
 def _fallback(query):
     """플래너 실패 시 안전 기본값 — 분해하지 않고 원문 1개, intent는 informational(안전 기본값,
     intent_llm_common 규칙 5 '애매하면 informational'과 동일). 분류 실패가 검색·답변을 막지 않게."""
-    return {"should_split": False, "items": [{"question": query, "intent": "informational"}],
-            "needs_clarification": False}
+    return {"should_split": False, "items": [{"question": query, "intent": "informational"}]}
 
 
 # 2026-08-19: 비교형 질문("미수령금 수령과 착오송금 반환신청은 뭐가 다른가요?")이 분해 없이
@@ -170,7 +157,6 @@ def plan_query(query):
         return {
             "should_split": bool(plan.should_split),
             "items": [{"question": it.question, "intent": it.intent} for it in plan.items],
-            "needs_clarification": bool(plan.needs_clarification),
         }
     except Exception:
         logger.warning("플래너 호출 실패 — 폴백(분해 없음)으로 계속. 질문: %r", query, exc_info=True)
