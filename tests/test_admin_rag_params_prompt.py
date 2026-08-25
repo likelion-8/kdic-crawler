@@ -171,7 +171,9 @@ def test_split_has_no_locked_rule_since_the_marker_was_dropped():
     header, principles, locked = split_instruction(prompt_builder.SYSTEM_INSTRUCTION)
     assert locked == ""
     assert all("[SOURCE_USED]" not in p for p in principles)
-    assert len(principles) == 6                      # 원칙 6개 전부 편집 가능
+    # 2026-08-25 원칙 9개(6개 -> 조건부 사실 · 역할축 · 지시 무시 저항 추가). 개수 자체가
+    # 계약은 아니지만, 분해가 원칙을 통째로 삼키거나 쪼개면 여기서 먼저 드러난다.
+    assert len(principles) == 9                      # 전부 편집 가능(잠금 없음)
     assert header.startswith("당신은 예금보험공사")
 
 
