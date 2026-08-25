@@ -16,6 +16,7 @@ import type {
   AnswerComposition,
   ConversationLogDetail,
   LangfuseTrace,
+  ObservedSub,
   RunObservation,
   ServedFrom,
 } from './api'
@@ -75,6 +76,26 @@ function TraceLink({ trace }: { trace: LangfuseTrace | null }) {
   )
 }
 
+/** 근거가 빈 하위 질문 한 줄 설명. '검색이 아무것도 못 찾음(지식베이스 공백 후보)'과
+ *  'Gate3가 관련도 낮다고 판정해 스스로 멈춤(질문 표현 문제일 수도 있음)'은 관리자가 다음에
+ *  할 일이 다르다(전자는 AD-002 지식베이스 점검, 후자는 질문 표현·임계값 점검) — 뭉뚱그려
+ *  "지식베이스 점검 대상"이라 하면 후자를 잘못된 곳으로 보낸다(2026-08-25 Gate3 도입 때 발견). */
+function EmptyEvidenceNote({ sub }: { sub: ObservedSub }) {
+  if (sub.exit_at === 'gate3' && sub.gate3_reason === 'low_retrieval_relevance') {
+    const score = sub.retrieval_top1_score?.toFixed(3) ?? '—'
+    const threshold = sub.retrieval_threshold?.toFixed(2) ?? '—'
+    return (
+      <p className="text-muted-foreground">
+        검색은 됐지만 관련도가 낮아(top-1 {score} ≤ 임계값 {threshold}) Gate3가 생성 전에
+        멈췄습니다 — 지식베이스 공백일 수도, 질문 표현 문제일 수도 있습니다
+      </p>
+    )
+  }
+  // gate3 + no_candidates, 또는 gate3 이전 대화(무관질문 게이트가 근거를 비운 경우)는
+  // 검색이 문자 그대로 후보를 하나도 못 찾은 것이라 종전 문구가 그대로 맞다.
+  return <p className="text-muted-foreground">검색된 근거 없음 — 지식베이스(AD-002) 점검 대상</p>
+}
+
 /**
  * 답변이 무엇을 근거로 삼았는지 — 민원 대응의 첫 단추다.
  *
@@ -97,9 +118,7 @@ function EvidencePanel({ observation }: { observation: RunObservation }) {
               <p className="mb-1 font-medium">{sub.question}</p>
             )}
             {sub.top.length === 0 ? (
-              // 근거가 비었다 = 검색이 아무것도 못 찾았거나 무관질문 게이트가 잘랐다.
-              // '데이터 없음' 갈래의 신호라 회색 문구로 죽이지 않고 명시한다.
-              <p className="text-muted-foreground">검색된 근거 없음 — 지식베이스(AD-002) 점검 대상</p>
+              <EmptyEvidenceNote sub={sub} />
             ) : (
               <ul className="space-y-0.5">
                 {sub.top.map((t) => (
@@ -239,12 +258,14 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
   )
 }
 
-/** 답변을 낸 경로 5종. 전부 검색·생성을 타지 않아 성격·유형·근거가 없다 — 분류가 비는 이유다. */
+/** 답변을 낸 경로 6종. gate3만 검색은 실제로 돌고 생성만 건너뛴다 — 나머지 다섯은 검색·생성
+ *  둘 다 안 타 성격·유형·근거가 없다(분류가 비는 이유). */
 const SERVED_FROM_LABEL: Record<ServedFrom, string> = {
   cache: '캐시 응답',
   guardrail: '가드레일 차단',
   gate1: '범위 판정 (Gate 1)',
   gate2: '범위 판정 (Gate 2)',
+  gate3: '검색 관련도 판정 (Gate 3)',
   clarify: '업무 되묻기',
 }
 
@@ -254,6 +275,7 @@ const SERVED_FROM_NOTE: Record<ServedFrom, string> = {
   guardrail: '게시된 금칙어(AD-008)에 걸려 고정 문구로 거절한 건입니다 — 검색·생성을 거치지 않습니다',
   gate1: '규칙 필터가 인사·노이즈·타 분야로 판정해 고정 문구로 답한 건입니다 — LLM을 부르지 않습니다',
   gate2: '임베딩 유사도 판정이 안내 범위 밖으로 보고 고정 문구로 답한 건입니다 — LLM을 부르지 않습니다',
+  gate3: '검색은 했지만 최상위 결과의 관련도가 임계값 이하라 생성 전에 멈춘 건입니다 — 아래 근거 항목에 실제 점수가 남습니다',
   clarify: '어느 업무에 대한 질문인지 정해지지 않아 업무 선택지로 되물은 건입니다 — 검색·생성을 거치지 않아 근거가 없습니다. 사용자가 업무를 고르면 그 답변은 다음 행에 남습니다',
 }
 
@@ -371,7 +393,7 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
             성격은 정보성 / 민원성 2값(쿼리 플래너 판정)입니다. 업무는 분류기가 코드에서 꺼져 있어
             저장되지 않고, 유형도 웹 경로에는 원천이 없습니다. 하위 질문이 둘 이상으로 나뉘면 「복합
             질문 N개」가 함께 섭니다. 검색·생성을 타지 않고 끝난 건은 성격이 저장되지 않아, 대신 그
-            경로(캐시 응답 · 가드레일 차단 · 범위 판정 Gate 1·2 · 업무 되묻기)를 적습니다.
+            경로(캐시 응답 · 가드레일 차단 · 범위 판정 Gate 1·2·3 · 업무 되묻기)를 적습니다.
           </InfoHint>
         </SectionTitle>
         {/* 값이 있는 것만 이어 붙인다 — 성격·유형이 null 인 건에서 구분점만 남으면 '·' 한 글자가

@@ -173,14 +173,20 @@ export interface RunObservation {
     kind: string | null
     appropriate: boolean | null
     normalized: boolean | null
+    /** Gate3(검색 관련도 게이트, 2026-08-25)가 이 하위 질문에서 EXIT했으면 "gate3" */
+    exit_at: string | null
+    gate3_reason: string | null
+    retrieval_top1_score: number | null
+    retrieval_threshold: number | null
   }[]
 }
 
 export interface ConversationLogDetail extends ConversationLogRow {
   /** 관측 신설(2026-08-14) 이전 대화는 null. 캐시 응답도 검색을 안 타 null 이다 */
   observation: RunObservation | null
-  /** 답변을 낸 경로. 다섯 다 검색·생성을 타지 않아 성격·유형·근거가 없다. 평소 경로는 null */
-  served_from: 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'clarify' | null
+  /** 답변을 낸 경로. gate3만 검색은 돌고 생성만 건너뛴다(관측이 채워짐) — 나머지 다섯은
+   *  검색·생성 둘 다 안 타 성격·유형·근거가 없다. 평소 경로는 null */
+  served_from: 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'gate3' | 'clarify' | null
   /** 그 경로에서 걸린 규칙 이름(Gate 1 의 FIXED_GREETING 등). 원시 식별자 */
   served_label: string | null
   classification: {
@@ -365,12 +371,14 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
             { chunk_id: 'kmrs_apply_mthd#c1', page_id: 'kmrs_apply_mthd', score: 0.804 },
           ],
           marker: true, used_source: true, kind: 'grounded', appropriate: true, normalized: false,
+          exit_at: null, gate3_reason: null, retrieval_top1_score: null, retrieval_threshold: null,
         },
         {
           question: '착오송금 반환지원 신청에 필요한 서류는 무엇인가요?',
           intent: 'civil_petition',
           top: [{ chunk_id: 'sender_docs#c1', page_id: 'sender_docs', score: 0.641 }],
           marker: false, used_source: false, kind: 'refusal', appropriate: true, normalized: false,
+          exit_at: null, gate3_reason: null, retrieval_top1_score: null, retrieval_threshold: null,
         },
       ],
     },
@@ -481,6 +489,7 @@ function detailOf(row: ConversationLogRow): ConversationLogDetail {
         kind: (row.source_count ?? 0) > 0 ? 'grounded' : 'refusal',
         appropriate: true,
         normalized: false,
+        exit_at: null, gate3_reason: null, retrieval_top1_score: null, retrieval_threshold: null,
       }],
     },
     classification: {

@@ -60,6 +60,13 @@ def build(sub_plans: list) -> Optional[dict]:
             # 프리체크 섀도 판정(exp/source-precheck-v1) — 소급 실험 표본용. None = 미계산.
             "precheck": getattr(sp, "obs_precheck", None),
             "precheck_missing": getattr(sp, "obs_precheck_missing", None),
+            # Gate3(검색 관련도 게이트, 2026-08-25) — exit_at 이 "gate3"인 하위 질문만 나머지
+            # 셋도 채워진다. 복합 질문은 하위별로 통과/EXIT 가 섞일 수 있어 이 정보를 최상위
+            # served_from 이 아니라 여기(하위 단위)에 남긴다(sse.py 의 served_from 계산 주석 참고).
+            "exit_at": getattr(sp, "exit_at", None),
+            "gate3_reason": getattr(sp, "gate3_reason", None),
+            "retrieval_top1_score": getattr(sp, "retrieval_top1_score", None),
+            "retrieval_threshold": getattr(sp, "retrieval_threshold", None),
         })
     return {"subs": subs}
 
