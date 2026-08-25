@@ -45,11 +45,36 @@ export interface ChatScenario {
   http_status?: number
 }
 
-/** 서식 다운로드 페이지 링크 — civil_petition.build_document_section()의 평탄화 결과와 같은 모양.
- * 서식 직링크(resolved_url)는 POST 전용 서블릿이라 못 쓴다 → 다운로드 버튼이 있는 페이지로 안내. */
-const senderFormLinks: Attachment[] = MOCK_PAGES.find((p) => p.page_id === 'sender_docs')!
-  .form_links.slice(0, 2)
-  .map((f) => ({ label: f.label, url: f.url, kind: 'document' as const }))
+/** 서식 다운로드 페이지 링크 — civil_petition.build_document_section()의 결과와 같은 모양.
+ * 서식 직링크(resolved_url)는 POST 전용 서블릿이라 못 쓴다 → 다운로드 버튼이 있는 페이지로 안내.
+ *
+ * 서버는 **같은 URL 로 가는 서류를 한 항목으로 접고 개별 서류명을 labels 로 넘긴다**
+ * (2026-08-25). 한 페이지의 서식은 page_url 로 대체되어 전부 같은 URL 이 되기 때문이다.
+ * 그래서 목도 두 모양을 다 담는다 — labels 가 있는 묶음(카드 부제에 서류명이 나열된다)과
+ * 없는 단건(부제가 기본 문구). 목이 곧 계약이라, 한쪽만 두면 백엔드 없이 개발할 때 새
+ * 부제 경로가 한 번도 안 그려진다. */
+const pageOf = (id: string) => MOCK_PAGES.find((p) => p.page_id === id)!
+
+/** 2건 이상이 같은 페이지로 묶인 모양 — label 은 페이지 이름, labels 가 개별 서류명.
+ *  sender_docs 는 서식 3건이 전부 같은 page_url 이라 서버가 한 항목으로 접는다. */
+const senderPage = pageOf('sender_docs')
+const groupedFormLink: Attachment = {
+  label: senderPage.page_title,
+  url: senderPage.form_links[0].url,
+  kind: 'document' as const,
+  labels: senderPage.form_links.map((f) => f.label),
+}
+
+/** 1건짜리 — labels 없음(프론트가 기본 부제를 쓴다). 서버도 이때는 labels 를 안 붙인다.
+ *  mtrs_vst_rcpt 는 서식이 하나라 접힐 것이 없다. */
+const visitPage = pageOf('mtrs_vst_rcpt')
+const singleFormLink: Attachment = {
+  label: visitPage.form_links[0].label,
+  url: visitPage.form_links[0].url,
+  kind: 'document' as const,
+}
+
+const senderFormLinks: Attachment[] = [groupedFormLink, singleFormLink]
 
 export const MOCK_SCENARIOS: ChatScenario[] = [
   // --- Type 4. 오류 응답 (429는 SSE를 열지 않고 HTTP로 끊는다) ---

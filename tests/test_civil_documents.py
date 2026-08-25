@@ -28,13 +28,19 @@ from prompt_builder import _format_document_line  # noqa: E402
 SAME_URL = "https://kdic.example/docs"
 
 
+_BLANK = {"attachments": [], "form_attachments": [], "business_function": None,
+          "page_title": None}
+
+
 @pytest.fixture
 def page(monkeypatch):
-    """corpus 대신 가짜 페이지 하나를 물린다 — 실 코퍼스 수치에 테스트를 묶지 않는다."""
+    """corpus 대신 가짜 페이지를 물린다 — 실 코퍼스 수치에 테스트를 묶지 않는다.
+    page(**doc) 는 p1 하나, page(p1=..., p2=...) 는 여러 페이지."""
     def _set(**doc):
-        monkeypatch.setattr(civil_petition, "_page_docs", {"p1": {
-            "attachments": [], "form_attachments": [], "business_function": None,
-            "page_title": None, **doc}})
+        pages = ({k: {**_BLANK, **v} for k, v in doc.items()}
+                 if all(isinstance(v, dict) for v in doc.values()) and doc
+                 else {"p1": {**_BLANK, **doc}})
+        monkeypatch.setattr(civil_petition, "_page_docs", pages)
     return _set
 
 
@@ -114,6 +120,46 @@ def test_rendered_line_shows_the_names_and_the_link_once():
 
 def test_rendered_line_for_a_single_document_is_unchanged():
     assert _format_document_line({"label": "다운로드", "url": SAME_URL}) == f"- 다운로드: {SAME_URL}"
+
+
+# ── top-1 업무 밖의 서류는 안 걷는다 ─────────────────────────────────────────────
+# 검색 top5 에는 다른 업무 페이지가 자주 섞인다(testset civil_petition 80건 실측 58.8%).
+# 종전에는 그 페이지의 서류까지 전부 걷어 와서, 예금보험금 질문에 착오송금 구비서류가
+# 붙거나(오답) 예금자보호 게시판 공지 29건이 붙어 부제가 1307자가 됐다.
+
+TWO_PAGES = dict(
+    p1={"business_function": "예금보험금 안내", "page_title": "신청시 구비서류",
+        "form_attachments": [{"label": "위임장 다운로드", "page_url": SAME_URL}]},
+    p2={"business_function": "예금자보호제도", "page_title": "안내자료 다운로드",
+        "form_attachments": [{"label": f"공지{i}", "page_url": "https://kdic.example/board"}
+                             for i in range(29)]},
+)
+MIXED_CHUNKS = [("p1#0", 0.9, "본문"), ("p2#3", 0.6, "본문")]
+
+
+def test_documents_from_another_business_are_not_collected(page):
+    page(**TWO_PAGES)
+    items = build_document_section(MIXED_CHUNKS)
+    assert [i["label"] for i in items] == ["위임장 다운로드"], "top-1 업무 것만 남아야 한다"
+
+
+def test_links_and_documents_share_one_criterion(page):
+    """링크만 top-1 업무를 보고 서류는 top-k 전체를 보던 어긋남이 이 변경의 이유다."""
+    page(**TWO_PAGES)
+    out = build_civil_petition_answer(MIXED_CHUNKS)
+    assert out["links"][0]["title"] == "예금보험금 신청절차"
+    assert all("공지" not in d["label"] for d in out["documents"])
+
+
+def test_same_business_pages_all_survive(page):
+    """같은 업무면 여러 페이지의 서류를 그대로 다 걷는다 — 범위를 좁힌 것이지 top-1
+    페이지 하나만 보는 게 아니다(착오송금인 + 착오송금수취인)."""
+    page(p1={"business_function": "착오송금 반환 신청", "page_title": "구비서류안내 - 착오송금인",
+             "form_attachments": [{"label": "신청서양식", "page_url": SAME_URL}]},
+         p2={"business_function": "착오송금 반환 신청", "page_title": "구비서류안내 - 수취인",
+             "form_attachments": [{"label": "이의제기서양식", "page_url": "https://kdic.example/b"}]})
+    items = build_document_section([("p1#0", 0.9, "본문"), ("p2#0", 0.6, "본문")])
+    assert [i["label"] for i in items] == ["신청서양식", "이의제기서양식"]
 
 
 if __name__ == "__main__":
