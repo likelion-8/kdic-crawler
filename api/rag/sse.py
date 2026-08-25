@@ -33,6 +33,7 @@ import threading
 import time
 
 from prompt_builder import _MARKER_RE  # [SOURCE_USED]/[NO_SOURCE] 판정 정규식(운영과 동일 기준)
+from prompt_builder import strip_answer_cue  # 되뱉은 "답변:" 큐 제거(운영과 동일 기준)
 from llm_client import stream_hyperclova
 
 from api.rag import answer, conversation
@@ -66,6 +67,10 @@ class _MarkerStripper:
     가정)로 둔다. 토큰이 마커를 쪼개 들어와도(예: "[SOURCE","_USED]\\n") 버퍼링으로 안전하게
     합쳐 판정한다.
 
+    2026-08-25: 되뱉은 "답변:" 큐도 같은 자리에서 벗긴다(prompt_builder.strip_answer_cue).
+    첫 줄 버퍼가 이미 여기 있어 추가 비용이 없고, 비스트리밍 경로(parse_marker)와 기준이
+    같아야 웹·CLI 답변이 갈리지 않는다.
+
     하위 답변마다 새 인스턴스를 만들어 상태를 초기화한다(복합 질문 요구사항).
     """
 
@@ -95,14 +100,24 @@ class _MarkerStripper:
         return self._resolve()
 
     def _resolve(self) -> str:
-        self._resolved = True
-        text = self._buf.lstrip()  # pipeline._strip_no_source_marker 와 동일하게 앞 공백 제거 후 판정
+        # 앞 공백 제거 후 판정(prompt_builder.parse_marker 와 동일 기준). "답변:" 큐는 마커와
+        # 순서가 섞일 수 있어 마커 앞뒤로 한 번씩 벗긴다 — 첫 줄 버퍼가 이미 여기 있으므로
+        # 추가 지연은 없다. 사유는 prompt_builder._ANSWER_CUE_RE 주석.
+        text = strip_answer_cue(self._buf.lstrip())
         self._buf = ""
         m = _MARKER_RE.match(text)
         if m:
             self.used_source = m.group(1).upper().replace(" ", "_") == "SOURCE_USED"
-            return text[m.end():]
-        return text  # 마커 없음 — used_source 는 None 그대로
+            text = strip_answer_cue(text[m.end():].lstrip())
+            if not text:
+                # 마커가 첫 줄을 통째로 차지했다. 큐는 다음 줄에 올 수 있으므로 한 번 더
+                # 버퍼링한다 — 이걸 안 하면 웹만 "답변:" 을 흘려보내고 비스트리밍
+                # parse_marker 와 결과가 갈린다. used_source 는 이미 확정됐고, 다음
+                # _resolve 에서 마커가 다시 매칭될 일은 없다(빈 버퍼면 즉시 종료).
+                return ""
+        self._resolved = True
+        return text  # 마커 없으면 used_source 는 None 그대로
+
 
 def _stream_one(prompt):
     """prompt 로 LLM 토큰을 producer 스레드에서 뽑아 queue 로 넘긴다. 반환한 queue 에서

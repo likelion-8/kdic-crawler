@@ -203,6 +203,27 @@ _MARKER_RE = re.compile(
     r"^\**\[\s*(SOURCE[_ ]USED|NO[_ ]SOURCE)\s*\]\**[:：]?\s*", re.IGNORECASE)
 
 
+# ── 프롬프트 큐 되뱉기 ────────────────────────────────────────────────────────────
+# 생성 프롬프트는 질문 줄 다음에 "답변:" 큐로 끝나고 few-shot 도 "질문/답변" 쌍이라
+# (build_informational_prompt · build_civil_petition_prompt · _format_examples), HCX 가 자기
+# 턴에서 그 큐를 한 번 더 찍는 롤이 있다 — 2026-08-25 웹 화면에 "답변: 예금자보호제도 신청은
+# 별도의 절차 없이…" 가 그대로 노출됐다. 롤마다 갈리는 확률적 현상이라(같은 프롬프트 6회
+# 재현 0회) 프롬프트를 고쳐 잡는 경로는 밟지 않는다 — 자기보고 마커를 프롬프트로 고치려던
+# 시도가 가설 7종 x 5회로 전부 실패한 전례가 있다(src/source_check.py 상단, 이슈 5).
+# 마커와 같은 자리에서 결정론적으로 벗긴다.
+#
+# 인식 대상은 **콜론이 붙은 '답변' 하나뿐**이다 — 자유 문구를 추측하지 않는다(_MARKER_RE 와
+# 같은 원칙). 콜론을 필수로 두는 이유: "답변 드리겠습니다" 처럼 '답변'으로 시작하는 정상
+# 본문을 잘라내지 않기 위해서다. 마커와 순서가 섞일 수 있어(둘 다 앞머리 장식이다)
+# parse_marker 가 마커 앞뒤로 한 번씩 벗긴다.
+_ANSWER_CUE_RE = re.compile(r"^\**\s*답변\s*\**\s*[:：]\s*")
+
+
+def strip_answer_cue(text):
+    """앞머리의 "답변:" 큐 하나를 벗긴다. 없으면 원문 그대로."""
+    return _ANSWER_CUE_RE.sub("", text, count=1)
+
+
 def parse_marker(llm_text):
     """(본문, 마커_판정 or None) — **마커가 없으면 None** 이다.
 
@@ -215,11 +236,14 @@ def parse_marker(llm_text):
     **모르는 것을 기본값으로 적지 않는다** — 그게 이 프로젝트가 관측에서 지켜온 규칙이다
     (api/rag/observation.build 주석). 판정이 필요한 곳은 사후검증(validate_answer)을 쓰고,
     이 함수는 '마커가 실제로 있었나'만 답한다."""
-    text = llm_text.strip()
+    text = strip_answer_cue(llm_text.strip())
     m = _MARKER_RE.match(text)
     if not m:
-        return llm_text, None
-    return text[m.end():].lstrip(), m.group(1).upper().replace(" ", "_") == "SOURCE_USED"
+        # 마커가 없으면 본문을 그대로 돌려주는 것이 종전 계약이다(앞뒤 공백까지 보존) —
+        # 큐를 실제로 벗겼을 때만 벗긴 결과를 돌려준다.
+        return (llm_text if text == llm_text.strip() else text), None
+    return (strip_answer_cue(text[m.end():].lstrip()),
+            m.group(1).upper().replace(" ", "_") == "SOURCE_USED")
 
 
 def _strip_no_source_marker(llm_text):
