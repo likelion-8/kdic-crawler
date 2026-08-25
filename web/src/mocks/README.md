@@ -182,7 +182,7 @@ error        ApiError                  ← done 대신 온다
 | `business_function` | `retrieval.route_search_chunks`가 고른 업무 | 로깅·분석용. 프론트는 렌더 분기에 쓰지 않는다 |
 | `latency_ms` | `pipeline._rag_answer_traced()`의 `timings["total"]` | 초 → ms |
 | `response_type` | 없음 | 새로 붙여야 한다(§6 I-04) |
-| `clarification` | `clarify.clarification_payload()` | 판정은 플래너·재작성기의 `needs_clarification` 필드 |
+| `clarification` | `clarify.clarification_payload()` | 판정은 질문 정리 콜(`query_rewriter.triage_query`)의 `needs_clarification` 필드 |
 | `error{}` | 없음 | 예외를 `{code, user_message, retryable, fallback_sources[]}`로 정규화하는 계층이 필요하다 |
 
 ### 구체적으로 어디를 자르면 되나

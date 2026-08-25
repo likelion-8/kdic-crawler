@@ -104,7 +104,6 @@ class _MarkerStripper:
             return text[m.end():]
         return text  # 마커 없음 — used_source 는 None 그대로
 
-
 def _stream_one(prompt):
     """prompt 로 LLM 토큰을 producer 스레드에서 뽑아 queue 로 넘긴다. 반환한 queue 에서
     ("tok", 조각) / ("end", None) / ("err", 예외) 를 꺼내 쓴다. get(timeout) 으로 토큰 간
@@ -124,9 +123,12 @@ def _stream_one(prompt):
 
 
 def chat_event_stream(message: str, session_id: str, request_id: str):
-    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 가드레일 → Gate 1 → [후속 턴:
-    재작성 → 되묻기] → 질의 캐시 → Gate 2 → 쿼리 플래너(분해+intent) → 하위질문마다
-    (준비 → 토큰 스트리밍, 마커 제거) → done.
+    """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 가드레일 → Gate 1 →
+    질문 정리(재작성 + 되묻기 판정) → 되묻기 → 질의 캐시 → Gate 2 → 쿼리 플래너(분해+intent)
+    → 하위질문마다 (준비 → 토큰 스트리밍, 마커 제거) → done.
+
+    2026-08-25: 첫 턴과 후속 턴이 **같은 경로**를 돈다 — 질문 정리를 이력 유무와 무관하게
+    부르면서 되묻기 판정이 한 곳(0-2.5)으로 모였다(종전엔 첫 턴만 플래너 뒤 1-1 에서 판정).
 
     sources/attachments 는 별도 이벤트로 보내지 않고 done 에 실린다(사유는 파일 맨 끝 주석).
     실패하면 done 대신 error 가 나가고 스트림이 끝난다."""
@@ -190,37 +192,41 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         yield _sse("done", resp.model_dump())
         return
 
-    # 0-2.5) 멀티턴 재작성(2026-08-19, src/query_rewriter.py) — 이전 턴이 있으면 후속 질문을
-    #      독립 질문으로 편다("그거 신청 기한은?" → "착오송금 반환지원 신청 기한은 언제인가요?").
+    # 0-2.5) 질문 정리(2026-08-19, src/query_rewriter.py) — 맥락에 기대는 후속 질문을 독립
+    #      질문으로 편다("그거 신청 기한은?" → "착오송금 반환지원 신청 기한은 언제인가요?").
+    #      같은 구조화 출력 콜에 업무 되묻기 판정(needs_clarification)이 함께 실려 온다.
     #      가드레일·Gate 1(원문 기준) **뒤**, 캐시·Gate 2 **앞**이 자리다: 이후 전 단계(캐시 키·
     #      Gate 2 판정·분해·검색·캐시 적재)가 독립 질문 기준으로 일관되게 돈다 — 특히
     #      Gate 2 는 도메인 신호 없는 파편 문장("그거는요?")을 범위외로 오차단할 수 있어,
-    #      재작성 없이는 멀티턴이 게이트에 막힌다. 실패·무이력은 원문 그대로(fail-open).
+    #      재작성 없이는 멀티턴이 게이트에 막힌다. 실패는 원문 그대로(fail-open).
     #      저장(위 0-1)·rag_runs 로그는 사용자가 실제 쓴 원문(message)을 유지하고, 재작성문은
     #      검색·판정에만 쓴다 — 하위 질문(sub_plans[].question)으로 관측에 남는다.
-    #      2026-08-20 확장: 같은 콜의 구조화 출력에 needs_clarification(업무 되묻기 판정)이
-    #      실려 온다 — 후속 턴은 +0콜. 2026-08-21: 첫 턴 판정은 여기서 빠지고 플래너(1)로
-    #      옮겼다 — 첫 턴에도 어차피 도는 콜이라 +0콜이고, 종전의 정규식 프리스크린
-    #      (clarify.first_turn_candidate)이 문지기라 힌트 낱말 없는 질문("얼마까지 가능해?")은
-    #      판정을 아예 못 받던 문제가 사라진다. **되묻기 판정은 턴당 한 번만 한다** —
-    #      이력이 있으면 여기(재작성기), 없으면 플래너. 아래 1)의 triage is None 조건이 그 규약.
+    #
+    #      2026-08-25: **이력이 없는 첫 턴에도 부른다**(종전엔 history 가 있을 때만 불렀고,
+    #      첫 턴 되묻기 판정은 플래너에 얹혀 그 뒤 1-1 블록에 있었다 — 지금은 없다). 되묻기 판정은 Gate 2 보다
+    #      앞에 있어야 하는데, 플래너는 Gate 2 뒤라 "신청 방법 알려줘"처럼 업무 명사가 빠진
+    #      질문은 Gate 2 가 먼저 EXIT 시켜 판정 기회 자체가 없었다(실측 s_id 0.536 <
+    #      s_ood 0.668 — 범위외 참조문 "저 대신 신청서를 접수해 줄 수 있나요?"에 붙는다).
+    #      대가는 첫 턴 LLM +1콜이고, 캐시(0-3)보다 앞이라 캐시 적중 턴도 이 콜을 먼저 쓴다 —
+    #      판정 위치를 한 곳으로 모으려고 감수한 값이다(팀 결정). 첫 턴은 펼 맥락이 없어
+    #      재작성이 no-op 이므로 캐시 키(query)는 바뀌지 않는다.
+    from query_rewriter import triage_query
     query = message
-    triage = None
-    if history:
-        from query_rewriter import rewrite_followup
-        triage = rewrite_followup(message, history)
-        if triage and triage.rewritten and triage.standalone_question != message:
-            query = triage.standalone_question
-            logger.info("[%s] 멀티턴 재작성: %r -> %r", request_id, message, query)
+    triage = triage_query(message, history)
+    if triage and triage.rewritten and triage.standalone_question != message:
+        query = triage.standalone_question
+        logger.info("[%s] 멀티턴 재작성: %r -> %r", request_id, message, query)
 
-    # 0-2.7) 업무 되묻기 — **후속 턴 전용**(첫 턴은 아래 1) 플래너가 판정한다). 이력을 보는
-    #      재작성기만 "다른 업무 말고" 같은 배제형을 판정할 수 있어 여기 남는다.
+    # 0-2.7) 업무 되묻기 — 판정은 바로 위 0-2.5 콜에 실려 왔다(+0콜, 턴당 한 번).
     #      (2026-08-20, src/clarify.py) — 어느 업무인지 특정되지 않는 질문은
     #      검색이 코퍼스 편향('신청'의 지배 주제 = 착오송금)으로 엉뚱한 업무를 단정하므로,
-    #      추측 답변 대신 업무 선택 버튼으로 되묻는다. 캐시 앞이 자리다 — 무주제 질문이
-    #      캐시에 적중해 단정 답변이 나가면 되묻기가 영영 안 보인다. 되묻기 문구는 assistant
-    #      이력에 저장된다(다음 턴에서 버튼 클릭 = 업무명 전송 → 재작성기가 원래 질문과
-    #      합성하는 재료). 스키마 계약(chat.py Clarification)대로 answer_delta 없이 done 만.
+    #      추측 답변 대신 업무 선택 버튼으로 되묻는다. 캐시·Gate 2 앞이 자리다 — 무주제 질문이
+    #      캐시에 적중해 단정 답변이 나가면 되묻기가 영영 안 보이고, Gate 2 는 업무 명사가 빠진
+    #      질문을 범위외로 오차단한다(0-2.5 주석). 되묻기 문구는 assistant 이력에 저장된다
+    #      (다음 턴에서 버튼 클릭 = 업무명 전송 → 0-2.5 가 원래 질문과 합성하는 재료). 스키마
+    #      계약(chat.py Clarification)대로 answer_delta 없이 done 만.
+    #      triage 가 None 인 턴(0-2.5 콜 실패)은 되묻기 판정 없이 지나간다 — 백업 판정기를
+    #      두지 않는 것이 판정 일원화의 대가다(fail-open, query_rewriter 모듈 docstring).
     if triage is not None and triage.needs_clarification:
         from clarify import clarification_payload
         resp = answer.clarification_response(
@@ -283,7 +289,8 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
     # 1) 쿼리 플래너: 멀티쿼리 분해 + 하위질문별 intent를 한 콜(structured output)로 판단한다.
     #    LLM 호출이라 실패할 수 있다(내부에서 안전 폴백하지만 예외도 방어).
-    #    2026-08-21: 같은 콜의 구조화 출력에 needs_clarification 도 실려 온다(+0콜).
+    #    2026-08-25: 업무 되묻기 판정은 이 콜에서 뺐다 — Gate 2 보다 뒤라 판정 기회를 못 받는
+    #    질문이 있었다(0-2.5 주석). 판정은 질문 정리(0-2.5) 한 곳뿐이다.
     try:
         plan_result = answer.plan(query)  # .items = [(하위질문, intent|None), ...] — 재작성문 기준
     except Exception as e:  # noqa: BLE001
@@ -294,24 +301,6 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         answer.log_failed_run(message, e, "retrieval", request_id, session_id,
                               sub_plans=[], latency_ms=_elapsed_ms(started))
         yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
-        return
-
-    # 1-1) 업무 되묻기(첫 턴) — 판정은 위 플래너 콜에 실려 왔다. triage is None 일 때만 본다:
-    #      이력이 있으면 0-2.7 에서 이미 판정했고(재작성기가 이력까지 보므로 그쪽이 정확하다),
-    #      여기서 또 보면 이중 판정이 된다. triage 가 None 인 경우는 첫 턴이거나 재작성 실패인데,
-    #      후자도 판정이 없었던 것이니 플래너 결과를 쓰는 게 맞다.
-    #
-    #      캐시(0-3)보다 뒤라는 점: 되묻기가 붙는 응답은 cache_put 적격에서 빠지므로(5-2 의
-    #      resp.clarification is None) 앞으로 이런 질문이 캐시에 쌓이지 않는다. 이 변경 전에
-    #      쌓인 행만 AD-009 질의별 비우기로 지우면 된다.
-    if triage is None and plan_result.needs_clarification:
-        from clarify import clarification_payload
-        resp = answer.clarification_response(
-            clarification_payload(), session_id, request_id, _elapsed_ms(started))
-        logger.info("[%s] 업무 되묻기(플래너): %r", request_id, message)
-        answer.log_run(message, resp, [], resp.latency_ms, served_from="clarify")
-        conversation.save_assistant_message(session_id, request_id, resp)
-        yield _sse("done", resp.model_dump())
         return
 
     plan_items = plan_result.items

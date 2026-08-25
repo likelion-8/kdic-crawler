@@ -1,8 +1,10 @@
-"""query_rewriter 가드 검증 — 핵심 불변식: **첫 턴(무이력)은 LLM 을 부르지 않는다.**
+"""query_rewriter 가드·계약 검증. 재작성 품질 자체는 LLM 판단이라 여기서 재지 않는다
+(실측은 수동/평가 스크립트 몫).
 
-이게 깨지면 모든 단일 턴 질문에 OpenAI 콜이 하나씩 붙는다 — 멀티턴 기능의 비용 약속
-("후속 턴에만 +1콜")이 조용히 무너지는 회귀라 테스트로 고정한다. 재작성 품질 자체는
-LLM 판단이라 여기서 재지 않는다(실측은 수동/평가 스크립트 몫).
+2026-08-25 로 불변식이 뒤집혔다. 종전 핵심 불변식은 "첫 턴(무이력)은 LLM 을 부르지 않는다"
+였는데, 되묻기 판정을 Gate 2 앞으로 옮기면서 **첫 턴에도 부르는 것이 요구사항이 됐다**
+(모듈 docstring "왜 첫 턴에도 부르는가"). 그래서 여기서 고정하는 것은 반대 방향이다 —
+무이력에서도 콜이 나가는가, 그리고 빈 이력이 프롬프트에 표식으로 들어가는가.
 """
 import sys
 from pathlib import Path
@@ -14,23 +16,46 @@ for p in (ROOT, ROOT / "src"):
     sys.path.insert(0, str(p))
 
 import query_rewriter  # noqa: E402
-from query_rewriter import _format_history, _unwrap_quotes, rewrite_followup  # noqa: E402
+from query_rewriter import (NO_HISTORY, _format_history, _unwrap_quotes,  # noqa: E402
+                            triage_query)
 
 
-@pytest.fixture(autouse=True)
-def _no_llm(monkeypatch):
-    """이 테스트 파일에서 LLM 이 불리면 그 자체가 실패다."""
+@pytest.fixture
+def no_llm(monkeypatch):
+    """LLM 이 불리면 그 자체가 실패 — 빈 질문 조기반환 경로 검증용."""
     def _boom():
-        raise AssertionError("무이력/빈 질문 경로에서 OpenAI 클라이언트가 생성됐다")
+        raise AssertionError("빈 질문 경로에서 OpenAI 클라이언트가 생성됐다")
     monkeypatch.setattr(query_rewriter, "_get_client", _boom)
 
 
-def test_no_history_skips_llm_entirely():
-    assert rewrite_followup("착오송금 반환 기한은?", []) is None
+@pytest.fixture
+def spy_llm(monkeypatch):
+    """실제 호출 없이 프롬프트에 실린 [이전 대화] 를 들여다본다."""
+    seen = {}
+
+    def _fake_run(query, history_text):
+        seen["query"], seen["history_text"] = query, history_text
+        return "SENTINEL"
+    monkeypatch.setattr(query_rewriter, "_run", _fake_run)
+    return seen
 
 
-def test_blank_query_skips_llm():
-    assert rewrite_followup("   ", [("user", "이전 질문")]) is None
+def test_first_turn_still_calls_the_llm(spy_llm):
+    """2026-08-25 로 뒤집힌 불변식 — 무이력이라고 건너뛰면 첫 턴 되묻기가 통째로 죽는다.
+    (Gate 2 가 업무 미정 질문을 먼저 EXIT 시키므로 뒤에 받아줄 판정기가 없다.)"""
+    assert triage_query("신청 방법 알려줘", []) == "SENTINEL"
+    assert spy_llm["query"] == "신청 방법 알려줘"
+
+
+def test_first_turn_marks_the_absent_history(spy_llm):
+    """빈 문자열로 넘기면 LLM 이 '이력이 잘린 것'과 '원래 없는 것'을 구분 못 한다 —
+    프롬프트의 첫 턴 규칙이 이 표식을 보고 rewritten=false 를 고정한다."""
+    triage_query("신청 방법 알려줘", [])
+    assert spy_llm["history_text"] == NO_HISTORY
+
+
+def test_blank_query_skips_llm(no_llm):
+    assert triage_query("   ", [("user", "이전 질문")]) is None
 
 
 
