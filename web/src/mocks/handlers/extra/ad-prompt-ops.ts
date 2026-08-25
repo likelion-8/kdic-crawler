@@ -507,6 +507,28 @@ export const adPromptOpsHandlers = [
     return HttpResponse.json({ version: published })
   }),
 
+  /** 「사전」 유형이 쓰는 내장 비속어 사전 전문. 본문은 서버 코드(api/rag/blocklist_ko.py)가
+   *  정본이라 읽기 전용이다 — 목은 세 갈래(부분 문자열·경계·결합형)를 보여 주는 표본만 싣는다.
+   *  실서버는 90여 개를 내린다 */
+  http.get('/api/admin/guardrails/dictionary', () =>
+    HttpResponse.json({
+      entries: [
+        { word: '씨발', mode: '부분 문자열', note: '' },
+        { word: '병신', mode: '부분 문자열', note: '' },
+        { word: '지랄', mode: '부분 문자열', note: '' },
+        { word: '개새끼', mode: '부분 문자열', note: '' },
+        { word: '존나', mode: '부분 문자열', note: '' },
+        { word: '변태', mode: '부분 문자열', note: '' },
+        { word: 'ㅅㅂ', mode: '부분 문자열', note: '' },
+        { word: '자지', mode: '경계', note: "선불전'자지'급수단 — 착오송금 안내의 핵심 용어라 부분 문자열은 금지" },
+        { word: '시발', mode: '경계', note: "'시발점'·'시발역'" },
+        { word: '육갑', mode: '경계', note: "'육십갑자'의 준말로도 쓰인다" },
+        { word: '근친', mode: '경계', note: "'근친혼'·'근친교배' 같은 학술 표기" },
+        { word: '미친\\s?(?:놈|년|새끼|자식|것|소리|짓)', mode: '결합형', note: '' },
+        { word: '뒈[지져]', mode: '결합형', note: '' },
+      ],
+    })),
+
   /** 마스킹 패턴 샘플 검증 — 판정은 경고 표시용이며 저장을 막지 않는다(2026-08-19 정책 변경, §2.11) */
   http.post('/api/admin/guardrails/masking/validate', async ({ request }) => {
     const no = denied(request, 'EDITOR')

@@ -17,6 +17,7 @@
     GET  /prompt/versions?page&size         -> Page<PromptVersion>
     POST /prompt/versions/{v}/rollback      그 버전 내용으로 기준값 재구성 -> PromptDraft
     POST /prompt/versions/{v}/emergency-rollback  ADMIN+재인증 -> PromptVersion
+    GET  /guardrails/dictionary             「사전」 유형 내장 사전 전문 -> {entries}
     POST /guardrails/masking/validate       정규식 서버 판정 -> ValidationResult
 
 ## 프롬프트 ⇄ 원칙(principles) 변환
@@ -605,6 +606,17 @@ def emergency_rollback(version: str, body: dict, request: Request,
 
 
 # ──────────────────────── 가드레일 검증 ────────────────────────
+
+@router.get("/guardrails/dictionary")
+def get_guardrail_dictionary(admin: CurrentAdmin):
+    """「사전」 유형이 실제로 쓰는 내장 비속어 사전 전문 -> {entries:[{word,mode,note}]}.
+
+    화면이 사전 안을 못 보면 「사전」 행은 이름뿐인 스위치다 — 무엇을 막고 있는지 모르는 채
+    켜고 끄게 된다. 본문은 코드가 정본이라 여기서 내려 주기만 하고, 관리자가 고른 '끔'은
+    규칙의 disabled 로 게시본에 실린다(api/rag/blocklist_ko.py find 참고)."""
+    from api.rag import blocklist_ko
+    return {"entries": blocklist_ko.entries()}
+
 
 @router.post("/guardrails/masking/validate")
 def validate_masking_rule(body: dict, me: CurrentAdmin):

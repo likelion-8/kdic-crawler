@@ -435,6 +435,7 @@ def guardrail_hit(text: str, side: str = "질문") -> Optional[str]:
       - scope         '질문'/'답변' 규칙은 해당 방향에서만, '질문 + 답변'은 양방향
       - type          '정규식'은 re 매칭(IGNORECASE), '단어'는 부분 문자열,
                       '사전'은 내장 비속어 사전(api/rag/blocklist_ko.py)을 켠다
+      - disabled      '사전' 행에서 관리자가 끈 표제어 — 그 낱말만 빼고 사전을 쓴다
     잘못된 정규식은 그 규칙만 건너뛴다(전체 실패-안전 원칙 유지). 문자열 항목(옛 형식)은
     종전과 같이 '단어·양방향·활성'으로 취급한다.
 
@@ -473,7 +474,8 @@ def blocklist_match(block: Optional[dict], text: str, side: str = "질문") -> O
             continue
         if item.get("type") == "사전":
             from api.rag import blocklist_ko
-            found = blocklist_ko.find(text)
+            # disabled = 관리자가 화면(「사전 보기」)에서 끈 표제어. 없으면 사전 전체를 쓴다
+            found = blocklist_ko.find(text, item.get("disabled") or ())
             if found:
                 return found
             continue

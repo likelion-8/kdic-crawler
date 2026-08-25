@@ -6,8 +6,11 @@
 `pattern` 문자열을 **그대로** 찾았다 — 목의 기본값이 `'비속어 기본 사전 (외부 사전)'` 이라
 사용자가 그 문구를 통째로 입력하지 않는 한 영원히 걸리지 않는, 이름만 있는 유형이었다.
 사전 본문을 DB(JSONB)에 넣으면 관리자가 화면에서 수백 줄을 편집·삭제할 수 있게 되는데,
-그건 오탐이 곧 서비스 장애가 되는 규칙이라 검토 없이 바뀌면 안 된다. 그래서 사전은 코드에
-두고 배포로만 바꾸며, 화면의 「사전」 행은 그 사전을 켜고 끄는 스위치로 쓴다.
+그건 오탐이 곧 서비스 장애가 되는 규칙이라 검토 없이 바뀌면 안 된다. 그래서 사전 본문은
+코드에 두고 배포로만 바꾸되, **화면(AD-008 「사전 보기」)에서 전문을 보고 항목별로 끌 수는
+있게 한다**(규칙의 `disabled`, find 참고) — 오탐이 정상 민원 질문을 막고 있을 때 배포를
+기다릴 수는 없기 때문이다. 낱말을 더하는 쪽은 열지 않는다. 같은 화면의 「단어」 유형이
+이미 하는 일이고, 이 사전의 세 갈래 매칭(아래)을 화면에서 고르게 만들 이유가 없다.
 
 ## 출처
 
@@ -106,25 +109,44 @@ def _bounded_re(word: str) -> re.Pattern:
 
 
 _BOUNDED_RE = tuple((w, _bounded_re(w)) for w, _ in BOUNDED)
-_COMPOUND_RE = tuple(re.compile(p) for p in COMPOUND)
+_COMPOUND_RE = tuple((p, re.compile(p)) for p in COMPOUND)
 
 
-def find(text: str) -> Optional[str]:
+def entries() -> list[dict]:
+    """사전 전문 -> [{"word", "mode", "note"}]. AD-008 「사전 보기」가 그대로 그린다.
+
+    word 가 화면·규칙(disabled)의 키다 — 사람이 읽는 이름이 아니라 매칭에 쓰는 값 그대로다.
+    끈 항목을 규칙에 남기려면 이 word 를 넣는다(find 의 disabled).
+    """
+    return ([{"word": w, "mode": "부분 문자열", "note": ""} for w in SUBSTRING]
+            + [{"word": w, "mode": "경계", "note": note} for w, note in BOUNDED]
+            + [{"word": p, "mode": "결합형", "note": ""} for p, _ in _COMPOUND_RE])
+
+
+def find(text: str, disabled=()) -> Optional[str]:
     """사전에 걸리는 첫 표현 -> str | None. 걸린 표현을 그대로 돌려준다(로그용).
 
-    호출부는 api/rag/answer.py guardrail_hit 하나다. 여기서 예외를 던지지 않는다 —
+    disabled 는 관리자가 화면에서 끈 표제어(entries()의 word)다. 사전 본문은 코드에 두고
+    배포로만 바꾸되, **끄는 것은 화면에서 즉시 할 수 있어야 한다** — 오탐 하나가 정상 민원
+    질문을 막고 있을 때 배포를 기다릴 수는 없기 때문이다(반대로 없는 낱말을 더하는 것은
+    급하지 않고, 같은 화면의 「단어」 유형 규칙이 이미 한다).
+
+    호출부는 api/rag/answer.py blocklist_match 하나다. 여기서 예외를 던지지 않는다 —
     사전이 답변을 막는 일은 있어도, 사전 때문에 답변이 실패하지는 않아야 한다.
     """
     if not text:
         return None
+    off = frozenset(disabled or ())
     folded = str(text).casefold()
     for word in SUBSTRING:
-        if word.casefold() in folded:
+        if word not in off and word.casefold() in folded:
             return word
     for word, rx in _BOUNDED_RE:
-        if rx.search(str(text)):
+        if word not in off and rx.search(str(text)):
             return word
-    for rx in _COMPOUND_RE:
+    for pattern, rx in _COMPOUND_RE:
+        if pattern in off:
+            continue
         m = rx.search(str(text))
         if m:
             return m.group(0)

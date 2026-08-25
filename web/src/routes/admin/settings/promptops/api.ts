@@ -34,6 +34,18 @@ export interface BlocklistRule {
   scope: GuardrailScope
   action: string
   active: boolean
+  /** '사전' 유형에서 관리자가 끈 표제어(DictionaryEntry.word). 다른 유형에서는 쓰지 않는다.
+   *  사전 본문은 서버 코드가 정본이라 화면이 보내는 것은 '무엇을 뺐는가'뿐이다 */
+  disabled?: string[]
+}
+
+/** GET /api/admin/guardrails/dictionary — 「사전」 유형이 실제로 쓰는 낱말 하나 */
+export interface DictionaryEntry {
+  word: string
+  /** 매칭 방식: '부분 문자열' · '경계'(앞뒤가 한글이면 제외) · '결합형'(정규식) */
+  mode: string
+  /** 왜 그 방식인지. 비어 있을 수 있다 */
+  note: string
 }
 
 export interface MaskingRule {
@@ -186,6 +198,7 @@ export interface SuggestedQuestion {
 export const promptKeys = {
   draft: ['admin', 'prompt', 'draft'] as const,
   versions: ['admin', 'prompt', 'versions'] as const,
+  dictionary: ['admin', 'guardrails', 'dictionary'] as const,
 }
 
 export const opsKeys = {
@@ -250,6 +263,11 @@ export const emergencyRollback = (version: string, reason: string) =>
  *  사전 차단은 회귀 게이트가, 사후 추적은 활동 로그(AD-011)와 긴급 롤백이 맡는다. */
 export const publishPrompt = (reason: string, draft: PromptDraftContent, gate_passed: boolean) =>
   write<PublishResult>('/api/admin/prompt/publish', reason, { draft, gate_passed })
+
+/** 「사전」 유형이 무엇을 막고 있는지 — 본문은 서버 코드가 정본이라 읽기만 한다.
+ *  관리자가 고른 '끔'은 규칙의 disabled 로 초안·게시본에 실린다 */
+export const fetchGuardrailDictionary = () =>
+  apiRequest<{ entries: DictionaryEntry[] }>('/api/admin/guardrails/dictionary')
 
 export const validateMasking = (pattern: string, replacement: string) =>
   apiRequest<ValidationResult>('/api/admin/guardrails/masking/validate', {
