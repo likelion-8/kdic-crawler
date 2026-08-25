@@ -97,7 +97,8 @@ Gate 1 룰에 없는 카테고리(세금/인접기관/개인정보 대행 요청
 
 ## 파이프라인 통합
 
-- 웹(`api/rag/sse.py`): 가드레일 → 캐시 → **Gate 1 → Gate 2** → 쿼리 플래너 순. 웹은 ambient
+- 웹(`api/rag/sse.py`): 가드레일 → **Gate 1**(원문) → 재작성(후속 턴) → 캐시 → **Gate 2**(재작성문)
+  → 쿼리 플래너 순(2026-08-25 Gate 1 을 재작성·캐시 앞으로 이동). 웹은 ambient
   trace가 없어(threadpool 소비) `record_trace` 메타데이터로 Gate 2 결과를 남긴다.
 - CLI(`src/pipeline.rag_answer`): Gate 1 → **Gate 2** → 기존 흐름. `@observe`로 열린 trace
   아래 `gate1_rulebase` → `gate2_embedding` span을 남긴다(`record_gate2_span`,
