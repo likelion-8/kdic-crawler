@@ -161,9 +161,11 @@ def _build_sources(top: list) -> list[SourceItem]:
 
 def _build_attachments(civil: dict) -> list[Attachment]:
     """민원 결과의 서류(documents)/신청링크(links)를 kind 로 구분해 Attachment 로.
-    documents: {page_id,label,url}, links: {title,url,breadcrumb}."""
+    documents: {page_id,label,url,labels?}, links: {title,url,breadcrumb}.
+    labels 는 같은 다운로드 페이지로 묶인 개별 서류명 목록이다(2건 이상일 때만 있다)."""
     out = [
-        Attachment(kind="document", label=d.get("label"), url=d.get("url"), page_id=d.get("page_id"))
+        Attachment(kind="document", label=d.get("label"), url=d.get("url"),
+                   page_id=d.get("page_id"), labels=d.get("labels"))
         for d in civil.get("documents", [])
     ]
     out += [

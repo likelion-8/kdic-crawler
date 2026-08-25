@@ -36,6 +36,11 @@ class Attachment(BaseModel):
     kind: Literal["document", "link"] = Field(
         description="document=필요 서류, link=신청 페이지 CTA. 프론트가 이 값으로 섹션을 가른다.")
     label: Optional[str] = Field(default=None, description="서류/링크 이름.")
+    labels: Optional[list[str]] = Field(
+        default=None,
+        description="여러 서류가 같은 다운로드 페이지로 묶였을 때의 개별 서류명 목록. "
+                    "이때 label 은 그 페이지 이름이다(civil_petition.build_document_section). "
+                    "1건짜리 서류는 None — 프론트는 None 이면 기존 부제를 쓴다.")
     file_type: Optional[str] = Field(
         default=None, description="파일 형식(pdf/hwp 등). ⚠️ civil_petition 반환값엔 없음.")
     url: Optional[str] = Field(

@@ -249,6 +249,15 @@ def _render_list(heading, items, line):
     return f"\n\n**{heading}**\n{body}"
 
 
+def _format_document_line(d):
+    """필요 서류 한 줄. 여러 서류가 같은 다운로드 페이지로 묶였으면(civil_petition.
+    build_document_section 의 labels) 페이지 이름 뒤에 개별 서류명을 함께 적는다 —
+    링크는 한 번만 나오고 "무엇을 준비해야 하는지"는 남는다."""
+    labels = d.get("labels")
+    name = f"{d['label']} ({' · '.join(labels)})" if labels else d["label"]
+    return f"- {name}: {d['url']}"
+
+
 def _format_source_line(item):
     """출처 한 줄 = 브레드크럼(사이트 계층 경로) + 제목 + URL. 브레드크럼이 없으면 제목만."""
     breadcrumb = item.get("breadcrumb", "")
@@ -375,7 +384,6 @@ def assemble_civil_petition_answer(llm_text, civil_petition_answer, recheck=None
     if not used_source:
         return text
     answer = text
-    answer += _render_list(
-        "필요 서류", civil_petition_answer["documents"], lambda d: f"- {d['label']}: {d['url']}")
+    answer += _render_list("필요 서류", civil_petition_answer["documents"], _format_document_line)
     answer += _render_list("신청 페이지", civil_petition_answer["links"], _format_source_line)
     return answer
