@@ -66,6 +66,25 @@ rules:
     priority: 50
     description: 순수 감사만 있는 경우
 
+  # ── 욕설 — wrapper 제거 후 남는 게 이 단어들뿐일 때만(정상 질문+욕설 혼합은 안 잡음) ──
+  - rule_id: abuse_01
+    label: FIXED_ABUSE
+    match_type: exact_after_wrapper_strip
+    words: [
+      씨발련아, 씨발, 시발, 씨팔, 개새끼, 개새꺄, 병신, 븅신, 지랄, 지랄하네, 좆같, 좆까, 좆나,
+      존나, 개소리, 미친놈, 미친년, 개년, 걸레, 잡놈, 씹새끼,
+      니미, 니애미, 애미뒤진, 느금마, 창녀, 인간쓰레기,
+      장애인새끼, 병신년, 김치녀, 한남충,
+      죽여버린다, 죽여버릴거야, 뒤지고싶냐
+    ]
+    response_id: resp_abuse
+    enabled: true
+    priority: 50
+    description: 순수 욕설·혐오·협박만 있는 경우(정상 질문에 욕설이 붙은 건 여기서 안 잡고 통과시킴)
+    counterexamples:
+      - 예금자보호한도 얼마인지 알려줘 씨발
+      - 신청 절차가 너무 복잡해서 짜증나요
+
   # ── 노이즈 — 질문 전체가 ㅋㅎㅠㅜ·자모·문장부호로만 구성(정규식은 코드의 NOISE_PATTERN) ──
   - rule_id: noise_01
     label: FIXED_NOISE
@@ -166,6 +185,8 @@ responses:
     - "반갑습니다. 예금보험과 관련해 무엇을 도와드릴까요?"
   resp_thanks:
     - "도움이 되었다니 다행입니다. 예금보험과 관련해 더 궁금한 점이 있으면 말씀해 주세요."
+  resp_abuse:
+    - "문의하신 내용에는 안내가 제한되는 표현이 포함되어 있어 답변을 드리기 어렵습니다. 예금보험공사 업무에 대한 질문으로 다시 작성해 주세요."
   resp_noise:
     - "질문을 이해하지 못했어요. 예금자보호 관련 궁금한 점을 문장으로 입력해 주세요."
   resp_bot_intro:

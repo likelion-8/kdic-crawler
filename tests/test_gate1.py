@@ -32,6 +32,10 @@ from gate1 import Gate1Result, load_config, run_gate1  # noqa: E402
     ("고마워", "FIXED_THANKS"),
     ("thanks", "FIXED_THANKS"),
     ("thank you", "FIXED_THANKS"),
+    ("씨발", "FIXED_ABUSE"),
+    ("개새끼", "FIXED_ABUSE"),
+    ("씨발 개새끼", "FIXED_ABUSE"),           # 낱말 전부가 욕설 목록에 속하면 조합도 매칭
+    ("씨발!!!", "FIXED_ABUSE"),               # 문장부호는 stripped 단계에서 제거
     ("ㅋㅋㅋ", "FIXED_NOISE"),
     ("????", "FIXED_NOISE"),
     ("ㅎㅎㅎ...", "FIXED_NOISE"),
@@ -88,6 +92,14 @@ def test_positive_matches_exit_with_expected_label(text, label):
     "설명해주세요",
     "궁금합니다",
     "부탁드립니다",
+    # 정상 질문에 욕설이 붙은 혼합 메시지는 욕설 규칙이 절대 잡으면 안 된다(이번 규칙의 핵심 반례)
+    "예금자보호한도 얼마인지 알려줘 씨발",
+    "착오송금 반환지원 신청 방법이 뭔지 좀 알려줘 개새끼야",
+    # 욕설 목록에 없는 경계선 표현(불만·감정 표현)은 차단하지 않는다
+    "신청 절차가 너무 복잡해서 짜증나요",
+    "서류 준비하느라 죽겠어요",
+    # 목록에 없는 낱말이 하나라도 섞인 조합은 CONTINUE(욕설 낱말끼리만 매칭)
+    "씨발 병신아",
 ])
 def test_counterexamples_do_not_exit(text):
     r = run_gate1(text)
