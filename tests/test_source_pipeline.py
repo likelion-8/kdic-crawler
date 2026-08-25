@@ -24,7 +24,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from prompt_builder import (  # noqa: E402  (sys.path 조정 후 import)
-    _strip_no_source_marker, assemble_informational_answer,
+    FEW_SHOT_EXAMPLES, NO_EVIDENCE_NOTICE, OUT_OF_SCOPE_MESSAGE, SYSTEM_INSTRUCTION,
+    _strip_no_source_marker, assemble_informational_answer, build_informational_prompt,
+    strip_urls, with_retry_notice,
 )
 
 
@@ -169,11 +171,66 @@ def test_subanswer_independence():
          pipeline.call_hyperclova, pipeline.validate_answer) = orig
 
 
+def test_url_backstop():
+    """원칙 5(URL 쓰지 말 것)의 결정론적 백스톱 — 실측 4.0%(rag_runs 802건 중 32건)가 지시를
+    어겼고 코퍼스에 없는 주소(https://www.kdic.or.kr/protect/apply.do)까지 7회 나갔다.
+
+    전화번호·이메일은 반대로 **지우면 안 된다** — 골든셋 849문항 중 29건이 연락처가 곧 정답이고
+    시스템이 뒤에 붙여주지도 않는다."""
+    assert strip_urls("홈페이지(https://www.kdic.or.kr/protect/apply.do)에서 신청하세요.") \
+        == "홈페이지에서 신청하세요.", "괄호 안 URL 제거 후 빈 괄호가 남음"
+    assert "www." not in strip_urls("자세한 내용은 www.kdic.or.kr 를 참고하세요.")
+    assert strip_urls("온라인 신청은 fins.kdic.or.kr에서 가능합니다.") == "온라인 신청은 가능합니다.", \
+        "맨몸 도메인이 안 잡히거나 조사가 덩그러니 남음"
+
+    keep = "신고센터 상담전화는 02-758-0102~04이며, 이메일은 cpreport@kdic.or.kr입니다."
+    assert strip_urls(keep) == keep, "연락처가 지워짐 — 골든셋 29건이 이 형태의 정답이다"
+    assert strip_urls("대표번호는 1588-0037입니다.") == "대표번호는 1588-0037입니다."
+
+    # 조립 경로(pipeline)도 같은 백스톱을 거친다
+    citations = [{"page_id": "p1", "breadcrumb": "안내", "title": "제목", "url": "https://x/1"}]
+    out = assemble_informational_answer("자세한 내용은 https://www.kdic.or.kr 참고.", citations)
+    body, _, sources = out.partition("**참고 출처**")
+    assert "kdic.or.kr" not in body, "본문 URL 이 그대로 나감"
+    assert "https://x/1" in sources, "붙여준 출처까지 지워짐"
+
+
+def test_refusal_wording_is_single():
+    """거절 문구가 하나뿐인지 — 생성 지시(원칙 1·few-shot·NO_EVIDENCE_NOTICE)와 사후 교체문
+    (api/rag/answer.py)이 서로 다른 문구를 내보내면 사용자에겐 같은 상황이 여러 얼굴로 보인다."""
+    from api.rag.answer import OUT_OF_SCOPE_MESSAGE as web_message
+    assert web_message == OUT_OF_SCOPE_MESSAGE, "웹 경로가 다른 거절 문구를 쓴다"
+    assert OUT_OF_SCOPE_MESSAGE in SYSTEM_INSTRUCTION, "시스템 지시문이 표준 거절 문구를 안 준다"
+    assert OUT_OF_SCOPE_MESSAGE in NO_EVIDENCE_NOTICE
+    assert FEW_SHOT_EXAMPLES[-1]["answer"] == OUT_OF_SCOPE_MESSAGE
+    assert "제공된 자료에서 확인할 수 없습니다" not in SYSTEM_INSTRUCTION, \
+        "내부 구현(RAG 근거)을 드러내는 옛 거절 문구가 남아 있다"
+    # 평가의 거절 판정이 이 문구를 계속 거절로 세는지(문구를 고치면 같이 깨진다)
+    from eval.eval_pipeline_generation import is_refused
+    assert is_refused(OUT_OF_SCOPE_MESSAGE), "평가가 표준 거절문을 거절로 못 센다"
+
+
+def test_retry_notice_anchor():
+    """재생성 문구는 **실제 질문 바로 앞**에 들어가야 한다. 사용자가 질문에 "질문: "을 적으면
+    rfind("질문: ") 방식은 문구를 질문 한가운데 박아 넣었다."""
+    q = "질문: 보호한도 얼마야"          # 사용자가 직접 적은 "질문: "
+    prompt = build_informational_prompt(q, [("c1", 0.9, "근거 본문")])
+    pushed = with_retry_notice(prompt, q, "(재확인)\n")
+    human = pushed[-1][1]
+    assert f"(재확인)\n질문: {q}" in human, "문구가 실제 질문 앞이 아닌 곳에 들어갔다"
+    assert human.count("(재확인)") == 1
+    # 앵커를 못 찾으면 원본 그대로 — 재생성이 죽지 않는다
+    assert with_retry_notice(prompt, "없는 질문", "(재확인)\n") == prompt
+
+
 if __name__ == "__main__":
     test_marker_parsing()
     test_assemble()
     test_recheck_direction()
     test_subanswer_independence()
+    test_url_backstop()
+    test_refusal_wording_is_single()
+    test_retry_notice_anchor()
     # em-dash 등 cp949에 없는 문자는 쓰지 않는다 - Windows 콘솔에서 UnicodeEncodeError로
     # 검사가 통과하고도 비정상 종료한다(2026-08-03 실제 발생).
-    print("OK - 출처 부착 경로 검사 4종 통과")
+    print("OK - 출처 부착 경로 검사 7종 통과")

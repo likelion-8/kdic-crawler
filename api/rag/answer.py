@@ -26,8 +26,9 @@ from candidate_ranking import gate_low_relevance, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
 from llm_client import call_hyperclova
-from prompt_builder import (_strip_no_source_marker, build_civil_petition_prompt,
-                            build_informational_prompt)
+from prompt_builder import (OUT_OF_SCOPE_MESSAGE, _strip_no_source_marker,
+                            build_civil_petition_prompt, build_informational_prompt,
+                            strip_urls, with_retry_notice)
 from runtime_config import get_param
 from source_check import validate_answer
 from source_precheck import classify as precheck_classify
@@ -54,14 +55,14 @@ USE_SOURCE_RECHECK = True
 # 에러 응답에 실을 폴백 출처(공식 페이지). errors.py 것을 그대로 SourceItem 으로.
 _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
 
-# 사후 판정이 "근거 없는 내용을 사실처럼 서술"(ungrounded_claims)로 분류한 답변의 대체 문구.
-# 환각 본문이 정상 답변처럼 노출되는 것을 막는다(2026-08-10 "스파이더맨" 마블 설명 실측).
-# 스트리밍으로 이미 흘러간 델타는 못 무르지만, 프론트는 done 의 answer 를 최종으로 신뢰하므로
-# 완성 화면·대화 복원·rag_runs 로그에는 이 문구가 남는다. 인사·정체성·정상 거절문은 교체하지 않는다.
-OUT_OF_SCOPE_MESSAGE = (
-    "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 "
-    "어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
-)
+# 사후 판정이 "근거 없는 내용을 사실처럼 서술"(ungrounded_claims)로 분류한 답변의 대체 문구는
+# prompt_builder.OUT_OF_SCOPE_MESSAGE 다(위에서 import). 환각 본문이 정상 답변처럼 노출되는 것을
+# 막는다(2026-08-10 "스파이더맨" 마블 설명 실측). 스트리밍으로 이미 흘러간 델타는 못 무르지만,
+# 프론트는 done 의 answer 를 최종으로 신뢰하므로 완성 화면·대화 복원·rag_runs 로그에는 이 문구가
+# 남는다. 인사·정체성·정상 거절문은 교체하지 않는다.
+#
+# 2026-08-25: 정의를 prompt_builder 로 옮겼다 — 생성 단계의 거절 지시(원칙 1·few-shot·
+# NO_EVIDENCE_NOTICE)와 이 교체문이 서로 다른 문구였고, 사용자에겐 같은 상황이 세 얼굴로 보였다.
 
 # 재생성 가드의 점수 하한 변천(2026-08-10): 0.60 → 0.45 → 폐지. 처음엔 도메인 인접 범위외의
 # 재생성 채택을 점수로 막았지만, 그 역할은 다수결 판정 + 판정 입력에 질문 포함으로 대체됐다
@@ -194,10 +195,9 @@ def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
     재생성본을 사실상 무조건 채택(재검증 없음)하게 되어 버린다 — 그래서 지름길을 없애고
     재생성본도 항상 사후검증을 거치게 한다(호출 1회 추가, 안전이 우선)."""
     try:
-        role, human = sp.prompt[-1]
-        # few-shot 예시에도 "질문: "이 있으므로 마지막(실제 질문) 위치에 끼운다
-        idx = human.rfind("질문: ")
-        pushed = sp.prompt[:-1] + [(role, human[:idx] + RETRY_NOTICE + human[idx:] if idx >= 0 else human)]
+        # 삽입 위치는 prompt_builder 가 정한다 — "질문: " 만 뒤에서 찾으면 사용자가 질문에
+        # 그 문자열을 적었을 때 문구가 질문 한가운데 박힌다(with_retry_notice 주석 참고).
+        pushed = with_retry_notice(sp.prompt, sp.question, RETRY_NOTICE)
         raw = call_hyperclova(pushed)
         body, _ = _strip_no_source_marker(raw)
         # 단일 검증 1콜(2026-08-14 팀 결정으로 다수결 폐지). 재생성본은 근거를 썼고
@@ -278,6 +278,11 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: Optional[bool]) -> 
                 used = False
                 sp.obs_normalized = True
     sp.obs_used_source = used
+    # 원칙 5(URL 쓰지 말 것)의 결정론적 백스톱 — 지시만으로는 4.0%가 샜고 존재하지 않는 주소도
+    # 있었다(prompt_builder.strip_urls 주석). 판정이 전부 끝난 뒤에 지운다: 검증은 생성 원문을
+    # 보고, 사용자·로그·대화복원에 남는 done.answer 에는 URL 이 없다. 스트리밍 델타는 이미
+    # 나갔지만 프론트가 done.answer 를 최종으로 신뢰하는 것은 본문 교체와 같은 전제다.
+    body = strip_urls(body)
     sources = _build_sources(sp.top) if used else []
     attachments = _build_attachments(sp.civil) if (used and sp.civil) else []
     return SubAnswer(title=sp.question, answer=body, sources=sources, attachments=attachments), used

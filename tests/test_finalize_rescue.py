@@ -139,3 +139,30 @@ def test_absent_marker_does_not_poison_the_precheck_shadow(wire):
     sp = _sp()
     finalize_sub(sp, "본문에 숫자 없음", marker_used_source=None)
     assert sp.obs_precheck != "marker_no_source"
+
+
+def test_url_is_stripped_from_the_final_body(wire):
+    """원칙 5(URL 쓰지 말 것)의 백스톱이 웹 경로에도 걸리는지 — 지시만으로는 실측 4.0%가 샜고,
+    코퍼스에 없는 주소(https://www.kdic.or.kr/protect/apply.do)가 7회 사용자에게 나갔다.
+
+    판정은 생성 원문을 보고(검증 입력 불변), 사용자가 받는 done.answer 에만 URL 이 없어야 한다."""
+    wire["verdict"] = _verdict(used_source=True, kind="grounded", appropriate=True)
+    seen = []
+    original = "신청은 https://www.kdic.or.kr/protect/apply.do 에서 하시면 됩니다. 문의 1588-0037."
+
+    def spy(_q, body, _e):
+        seen.append(body)
+        return wire["verdict"]
+
+    import api.rag.answer as m
+    m_validate = m.validate_answer
+    try:
+        m.validate_answer = spy
+        sub, used = finalize_sub(_sp(), original, marker_used_source=None)
+    finally:
+        m.validate_answer = m_validate
+
+    assert seen == [original], "검증이 URL 제거된 본문을 봤다 — 판정 입력은 생성 원문이어야 한다"
+    assert "kdic.or.kr" not in sub.answer, "URL 이 그대로 사용자에게 나감"
+    assert "1588-0037" in sub.answer, "전화번호까지 지워짐 — 연락처는 정답인 경우가 있다"
+    assert used is True
