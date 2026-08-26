@@ -2,20 +2,37 @@
 
 다른 모듈은 langfuse를 직접 import하지 않고 반드시 이 파일을 거친다. 이유는 rag_logger와
 같은 원칙이다: 관측 실패가 챗봇 응답을 막으면 안 된다. langfuse 미설치·키 미설정 어느
-경우에도 아래 observe/current_trace_id/flush는 조용히 no-op으로 동작하고, 파이프라인은
-평소처럼 굴러간다. (키가 없으면 langfuse SDK 자체도 경고만 찍고 no-op이지만, 패키지가
-아예 없는 PC — requirements 갱신 전에 pull만 받은 팀원 — 까지 보호하려면 이 겹이 필요하다.)
+경우에도 아래 함수들은 조용히 no-op으로 동작하고, 파이프라인은 평소처럼 굴러간다.
+(키가 없으면 langfuse SDK 자체도 경고만 찍고 no-op이지만, 패키지가 아예 없는 PC —
+requirements 갱신 전에 pull만 받은 팀원 — 까지 보호하려면 이 겹이 필요하다.)
 
 설정은 .env의 LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY / LANGFUSE_HOST(=LANGFUSE_BASE_URL,
 SDK 버전에 따라 읽는 이름이 달라 둘 다 넣어둔다)를 SDK가 자동으로 읽는다.
-평가 스크립트 실행이 trace를 오염시키는 게 싫으면 LANGFUSE_TRACING_ENABLED=false 로 끈다.
 
-trace 계층은 데코레이터가 함수 호출 구조에서 자동으로 만든다:
-    rag_answer (trace 루트)
-      └─ plan_query / route_search_chunks / rerank / call_hyperclova (span·generation)
+trace 계층은 경로에 따라 두 가지 방식으로 만든다.
+
+1. **CLI·평가 경로** — @observe 데코레이터가 함수 호출 구조에서 자동으로 만든다.
+       rag_answer (trace 루트)
+         └─ plan_query / route_search_chunks / rerank / call_hyperclova
+   contextvar 기반이라 같은 스레드에서 이어 부르면 알아서 중첩된다.
+
+2. **웹 SSE 경로** — 동기 제너레이터를 스레드풀이 조각 단위로 소비하므로(starlette
+   iterate_in_threadpool — next() 마다 워커 스레드가 바뀔 수 있다) contextvar 가 조각
+   사이에 유실된다. 그래서 루트 span 을 open_span() 으로 직접 열어 두고 각 계산 블록을
+   as_child_of(부모) 로 감싼다 — 그 블록 안에서 만들어지는 span 은 스레드가 무엇이든
+   지정한 부모의 자식이 된다(OTel SpanContext 를 명시적으로 attach 한다).
+
+   ⚠️ 이 배선이 없던 때(~2026-08-26)에는 웹 trace 가 자식 없는 껍데기 하나였고, 실제 단계
+   span(plan_query·route_search_chunks·classify_question_type)은 전부 **별개의 고아 trace**
+   로 흩어져 한 요청을 쭉 훑을 수가 없었다. 새 코드도 같은 함정을 밟지 않으려면 웹 경로에서
+   무언가를 계측할 때 반드시 as_child_of 안에서 해야 한다.
+
 trace_id는 rag_runs.trace_id로도 남겨(log_rag_run) 관리자 대화 로그 상세(AD-005)가
 API_LANGFUSE_HOST로 완성한 링크를 붙일 수 있게 한다(api/config.py 참고).
 """
+import os
+import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -23,8 +40,21 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")  # LANGFUSE_* 키 로드 — SDK가 환경변수에서 자동 인식
 
+# 평가·색인 스크립트(src/crawler/*.py)와 pytest 는 기본적으로 trace 를 남기지 않는다.
+# 실측 근거(2026-08-26): 전체 trace 14,078건 중 ~70%가 평가 스크립트가 계측된 함수를 직접
+# 불러 만든 단발 root trace 였고(route_search_chunks 9,993 · classify_question_type 3,365 ·
+# call_hyperclova 1,063 · plan_query 989 · rerank 641), rag_answer trace 114건은 전부
+# tests/test_source_pipeline.py 의 모의 실행이었다. 정작 실사용 trace(web_chat 238건)가 그
+# 사이에 묻혀 목록으로는 찾을 수가 없었다. 평가 실행도 Langfuse 로 보고 싶으면 그 실행에서만
+# LANGFUSE_TRACING_ENABLED=true 를 준다(setdefault 라 명시값이 항상 이긴다).
+_ARGV0 = Path(sys.argv[0] or "")
+if "crawler" in _ARGV0.parts or _ARGV0.name in ("pytest", "py.test"):
+    os.environ.setdefault("LANGFUSE_TRACING_ENABLED", "false")
+
 try:
     from langfuse import get_client, observe  # noqa: F401  (observe는 재수출이 목적)
+    from opentelemetry import context as _otel_context
+    from opentelemetry import trace as _otel_trace
     _AVAILABLE = True
 except ImportError:
     _AVAILABLE = False
@@ -69,77 +99,126 @@ def update_current_span(**kwargs):
         pass
 
 
-def record_gate1_span(canonical_text, rule_text, result):
-    """Gate 1(결정론적 룰) 판정을 현재 trace 의 자식 span(gate1_rulebase)으로 남긴다.
+# ──────────────────────── span 열고·닫기 (웹 SSE 경로의 기본 도구) ────────────────────────
 
-    CLI·평가 경로(@observe 로 ambient trace 가 열려 있는 pipeline.rag_answer 안)에서 부르면
-    start_observation 이 현재 컨텍스트 아래에 이 span 을 끼운다. 웹 SSE 경로는 스레드풀
-    소비라 ambient 컨텍스트가 없어 이 방식이 안 되므로 거긴 record_trace 메타데이터로 Gate 1
-    결과를 남긴다(그쪽은 이 함수를 부르지 않는다).
+def open_span(name, *, as_type="span", input=None, metadata=None, **kwargs):
+    """span 을 열고 **끝내지 않은 채** 돌려준다. 반드시 close_span 으로 닫는다.
 
-    관측 실패·비활성은 조용히 무시한다(다른 관측 함수와 같은 원칙 — 챗봇 응답을 막지 않는다).
-    result 는 gate1.Gate1Result(action/label/rule_id/reason 필드)."""
-    if not _AVAILABLE:
-        return
-    try:
-        span = get_client().start_observation(
-            name="gate1_rulebase", as_type="span",
-            input={"canonical_text": canonical_text, "rule_text": rule_text})
-        span.update(output={
-            "action": result.action, "label": result.label,
-            "rule_id": result.rule_id, "reason": result.reason})
-        span.end()
-    except Exception:
-        pass
+    현재 컨텍스트에 부모가 있으면 그 자식이 되고, 없으면 새 trace 의 루트가 된다. 웹 SSE
+    경로는 루트를 이걸로 하나 열어 두고(요청 시작) 나머지를 as_child_of 로 붙인다.
 
-
-def record_gate2_span(query, result):
-    """Gate 2(임베딩 유사도 도메인 판정) 결과를 현재 trace 의 자식 span(gate2_embedding)으로
-    남긴다. record_gate1_span 과 같은 이유로 CLI·평가 경로 전용이다(웹 SSE 는 ambient
-    컨텍스트가 없어 record_trace 메타데이터로 대신 남긴다 — api/rag/sse.py 참고).
-
-    nearest_out_category(내부 판정 카테고리, 예: 프롬프트인젝션)는 trace에는 남기지만 이
-    값이 사용자에게 노출되는 것은 아니다 — 사용자 응답은 fixed_gate_response의 고정 문구뿐.
-    result 는 gate2.Gate2Result(action/s_id/s_ood/threshold/reason 등 필드)."""
-    if not _AVAILABLE:
-        return
-    try:
-        span = get_client().start_observation(
-            name="gate2_embedding", as_type="span", input={"query": query})
-        span.update(output={
-            "action": result.action, "s_id": result.s_id, "s_ood": result.s_ood,
-            "threshold": result.threshold,
-            "nearest_out_cluster_id": result.nearest_out_cluster_id,
-            "nearest_out_category": result.nearest_out_category,
-            "reason": result.reason})
-        span.end()
-    except Exception:
-        pass
-
-
-def record_trace(name, *, input=None, output=None, metadata=None):
-    """단일 root trace 를 **사후에 한 번에** 기록하고 trace_id 를 돌려준다 — 웹 SSE 경로용.
-
-    웹 응답은 동기 제너레이터를 스레드풀이 조각 단위로 소비한다(starlette
-    iterate_in_threadpool — next() 마다 워커 스레드가 바뀔 수 있다). 그래서 pipeline.py 처럼
-    @observe 데코레이터로 ambient 컨텍스트를 여는 방식은 조각 사이에 컨텍스트가 유실돼
-    쓸 수 없다(이 경로에 계측이 없던 구조적 이유). 대신 done 시점에 질문·답변·메타를 실어
-    root trace 하나를 남기고, 그 trace_id 를 rag_runs 에 연결한다(AD-005 링크용).
-
-    한계(의도된 것): 웹 trace 는 단계별 자식 span 이 없다 — 단계 span 은 pipeline 경로
-    (CLI·평가)에서 본다. 실패·비활성 시 None(호출부는 그대로 컬럼에 넣으면 된다)."""
+    스트리밍 LLM 처럼 시작과 끝이 여러 next() 조각에 걸쳐 있는 구간에도 쓴다 — 컨텍스트가
+    아니라 span 객체를 들고 다니므로 스레드가 바뀌어도 소요 시간이 실제 값으로 남는다.
+    관측이 꺼져 있거나 실패하면 None(close_span·as_child_of 모두 None 을 무해하게 받는다)."""
     if not _AVAILABLE:
         return None
     try:
         # SDK v4 는 start_span 이 아니라 start_observation(as_type=...) 이다(4.14 실확인).
-        span = get_client().start_observation(
-            name=name, as_type="span", input=input, metadata=metadata)
-        if output is not None:
-            span.update(output=output)
-        span.end()
-        return span.trace_id
+        return get_client().start_observation(
+            name=name, as_type=as_type, input=input, metadata=metadata, **kwargs)
     except Exception:
         return None
+
+
+def close_span(span, *, output=None, metadata=None, **kwargs):
+    """open_span 으로 연 span 에 결과를 적고 닫는다. span 이 None 이면 아무 일도 안 한다."""
+    if span is None:
+        return
+    try:
+        updates = {k: v for k, v in
+                   {"output": output, "metadata": metadata, **kwargs}.items() if v is not None}
+        if updates:
+            span.update(**updates)
+        span.end()
+    except Exception:
+        pass
+
+
+def record_span(name, *, as_type="span", input=None, output=None, metadata=None, **kwargs):
+    """이미 끝난 단계를 span 하나로 즉시 남긴다(open+close). 판정 결과처럼 '값만 있고 구간이
+    없는' 단계용이다 — 소요 시간이 필요하면 open_span/close_span 을 쓴다."""
+    span = open_span(name, as_type=as_type, input=input, metadata=metadata, **kwargs)
+    close_span(span, output=output)
+    return span
+
+
+@contextmanager
+def as_child_of(span):
+    """이 블록 안에서 만들어지는 모든 span(@observe 데코레이터 포함)을 span 의 자식으로 붙인다.
+
+    span 을 하나 더 만들지 않는다 — 부모만 명시적으로 갈아끼운다. contextvar 를 신뢰할 수
+    없는 곳(스레드풀이 조각 단위로 소비하는 SSE 제너레이터)에서 계층을 유지하는 유일한
+    방법이다. span 이 None 이거나 관측이 꺼져 있으면 그냥 통과한다."""
+    if not _AVAILABLE or span is None:
+        yield
+        return
+    try:
+        ctx = _otel_trace.SpanContext(
+            trace_id=int(span.trace_id, 16), span_id=int(span.id, 16),
+            trace_flags=_otel_trace.TraceFlags(0x01),  # sampled 로 표시하지 않으면 자식이 버려진다
+            is_remote=False)
+        token = _otel_context.attach(
+            _otel_trace.set_span_in_context(_otel_trace.NonRecordingSpan(ctx)))
+    except Exception:
+        yield
+        return
+    try:
+        yield
+    finally:
+        try:
+            _otel_context.detach(token)
+        except Exception:
+            pass
+
+
+_ZERO_TRACE_ID = "0" * 32
+
+
+def trace_id_of(span):
+    """span 의 trace_id(없으면 None). rag_runs.trace_id 로 넘겨 AD-005 링크를 만든다.
+
+    관측이 꺼져 있으면(LANGFUSE_TRACING_ENABLED=false) SDK 가 0으로 채운 id 를 돌려준다 —
+    그대로 저장하면 AD-005 상세가 존재하지 않는 trace 로 가는 링크를 그린다. None 으로 바꿔
+    링크 자체가 안 생기게 한다(api/routers/admin_logs.py._langfuse)."""
+    tid = getattr(span, "trace_id", None)
+    return None if tid in (None, _ZERO_TRACE_ID) else tid
+
+
+# ──────────────────────── 게이트 판정 span ────────────────────────
+
+def record_gate1_span(canonical_text, rule_text, result):
+    """Gate 1(결정론적 룰) 판정을 현재 컨텍스트의 자식 span(gate1_rulebase)으로 남긴다.
+    result 는 gate1.Gate1Result(action/label/rule_id/reason 필드)."""
+    record_span("gate1_rulebase",
+                input={"canonical_text": canonical_text, "rule_text": rule_text},
+                output={"action": result.action, "label": result.label,
+                        "rule_id": result.rule_id, "reason": result.reason})
+
+
+def record_gate2_span(query, result):
+    """Gate 2(임베딩 유사도 도메인 판정) 결과를 자식 span(gate2_embedding)으로 남긴다.
+
+    nearest_out_category(내부 판정 카테고리, 예: 프롬프트인젝션)는 trace에는 남기지만 이
+    값이 사용자에게 노출되는 것은 아니다 — 사용자 응답은 fixed_gate_response의 고정 문구뿐.
+    result 는 gate2.Gate2Result(action/s_id/s_ood/threshold/reason 등 필드)."""
+    record_span("gate2_embedding", input={"query": query},
+                output={"action": result.action, "s_id": result.s_id, "s_ood": result.s_ood,
+                        "threshold": result.threshold,
+                        "nearest_out_cluster_id": result.nearest_out_cluster_id,
+                        "nearest_out_category": result.nearest_out_category,
+                        "reason": result.reason})
+
+
+def record_gate3_span(query, *, exited, top1_score=None, threshold=None, reason=None):
+    """Gate 3(검색 관련도 게이트) 판정을 자식 span(gate3_relevance)으로 남긴다.
+
+    Gate 1·2 와 달리 판정 값이 trace 어디에도 없어서, 임계값(MIN_TOP1_SCORE)을 조정하려면
+    rag_runs.observation JSONB 를 SQL 로 뒤져야 했다(2026-08-26). 통과(exited=False)도
+    남긴다 — 임계값 근처에서 아슬아슬하게 통과한 질문이 조정의 핵심 표본이다."""
+    record_span("gate3_relevance", input={"query": query},
+                output={"action": "EXIT" if exited else "CONTINUE",
+                        "retrieval_top1_score": top1_score,
+                        "threshold": threshold, "reason": reason})
 
 
 def flush():

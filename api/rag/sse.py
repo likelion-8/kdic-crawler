@@ -29,6 +29,7 @@ producer 스레드가 queue 에 쌓고 여기서 queue.get(timeout=30) 으로 �
 """
 import json
 import logging
+import os
 import queue
 import threading
 import time
@@ -36,6 +37,8 @@ import time
 from prompt_builder import _MARKER_RE  # [SOURCE_USED]/[NO_SOURCE] 판정 정규식(운영과 동일 기준)
 from prompt_builder import strip_answer_cue  # 되뱉은 "답변:" 큐 제거(운영과 동일 기준)
 from llm_client import stream_hyperclova
+from observability import (as_child_of, close_span, open_span, record_gate1_span,
+                           record_gate2_span, record_span, trace_id_of)
 
 from api.rag import answer, conversation
 
@@ -139,6 +142,29 @@ def _stream_one(prompt):
 
 
 def chat_event_stream(message: str, session_id: str, request_id: str):
+    """Langfuse 루트 span 의 수명만 책임지는 껍데기. 본체는 _chat_event_stream 이다.
+
+    span 을 여기서 열고 finally 에서 닫는 이유는 본체의 종료 경로가 많아서다(가드레일·Gate
+    1·2·3·되묻기·캐시·실패 3경로·정상 done). 각 return 앞에 close 를 흩어 두면 하나만
+    빠뜨려도 span 이 영영 안 닫히고, 프론트가 중간에 끊어 제너레이터가 close 되는 경우도
+    못 잡는다. 본체는 trace 딕셔너리에 경로 판정만 적고 닫는 것은 신경 쓰지 않는다.
+
+    루트를 직접 여는 이유(=@observe 를 못 쓰는 이유)는 observability 모듈 docstring 2번 참고 —
+    이 제너레이터는 스레드풀이 조각 단위로 소비해 contextvar 가 조각 사이에 유실된다."""
+    started = time.perf_counter()
+    root = open_span("web_chat", input={"question": message},
+                     metadata={"request_id": request_id, "session_id": session_id})
+    trace = {}   # 본체가 채우는 경로 판정(output·exit_at·error 등)
+    try:
+        yield from _chat_event_stream(message, session_id, request_id, started, root, trace)
+    finally:
+        close_span(root, output=trace.pop("output", None),
+                   metadata={"request_id": request_id, "session_id": session_id,
+                             "latency_ms": _elapsed_ms(started), **trace})
+
+
+def _chat_event_stream(message: str, session_id: str, request_id: str,
+                       started: float, root, trace: dict):
     """POST /api/chat 의 SSE 본체(동기 제너레이터). accepted → 가드레일 → Gate 1 →
     질문 정리(재작성 + 되묻기 판정) → 되묻기 → 질의 캐시 → Gate 2 → 쿼리 플래너(분해+intent)
     → 하위질문마다 (준비 → 토큰 스트리밍, 마커 제거) → done.
@@ -147,8 +173,13 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     부르면서 되묻기 판정이 한 곳(0-2.5)으로 모였다(종전엔 첫 턴만 플래너 뒤 1-1 에서 판정).
 
     sources/attachments 는 별도 이벤트로 보내지 않고 done 에 실린다(사유는 파일 맨 끝 주석).
-    실패하면 done 대신 error 가 나가고 스트림이 끝난다."""
-    started = time.perf_counter()
+    실패하면 done 대신 error 가 나가고 스트림이 끝난다.
+
+    root/trace 는 껍데기(chat_event_stream)가 넘겨준 Langfuse 루트 span 과 메타 딕셔너리다.
+    단계 계측은 전부 `with as_child_of(root)` 안에서 한다 — 그래야 이미 @observe 가 붙은
+    함수들(plan_query·route_search_chunks·classify_question_type·call_hyperclova)이 이 요청의
+    trace 밑으로 들어온다. 밖에서 부르면 각자 별개의 고아 trace 가 된다."""
+    trace_id = trace_id_of(root)   # rag_runs.trace_id → AD-005 상세의 Langfuse 링크
 
     # 0) accepted — 프론트가 이 값으로 URL replaceState·피드백 키를 잡는다. done 의 값과 같아야
     #    한다(핸드오프 §6 B3). 그래서 여기서 새로 만들지 않고 라우터가 준 값을 그대로 쓴다.
@@ -169,7 +200,12 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     if hit is not None:
         resp = answer.guardrail_refusal(session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] 금칙어 적중(질문): %r", request_id, hit)
-        answer.log_run(message, resp, [], resp.latency_ms, served_from="guardrail")
+        with as_child_of(root):
+            record_span("guardrail", input={"side": "질문"}, output={"hit": hit})
+        trace.update(exit_at="guardrail",
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
+        answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
+                       served_from="guardrail")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -187,21 +223,19 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      결과는 동일하고 비용만 준다. **원문(message)** 을 본다 — 규칙이 전부 정확 일치·
     #      키워드 조합·보호단어 검사라 파편 문장("그거는요?")을 오차단할 구멍이 없고, 인사·
     #      노이즈는 재작성할 대상이 아니다. EXIT 처리는 가드레일 거절과 같은 골격이다(질문은
-    #      위에서 저장 완료 → 고정 응답 저장 → answer_delta·done). 웹 경로는 ambient trace 가
-    #      없어(record_trace docstring) Gate 1 결과를 record_trace 메타데이터로 남긴다.
+    #      위에서 저장 완료 → 고정 응답 저장 → answer_delta·done). Gate 1 판정은 CONTINUE 도
+    #      gate1_rulebase span 으로 남긴다 — 오탐(EXIT 하면 안 될 질문을 막았는지) 감시용이다.
     from gate1 import run_gate1
-    g1 = run_gate1(message)
+    with as_child_of(root):
+        g1 = run_gate1(message)
+        record_gate1_span(g1.canonical_text, g1.rule_text, g1)   # CONTINUE 도 남긴다(오탐 모니터링)
     if g1.action == "EXIT":
         resp = answer.fixed_gate_response(g1, session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] Gate1 EXIT: %s (%s)", request_id, g1.label, g1.rule_id)
-        from observability import record_trace
-        record_trace("web_chat", input={"question": message},
-                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
-                     metadata={"request_id": request_id, "session_id": session_id,
-                               "latency_ms": resp.latency_ms, "exit_at": "gate1",
-                               "gate1_label": g1.label, "gate1_rule_id": g1.rule_id,
-                               "gate1_reason": g1.reason})
-        answer.log_run(message, resp, [], resp.latency_ms,
+        trace.update(exit_at="gate1", gate1_label=g1.label, gate1_rule_id=g1.rule_id,
+                     gate1_reason=g1.reason,
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
+        answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
                        served_from="gate1", served_label=g1.label)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
@@ -228,7 +262,17 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      재작성이 no-op 이므로 캐시 키(query)는 바뀌지 않는다.
     from query_rewriter import triage_query
     query = message
-    triage = triage_query(message, history)
+    with as_child_of(root):
+        _rw = open_span("query_rewrite",
+                        input={"question": message, "history_turns": len(history)})
+    triage = None   # triage_query 가 터져도 아래 finally 가 NameError 로 원인을 덮지 않게
+    try:
+        triage = triage_query(message, history)
+    finally:
+        close_span(_rw, output=(None if triage is None else
+                                {"rewritten": triage.rewritten,
+                                 "standalone_question": triage.standalone_question,
+                                 "needs_clarification": triage.needs_clarification}))
     if triage and triage.rewritten and triage.standalone_question != message:
         query = triage.standalone_question
         logger.info("[%s] 멀티턴 재작성: %r -> %r", request_id, message, query)
@@ -248,7 +292,10 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         resp = answer.clarification_response(
             clarification_payload(), session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] 업무 되묻기: %r", request_id, message)
-        answer.log_run(message, resp, [], resp.latency_ms, served_from="clarify")
+        trace.update(exit_at="clarify",
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
+        answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
+                       served_from="clarify")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("done", resp.model_dump())
         return
@@ -262,13 +309,18 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      (admin_ops.py 상단 주석 참고 — 관리자 CRUD 자체는 그대로 남아 있다).
     #      적중 시 검색·생성을 통째로 건너뛴다. 캐시 실패는 미스로 취급되어 답변을 막지 않는다.
     cached = answer.cache_get(query)
+    with as_child_of(root):
+        record_span("cache_lookup", input={"query": query}, output={"hit": cached is not None})
     if cached is not None:
         resp_dict = {**cached, "session_id": session_id, "request_id": request_id,
                      "latency_ms": _elapsed_ms(started)}
         from api.schemas.chat import ChatResponse
         resp = ChatResponse.model_validate(resp_dict)
         logger.info("[%s] 질의 캐시 적중", request_id)
-        answer.log_run(message, resp, [], resp.latency_ms, served_from="cache")
+        trace.update(exit_at="cache",
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
+        answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
+                       served_from="cache")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -284,20 +336,18 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #      (내부 관측)에만 남긴다 — 응답 문구는 Gate 1의 resp_out_of_domain을 그대로 재사용
     #      (fixed_gate_response)하므로 사용자 눈에는 Gate 1 EXIT와 구분되지 않는다.
     from gate2 import run_gate2
-    g2 = run_gate2(query)
+    with as_child_of(root):
+        g2 = run_gate2(query)
+        record_gate2_span(query, g2)   # CONTINUE 도 남긴다(임계값 조정 표본)
     if g2.action == "EXIT":
         resp = answer.fixed_gate_response(g2, session_id, request_id, _elapsed_ms(started))
         logger.info("[%s] Gate2 EXIT: %s", request_id, g2.reason)
-        from observability import record_trace
-        record_trace("web_chat", input={"question": message},
-                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
-                     metadata={"request_id": request_id, "session_id": session_id,
-                               "latency_ms": resp.latency_ms, "exit_at": "gate2",
-                               "gate2_s_id": g2.s_id, "gate2_s_ood": g2.s_ood,
-                               "gate2_threshold": g2.threshold,
-                               "gate2_nearest_cluster": g2.nearest_out_cluster_id,
-                               "gate2_nearest_category": g2.nearest_out_category})
-        answer.log_run(message, resp, [], resp.latency_ms, served_from="gate2")
+        trace.update(exit_at="gate2", gate2_s_id=g2.s_id, gate2_s_ood=g2.s_ood,
+                     gate2_threshold=g2.threshold,
+                     gate2_nearest_category=g2.nearest_out_category,
+                     output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
+        answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
+                       served_from="gate2")
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -308,14 +358,16 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     #    2026-08-25: 업무 되묻기 판정은 이 콜에서 뺐다 — Gate 2 보다 뒤라 판정 기회를 못 받는
     #    질문이 있었다(0-2.5 주석). 판정은 질문 정리(0-2.5) 한 곳뿐이다.
     try:
-        plan_result = answer.plan(query)  # .items = [(하위질문, intent|None), ...] — 재작성문 기준
+        with as_child_of(root):
+            plan_result = answer.plan(query)  # .items = [(하위질문, intent|None), ...] — 재작성문 기준
     except Exception as e:  # noqa: BLE001
         logger.exception("[%s] plan 실패", request_id)
+        trace.update(error=f"{type(e).__name__}: {e}", failure_stage="plan")
         # 기록을 yield 앞에 두는 이유는 아래 세 실패 경로 모두 같다 — yield 뒤에 두면 프론트가
         # 오류 프레임을 받고 연결을 끊었을 때 제너레이터가 재개되지 않아 기록이 통째로 날아간다.
         # log_rag_run 은 내부에서 예외를 삼키므로 이 호출이 오류 전달을 막지는 못한다.
         answer.log_failed_run(message, e, "retrieval", request_id, session_id,
-                              sub_plans=[], latency_ms=_elapsed_ms(started))
+                              sub_plans=[], latency_ms=_elapsed_ms(started), trace_id=trace_id)
         yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
         return
 
@@ -328,15 +380,25 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
     for i, (q, intent) in enumerate(plan_items):
         # 2) 하위질문 준비(검색+프롬프트) — 동기. intent는 플래너 결과를 그대로 넘긴다.
+        #    하위 질문마다 span 을 하나 열고(복합이면 여러 개) 검색·생성·검증을 그 밑에 붙인다.
+        #    복합 질문이 어느 하위에서 오래 걸렸는지가 이 계층으로 보인다.
+        with as_child_of(root):
+            sub_span = open_span("sub_answer", input={"question": q, "intent": intent},
+                                 metadata={"index": i + 1, "total": len(plan_items)})
         try:
-            sp = answer.prepare_sub(q, intent)
+            with as_child_of(sub_span):
+                # route_search_chunks·classify_question_type(@observe)와 prepare_sub 안의
+                # record_gate3_span 이 전부 이 하위 span 밑으로 들어온다.
+                sp = answer.prepare_sub(q, intent)
         except Exception as e:  # noqa: BLE001
             logger.exception("[%s] prepare_sub 실패: %s", request_id, q)
+            close_span(sub_span, metadata={"error": f"{type(e).__name__}: {e}"})
+            trace.update(error=f"{type(e).__name__}: {e}", failure_stage="prepare_sub")
             # sub_plans 는 여기까지 성공한 하위질문들이다(이번 것은 아직 안 들어갔다).
             # 복합 질문이 두 번째 하위에서 죽었을 때 어디까지 갔는지가 이 값으로 남는다.
             answer.log_failed_run(message, e, "retrieval", request_id, session_id,
                                   sub_plans=sub_plans, latency_ms=_elapsed_ms(started),
-                                  partial_answer="".join(full_parts))
+                                  partial_answer="".join(full_parts), trace_id=trace_id)
             yield _sse("error", answer.error_from_exception(e, "retrieval", request_id).model_dump())
             return
         sub_plans.append(sp)
@@ -365,9 +427,17 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
             sub, used = answer.finalize_gate3_exit(sp)
             finalized.append(sub)
             used_flags.append(used)
+            close_span(sub_span, output={"answer": sp.fixed_response, "exit_at": "gate3",
+                                         "gate3_reason": sp.gate3_reason})
             continue
 
         # 3) 토큰 스트리밍 + 마커 제거 + 토큰 간 타임아웃
+        #    generation span 은 with 로 못 감싼다 — 스트리밍이 여러 next() 조각에 걸쳐 있어
+        #    컨텍스트가 유실된다. span 객체를 들고 다니며 루프가 끝날 때 닫으면 소요 시간은
+        #    실제 값으로 남는다. (HCX 스트림은 usage 를 안 주므로 토큰 수는 비어 있다.)
+        with as_child_of(sub_span):
+            gen_span = open_span("hcx_stream", as_type="generation", input=sp.prompt,
+                                 model=os.environ.get("CLOVA_MODEL"))
         stripper = _MarkerStripper()
         body_parts = []
         tokens = _stream_one(sp.prompt)
@@ -397,18 +467,33 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
 
         if err is not None:
             logger.warning("[%s] 스트리밍 중단: %r", request_id, err)
+            close_span(gen_span, output="".join(body_parts),
+                       metadata={"error": f"{type(err).__name__}: {err}"})
+            close_span(sub_span, metadata={"error": f"{type(err).__name__}: {err}"})
+            trace.update(error=f"{type(err).__name__}: {err}", failure_stage="llm")
             # 여기까지 흘러간 본문을 함께 남긴다 — 토큰 타임아웃(30초)인지 LLM 이 초장에
             # 터진 것인지가 '어디까지 답했나'로 갈린다.
             answer.log_failed_run(message, err, "llm", request_id, session_id,
                                   sub_plans=sub_plans, latency_ms=_elapsed_ms(started),
-                                  partial_answer="".join(full_parts))
+                                  partial_answer="".join(full_parts), trace_id=trace_id)
             yield _sse("error", answer.error_from_exception(err, "llm", request_id).model_dump())
             return
 
+        close_span(gen_span, output="".join(body_parts))
+
         # 4) 하위 답변 확정(근거 사용 여부 → 출처/서류 구조화)
-        sub, used = answer.finalize_sub(sp, "".join(body_parts), stripper.used_source)
+        #    사후검증(validate_answer)·재생성(call_hyperclova)이 이 안에서 돈다 — 재생성은
+        #    @observe 가 붙어 있어 이 하위 span 밑으로 자동으로 들어온다.
+        with as_child_of(sub_span):
+            sub, used = answer.finalize_sub(sp, "".join(body_parts), stripper.used_source)
+            record_span("answer_validation", output={
+                "marker": sp.obs_marker, "used_source": sp.obs_used_source,
+                "kind": sp.obs_kind, "appropriate": sp.obs_appropriate,
+                "normalized": sp.obs_normalized, "precheck": sp.obs_precheck})
         finalized.append(sub)
         used_flags.append(used)
+        close_span(sub_span, output={"answer": sub.answer, "used_source": used,
+                                     "source_count": len(sub.sources)})
 
     # 5) 완성 결과
     latency_ms = _elapsed_ms(started)
@@ -423,17 +508,11 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
         logger.info("[%s] 금칙어 적중(답변): %r — 거절로 대체", request_id, a_hit)
         resp = answer.guardrail_refusal(session_id, request_id, latency_ms)
 
-    # Langfuse root trace — 웹 경로는 스레드풀 소비라 데코레이터 계측이 안 붙는다
-    # (observability.record_trace docstring). done 직전에 한 번에 남기고 rag_runs 에 잇는다.
-    from observability import record_trace
-    trace_id = record_trace(
-        "web_chat",
-        input={"question": message},
-        output={"answer": resp.answer, "out_of_scope": resp.out_of_scope},
-        metadata={"request_id": request_id, "session_id": session_id,
-                  "latency_ms": latency_ms, "composite": composite,
-                  "gate1_label": g1.label, "gate1_reason": g1.reason,  # CONTINUE 도 기록(오탐 모니터링)
-                  "sub_questions": [sp.question for sp in sub_plans]})
+    # 루트 span 에 실을 요약. 닫는 것은 껍데기(chat_event_stream)의 finally 가 한다 —
+    # 여기서 닫으면 아래 done 을 프론트가 못 받고 끊었을 때와 경로가 갈린다.
+    trace.update(composite=composite, gate1_label=g1.label, gate1_reason=g1.reason,
+                 sub_questions=[sp.question for sp in sub_plans],
+                 output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
 
     # served_from="gate3": 단일 질문(비복합)이 통째로 Gate3 EXIT일 때만 표시한다. 복합 질문은
     # 하위 질문마다 통과/EXIT가 섞일 수 있어(일부만 Gate3) 최상위 한 칸짜리 served_from으로

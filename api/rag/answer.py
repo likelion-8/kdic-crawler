@@ -32,6 +32,7 @@ from prompt_builder import (NO_RELEVANT_EVIDENCE_MESSAGE, OUT_OF_SCOPE_MESSAGE,
 from runtime_config import get_param
 from source_check import validate_answer
 from source_precheck import classify as precheck_classify
+from observability import record_gate3_span
 
 from api.errors import DEFAULT_FALLBACK_SOURCES
 from api.schemas.chat import Attachment, ChatResponse, SourceItem, SubAnswer
@@ -163,16 +164,21 @@ def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
     hybrid_routing = get_param("use_type_routing", USE_TYPE_ROUTING)
     if not hybrid_routing:
         threshold = get_param("min_top1_score", MIN_TOP1_SCORE)
+        top1 = candidates[0][1] if candidates else None
         if gate3_exit(candidates, threshold):
             reason = "no_candidates" if not candidates else "low_retrieval_relevance"
             logger.info("Gate3 EXIT(%s): %r top1=%s threshold=%s", reason, q,
                        candidates[0][1] if candidates else None, threshold)
+            record_gate3_span(q, exited=True, top1_score=top1, threshold=threshold, reason=reason)
             return SubPlan(
                 question=q, intent=intent, top=[], prompt=None, civil=None, evidence="",
                 fixed_response=NO_RELEVANT_EVIDENCE_MESSAGE, exit_at="gate3",
                 gate3_reason=reason,
                 retrieval_top1_score=(candidates[0][1] if candidates else None),
                 retrieval_threshold=threshold, obs_used_source=False)
+        # 통과도 남긴다 — 임계값 조정의 핵심 표본은 아슬아슬하게 통과한 질문이다. SubPlan 에는
+        # EXIT 일 때만 점수가 실리므로(위 필드) 통과 쪽 점수는 이 span 에만 남는다.
+        record_gate3_span(q, exited=False, top1_score=top1, threshold=threshold)
 
     top = top_k_cut(candidates, k=get_param("k_final", K_FINAL))
     if intent == "civil_petition":
@@ -408,7 +414,7 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
         request_id=resp.request_id,
         session_id=resp.session_id,
         status=STATUS_OUT_OF_SCOPE if resp.out_of_scope else STATUS_NORMAL,
-        trace_id=trace_id,   # observability.record_trace 결과 — AD-005 상세의 Langfuse 링크 원천
+        trace_id=trace_id,   # web_chat 루트 span 의 trace_id — AD-005 상세의 Langfuse 링크 원천
         # 검색 상위 청크·검증 판정. 이게 없으면 AD-005 상세의 source_count·source_used·marker·
         # normalized 가 영원히 null 이라 관리자가 원인을 못 가린다(api/rag/observation.py).
         # 플래너 앞에서 끝난 경로(캐시·가드레일·Gate 1·2)는 sub_plans 가 비어 관측이 NULL 이
@@ -419,7 +425,8 @@ def log_run(question: str, resp: ChatResponse, sub_plans: list, latency_ms: int,
 
 
 def log_failed_run(question: str, exc: Exception, phase: str, request_id: str, session_id: str,
-                   sub_plans: list, latency_ms: int, partial_answer: str = "") -> None:
+                   sub_plans: list, latency_ms: int, partial_answer: str = "",
+                   trace_id=None) -> None:
     """에러로 끝난 질의 1건을 rag_runs 에 FAILED 로 남긴다.
 
     log_run 을 못 쓰는 이유는 그 시점에 ChatResponse 가 없어서다 — 실패 경로는 응답을 완성하지
@@ -446,6 +453,7 @@ def log_failed_run(question: str, exc: Exception, phase: str, request_id: str, s
         request_id=request_id,
         session_id=session_id,
         status=STATUS_FAILED,
+        trace_id=trace_id,   # 실패 건이야말로 Langfuse 로 어디서 멈췄는지 봐야 한다
         failure_stage=phase,
         # 사용자 문구(ApiError.user_message)가 아니라 내부 원문이다. 사용자 문구는 5종뿐이라
         # 원인 구분이 안 되고, 조사에 필요한 것은 어떤 예외가 어디서 났는지다.

@@ -181,9 +181,9 @@ def _open_gates_no_cache(monkeypatch):
     monkeypatch.setattr(sse.conversation, "save_assistant_message", lambda *a: None)
     monkeypatch.setattr(sse.answer, "log_run", lambda *a, **kw: None)
     monkeypatch.setattr(sse.answer, "cache_put", lambda *a: None)
-    monkeypatch.setattr("observability.record_trace", lambda *a, **kw: "trace-1")
     monkeypatch.setattr("gate1.run_gate1", lambda _q: SimpleNamespace(
-        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched"))
+        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched",
+        canonical_text=_q, rule_text=_q))
     monkeypatch.setattr("gate2.run_gate2", lambda _q: SimpleNamespace(
         action="CONTINUE", s_id=0.9, s_ood=0.1, threshold=0.5,
         nearest_out_cluster_id=None, nearest_out_category=None, reason="in_domain"))
