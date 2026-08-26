@@ -288,16 +288,6 @@ const RAG_PARAMS: RagParam[] = [
     note: 'CPU 문항당 96초 실측으로 기본 Off — GPU 확보 시 재검증(README 2.4)',
   },
   {
-    key: 'use_query_planner', label: '쿼리 플래너(분해+intent 한 콜)', group: 'retrieval', control: 'toggle',
-    apply_timing: '무중단',
-    note: 'gpt-5.6-luna structured output (100문항 joint 89% 실측)',
-  },
-  {
-    key: 'use_query_decomposition', label: '복합 질문 분해(플래너 Off 폴백)', group: 'retrieval',
-    control: 'toggle', apply_timing: '무중단',
-    note: '플래너를 껐을 때만 쓰는 HCX 분해 경로',
-  },
-  {
     key: 'use_source_recheck', label: '답변 사후 검증(전 답변 1콜)', group: 'generation',
     control: 'toggle', apply_timing: '무중단',
     note: '마커 오표기(출처 소실 54% 실측)를 별도 LLM 판정으로 복구',
@@ -309,8 +299,6 @@ let currentValues: Record<string, ParamValue> = {
   k_final: 5,
   min_top1_score: 0.35,
   use_reranker: false,
-  use_query_planner: true,
-  use_query_decomposition: true,
   use_source_recheck: true,
 }
 
@@ -338,8 +326,8 @@ let gate: RagGate = { ...EMPTY_GATE }
 const history: RagHistoryEntry[] = [
   {
     id: 'rp_20260730_1420', changed_at: '2026-07-30T14:20:00+09:00',
-    summary: '복합 질문 분해 Off → On', actor: 'admin',
-    reason: '하위 요구 누락 개선 · 분해셋 38건 검증',
+    summary: '1차 후보 수 20 → 30', actor: 'admin',
+    reason: '후보 폭을 넓혀 Recall 확인 · 지연 영향 없음',
   },
   {
     id: 'rp_20260728_1105', changed_at: '2026-07-28T11:05:00+09:00',
@@ -355,7 +343,7 @@ const history: RagHistoryEntry[] = [
 
 /** 롤백 대상 시점의 값. 목이라 이력 id별 스냅샷만 들고 있는다 */
 const historyValues: Record<string, Record<string, ParamValue>> = {
-  rp_20260730_1420: { ...currentValues, use_query_planner: false },
+  rp_20260730_1420: { ...currentValues, k_candidates: 30 },
   rp_20260728_1105: { ...currentValues, use_reranker: true, k_final: 7 },
   rp_20260728_1040: { ...currentValues, min_top1_score: 0.3 },
 }

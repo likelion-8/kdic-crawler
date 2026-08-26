@@ -66,5 +66,22 @@ def test_html_noise_does_not_trigger_change():
     assert r["unchanged"] == ["dp_protlmts"]
 
 
+def test_progress_reports_every_page_once():
+    """진행률(%)의 근거 — 건너뛴 페이지·실패한 페이지도 한 번씩 세야 done 이 total 에 닿는다.
+    한 갈래라도 빠지면 화면 진행률이 100%에 못 미친 채 끝난다."""
+    dyn = {"id": "uc_bkrp_fndt", "url": "https://x/t", "dyn_table": True}
+    bad = {"id": "broken", "url": "https://x/b"}
+
+    def fetch(url):
+        if url.endswith("/b"):
+            raise RuntimeError("timeout")
+        return HTML_A
+
+    seen = []
+    change_detect.detect([PAGE, dyn, bad], fetch=fetch, saved={"dp_protlmts": _hash_of(HTML_A)},
+                         sleep=None, on_progress=lambda done, total: seen.append((done, total)))
+    assert seen == [(1, 3), (2, 3), (3, 3)]
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))

@@ -37,12 +37,15 @@ def _text_of(page_id: str, html: str) -> str:
 
 
 def detect(pages: list, *, fetch: Callable[[str], str], saved: dict,
-           sleep: Optional[Callable[[float], None]] = time.sleep) -> dict:
+           sleep: Optional[Callable[[float], None]] = time.sleep,
+           on_progress: Optional[Callable[[int, int], None]] = None) -> dict:
     """정적 페이지를 다시 읽어 저장 해시와 대조한다.
 
     pages : inventory.PAGES 항목들({id,url,expect?,dyn_table?})
     fetch : url -> html
     saved : page_id -> 저장된 content_sha256 (documents 테이블에서 읽어 넘긴다)
+    on_progress : 페이지 하나를 끝낼 때마다 (처리한 수, 전체 수). 워커가 잡 단계에 적어
+                  화면이 %를 그린다 — 58페이지를 한 단계 안에서 도니 상태만으론 진행이 안 보인다
 
     돌려주는 dict:
       changed   본문 해시가 다른 page_id 목록 → 호출자가 PENDING 으로 표시
@@ -54,10 +57,11 @@ def detect(pages: list, *, fetch: Callable[[str], str], saved: dict,
     from hashing import content_sha256
 
     changed, unchanged, failed, skipped = [], [], [], []
-    for p in pages:
+    for done, p in enumerate(pages, 1):
         pid = p["id"]
         if p.get("dyn_table"):
             skipped.append(pid)
+            if on_progress: on_progress(done, len(pages))
             continue
         html, last = None, ""
         for _attempt in range(3):
@@ -76,6 +80,7 @@ def detect(pages: list, *, fetch: Callable[[str], str], saved: dict,
             break
         if html is None:
             failed.append({"page_id": pid, "reason": last})
+            if on_progress: on_progress(done, len(pages))
             continue
         new_hash = content_sha256(_text_of(pid, html))
         if saved.get(pid) is None:
@@ -85,6 +90,7 @@ def detect(pages: list, *, fetch: Callable[[str], str], saved: dict,
             changed.append(pid)
         else:
             unchanged.append(pid)
+        if on_progress: on_progress(done, len(pages))
         if sleep: sleep(POLITE_SLEEP_S)
 
     logger.info("변경 감지: 변경 %d · 동일 %d · 실패 %d · 제외 %d",
@@ -92,7 +98,7 @@ def detect(pages: list, *, fetch: Callable[[str], str], saved: dict,
     return {"changed": changed, "unchanged": unchanged, "failed": failed, "skipped": skipped}
 
 
-def run(session) -> dict:
+def run(session, on_progress: Optional[Callable[[int, int], None]] = None) -> dict:
     """실제 실행 — 저장 해시를 읽고, 감지하고, PENDING 을 표시한다. 워커·API 가 부른다.
 
     PENDING 표시는 '이번에 변경으로 판정된 것'으로 **덮어쓴다**: 이전에 PENDING 이었는데
@@ -117,7 +123,7 @@ def run(session) -> dict:
     saved = {r.page_id: r.content_sha256 for r in rows}
     reindexing = {r.page_id for r in rows if r.index_status == "REINDEXING"}
 
-    result = detect(PAGES, fetch=fetch, saved=saved)
+    result = detect(PAGES, fetch=fetch, saved=saved, on_progress=on_progress)
 
     to_pending = [pid for pid in result["changed"] if pid not in reindexing]
     to_clear = [pid for pid in result["unchanged"] if pid not in reindexing]

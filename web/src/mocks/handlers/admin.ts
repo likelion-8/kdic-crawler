@@ -121,7 +121,16 @@ function progressed(job: PipelineJob): PipelineJob {
   const doneCount = Math.floor(elapsed / STEP_MS)
   const steps = PIPELINE_STEPS.map((name, i) => {
     if (i < doneCount) return { name, status: 'SUCCESS' as const, elapsed_ms: STEP_MS }
-    if (i === doneCount) return { name, status: 'RUNNING' as const }
+    if (i === doneCount) {
+      // 진행 중 단계의 처리 건수(2026-08-26) — 실제 워커는 수집·변경 감지 단계에서만 준다.
+      // 목은 58페이지를 도는 셈 치고 경과로 환산해 화면의 %가 움직이는지 볼 수 있게 한다
+      const total = 58
+      return {
+        name,
+        status: 'RUNNING' as const,
+        progress: { done: Math.floor(((elapsed % STEP_MS) / STEP_MS) * total), total },
+      }
+    }
     return { name, status: 'QUEUED' as const }
   })
   const finished = doneCount >= PIPELINE_STEPS.length

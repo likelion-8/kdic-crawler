@@ -9,7 +9,7 @@ import { Button, EmptyState, InfoHint, Loading, Notice, RefreshBar } from '../..
 import { Checkbox } from '@/components/shadcn/checkbox'
 import { isApiRequestError } from '../../../lib/api/client'
 import { formatTarget } from '../../../lib/format'
-import { changesQueryKey, fetchChanges, formatMonthDay, recheckChanges } from './api'
+import { changesQueryKey, fetchChanges, formatMonthDay, jobsQueryKey, recheckChanges } from './api'
 import type { ChangedPagesResponse } from './api'
 
 const CARD_CLASS = 'rounded-md border bg-card p-5'
@@ -21,9 +21,21 @@ export interface ChangedPagesCardProps {
   disabledReason?: string
   /** OPERATOR 미만이면 실행 버튼을 숨긴다. 서버가 최종 판정이므로 403도 따로 처리한다 */
   canRun: boolean
+  /** 변경 감지 잡이 진행 중인가. 부모가 폴링하는 잡에서 온다 — 이 카드의 안내문은
+   * [지금 확인]을 누른 흔적(로컬 상태)이 아니라 **잡 상태**로 살아 있어야 한다.
+   * 다른 메뉴에 갔다 오면 로컬 상태는 사라지는데 잡은 1~2분 더 돈다 */
+  detecting?: boolean
+  /** 진행률 문구(`42% · 수집 12/58건`). 아직 셀 수 없는 구간이면 빈 문자열 */
+  detectProgress?: string
 }
 
-export function ChangedPagesCard({ onRecrawl, disabledReason, canRun }: ChangedPagesCardProps) {
+export function ChangedPagesCard({
+  onRecrawl,
+  disabledReason,
+  canRun,
+  detecting,
+  detectProgress,
+}: ChangedPagesCardProps) {
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState<string[]>([])
 
@@ -36,7 +48,13 @@ export function ChangedPagesCard({ onRecrawl, disabledReason, canRun }: ChangedP
 
   const recheck = useMutation({
     mutationFn: recheckChanges,
-    onSuccess: (data: ChangedPagesResponse) => queryClient.setQueryData(changesQueryKey, data),
+    onSuccess: (data: ChangedPagesResponse) => {
+      queryClient.setQueryData(changesQueryKey, data)
+      // 방금 만든 감지 잡을 작업 목록에도 즉시 반영한다(2026-08-26). 안 하면 목록 캐시가
+      // 30초 fresh 라 재요청이 안 나가고, 부모가 진행 중 잡을 못 찾아 파이프라인 카드도
+      // 폴링도 안 뜬다 — 다른 메뉴에 갔다 와야 그제서야 도는 게 보였다.
+      if (data.job_queued) void queryClient.invalidateQueries({ queryKey: jobsQueryKey })
+    },
   })
 
   if (changes.isPending) {
@@ -98,10 +116,16 @@ export function ChangedPagesCard({ onRecrawl, disabledReason, canRun }: ChangedP
       {/* [지금 확인]은 변경 감지 잡을 만든다(2026-08-18, src/change_detect.py). 워커가 정적
           페이지를 다시 읽어 본문 해시를 대조하고 바뀐 것만 표시한다 — 저장·색인은 안 한다.
           결과는 파이프라인 카드에서 진행을 보고, 끝나면 이 목록이 갱신된다 */}
-      {recheck.data?.job_queued && (
-        <p className="mt-2 text-xs text-muted-foreground" role="status">
-          변경 감지를 시작했습니다 — 정적 페이지를 다시 읽어 본문을 대조합니다(30초 안팎). 끝나면
-          이 목록이 갱신됩니다
+      {(detecting || recheck.data?.job_queued) && (
+        <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground" role="status">
+          {/* 진행 중 상태 점 — 파이프라인 카드와 같은 UI. 진행률을 못 셀 때도 '도는 중'임을
+              이 점이 알린다(색만이 아니라 뒤따르는 문장과 병기) */}
+          <span className="pulse-dot size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+          {/* 진행률은 부모(파이프라인 카드)가 폴링하는 잡에서 온다 — 없으면 아직 워커가 잡지
+              않은 것이라 종전 안내를 그대로 쓴다 */}
+          {detectProgress
+            ? `변경 감지를 진행 중입니다 — ${detectProgress}. 끝나면 이 목록이 갱신됩니다`
+            : '변경 감지를 진행 중입니다 — 정적 페이지 58건을 다시 읽어 본문을 대조합니다(1~2분). 끝나면 이 목록이 갱신됩니다'}
         </p>
       )}
       {recheck.data && recheck.data.job_queued === false && (
