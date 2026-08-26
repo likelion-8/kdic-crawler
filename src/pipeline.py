@@ -36,6 +36,7 @@ from prompt_builder import (
 from llm_client import call_hyperclova
 from observability import (
     current_trace_id, flush as flush_traces, observe, record_gate1_span, record_gate2_span,
+    record_gate3_span,
 )
 from performance import measure_time
 from rag_logger import log_rag_run
@@ -113,7 +114,13 @@ def _answer_one(query, timings, intent=None):
     hybrid_routing = get_param("use_type_routing", USE_TYPE_ROUTING)
     if not hybrid_routing:
         threshold = get_param("min_top1_score", MIN_TOP1_SCORE)
-        if gate3_exit(candidates, threshold):
+        top1 = candidates[0][1] if candidates else None
+        exited = gate3_exit(candidates, threshold)
+        # 통과도 남긴다 — 임계값 조정의 핵심 표본은 아슬아슬하게 통과한 질문이다.
+        record_gate3_span(query, exited=exited, top1_score=top1, threshold=threshold,
+                          reason=(None if not exited else
+                                  "no_candidates" if not candidates else "low_retrieval_relevance"))
+        if exited:
             return NO_RELEVANT_EVIDENCE_MESSAGE
 
     with measure_time(timings, "reranking", accumulate=True):

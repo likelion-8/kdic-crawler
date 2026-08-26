@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from observability import observe, update_current_generation
+from observability import observe, update_current_generation, usage_details
 
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
@@ -90,15 +90,24 @@ def call_hyperclova(messages, *, deterministic=False, seed=None):
     update_current_generation(model=os.environ.get("CLOVA_MODEL"))
     client = _get_eval_client(seed or EVAL_SEED) if deterministic else _get_client()
     response = client.invoke(messages)
+    update_current_generation(usage_details=usage_details(getattr(response, "usage_metadata", None)))
     return response.content
 
 
-def stream_hyperclova(messages):
+def stream_hyperclova(messages, usage=None):
     """call_hyperclova와 같은 클라이언트·설정을 쓰되 응답을 토큰 조각(str)으로 순차 yield한다.
     SSE 스트리밍(api/rag/sse.py)이 이 제너레이터를 소비한다 — .invoke() 대신 .stream()을 쓴다.
     각 청크의 content만 흘리고 빈 조각은 건너뛴다. 호출부가 조각을 이어붙이면 call_hyperclova의
-    반환 문자열과 동일해야 한다(동일 모델·프롬프트 기준)."""
-    for chunk in _get_client().stream(messages):
+    반환 문자열과 동일해야 한다(동일 모델·프롬프트 기준).
+
+    usage: 넘기면 토큰 사용량({input_tokens, output_tokens, total_tokens})을 여기 채워 준다.
+    yield 로 돌려주지 않고 out 인자를 쓰는 이유는 위의 불변식 때문이다 — 조각 사이에 다른
+    것을 흘리면 '이어붙이면 같은 문자열'이 깨진다. CLOVA Studio 는 OpenAI 호환
+    stream_options.include_usage 를 지원해(2026-08-26 실측: input 23 / output 26) 마지막
+    청크에 usage_metadata 가 실려 온다 — 추정이 아니라 실제 값이다."""
+    for chunk in _get_client().stream(messages, stream_usage=True):
+        if usage is not None and getattr(chunk, "usage_metadata", None):
+            usage.update(chunk.usage_metadata)
         text = getattr(chunk, "content", "") or ""
         if text:
             yield text

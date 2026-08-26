@@ -18,7 +18,7 @@ import os
 
 from dotenv import load_dotenv
 
-from observability import observe, update_current_span
+from observability import observe, record_openai_generation, update_current_span
 from retrieval import DEFAULT_DENSE_MODEL, ROOT, _encode_query, _get_model
 
 load_dotenv(ROOT / ".env")  # OPENAI_API_KEY 등 로드(intent 분류 OpenAI 호출용)
@@ -212,6 +212,7 @@ def classify_intent(query):
         messages = [{"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": query}]
         completion = _parse_intent(_get_openai_client(), _OPENAI_INTENT_MODEL, messages)
+        record_openai_generation("classify_intent_llm", completion, input=messages)
         return completion.choices[0].message.parsed.intent
     except Exception:
         return "informational"

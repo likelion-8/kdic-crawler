@@ -58,13 +58,13 @@ def _no_cache(monkeypatch):
     monkeypatch.setattr(sse.answer, "guardrail_hit", lambda *a, **kw: None)
     monkeypatch.setattr(sse.answer, "cache_get", lambda _q: None)
     monkeypatch.setattr(sse.answer, "fixed_gate_response", lambda *a: _resp())
-    monkeypatch.setattr("observability.record_trace", lambda *a, **kw: None)
 
 
 def test_gate1_exit_records_the_rule_label(captured, monkeypatch):
     _no_cache(monkeypatch)
     monkeypatch.setattr("gate1.run_gate1", lambda _q: SimpleNamespace(
-        action="EXIT", label="FIXED_GREETING", rule_id="greet_01", reason="matched"))
+        action="EXIT", label="FIXED_GREETING", rule_id="greet_01", reason="matched",
+        canonical_text=_q, rule_text=_q))
 
     list(sse.chat_event_stream("안녕", "sess", "req"))
 
@@ -75,7 +75,8 @@ def test_gate1_exit_records_the_rule_label(captured, monkeypatch):
 def test_gate2_exit_records_the_path_without_the_internal_category(captured, monkeypatch):
     _no_cache(monkeypatch)
     monkeypatch.setattr("gate1.run_gate1", lambda _q: SimpleNamespace(
-        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched"))
+        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched",
+        canonical_text=_q, rule_text=_q))
     monkeypatch.setattr("gate2.run_gate2", lambda _q: SimpleNamespace(
         action="EXIT", s_id=0.1, s_ood=0.8, threshold=0.5,
         nearest_out_cluster_id="c1", nearest_out_category="일상잡담", reason="out_of_domain"))
@@ -94,7 +95,8 @@ def test_gate2_exit_records_the_path_without_the_internal_category(captured, mon
 def _gates_open(monkeypatch):
     _no_cache(monkeypatch)
     monkeypatch.setattr("gate1.run_gate1", lambda _q: SimpleNamespace(
-        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched"))
+        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched",
+        canonical_text=_q, rule_text=_q))
     monkeypatch.setattr("gate2.run_gate2", lambda _q: SimpleNamespace(
         action="CONTINUE", s_id=0.9, s_ood=0.1, threshold=0.5,
         nearest_out_cluster_id=None, nearest_out_category=None, reason="in_domain"))
@@ -142,7 +144,8 @@ def test_clarification_runs_before_gate2(captured, monkeypatch):
     Gate 2 가 범위외로 오차단하므로(실측 s_id 0.536 < s_ood 0.668), 뒤에 두면 못 나간다."""
     _no_cache(monkeypatch)
     monkeypatch.setattr("gate1.run_gate1", lambda _q: SimpleNamespace(
-        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched"))
+        action="CONTINUE", label="CONTINUE", rule_id=None, reason="no_rule_matched",
+        canonical_text=_q, rule_text=_q))
     monkeypatch.setattr("gate2.run_gate2", lambda _q: SimpleNamespace(
         action="EXIT", s_id=0.536, s_ood=0.668, threshold=0.66,
         nearest_out_cluster_id="human_agent_proxy_request",

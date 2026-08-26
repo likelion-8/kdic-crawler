@@ -132,13 +132,38 @@ def test_dashboard_rejects_unsupported_ranges(value):
         admin_dashboard._range_days(value)
 
 
-def test_resources_do_not_invent_missing_token_or_cost_measurements():
+def test_resources_do_not_invent_numbers_when_langfuse_is_unreachable(monkeypatch):
+    """2026-08-26 전에는 원천이 아예 없어 항상 빈 응답이었다. 지금은 Langfuse 가 원천이지만,
+    못 읽는 배포(키 미설정·조회 실패)에서는 여전히 0 을 실측값처럼 채우지 않는다."""
+    monkeypatch.setattr(admin_dashboard, "llm_usage", lambda *a, **kw: None)
+
     response = admin_dashboard.dashboard_resources(_admin(), object(), 30)
+
     assert response["range"] == 30
     assert response["tokens"] == []
     assert response["cost"] == []
     assert response["cost_breakdown"] == []
     assert response["today"]["tokens_text"] == "집계 원천 없음"
+    assert "Langfuse 미연결" in response["cost_caption"]
+
+
+def test_resources_read_langfuse_and_never_call_it_twice_for_the_same_window(monkeypatch):
+    """질의는 둘뿐이다 — 기간 일별(UTC 버킷) + 오늘(KST). 화면 한 번 그리는 데 그 이상
+    부르면 관리자 페이지가 Langfuse 왕복에 묶인다."""
+    calls = []
+
+    def fake(from_dt, to_dt, *, daily=False):
+        calls.append(daily)
+        return [{"date": to_dt.date().isoformat(), "name": "plan_query_llm",
+                 "model": "gpt-5.6-luna", "input": 1_000_000, "output": 0}]
+
+    monkeypatch.setattr(admin_dashboard, "llm_usage", fake)
+
+    response = admin_dashboard.dashboard_resources(_admin(), object(), 7)
+
+    assert calls == [True, False]        # 일별 1회 + 오늘 1회
+    assert len(response["tokens"]) == 7  # 빈 날짜도 축에 남는다
+    assert response["today"]["cost_text"] == "$0.2000"
 
 
 # ---------------------------------------------------------------- Ops policy

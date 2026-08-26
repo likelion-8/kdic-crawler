@@ -27,7 +27,7 @@ from typing import List, Literal
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from observability import observe
+from observability import observe, record_openai_generation
 from retrieval import ROOT  # .env 위치 재사용(다른 모듈과 동일 경로)
 
 load_dotenv(ROOT / ".env")
@@ -150,6 +150,7 @@ def plan_query(query):
         messages = [{"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": query}]
         completion = _parse(_get_client(), _PLANNER_MODEL, messages)
+        record_openai_generation("plan_query_llm", completion, input=messages)
         plan = completion.choices[0].message.parsed
         if plan is None or not plan.items:
             logger.warning("플래너 응답이 비어 폴백(분해 없음) — 질문: %r", query)

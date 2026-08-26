@@ -53,6 +53,7 @@ import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+from observability import record_openai_generation
 from retrieval import ROOT  # .env 위치 재사용(query_planner 와 동일)
 
 load_dotenv(ROOT / ".env")
@@ -170,6 +171,7 @@ def _run(query: str, history_text: str) -> RewriteResult | None:
              "content": f"[이전 대화]\n{history_text}\n\n[새 질문]\n{query}"},
         ]
         r = _parse(_get_client(), _MODEL, messages)
+        record_openai_generation("triage_query_llm", r, input=messages)
         parsed = r.choices[0].message.parsed
         if parsed is None:
             logger.warning("재작성 응답이 비어 원문으로 계속 — 질문: %r", query)
