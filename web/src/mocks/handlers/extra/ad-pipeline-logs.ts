@@ -130,6 +130,8 @@ export interface ConversationLogRow {
   question_masked: string
   /** 플래너 전에 끝난 건(캐시 적중·가드레일 거절·Gate EXIT)은 null */
   intent: Intent | null
+  /** 성격이 없는 행이 왜 비었는지 — 표의 분류 칸이 이 값을 대신 적는다. 평소 경로는 null */
+  served_from?: 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'gate3' | 'clarify' | null
   status: LogStatus
   feedback: FeedbackVote | null
   /** 실패 건은 null(화면에서 '—') */
@@ -249,13 +251,13 @@ const rows: ConversationLogRow[] = [
   {
     // 위 4a01-77bc 와 같은 질문 — 저장해 둔 답을 그대로 돌려준 건이라 소요가 1초대다
     request_id: '2b77-05e1', occurred_at: at('09:40'), question_masked: '예금자보호 한도가 얼마인가요?',
-    intent: null, status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.2,
+    intent: null, served_from: 'cache', status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.2,
     triage: 'NONE',
   },
   {
     // Gate 1 규칙 필터가 인사로 판정해 즉답한 건 — LLM 을 안 불러 0.1초다
     request_id: '9c40-1d22', occurred_at: at('09:39'), question_masked: '안녕하세요',
-    intent: null, status: 'NORMAL', feedback: null, source_count: null, latency_s: 0.1,
+    intent: null, served_from: 'gate1', status: 'NORMAL', feedback: null, source_count: null, latency_s: 0.1,
     triage: 'NONE',
   },
   {
@@ -275,7 +277,7 @@ const rows: ConversationLogRow[] = [
   {
     // 업무 되묻기 — 어느 업무인지 정해지지 않아 선택지로 되물었다. 검색·생성을 안 타 1초대
     request_id: 'f733-6b02', occurred_at: at('09:33'), question_masked: '신청 링크 알려줘',
-    intent: null, status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.1,
+    intent: null, served_from: 'clarify', status: 'NORMAL', feedback: null, source_count: null, latency_s: 1.1,
     triage: 'NONE',
   },
   {
@@ -379,8 +381,8 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
           question: '착오송금 반환지원 신청 방법은 무엇인가요?',
           intent: 'civil_petition',
           top: [
-            { chunk_id: 'faq_msdr_apply#c1', page_id: 'faq_msdr_apply', score: 0.882 },
-            { chunk_id: 'kmrs_apply_mthd#c1', page_id: 'kmrs_apply_mthd', score: 0.804 },
+            { chunk_id: 'faq_msdr_apply#2', page_id: 'faq_msdr_apply', score: 0.882 },
+            { chunk_id: 'faq_msdr_apply#5', page_id: 'faq_msdr_apply', score: 0.804 },
           ],
           marker: true, used_source: true, kind: 'grounded', appropriate: true, normalized: false,
           exit_at: null, gate3_reason: null, retrieval_top1_score: null, retrieval_threshold: null,
@@ -388,7 +390,7 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
         {
           question: '착오송금 반환지원 신청에 필요한 서류는 무엇인가요?',
           intent: 'civil_petition',
-          top: [{ chunk_id: 'sender_docs#c1', page_id: 'sender_docs', score: 0.641 }],
+          top: [{ chunk_id: 'sender_docs#1', page_id: 'sender_docs', score: 0.641 }],
           marker: false, used_source: false, kind: 'refusal', appropriate: true, normalized: false,
           exit_at: null, gate3_reason: null, retrieval_top1_score: null, retrieval_threshold: null,
         },
@@ -429,7 +431,9 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
   '7d1a-93f2': {
     classification: {
       intent: 'civil_petition', business_function: '착오송금 반환 신청', question_type: 'fact',
-      source_used: true, marker: 'SOURCE_USED', normalized: false,
+      // 마커가 남아 있는 건 — 2026-08-20 이전 대화이거나, AD-008 게시 프롬프트가 아직
+      // 마커를 요구하는 경우다(파싱은 하위호환으로 유지). 대괄호까지가 서버가 내리는 값이다
+      source_used: true, marker: '[SOURCE_USED]', normalized: false,
     },
     langfuse: { id: 'tr_7d1a93f2', url: 'https://langfuse.example.com/trace/tr_7d1a93f2' },
     total_latency_ms: 5900,
@@ -457,7 +461,7 @@ const DETAIL_OVERRIDE: Record<string, Partial<ConversationLogDetail>> = {
   '8f2c-41ab': {
     classification: {
       intent: 'civil_petition', business_function: '예금보험금 안내', question_type: 'link_guide',
-      source_used: false, marker: 'SOURCE_UNUSED', normalized: false,
+      source_used: false, marker: null, normalized: false,
     },
     langfuse: { id: 'tr_8f2c41ab', url: 'https://langfuse.example.com/trace/tr_8f2c41ab' },
     total_latency_ms: null,
@@ -491,11 +495,18 @@ function detailOf(row: ConversationLogRow): ConversationLogDetail {
       subs: [{
         question: row.question_masked,
         intent: row.intent,
-        top: Array.from({ length: row.source_count ?? 0 }, (_, i) => ({
-          chunk_id: `dp_protlmts#c${i + 1}`,
-          page_id: i === 0 ? 'dp_protlmts' : `dp_faq_page_${i}`,
-          score: Number((0.87 - i * 0.06).toFixed(3)),
-        })),
+        // chunk_id 는 '{page_id}#{번호}' 규약이다(api/rag/observation.page_of · chunks_all.jsonl).
+        // 종전에는 chunk_id 앞부분과 page_id 가 서로 달라(dp_protlmts#c2 / dp_faq_page_1) 실제로
+        // 올 수 없는 값이었다. 같은 페이지에서 청크가 여럿 뽑히는 흔한 경우도 함께 만든다 —
+        // 화면이 그 둘을 구분해 그리는지 목에서 바로 보이게(2026-08-26).
+        top: Array.from({ length: row.source_count ?? 0 }, (_, i) => {
+          const page = i % 2 === 0 ? 'dp_protlmts' : `dp_faq_page_${Math.ceil(i / 2)}`
+          return {
+            chunk_id: `${page}#${i}`,
+            page_id: page,
+            score: Number((0.87 - i * 0.06).toFixed(3)),
+          }
+        }),
         marker: (row.source_count ?? 0) > 0,
         used_source: (row.source_count ?? 0) > 0,
         kind: (row.source_count ?? 0) > 0 ? 'grounded' : 'refusal',
@@ -509,7 +520,10 @@ function detailOf(row: ConversationLogRow): ConversationLogDetail {
       business_function: row.status === 'OUT_OF_SCOPE' ? null : '예금자보호제도',
       question_type: row.status === 'OUT_OF_SCOPE' ? 'out_of_scope' : 'faq',
       source_used: (row.source_count ?? 0) > 0,
-      marker: (row.source_count ?? 0) > 0 ? 'SOURCE_USED' : 'SOURCE_UNUSED',
+      // 2026-08-20(exp/hcx007-no-marker-v1) 이후 프롬프트에서 마커 지시를 뺐다 — 정상 응답엔
+      // 마커가 없어 관측에 null 로 남는다. 판정은 사후검증이 한다(api/rag/sse.py _MarkerStripper).
+      // 'SOURCE_UNUSED' 는 백엔드에 없는 값이었다(실제 값은 '[SOURCE_USED]' | '[NO_SOURCE]' | '혼재')
+      marker: null,
       normalized: false,
     },
     // 평소 경로는 검색·생성을 탄다. 플래너 앞에서 끝난 건만 값이 있다(DETAIL_OVERRIDE 참고)
