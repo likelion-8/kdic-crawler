@@ -14,6 +14,17 @@ import { formatDate, formatTime } from '../../../lib/format'
 export type LogStatus = 'NORMAL' | 'OUT_OF_SCOPE' | 'FAILED'
 export type FeedbackVote = 'up' | 'down'
 
+/** 답변을 낸 경로. cache·guardrail·gate1·gate2·clarify 다섯은 전부 검색·생성을 타지 않고
+ *  끝나 성격·근거가 없다(api/rag/sse.py 0-2 ~ 1-1). clarify(업무 되묻기, 2026-08-24)만 플래너
+ *  뒤에서도 끝날 수 있다(첫 턴은 1-1, 후속 턴은 0-2.7) — 그 경우에도 log_run 에 하위 질문을
+ *  넘기지 않아 intent 는 저장되지 않는다.
+ *
+ *  gate3(검색 관련도 게이트, 2026-08-25)만 다르다 — **검색은 실제로 돈다.** 플래너 뒤,
+ *  하위 질문별로 route_search_chunks 를 부른 뒤 원본 top-1 점수로 판정해 생성만 건너뛰므로,
+ *  observation 이 null 이 아니라 실제 점수(subs[].retrieval_top1_score)를 담고 내려온다 —
+ *  다른 넷과 같은 취급으로 "관측 없음"이라 읽으면 안 된다. */
+export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'gate3' | 'clarify'
+
 export interface ConversationLogRow {
   request_id: string
   occurred_at: string
@@ -21,6 +32,13 @@ export interface ConversationLogRow {
   question_masked: string
   /** 플래너 전에 끝난 건(캐시 적중·가드레일 거절·Gate EXIT·초기 실패)은 null 이다 */
   intent: Intent | null
+  /**
+   * 이 답변을 낸 경로. 상세뿐 아니라 **목록에도** 필요하다 — intent 가 null 인 행은 표의
+   * 분류 칸이 '—' 한 글자였고, 캐시로 답한 건인지 게이트에 걸린 건인지 열어 보기 전에는
+   * 알 수 없었다(2026-08-26). 평소 경로는 null.
+   * 서버가 아직 안 내려주는 배포에서는 undefined — 그때는 종전처럼 '—'만 그린다.
+   */
+  served_from?: ServedFrom | null
   status: LogStatus
   feedback: FeedbackVote | null
   source_count: number | null
@@ -72,17 +90,6 @@ export interface LogErrorDetail {
   /** rag_runs.root_cause */
   root_cause: string | null
 }
-
-/** 답변을 낸 경로. cache·guardrail·gate1·gate2·clarify 다섯은 전부 검색·생성을 타지 않고
- *  끝나 성격·근거가 없다(api/rag/sse.py 0-2 ~ 1-1). clarify(업무 되묻기, 2026-08-24)만 플래너
- *  뒤에서도 끝날 수 있다(첫 턴은 1-1, 후속 턴은 0-2.7) — 그 경우에도 log_run 에 하위 질문을
- *  넘기지 않아 intent 는 저장되지 않는다.
- *
- *  gate3(검색 관련도 게이트, 2026-08-25)만 다르다 — **검색은 실제로 돈다.** 플래너 뒤,
- *  하위 질문별로 route_search_chunks 를 부른 뒤 원본 top-1 점수로 판정해 생성만 건너뛰므로,
- *  observation 이 null 이 아니라 실제 점수(subs[].retrieval_top1_score)를 담고 내려온다 —
- *  다른 넷과 같은 취급으로 "관측 없음"이라 읽으면 안 된다. */
-export type ServedFrom = 'cache' | 'guardrail' | 'gate1' | 'gate2' | 'gate3' | 'clarify'
 
 /** rag_runs.observation 의 subs[].top[] 원소. 모양의 정본은 api/rag/observation.py */
 export interface ObservedChunk {
@@ -340,6 +347,17 @@ export const LOG_STATUS_TONE: Record<LogStatus, 'green' | 'orange' | 'red'> = {
 export const TRIAGE_LABEL: Record<TriageStatus, string> = {
   NONE: '미확인',
   RESOLVED: '처리 완료',
+}
+
+/** 답변을 낸 경로 6종. 목록의 분류 칸과 상세의 '처리 경로' 줄이 같은 문구를 쓴다.
+ *  gate3만 검색은 실제로 돌고 생성만 건너뛴다 — 나머지 다섯은 검색·생성 둘 다 안 탄다. */
+export const SERVED_FROM_LABEL: Record<ServedFrom, string> = {
+  cache: '캐시 응답',
+  guardrail: '가드레일 차단',
+  gate1: '범위 판정 (Gate 1)',
+  gate2: '범위 판정 (Gate 2)',
+  gate3: '검색 관련도 판정 (Gate 3)',
+  clarify: '업무 되묻기',
 }
 
 export const FEEDBACK_LABEL: Record<FeedbackVote, string> = {

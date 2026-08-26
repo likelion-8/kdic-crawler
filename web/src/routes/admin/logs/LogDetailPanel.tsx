@@ -10,6 +10,7 @@ import { INTENT_LABEL, QUESTION_TYPE_LABEL } from '../../../lib/codes'
 import {
   FEEDBACK_LABEL,
   LOG_STATUS_LABEL,
+  SERVED_FROM_LABEL,
   formatMonthDayTime,
 } from './api'
 import type {
@@ -76,6 +77,31 @@ function TraceLink({ trace }: { trace: LangfuseTrace | null }) {
   )
 }
 
+/** 이름표 붙은 줄 묶음 — 최상위 「분류」와 하위 질문 판정이 같은 모양을 쓴다.
+ *  값을 '·'로 이어 붙이지 않는 것이 요점이다(어느 값이 성격인지 이름으로 읽힌다).
+ *
+ *  값이 없어도 줄을 빼지 않고 '—'로 채운다(2026-08-26) — 줄을 감추면 건마다 구성이 달라져
+ *  같은 자리를 눈으로 찾을 수 없고, '이 건에는 업무가 없다'와 '이 화면은 업무를 안 보여준다'가
+ *  구분되지 않는다. null 을 넘기면 여기서 한 번에 '—'가 된다. */
+function FieldList({ rows }: { rows: [string, ReactNode][] }) {
+  return (
+    <dl className="space-y-1.5 text-[13px]">
+      {rows.map(([label, value]) => (
+        <div key={label} className="grid grid-cols-[120px_1fr] gap-2.5">
+          <dt className="text-muted-foreground">{label}</dt>
+          <dd className="break-keep">
+            {value === null || value === undefined || value === '' ? (
+              <span className="text-muted-foreground">—</span>
+            ) : (
+              value
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 /** 근거가 빈 하위 질문 한 줄 설명. '검색이 아무것도 못 찾음(지식베이스 공백 후보)'과
  *  'Gate3가 관련도 낮다고 판정해 스스로 멈춤(질문 표현 문제일 수도 있음)'은 관리자가 다음에
  *  할 일이 다르다(전자는 AD-002 지식베이스 점검, 후자는 질문 표현·임계값 점검) — 뭉뚱그려
@@ -107,33 +133,81 @@ function EmptyEvidenceNote({ sub }: { sub: ObservedSub }) {
  * 검색 후보 전체와 단계별 소요는 Langfuse 전담이다(2026-08-04 팀 결정). 여기 두는 것은
  * '근거로 실제 쓴 페이지'까지이고, 그 이상은 추적 링크로 보낸다.
  */
+/** 근거 청크 목록 — 같은 페이지에서 여러 청크가 뽑히는 일이 흔하다.
+ *
+ * page_id 만 적으면 서로 다른 청크가 'faq_top10' 두 줄로 똑같이 보인다(2026-08-26 제보).
+ * chunk_id 는 '{page_id}#{번호}' 규약이라(api/rag/observation.page_of) 그 번호가 곧 구분자다.
+ * 번호는 잘리면 안 되므로 truncate 는 page_id 쪽에만 걸고 번호는 shrink-0 으로 붙인다.
+ * 청크가 하나뿐인 페이지는 chunk_id 에 '#' 이 없어 번호도 없다(data/chunks_all.jsonl). */
+function ChunkList({ top }: { top: ObservedSub['top'] }) {
+  return (
+    <ul className="space-y-0.5">
+      {top.map((t) => {
+        const part = t.chunk_id.startsWith(`${t.page_id}#`) ? t.chunk_id.slice(t.page_id.length) : null
+        return (
+          <li key={t.chunk_id} className="grid grid-cols-[1fr_auto] gap-2">
+            <span className="flex min-w-0 font-mono text-xs">
+              <span className="truncate">{t.page_id}</span>
+              {part && <span className="shrink-0 text-muted-foreground">{part}</span>}
+            </span>
+            <span className="tabular-nums text-xs text-muted-foreground">{t.score.toFixed(3)}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/**
+ * 하위 질문 하나의 판정 — 복합 질문에서만 그린다(2026-08-26).
+ *
+ * 최상위 분류는 하위의 **요약**이라('일부 사용 (하위 2개 중 1개)') 어느 하위가 근거를 못 썼는지,
+ * 어느 하위만 본문이 교체됐는지는 여기서만 알 수 있다. 하위마다 조치가 갈리는 게 요점이다 —
+ * 한쪽은 지식베이스 공백(AD-002), 다른 쪽은 프롬프트 문제(AD-008)일 수 있다.
+ * 판정 필드의 null 은 '판정 안 함'이지 '아니오'가 아니라, 값이 없으면 줄을 그리지 않는다.
+ */
+function subVerdictRows(sub: ObservedSub): [string, ReactNode][] {
+  // 하위의 marker 는 최상위와 달리 boolean 이다(문자열 '[SOURCE_USED]' 가 아니다)
+  const marker = sub.marker === null ? '' : ` · 마커 ${sub.marker ? '[SOURCE_USED]' : '[NO_SOURCE]'}`
+  return [
+    ['성격', sub.intent === null ? null : INTENT_LABEL[sub.intent]],
+    // null 은 '판정 안 함'이라 '—'다. false 는 실제로 '안 썼다'는 판정이라 '미사용'으로 적는다
+    ['출처 판정', sub.used_source === null ? null : `${sub.used_source ? '사용' : '미사용'}${marker}`],
+    [
+      '답변 교체',
+      sub.normalized === null ? null : sub.normalized ? '교체됨 · 검증이 근거 밖 내용을 잡음' : '없음',
+    ],
+    ['근거', sub.top.length === 0 ? <EmptyEvidenceNote key="근거" sub={sub} /> : <ChunkList key="근거" top={sub.top} />],
+  ]
+}
+
 function EvidencePanel({ observation }: { observation: RunObservation }) {
+  // 복합 질문은 하위가 각각 독립된 검색·판정을 거친다 — 카드로 떼어 하위 단위로 읽히게 한다.
+  // 하위가 하나뿐이면 최상위 분류가 이미 그 하위의 판정이라 근거만 그린다(같은 값 두 번 금지).
+  const composite = observation.subs.length > 1
   return (
     <div>
-      <h4 className="mb-2 text-xs font-semibold text-muted-foreground">근거</h4>
-      <ul className="space-y-3">
+      <h4 className="mb-2 text-xs font-semibold text-muted-foreground">
+        {composite ? `하위 질문별 판정 · 근거 (${observation.subs.length}개)` : '근거'}
+      </h4>
+      <ol className="space-y-3">
         {observation.subs.map((sub, i) => (
-          <li key={i} className="text-[13px]">
-            {observation.subs.length > 1 && (
-              <p className="mb-1 font-medium">{sub.question}</p>
-            )}
-            {sub.top.length === 0 ? (
+          <li key={i} className={composite ? 'rounded-md border border-border p-3' : 'text-[13px]'}>
+            {composite ? (
+              <>
+                <p className="mb-2 text-[13px] font-semibold">
+                  {i + 1}. {sub.question}
+                </p>
+                <FieldList rows={subVerdictRows(sub)} />
+              </>
+            ) : sub.top.length === 0 ? (
               <EmptyEvidenceNote sub={sub} />
             ) : (
-              <ul className="space-y-0.5">
-                {sub.top.map((t) => (
-                  <li key={t.chunk_id} className="grid grid-cols-[1fr_auto] gap-2">
-                    <span className="truncate font-mono text-xs">{t.page_id}</span>
-                    <span className="tabular-nums text-xs text-muted-foreground">
-                      {t.score.toFixed(3)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <ChunkList top={sub.top} />
             )}
           </li>
         ))}
-      </ul>
+      </ol>
     </div>
   )
 }
@@ -258,17 +332,6 @@ function NextActions({ detail }: { detail: ConversationLogDetail }) {
   )
 }
 
-/** 답변을 낸 경로 6종. gate3만 검색은 실제로 돌고 생성만 건너뛴다 — 나머지 다섯은 검색·생성
- *  둘 다 안 타 성격·유형·근거가 없다(분류가 비는 이유). */
-const SERVED_FROM_LABEL: Record<ServedFrom, string> = {
-  cache: '캐시 응답',
-  guardrail: '가드레일 차단',
-  gate1: '범위 판정 (Gate 1)',
-  gate2: '범위 판정 (Gate 2)',
-  gate3: '검색 관련도 판정 (Gate 3)',
-  clarify: '업무 되묻기',
-}
-
 /** 왜 그 경로로 끝났는지 한 줄. 관리자가 '검색이 안 됐나'로 잘못 읽지 않게 한다 */
 const SERVED_FROM_NOTE: Record<ServedFrom, string> = {
   cache: `저장해 둔 답변을 그대로 돌려준 건입니다 — 검색·생성을 거치지 않아 근거가 남지 않습니다. 캐시는 ${QUERY_CACHE_TTL_H}시간 보관되며 운영 정책(AD-009)에서 비웁니다`,
@@ -291,17 +354,11 @@ const GATE1_RULE_LABEL: Record<string, string> = {
   OUT_OF_DOMAIN_RULE: '타 분야',
 }
 
-/** 경로만('범위 판정 (Gate 1)')과 규칙까지('… · 인사') 두 벌. 세 줄이 같은 문구를 되풀이하지
- *  않도록 분류 줄만 규칙을 달고, 처리 추적은 경로만 적는다 */
-function servedPath(detail: ConversationLogDetail): string | null {
-  return detail.served_from === null ? null : SERVED_FROM_LABEL[detail.served_from]
-}
-
+/** 경로 + 걸린 규칙('범위 판정 (Gate 1) · 인사'). 분류의 '처리 경로' 줄이 쓴다 */
 function servedPathWithRule(detail: ConversationLogDetail): string | null {
-  const path = servedPath(detail)
-  if (path === null) return null
+  if (detail.served_from == null) return null
   const rule = detail.served_label
-  return path + (rule ? ` · ${GATE1_RULE_LABEL[rule] ?? rule}` : '')
+  return SERVED_FROM_LABEL[detail.served_from] + (rule ? ` · ${GATE1_RULE_LABEL[rule] ?? rule}` : '')
 }
 
 /** rag_runs.failure_stage 는 파이프라인 내부 식별자다 — 화면에는 사람이 읽는 단계명으로 적는다.
@@ -365,7 +422,6 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
   const [expanded, setExpanded] = useState(false)
   const { classification: c } = detail
   const served = servedPathWithRule(detail)
-  const path = servedPath(detail)
   const subs = detail.observation?.subs ?? []
   // 하위 질문마다 판정이 갈릴 수 있다. 최상위 source_used 는 그 OR 이라(observation.summarize)
   // 복합 질문에서 '사용'만 적으면 안 쓴 하위가 가려진다 — 갈리면 '일부 사용'으로 적는다.
@@ -375,14 +431,39 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
   // 답변 구성 기준의 복합 여부 — 관측(subs)이 아니라 실제로 하위 답변이 저장됐는지를 본다.
   // 관측은 있는데 하위 답변이 없는 건(대화 저장 이전)에서 본문을 잃지 않기 위해서다.
   const composite = (detail.answer_composition?.sub_answers.length ?? 0) > 0
-  // 분류로 읽히는 값 전부. 복합 질문은 성격·업무와 같은 줄에 선다 — 종전에는 하위가 몇 개로
-  // 나뉘었는지가 분류 어디에도 없어, 근거 구획을 펼쳐 보고서야 복합인 줄 알 수 있었다.
-  const labels = [
-    c.intent === null ? null : INTENT_LABEL[c.intent],
-    c.business_function,
-    c.question_type === null ? null : QUESTION_TYPE_LABEL[c.question_type],
-    subs.length > 1 ? `복합 질문 ${subs.length}개` : null,
-  ].filter(Boolean)
+  // 분류로 읽히는 값 전부 — 이름표를 붙여 한 줄에 하나씩, **늘 같은 순서로** 세운다.
+  // 종전에는 '정보성 · 착오송금 반환 신청 · 복합 질문 2개'처럼 '·'로 이어 붙여, 어느 값이
+  // 성격이고 어느 값이 업무인지 알 수 없었다(2026-08-26). 값이 없는 항목도 줄은 그대로 두고
+  // '—'로 채운다 — 건마다 줄 수가 달라지면 같은 자리를 눈으로 찾을 수 없다.
+  const rows: [string, ReactNode][] = [
+    ['성격', c.intent === null ? null : INTENT_LABEL[c.intent]],
+    ['업무', c.business_function],
+    ['유형', c.question_type === null ? null : QUESTION_TYPE_LABEL[c.question_type]],
+    // 하위가 몇 개로 나뉘었는지 — 근거 구획을 펼쳐 보지 않고도 복합 여부를 알 수 있어야 한다
+    ['질문 구성', subs.length === 0 ? null : subs.length > 1 ? `복합 질문 ${subs.length}개` : '단일 질문'],
+    // 성격이 비는 건은 이 줄이 그 이유다(플래너 앞에서 끝난 경로). 평소 경로는 null → '—'
+    ['처리 경로', served],
+    // 사후검증이 동문서답·근거 밖 서술을 잡아 생성 본문을 범위 외 안내로 갈아끼운 건 —
+    // **사용자는 생성된 답변을 보지 못했다**는 뜻이라 '본문 교체'(내부 동작)가 아니라
+    // 사용자가 본 것이 바뀌었다고 적는다(2026-08-26 용어 확정).
+    // null 은 '판정 안 함'이라 '—'다. false 는 '교체하지 않았다'는 판정이라 '없음'으로 적는다
+    ['답변 교체', c.normalized === null ? null : c.normalized ? '교체됨 · 검증이 근거 밖 내용을 잡음' : '없음'],
+  ]
+  rows.push([
+    '출처 판정',
+    <span key="출처 판정">
+      {/* 백엔드가 원천 부재로 null 을 내린다(admin_logs.py) — '미사용' 단정은 거짓이 된다 */}
+      {c.source_used === null
+        ? '판정 원천 없음'
+        : mixedUse
+          ? `일부 사용 (하위 ${usedFlags.length}개 중 ${usedCount}개)`
+          : c.source_used
+            ? '사용'
+            : '미사용'}
+      {/* 서버가 이미 '[SOURCE_USED]' 형태로 내려준다 — 여기서 또 감싸면 [[…]] 가 된다 */}
+      {c.marker === null ? '' : ` · 마커 ${c.marker}`}
+    </span>,
+  ])
   return (
     // 질문·시각·요청 ID는 DetailModal 헤더가 그린다 — 여기서 두 번 쓰지 않는다
     <section aria-label="처리 과정">
@@ -390,32 +471,16 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
         <SectionTitle>
           분류
           <InfoHint label="분류 값 설명" size="sm">
-            성격은 정보성 / 민원성 2값(쿼리 플래너 판정)입니다. 업무는 분류기가 코드에서 꺼져 있어
-            저장되지 않고, 유형도 웹 경로에는 원천이 없습니다. 하위 질문이 둘 이상으로 나뉘면 「복합
-            질문 N개」가 함께 섭니다. 검색·생성을 타지 않고 끝난 건은 성격이 저장되지 않아, 대신 그
-            경로(캐시 응답 · 가드레일 차단 · 범위 판정 Gate 1·2·3 · 업무 되묻기)를 적습니다.
+            「—」는 그 값이 저장된 적이 없다는 뜻입니다(0 이나 '아니오'가 아닙니다). 성격은 정보성 /
+            민원성 2값(쿼리 플래너 판정)이고, 업무는 분류기가 코드에서 꺼져 있어, 유형은 웹 경로에
+            원천이 없어 늘 「—」입니다. 검색·생성을 타지 않고 끝난 건은 성격이 「—」이고 그 이유가
+            「처리 경로」 줄(캐시 응답 · 가드레일 차단 · 범위 판정 Gate 1·2·3 · 업무 되묻기)입니다.
+            「답변 교체」가 '교체됨'이면 사후검증이 동문서답·근거 밖 서술을 잡아낸 건이라, 사용자가
+            본 것은 생성된 답변이 아니라 범위 외 안내 문구입니다. 복합 질문이면 하위마다 판정이 갈릴
+            수 있어, 아래 하위 질문 카드에 같은 항목이 하위 단위로 다시 섭니다.
           </InfoHint>
         </SectionTitle>
-        {/* 값이 있는 것만 이어 붙인다 — 성격·유형이 null 인 건에서 구분점만 남으면 '·' 한 글자가
-            찍힌다. 하나도 없으면 **어느 경로로 끝나 분류가 없는지**를 그 자리에 적는다 */}
-        <p className="text-[13px]">{labels.join(' · ') || served || '분류 기록 없음'}</p>
-        <p className="mt-1.5 grid grid-cols-[120px_1fr] gap-2.5 text-[13px]">
-          <span className="text-muted-foreground">출처 판정</span>
-          <span>
-            {/* 백엔드가 원천 부재로 null 을 내린다(admin_logs.py) — '미사용' 단정은 거짓이 된다 */}
-            {c.source_used === null
-              ? '판정 원천 없음'
-              : mixedUse
-                ? `일부 사용 (하위 ${usedFlags.length}개 중 ${usedCount}개)`
-                : c.source_used
-                  ? '사용'
-                  : '미사용'}
-            {/* 서버가 이미 '[SOURCE_USED]' 형태로 내려준다 — 여기서 또 감싸면 [[…]] 가 된다 */}
-            {c.marker === null ? '' : ` · 마커 ${c.marker}`}
-          </span>
-        </p>
-        {/* 사후검증이 환각·동문서답을 잡아 본문을 표준 안내로 갈아끼운 건 */}
-        {c.normalized && <p className="mt-1.5 text-xs text-muted-foreground">본문 교체</p>}
+        <FieldList rows={rows} />
         {/* 근거는 출처 판정의 하위다 — 무엇을 근거로 삼았고 그래서 썼는지/안 썼는지가 한 덩어리다.
             들여쓰기와 왼쪽 선으로 종속을 보인다(별도 구획으로 떼면 두 판정이 남남처럼 읽힌다) */}
         {detail.observation && (
@@ -445,10 +510,10 @@ function TracePanel({ detail, canRun, onResolve, onReopen }: LogDetailPanelProps
           <span className="font-semibold tabular-nums">
             {detail.total_latency_ms === null ? '—' : `${(detail.total_latency_ms / 1000).toFixed(1)}초`}
           </span>
-          {/* 이 경로들은 총 소요가 1초대로 뚝 떨어지고 근거 구획이 통째로 비는데, 그 이유가
-              화면 어디에도 없었다 — 관리자가 '검색이 안 됐나'로 잘못 읽는다(2026-08-20) */}
-          {path !== null && ` · ${path}`}
         </p>
+        {/* 이 경로들은 총 소요가 1초대로 뚝 떨어지고 근거 구획이 통째로 비는데, 그 이유가
+            화면 어디에도 없었다 — 관리자가 '검색이 안 됐나'로 잘못 읽는다(2026-08-20).
+            경로 이름은 분류의 '처리 경로' 줄이 적는다 — 여기서는 그 뜻만 풀어 쓴다 */}
         {/* ⓘ로 접지 않는다 — 이 패널은 네이티브 <dialog showModal()> 안이라 body로 포털되는
             팝오버가 top layer 아래에 깔려 아예 안 보인다(2026-08-20 실측). 한 줄로 편다 */}
         {detail.served_from !== null && (

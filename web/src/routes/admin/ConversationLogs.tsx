@@ -44,6 +44,7 @@ import {
   LOG_STATUS_TONE,
   MAX_CUSTOM_DAYS,
   PERIOD_OPTIONS,
+  SERVED_FROM_LABEL,
   TRIAGE_LABEL,
   dash,
   daysBetween,
@@ -202,13 +203,22 @@ export function ConversationLogs() {
     },
     {
       key: 'intent',
-      header: '성격',
-      width: '72px',
-      render: (r) => (
-        <span className={r.status === 'OUT_OF_SCOPE' ? 'text-muted-foreground' : undefined}>
-          {r.intent === null ? '—' : INTENT_LABEL[r.intent]}
-        </span>
-      ),
+      // '성격' 한 열이던 것을 '분류'로 넓혔다(2026-08-26) — 캐시·게이트로 끝난 건은 성격이
+      // 저장되지 않아 열이 '—' 한 글자였고, 왜 비었는지는 상세를 열어야만 알 수 있었다.
+      // 성격이 없으면 그 자리에 **답을 낸 경로**를 적는다(상세 '처리 경로' 줄과 같은 문구).
+      header: '분류',
+      width: '136px',
+      render: (r) => {
+        const muted = r.status === 'OUT_OF_SCOPE' ? 'text-muted-foreground' : undefined
+        if (r.intent !== null) return <span className={muted}>{INTENT_LABEL[r.intent]}</span>
+        // served_from 을 아직 안 내려주는 배포에서는 undefined — 종전처럼 '—'만 그린다
+        if (!r.served_from) return <span className="text-muted-foreground">—</span>
+        return (
+          <span className="whitespace-nowrap text-muted-foreground">
+            {SERVED_FROM_LABEL[r.served_from]}
+          </span>
+        )
+      },
     },
     {
       key: 'status',
@@ -463,7 +473,7 @@ export function ConversationLogs() {
                   </Notice>
                 )}
                 <DataTable
-                  caption="대화 로그 — 시각 · 질문 · 성격 · 상태 · 피드백 · 출처 수 · 응답 시간"
+                  caption="대화 로그 — 시각 · 질문 · 분류(성격 또는 처리 경로) · 상태 · 피드백 · 출처 수 · 응답 시간"
                   columns={columns}
                   rows={logs.data.items}
                   rowKey={(r) => r.request_id}
