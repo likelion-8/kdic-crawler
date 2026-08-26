@@ -38,7 +38,7 @@ from prompt_builder import _MARKER_RE  # [SOURCE_USED]/[NO_SOURCE] 판정 정규
 from prompt_builder import strip_answer_cue  # 되뱉은 "답변:" 큐 제거(운영과 동일 기준)
 from llm_client import stream_hyperclova
 from observability import (as_child_of, close_span, open_span, record_gate1_span,
-                           record_gate2_span, record_span, trace_id_of)
+                           record_gate2_span, record_span, trace_id_of, usage_details)
 
 from api.rag import answer, conversation
 
@@ -125,15 +125,19 @@ class _MarkerStripper:
 
 def _stream_one(prompt):
     """prompt 로 LLM 토큰을 producer 스레드에서 뽑아 queue 로 넘긴다. 반환한 queue 에서
-    ("tok", 조각) / ("end", None) / ("err", 예외) 를 꺼내 쓴다. get(timeout) 으로 토큰 간
-    타임아웃을 건다."""
+    ("tok", 조각) / ("end", 토큰사용량|None) / ("err", 예외) 를 꺼내 쓴다. get(timeout) 으로
+    토큰 간 타임아웃을 건다.
+
+    "end" 에 실리는 값은 HCX 가 마지막 청크로 준 토큰 사용량이다(generation span 에 기록).
+    스트림이 usage 를 안 주는 모델·대역이면 None 이라 호출부는 그냥 건너뛴다."""
     q: queue.Queue = queue.Queue()
 
     def _produce():
+        usage: dict = {}
         try:
-            for tok in stream_hyperclova(prompt):
+            for tok in stream_hyperclova(prompt, usage=usage):
                 q.put(("tok", tok))
-            q.put(("end", None))
+            q.put(("end", usage or None))
         except Exception as ex:  # noqa: BLE001 — 그대로 소비 측에 전달해 error 이벤트로 변환
             q.put(("err", ex))
 
@@ -434,7 +438,8 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
         # 3) 토큰 스트리밍 + 마커 제거 + 토큰 간 타임아웃
         #    generation span 은 with 로 못 감싼다 — 스트리밍이 여러 next() 조각에 걸쳐 있어
         #    컨텍스트가 유실된다. span 객체를 들고 다니며 루프가 끝날 때 닫으면 소요 시간은
-        #    실제 값으로 남는다. (HCX 스트림은 usage 를 안 주므로 토큰 수는 비어 있다.)
+        #    실제 값으로 남는다. 토큰 수는 HCX 가 마지막 청크로 주는 실제 값이다(추정 아님) —
+        #    _stream_one 이 "end" 프레임에 실어 보낸다.
         with as_child_of(sub_span):
             gen_span = open_span("hcx_stream", as_type="generation", input=sp.prompt,
                                  model=os.environ.get("CLOVA_MODEL"))
@@ -442,6 +447,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
         body_parts = []
         tokens = _stream_one(sp.prompt)
         err = None
+        usage = None
         while True:
             try:
                 kind, payload = tokens.get(timeout=TOKEN_TIMEOUT_S)
@@ -455,6 +461,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
                     full_parts.append(visible)
                     yield _sse("answer_delta", {"text": visible})
             elif kind == "end":
+                usage = payload   # HCX 가 준 실제 토큰 수(없으면 None)
                 visible = stripper.finalize()
                 if visible:
                     body_parts.append(visible)
@@ -479,14 +486,20 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
             yield _sse("error", answer.error_from_exception(err, "llm", request_id).model_dump())
             return
 
-        close_span(gen_span, output="".join(body_parts))
+        close_span(gen_span, output="".join(body_parts), usage_details=usage_details(usage))
 
         # 4) 하위 답변 확정(근거 사용 여부 → 출처/서류 구조화)
         #    사후검증(validate_answer)·재생성(call_hyperclova)이 이 안에서 돈다 — 재생성은
         #    @observe 가 붙어 있어 이 하위 span 밑으로 자동으로 들어온다.
+        #    점(point)이 아니라 구간으로 잡는다 — validate_answer 는 OpenAI 콜이라 실측 2.5초쯤
+        #    걸리는데, 사후에 값만 남기면 그 시간이 sub_answer 안의 정체불명 공백으로 남는다.
         with as_child_of(sub_span):
-            sub, used = answer.finalize_sub(sp, "".join(body_parts), stripper.used_source)
-            record_span("answer_validation", output={
+            _val = open_span("answer_validation", input={"answer": "".join(body_parts)})
+        try:
+            with as_child_of(_val):
+                sub, used = answer.finalize_sub(sp, "".join(body_parts), stripper.used_source)
+        finally:
+            close_span(_val, output={
                 "marker": sp.obs_marker, "used_source": sp.obs_used_source,
                 "kind": sp.obs_kind, "appropriate": sp.obs_appropriate,
                 "normalized": sp.obs_normalized, "precheck": sp.obs_precheck})

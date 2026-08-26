@@ -171,6 +171,17 @@ def as_child_of(span):
             pass
 
 
+def usage_details(usage_metadata):
+    """langchain 의 usage_metadata({input_tokens, output_tokens, total_tokens})를 Langfuse
+    usage_details({input, output, total})로 옮긴다. 값이 없으면 None — 토큰 정보 없는
+    generation 은 그냥 비워 두는 게 맞다(0 으로 채우면 '0 토큰 썼다'는 거짓이 된다)."""
+    if not usage_metadata:
+        return None
+    pairs = (("input", "input_tokens"), ("output", "output_tokens"), ("total", "total_tokens"))
+    out = {k: usage_metadata[src] for k, src in pairs if usage_metadata.get(src) is not None}
+    return out or None
+
+
 _ZERO_TRACE_ID = "0" * 32
 
 
