@@ -98,6 +98,8 @@ export interface JobStep {
   status: 'QUEUED' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED'
   /** 진행 중이면 undefined */
   elapsed_ms?: number
+  /** 진행 중 단계의 처리 건수 — routes/admin/pipeline/api.ts JobStep 과 같은 모양 */
+  progress?: { done: number; total: number }
 }
 
 export interface PipelineJob {

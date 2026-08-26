@@ -153,6 +153,19 @@ def _set_step(session, job_id, name: str, status: str, *,
     _write_steps(session, job_id, steps)
 
 
+def _set_progress(session, job_id, name: str, done: int, total: int) -> None:
+    """진행 중인 단계의 처리 건수 — 화면이 이 값으로 %를 그린다(3초 폴링).
+
+    단계 상태는 건드리지 않는다. 단계가 7개뿐이라 상태만으로는 변경 감지(1단계)·수집처럼
+    '한 단계 안에서 오래 도는' 작업의 진행이 0%에서 100%로 튄다.
+    ponytail: 항목마다 UPDATE 1회. 항목당 1초 넘게 걸리는 루프에만 붙이므로 부담이 없다."""
+    steps = _load_steps(session, job_id)   # 취소됐으면 여기서 JobCancelled 가 올라간다
+    for s in steps:
+        if s.get("name") == name:
+            s["progress"] = {"done": done, "total": total}
+    _write_steps(session, job_id, steps)
+
+
 def _finish(session, job_id, status: str, *, error: dict = None,
             index_impact: str = None, skip_remaining: bool = False) -> None:
     if skip_remaining:
@@ -212,7 +225,7 @@ def _corpus_hashes() -> dict:
     return hashes
 
 
-def _fetch_stage(job) -> int:
+def _fetch_stage(job, on_progress=None) -> int:
     """수집: inventory.PAGES 를 실제로 재크롤한다(모듈 주석의 1·2번). 반환 = 수집한 페이지 수.
 
     SELECTED_RECRAWL 은 job.targets(page_id 배열)만, FULL_RECRAWL 은 전체를 돈다.
@@ -239,7 +252,7 @@ def _fetch_stage(job) -> int:
     raw_dir.mkdir(parents=True, exist_ok=True)
     failures = []
     static_pages = [p for p in pages if not p.get("dyn_table")]
-    for p in static_pages:
+    for done, p in enumerate(static_pages, 1):
         last = ""
         for _attempt in range(4):
             try:
@@ -258,6 +271,10 @@ def _fetch_stage(job) -> int:
             break
         else:
             failures.append(f"{p['id']}({last})")
+        if on_progress:
+            # ponytail: 정적 페이지만 센다. 뒤따르는 동적 표·페이지네이션 스크립트는
+            # 서브프로세스라 안에서 몇 건을 처리했는지 알 수 없다 — 그 구간은 100%에서 멈춘다.
+            on_progress(done, len(static_pages))
         time.sleep(0.5)   # 예의 있는 수집 간격 — 원 크롤러들과 같은 태도
 
     # 동적 표·페이지네이션·게시판 상세는 검증된 독립 스크립트를 그대로 서브프로세스로.
@@ -449,7 +466,8 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         _run_stage(session, job.id, "수집",
                    lambda: _restore_snapshot_for_rollback(session, job.rollback_of))
     elif recrawl:
-        _run_stage(session, job.id, "수집", lambda: _fetch_stage(job))
+        _run_stage(session, job.id, "수집", lambda: _fetch_stage(
+            job, lambda done, total: _set_progress(session, job.id, "수집", done, total)))
     else:
         _set_step(session, job.id, "수집", "SKIPPED")   # 재적재는 기존 코퍼스를 쓴다
 
@@ -541,8 +559,15 @@ def _run_change_detect(session, job) -> None:
     """변경 감지 — 단계 그림에서는 '수집'만 쓰고 나머지는 SKIPPED. 저장·색인은 하지 않는다."""
     import change_detect
 
+    for name in STEPS[1:]:
+        # 감지가 끝난 뒤가 아니라 **시작 전에** 건너뛴 단계를 박는다 — 화면 진행률의 분모가
+        # '건너뛰지 않은 단계'라, 나중에 박으면 도는 내내 1/7(14%)에서 멈춰 보인다.
+        _set_step(session, job.id, name, "SKIPPED")
+
     def _detect():
-        result = change_detect.run(session)
+        result = change_detect.run(
+            session, on_progress=lambda done, total: _set_progress(
+                session, job.id, "수집", done, total))
         _set_step(session, job.id, "수집", "RUNNING", detail={
             "changed": result["changed"], "failed": result["failed"],
             "unchanged": len(result["unchanged"]), "skipped": len(result["skipped"]),
@@ -551,8 +576,6 @@ def _run_change_detect(session, job) -> None:
         return len(result["changed"])
 
     _run_stage(session, job.id, "수집", _detect)
-    for name in STEPS[1:]:
-        _set_step(session, job.id, name, "SKIPPED")
     _finish(session, job.id, "SUCCESS", index_impact="색인 변경 없음(감지만 수행)")
 
 

@@ -52,6 +52,8 @@ import {
   formatMonthDayTime,
   isJobActive,
   jobElapsedText,
+  jobPercent,
+  jobProgressText,
   jobTargetText,
   jobsQueryKey,
   reauth,
@@ -324,6 +326,8 @@ export function Pipeline() {
       {/* R2 — 변경 페이지 알림 */}
       <ChangedPagesCard
         canRun={canRun}
+        detectProgress={running?.type === 'CHANGE_DETECT' ? jobProgressText(running) : undefined}
+        detecting={running?.type === 'CHANGE_DETECT'}
         disabledReason={busyReason}
         onRecrawl={(pageIds) => setConfirming({ kind: 'SELECTED_RECRAWL', pageIds })}
       />
@@ -338,13 +342,27 @@ export function Pipeline() {
             {/* 실행 중에는 단계 그림이 이 카드의 주인공 — 색면 대신 위아래 헤어라인으로 구획한다 */}
             <div className="border-y py-3.5">
               <PipelineSteps states={running.steps.map((s) => STEP_STATE[s.status])} />
+              {/* 진행률 막대(2026-08-26 사용자 요청) — 단계 그림만으로는 '얼마나 남았나'를 못
+                  읽는다. 특히 변경 감지·수집은 한 단계 안에서 58페이지를 도느라 오래 멈춰 있다.
+                  %를 못 세는 구간(대기 중·건수를 모르는 단계)은 값 없는 막대로 흐르게 둔다 —
+                  멈춘 막대는 '죽은 화면'으로 읽힌다.
+                  ponytail: 컴포넌트로 빼지 않았다. 진행률을 그리는 곳이 여기 하나뿐이다 */}
+              <ProgressBar job={running} />
             </div>
             <GateVerdictLine job={running} />
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               {/* 실행 중 상태 점 — 카드가 살아있음을 알린다. 색만이 아니라 이 캡션 텍스트와 병기 */}
               <span className="pulse-dot size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
               {/* CM-DF-002 06절: QUEUED=대기 · RUNNING=진행 중. 워커가 죽어도 '실행 중'으로 읽히던 오표기 수정 */}
-              {running.status === 'RUNNING' ? '실행 중' : '대기 중 (실행 시작 대기)'}
+              {/* 유형을 함께 쓴다(2026-08-26) — [지금 확인]으로 만든 변경 감지 잡이 이 카드에
+                  뜨는데 '실행 중'만 있으면 내가 시작한 작업인지 알 수 없다 */}
+              {[
+                JOB_TYPE_LABEL[running.type],
+                running.status === 'RUNNING' ? '실행 중' : '대기 중 (실행 시작 대기)',
+                running.status === 'RUNNING' ? jobProgressText(running) : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')}
               {/* 교체·실패 정책은 지금 상태가 아니라 규칙이라 접는다 */}
               <InfoHint label="인덱스 교체 정책 설명" size="sm">
                 {PIPELINE_STEPS.length}단계까지 모두 통과하면 인덱스를 한 번에 교체합니다. 실패하면
@@ -670,6 +688,38 @@ function ModalImpact({
           </>
         )}
       </p>
+    </div>
+  )
+}
+
+/**
+ * 작업 진행률 막대. percent=null 이면 값을 모르는 상태(대기 중 등)라 띠가 트랙을 가로지른다
+ * (aria 로도 값 없음 — aria-valuenow 를 안 붙인다). 값이 있어도 채운 부분은 항상 흐르게 둔다:
+ * 색인처럼 안을 못 보는 단계에서는 %가 몇 분씩 그대로라 정지 화면과 구분되지 않는다.
+ * 두 애니메이션 모두 global.css 의 prefers-reduced-motion 규칙이 자동으로 멈춘다.
+ */
+function ProgressBar({ job }: { job: PipelineJob }) {
+  // 대기 중이거나 아직 한 단계도 못 끝냈으면 값을 모르는 것으로 본다 — 폭 0인 막대는
+  // 빈 트랙과 구분되지 않아 '아무 일도 안 일어나는 화면'이 된다
+  const measured = job.status === 'RUNNING' ? jobPercent(job) : 0
+  const percent = measured > 0 ? measured : null
+  return (
+    <div
+      aria-label="작업 진행률"
+      aria-valuemax={100}
+      aria-valuemin={0}
+      aria-valuenow={percent ?? undefined}
+      className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted"
+      role="progressbar"
+    >
+      {percent === null ? (
+        <div className="progress-indeterminate h-full w-1/4 rounded-full bg-primary" />
+      ) : (
+        <div
+          className="progress-live h-full rounded-full bg-primary transition-[width] duration-500"
+          style={{ width: `${percent}%` }}
+        />
+      )}
     </div>
   )
 }

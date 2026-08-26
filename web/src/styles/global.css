@@ -115,6 +115,28 @@ body,
     animation: pulse-dot 1.6s ease-in-out infinite;
   }
 
+  /* 진행률 막대가 '살아있음'을 알리는 두 가지(2026-08-26).
+     .progress-live       채운 폭 위로 흐르는 띠 — %는 아는데 한동안 안 움직이는 구간
+                          (색인처럼 안을 못 보는 단계)에서도 멈춘 화면으로 안 읽히게 한다
+     .progress-indeterminate  %를 계산할 수 없을 때(대기 중·건수를 모르는 단계) 트랙을
+                          가로지르는 띠. 값을 모르므로 aria-valuenow 는 붙이지 않는다
+     둘 다 아래 prefers-reduced-motion 규칙이 자동으로 멈춘다 */
+  .progress-live {
+    background-image: linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0) 0%,
+      rgb(255 255 255 / 0.5) 50%,
+      rgb(255 255 255 / 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-size: 40% 100%;
+    animation: progress-shimmer 1.6s linear infinite;
+  }
+
+  .progress-indeterminate {
+    animation: progress-slide 1.3s ease-in-out infinite;
+  }
+
   /* 관리자 수치 공통 — 자릿수가 흔들리지 않는 표 숫자 */
   .nums {
     font-variant-numeric: tabular-nums;
@@ -151,6 +173,25 @@ body,
   }
   50% {
     opacity: 0.35;
+  }
+}
+
+@keyframes progress-shimmer {
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
+}
+
+/* 띠 폭이 트랙의 1/4 이라 -100% ~ 400% 면 왼쪽 밖에서 오른쪽 밖까지 지나간다 */
+@keyframes progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
   }
 }
 

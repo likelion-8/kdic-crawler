@@ -25,6 +25,9 @@ class JobStep(BaseModel):
     # summary)을 싣는다 — 이 필드가 없으면 response_model 이 잘라내 화면에 '—'만 남는다
     # (전날 prefilled_sources 와 같은 함정). 모양은 src/index_gate.evaluate 결과 + summary.
     detail: Optional[dict] = None
+    # 진행 중 단계의 처리 건수 {done,total}(2026-08-26). 화면이 %를 그린다 — 단계 상태만으론
+    # 한 단계 안에서 오래 도는 작업(변경 감지 58페이지·수집)의 진행이 0에서 100으로 튄다.
+    progress: Optional[dict] = None
 
 
 class JobError(BaseModel):

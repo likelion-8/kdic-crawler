@@ -22,6 +22,9 @@ export interface JobStep {
   /** 단계가 남긴 구조화 정보(2026-08-18). 게이트 단계가 판정 요약을 싣는다 — 관리자가
    * 판정을 보러 AD-006 으로 옮기지 않아도 카드 안에서 읽는다 */
   detail?: GateVerdict
+  /** 진행 중 단계의 처리 건수(2026-08-26). 한 단계 안에서 오래 도는 작업(변경 감지 58페이지·
+   * 수집)만 서버가 채운다 — 없으면 단계 단위로만 진행률을 센다 */
+  progress?: { done: number; total: number }
 }
 
 /** src/index_gate.evaluate 결과 + 한 줄 요약(worker 가 게이트 단계 detail 로 저장) */
@@ -216,4 +219,33 @@ export function stageWithIndex(stage: string): string {
 export function stageNumber(stage: string): number {
   const i = PIPELINE_STEPS.indexOf(stage as (typeof PIPELINE_STEPS)[number])
   return i < 0 ? 1 : i + 1
+}
+
+/** 진행률 0~100. 단계 status 로 세되, 진행 중 단계는 서버가 준 건수만큼만 채운다.
+ *  SKIPPED 는 분모에서 뺀다 — 변경 감지는 7단계 중 '수집' 하나만 실제로 돈다. */
+export function jobPercent(job: PipelineJob): number {
+  if (job.status === 'SUCCESS') return 100
+  const steps = job.steps.filter((s) => s.status !== 'SKIPPED')
+  if (steps.length === 0) return 0
+  const done = steps.reduce((sum, s) => {
+    if (s.status === 'SUCCESS') return sum + 1
+    if (s.status === 'RUNNING' && s.progress && s.progress.total > 0) {
+      return sum + Math.min(1, s.progress.done / s.progress.total)
+    }
+    return sum
+  }, 0)
+  // 실제로 다 끝나기 전에는 100%로 올리지 않는다 — 마지막 1건이 반올림으로 삼켜지면
+  // '100%인데 아직 도는' 화면이 된다
+  return Math.min(99, Math.round((done / steps.length) * 100))
+}
+
+/** `42% · 수집 12/58건` — 진행 중 캡션. 건수는 서버가 줄 때만 붙는다.
+ *  아직 아무것도 못 센 상태의 '0%'는 정보가 아니라 오해라 빈 문자열을 준다 —
+ *  그 구간은 화면이 값 없는(흐르는) 막대로 알린다. */
+export function jobProgressText(job: PipelineJob): string {
+  const running = job.steps.find((s) => s.status === 'RUNNING')
+  const p = running?.progress
+  const percent = jobPercent(job)
+  if (percent === 0 && !p) return ''
+  return `${percent}%` + (p && p.total > 0 ? ` · ${running!.name} ${p.done}/${p.total}건` : '')
 }
