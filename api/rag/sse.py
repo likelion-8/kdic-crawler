@@ -271,7 +271,8 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
                         input={"question": message, "history_turns": len(history)})
     triage = None   # triage_query 가 터져도 아래 finally 가 NameError 로 원인을 덮지 않게
     try:
-        triage = triage_query(message, history)
+        with as_child_of(_rw):   # 안의 OpenAI generation(triage_query_llm)이 여기 붙는다
+            triage = triage_query(message, history)
     finally:
         close_span(_rw, output=(None if triage is None else
                                 {"rewritten": triage.rewritten,

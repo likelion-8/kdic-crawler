@@ -22,7 +22,11 @@ import { cn } from '../../../lib/utils'
 /** `2026-07-20` → `07-20` (AD-001 A-3 x축 라벨 표기) */
 const md = (iso: string) => iso.slice(5)
 
-const won = (n: number) => `₩ ${n.toLocaleString('ko-KR')}`
+/** 비용 표기. 원천(Langfuse)이 USD 라 그대로 쓴다 — 환율을 프론트가 지어내지 않는다.
+ *  질문 1건이 $0.0013 수준이라 소수 두 자리로 자르면 전부 `$0.00` 이 되므로, $1 미만은
+ *  넷째 자리까지 보여준다. 서버의 _usd_text(admin_dashboard.py)와 같은 규칙이다. */
+const usd = (n: number) =>
+  n >= 1000 ? `$${compact(n)}` : n >= 1 ? `$${n.toFixed(2)}` : `$${n.toFixed(4)}`
 
 /** 요일 — 주말에 질문이 꺼지는 골을 툴팁만 보고 알 수 있게 한다.
  * `2026-07-27`은 UTC 자정으로 파싱되므로 KST로 찍어야 날짜가 밀리지 않는다 */
@@ -160,10 +164,11 @@ function TipDate({ iso }: { iso: string }) {
 }
 
 /** 전일 대비 — 늘고 주는 것에 좋고 나쁨이 없으므로 색을 입히지 않는다 */
-function Delta({ diff }: { diff: number }) {
+function Delta({ diff, format }: { diff: number; format?: (n: number) => string }) {
+  const show = format ?? ((n: number) => n.toLocaleString('ko-KR'))
   return (
     <span className="ml-1 font-normal text-muted-foreground">
-      {diff === 0 ? '± 0' : `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toLocaleString('ko-KR')}`}
+      {diff === 0 ? '± 0' : `${diff > 0 ? '▲' : '▼'} ${show(Math.abs(diff))}`}
     </span>
   )
 }
@@ -504,16 +509,18 @@ export function TokenStack({ points }: { points: TokenPoint[] }) {
 
 export interface CostPoint {
   date: string
-  krw: number
+  usd: number
 }
 
-/** 선은 0 기준으로 그린다. 최저값을 바닥으로 삼으면 ₩9,800↔₩12,400 같은 잔변동이
+/** 선은 0 기준으로 그린다. 최저값을 바닥으로 삼으면 $0.0098↔$0.0124 같은 잔변동이
  * 절벽처럼 보여 비용이 폭증한 것처럼 읽힌다 — 눈금 0이 있어야 진폭을 제 크기로 본다. */
 export function CostLine({ points, caption }: { points: CostPoint[]; caption: string }) {
   const [active, setActive] = useState<number | null>(null)
   if (points.length === 0) return <NoData text="이 기간에 기록된 비용이 없습니다" />
 
-  const max = niceMax(Math.max(...points.map((p) => p.krw), 1))
+  // 천장의 하한을 1(=$1)로 두면 $0.003 짜리 선이 바닥에 붙어 아무것도 안 보인다.
+  // 실측 최댓값이 작으면 그 값 기준으로 눈금을 잡는다.
+  const max = niceMax(Math.max(...points.map((p) => p.usd), 0.0001))
   // viewBox를 0~100 정규 좌표로 두고 preserveAspectRatio="none"으로 늘인다 →
   // SVG 안의 x%와 HTML 오버레이의 left%가 같은 값이 되어 호버 표시가 선 위에 정확히 얹힌다.
   // 늘이면 선 굵기도 같이 찌그러지므로 vector-effect로 굵기만 고정한다.
@@ -522,17 +529,17 @@ export function CostLine({ points, caption }: { points: CostPoint[]; caption: st
   // 반 칸씩 왼쪽으로 밀려 선 전체가 날짜와 어긋나 보인다 — 축이 같은 열을 쓰므로 좌표도 같아야 한다.
   const at = (i: number) => ((i + 0.5) / points.length) * 100
   const yOf = (v: number) => 100 - (v / max) * 100
-  const line = points.map((p, i) => `${at(i)},${yOf(p.krw)}`).join(' ')
+  const line = points.map((p, i) => `${at(i)},${yOf(p.usd)}`).join(' ')
   const hot = active === null ? null : points[active]
 
   return (
     <div className="flex flex-col gap-2">
-      <Plot max={max} format={(n) => `₩${compact(n)}`}>
+      <Plot max={max} format={usd}>
         <div
           className="relative min-h-0 flex-1"
           onMouseLeave={() => setActive(null)}
           role="img"
-          aria-label={`일별 비용 추이. 최고 ${won(max)}`}
+          aria-label={`일별 비용 추이. 최고 ${usd(max)}`}
         >
           {/* absolute inset-0 — `h-full`은 부모 높이가 auto라 풀리지 않고, 그러면 SVG가
               viewBox 비율(1:1)로 스스로 커져 폭만큼 높아진다(실측 396px). 박스에 못박는다 */}
@@ -558,7 +565,7 @@ export function CostLine({ points, caption }: { points: CostPoint[]; caption: st
               />
               <span
                 className="pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-chart-1 ring-2 ring-card"
-                style={{ left: `${at(active)}%`, top: `${yOf(hot.krw)}%` }}
+                style={{ left: `${at(active)}%`, top: `${yOf(hot.usd)}%` }}
                 aria-hidden="true"
               />
             </>
@@ -570,11 +577,11 @@ export function CostLine({ points, caption }: { points: CostPoint[]; caption: st
             ))}
           </ul>
           {hot && active !== null && (
-            <ChartTip x={at(active) / 100} y={hot.krw / max}>
+            <ChartTip x={at(active) / 100} y={hot.usd / max}>
               <TipDate iso={hot.date} />
               <span className="nums mt-0.5 block font-semibold">
-                {won(hot.krw)}
-                {active > 0 && <Delta diff={hot.krw - points[active - 1].krw} />}
+                {usd(hot.usd)}
+                {active > 0 && <Delta diff={hot.usd - points[active - 1].usd} format={usd} />}
               </span>
             </ChartTip>
           )}
@@ -584,7 +591,7 @@ export function CostLine({ points, caption }: { points: CostPoint[]; caption: st
       <ul className="sr-only">
         {points.map((p) => (
           <li key={p.date}>
-            {md(p.date)} {won(p.krw)}
+            {md(p.date)} {usd(p.usd)}
           </li>
         ))}
       </ul>

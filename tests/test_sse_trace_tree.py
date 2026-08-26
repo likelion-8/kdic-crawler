@@ -20,13 +20,23 @@ ROOT = Path(__file__).resolve().parent.parent
 for p in (ROOT, ROOT / "api", ROOT / "src"):
     sys.path.insert(0, str(p))
 
+import query_rewriter  # noqa: E402
 from api.rag import answer as answer_mod  # noqa: E402
 from api.rag import sse  # noqa: E402
 
-# 이 함수들 안에서 @observe 가 붙은 단계(plan_query·route_search_chunks·
-# classify_question_type·call_hyperclova)가 돈다. 부모 스코프 밖에서 부르면 그 span 들이
-# 통째로 고아가 되므로, "부모가 열린 채로 불렸는가"를 따로 확인한다.
-_MUST_RUN_UNDER_PARENT = ("plan", "prepare_sub", "finalize_sub")
+# 이 함수들 안에서 계측된 단계가 돈다 — @observe 가 붙은 것(plan_query·route_search_chunks·
+# classify_question_type·call_hyperclova)과 OpenAI generation(plan_query_llm·
+# triage_query_llm·validate_answer_llm·classify_intent_llm). 부모 스코프 밖에서 부르면
+# 그 span 들이 통째로 고아가 되므로 "부모가 열린 채로 불렸는가"를 따로 확인한다.
+#
+# triage_query 가 여기 있는 이유는 실제로 그 사고가 났기 때문이다(2026-08-26): span 은
+# 열었는데 호출을 as_child_of 밖에 두어 triage_query_llm 이 고아 trace 로 나갔다.
+_MUST_RUN_UNDER_PARENT = (
+    (answer_mod, "plan"),
+    (answer_mod, "prepare_sub"),
+    (answer_mod, "finalize_sub"),
+    (query_rewriter, "triage_query"),
+)
 
 
 @pytest.fixture
@@ -64,14 +74,14 @@ def tree(monkeypatch):
     def watch():
         """@observe 가 붙은 단계를 품은 호출을 감싸 '부모가 열린 채로 불렸는지' 기록한다.
         대역(_normal_path)을 다 깐 **뒤에** 불러야 한다 — 먼저 감싸면 대역이 덮어써 버린다."""
-        for fn in _MUST_RUN_UNDER_PARENT:
-            original = getattr(sse.answer, fn)
+        for owner, fn in _MUST_RUN_UNDER_PARENT:
+            original = getattr(owner, fn)
 
             def wrapped(*a, _fn=fn, _orig=original, **kw):
                 called_under[_fn] = stack[-1] if stack else None
                 return _orig(*a, **kw)
 
-            monkeypatch.setattr(sse.answer, fn, wrapped)
+            monkeypatch.setattr(owner, fn, wrapped)
 
     return SimpleNamespace(created=created, called_under=called_under, watch=watch)
 
@@ -135,10 +145,10 @@ def test_the_expected_stages_are_actually_recorded(tree, monkeypatch):
     assert ("answer_validation", "sub_answer") in tree.created
 
 
-@pytest.mark.parametrize("fn", _MUST_RUN_UNDER_PARENT)
+@pytest.mark.parametrize("fn", [fn for _, fn in _MUST_RUN_UNDER_PARENT])
 def test_observed_helpers_run_inside_a_parent_scope(tree, monkeypatch, fn):
-    """@observe 가 붙은 단계를 품은 호출은 부모 스코프 안에서 돌아야 한다. 밖에서 부르면
-    plan_query·route_search_chunks·call_hyperclova 가 각자 별개 trace 로 흩어진다."""
+    """계측된 단계를 품은 호출은 부모 스코프 안에서 돌아야 한다. 밖에서 부르면
+    plan_query·route_search_chunks·call_hyperclova·OpenAI generation 이 별개 trace 로 흩어진다."""
     _normal_path(monkeypatch)
     tree.watch()
 

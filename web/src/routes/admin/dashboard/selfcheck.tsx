@@ -84,7 +84,7 @@ function assertNoBadStyle(html: string, where: string) {
 
 // 6. 점이 하나뿐인 선 — (i / (n-1))이 0으로 나뉘지 않는다
 {
-  const html = renderToStaticMarkup(<CostLine points={[{ date: '2026-07-27', krw: 9800 }]} caption="1일" />)
+  const html = renderToStaticMarkup(<CostLine points={[{ date: '2026-07-27', usd: 0.0098 }]} caption="1일" />)
   assertNoBadStyle(html, 'CostLine')
   assert.ok(html.includes('50,'), '점이 하나면 가운데에 놓는다')
   // 선은 0 기준이다 — 최저값을 바닥으로 삼으면 잔변동이 절벽처럼 보인다
@@ -96,8 +96,8 @@ function assertNoBadStyle(html: string, where: string) {
   const html = renderToStaticMarkup(
     <CostLine
       points={[
-        { date: '2026-07-27', krw: 8000 },
-        { date: '2026-07-28', krw: 10000 },
+        { date: '2026-07-27', usd: 0.008 },
+        { date: '2026-07-28', usd: 0.01 },
       ]}
       caption="2일"
     />,

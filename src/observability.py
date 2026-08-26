@@ -171,6 +171,27 @@ def as_child_of(span):
             pass
 
 
+def record_openai_generation(name, completion, *, input=None):
+    """OpenAI 구조화 출력 호출 하나를 generation span 으로 남긴다 — 모델·토큰까지.
+
+    langfuse.openai 의 전역 자동계측을 안 쓰는 이유가 둘이다.
+    (1) 그 패치는 openai SDK 의 chat.completions 를 통째로 감싸는데, HCX(langchain-naver
+        ChatClovaX)도 같은 SDK 를 쓴다 — hcx_stream span 과 토큰이 이중 계상된다.
+    (2) HCX 스트리밍은 producer 스레드에서 돌아 자동 span 이 다시 고아가 된다(모듈 docstring 2번).
+    호출 지점이 넷뿐이라 명시 계측이 더 싸고 정확하다.
+
+    completion 은 client.beta.chat.completions.parse 의 반환값. 실패한 호출은 completion 이
+    없으므로 기록되지 않는다 — 그쪽은 어차피 토큰도 안 쓴다."""
+    u = getattr(completion, "usage", None)
+    record_span(
+        name, as_type="generation", input=input,
+        output=getattr(getattr(completion.choices[0], "message", None), "content", None)
+        if getattr(completion, "choices", None) else None,
+        model=getattr(completion, "model", None),
+        usage_details=None if u is None else {
+            "input": u.prompt_tokens, "output": u.completion_tokens, "total": u.total_tokens})
+
+
 def usage_details(usage_metadata):
     """langchain 의 usage_metadata({input_tokens, output_tokens, total_tokens})를 Langfuse
     usage_details({input, output, total})로 옮긴다. 값이 없으면 None — 토큰 정보 없는
@@ -230,6 +251,53 @@ def record_gate3_span(query, *, exited, top1_score=None, threshold=None, reason=
                 output={"action": "EXIT" if exited else "CONTINUE",
                         "retrieval_top1_score": top1_score,
                         "threshold": threshold, "reason": reason})
+
+
+# 서빙 경로가 만드는 generation span 이름 전부. 대시보드 리소스 집계(AD-001)가 이 목록으로
+# **실사용 LLM 호출만** 골라낸다 — 평가·CLI 가 만드는 call_hyperclova·rerank 는 빠진다.
+# 새 LLM 호출을 계측하면 여기 이름을 더해야 대시보드 비용에 잡힌다.
+SERVING_GENERATION_NAMES = ("hcx_stream", "plan_query_llm", "triage_query_llm",
+                            "validate_answer_llm", "classify_intent_llm")
+
+
+def llm_usage(from_dt, to_dt, *, daily=False):
+    """서빙 LLM 호출의 토큰 합계를 Langfuse 에서 읽는다(단계×모델별).
+
+    반환: [{"date": "YYYY-MM-DD"|None, "name": 단계, "model": 모델명|None,
+            "input": int, "output": int}, ...]
+    관측이 꺼져 있거나 조회가 실패하면 **None** — 빈 리스트([])와 구분해야 호출부가
+    '집계 원천 없음'과 '이 기간에 호출이 없음'을 다르게 말할 수 있다.
+
+    ⚠️ daily=True 의 날짜 경계는 Langfuse 가 UTC 로 자른다(2026-08-26 실측: 08-25T20:00Z 가
+    08-25 버킷). KST 로 다시 자르려면 hour 단위로 받아야 하는데 90일이면 row_limit(1000)을
+    넘겨 요청을 쪼개야 한다 — 추이 그래프의 하루 경계가 9시간 밀리는 대가로 호출 1번을
+    택했다. 화면의 '오늘' 값은 KST 자정~현재로 따로 물어(daily=False) 정확하게 낸다.
+    """
+    if not _AVAILABLE:
+        return None
+    query = {
+        "view": "observations",
+        "dimensions": [{"field": "name"}, {"field": "providedModelName"}],
+        "metrics": [{"measure": "inputTokens", "aggregation": "sum"},
+                    {"measure": "outputTokens", "aggregation": "sum"}],
+        "filters": [{"column": "name", "operator": "any of",
+                     "value": list(SERVING_GENERATION_NAMES), "type": "stringOptions"}],
+        "fromTimestamp": from_dt.isoformat(),
+        "toTimestamp": to_dt.isoformat(),
+        "config": {"row_limit": 1000},
+    }
+    if daily:
+        query["timeDimension"] = {"granularity": "day"}
+    try:
+        import json as _json
+        rows = get_client().api.metrics.metrics(query=_json.dumps(query)).data
+    except Exception:
+        return None
+    return [{"date": r.get("time_dimension"), "name": r.get("name"),
+             "model": r.get("providedModelName"),
+             "input": int(r.get("sum_inputTokens") or 0),
+             "output": int(r.get("sum_outputTokens") or 0)}
+            for r in rows]
 
 
 def flush():

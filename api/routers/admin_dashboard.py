@@ -31,13 +31,14 @@ feedback(좋아요/싫어요) · pipeline_jobs(작업) · admin_activity_logs(�
 - ⚠️ rag_runs.status 에는 옛 값 "success" 가 섞여 있다. admin_logs.py 의 LEGACY_STATUS
   매핑과 **같은 처리**를 할 것 — 안 하면 대시보드 숫자와 대화 로그 숫자가 어긋난다.
 """
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import Date, cast, func, select
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError
+from observability import llm_usage
 from api.routers.admin_logs import KST, _kst_day_start, _status_out, _to_kst_iso
 from schema import document_chunks, documents, pipeline_jobs, rag_runs
 from schema import feedback as feedback_table
@@ -277,29 +278,160 @@ def dashboard_trend(
     }
 
 
+# ──────────────────── 리소스 모니터링(AD-001) — 원천은 Langfuse ────────────────────
+# rag_runs 에는 토큰 컬럼이 없다. 2026-08-26 부터 모든 서빙 LLM 호출이 Langfuse generation
+# span 으로 남으므로(observability.SERVING_GENERATION_NAMES) 그쪽 집계를 읽는다. Langfuse 를
+# 못 읽으면 0 을 실측값처럼 채우지 않고 '집계 원천 없음'을 그대로 내려보낸다.
+
+# LLM 단가 — USD / 1M 토큰, (입력, 출력). None 이면 '단가 미등록'이라 비용 집계에서 빠진다.
+#
+# gpt-5.6-luna: Langfuse 가 계산해 준 비용에서 역산했다(2026-08-26). 표본 3건이 소수점까지
+#   맞는다 — 1659in/38out=$0.000377 · 3064/22=$0.000639 · 1368/38=$0.000319.
+# 🔴 HCX-007: 클라비 제공 리소스(project_context 2.4)라 NCP 단가를 팀이 확인해 채워야 한다.
+#   0 으로 두면 '공짜'로 읽히므로 None 을 유지한다 — 화면은 토큰만 보여주고 캡션이 미등록
+#   사실을 말한다. 값이 생기면 여기 한 줄만 고치면 된다.
+MODEL_PRICE_USD_PER_1M: dict[str, tuple[float, float] | None] = {
+    "gpt-5.6-luna": (0.20, 1.20),
+    "HCX-007": None,
+}
+
+# generation span 이름 → 화면 라벨(비용 분석의 항목별 비중). 이름의 정본은
+# observability.SERVING_GENERATION_NAMES 다 — 새 호출을 계측하면 양쪽에 같이 더한다.
+STAGE_LABELS = {
+    "hcx_stream": "답변 생성 (HyperCLOVA X)",
+    "plan_query_llm": "질문 분해·의도 판단",
+    "triage_query_llm": "질문 정리·되묻기 판정",
+    "validate_answer_llm": "출처 판정",
+    "classify_intent_llm": "질문 성격 분류",
+}
+
+
+def _tokens_compact(n: int) -> str:
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}K"
+    return str(n)
+
+
+def _usd_text(value: float) -> str:
+    """소수 넷째 자리까지 — 질문 1건이 $0.0013 라 두 자리로 자르면 전부 $0.00 이 된다."""
+    return f"${value:,.2f}" if value >= 1 else f"${value:.4f}"
+
+
+def _row_cost_usd(row: dict) -> float | None:
+    """토큰 × 단가. 단가 미등록 모델은 None 이다 — 0 을 돌려주면 '안 썼다'와 구분이 안 된다."""
+    price = MODEL_PRICE_USD_PER_1M.get(row["model"] or "")
+    if price is None:
+        return None
+    return row["input"] * price[0] / 1_000_000 + row["output"] * price[1] / 1_000_000
+
+
+def _unpriced_models(rows: list[dict]) -> list[str]:
+    return sorted({r["model"] for r in rows
+                   if r["model"] and MODEL_PRICE_USD_PER_1M.get(r["model"]) is None})
+
+
+def _resources_unavailable(days: int) -> dict:
+    """Langfuse 를 못 읽는 배포(키 미설정·조회 실패). 종전과 같은 '0건 상태' 응답이다."""
+    return {
+        "range": days,
+        "tokens": [],
+        "cost": [],
+        "cost_caption": f"최근 {days}일 · 비용 집계 원천 없음(Langfuse 미연결)",
+        "today": {"tokens_text": "집계 원천 없음", "cost_text": "집계 원천 없음",
+                  "concurrency_text": "N/A", "gpu_text": "N/A"},
+        "cost_breakdown": [],
+    }
+
+
+def build_resource_payload(days: int, day_rows: list[dict], today_rows: list[dict],
+                           utc_days: list[str]) -> dict:
+    """Langfuse 집계 → 화면 계약. 순수 함수라 테스트가 여기만 보면 된다.
+
+    day_rows/today_rows 는 observability.llm_usage() 반환값. utc_days 는 그래프 x축으로 쓸
+    날짜 문자열 목록(Langfuse 의 일 경계가 UTC 라 UTC 날짜다 — llm_usage docstring 참고)."""
+    day_rows = [r for r in day_rows if r["name"]]
+    today_rows = [r for r in today_rows if r["name"]]
+
+    tokens_by_day = {d: {"date": d, "input": 0, "output": 0} for d in utc_days}
+    cost_by_day = {d: 0.0 for d in utc_days}
+    for r in day_rows:
+        bucket = tokens_by_day.get(r["date"])
+        if bucket is None:
+            continue        # 조회 창 밖의 버킷(경계 반올림) — 축에 없는 날짜는 버린다
+        bucket["input"] += r["input"]
+        bucket["output"] += r["output"]
+        usd = _row_cost_usd(r)
+        if usd is not None:
+            cost_by_day[r["date"]] += usd
+
+    priced_total = sum(cost_by_day.values())
+    unpriced = _unpriced_models(day_rows)
+    caption = f"최근 {days}일 · 일 평균 {_usd_text(priced_total / days)}"
+    if not day_rows:
+        caption = f"최근 {days}일 · 기록된 LLM 호출 없음"
+    elif unpriced:
+        caption += f" · {', '.join(unpriced)} 단가 미등록(비용에서 제외)"
+
+    # 항목별 비중 — 단가 미등록 단계는 금액 대신 그 사실을 적고 비중을 비운다. 0% 로 적으면
+    # 안 썼다는 뜻이 되는데, 실제로는 토큰을 가장 많이 쓰는 단계가 여기 들어온다.
+    by_stage: dict[str, dict] = {}
+    for r in day_rows:
+        st = by_stage.setdefault(r["name"], {"usd": 0.0, "priced": False, "tokens": 0})
+        st["tokens"] += r["input"] + r["output"]
+        usd = _row_cost_usd(r)
+        if usd is not None:
+            st["usd"] += usd
+            st["priced"] = True
+    breakdown = [
+        {"label": STAGE_LABELS.get(name, name),
+         "amount_text": _usd_text(st["usd"]) if st["priced"]
+         else f"{_tokens_compact(st['tokens'])} 토큰 · 단가 미등록",
+         "share": round(st["usd"] / priced_total * 100) if st["priced"] and priced_total else None}
+        for name, st in sorted(by_stage.items(), key=lambda kv: -kv[1]["tokens"])
+    ]
+
+    today_in = sum(r["input"] for r in today_rows)
+    today_out = sum(r["output"] for r in today_rows)
+    today_costs = [_row_cost_usd(r) for r in today_rows]
+    today_priced = [c for c in today_costs if c is not None]
+    return {
+        "range": days,
+        "tokens": [tokens_by_day[d] for d in utc_days],
+        "cost": [{"date": d, "usd": round(cost_by_day[d], 6)} for d in utc_days],
+        "cost_caption": caption,
+        "today": {
+            "tokens_text": (f"입력 {_tokens_compact(today_in)} · 출력 {_tokens_compact(today_out)}"
+                            if today_rows else "호출 없음"),
+            "cost_text": _usd_text(sum(today_priced)) if today_priced else "단가 미등록",
+            # 동시 요청·GPU 는 원천이 없다. 0 을 실측처럼 채우지 않는다(AD-001 A-6 과 동일 판단).
+            "concurrency_text": "N/A",
+            "gpu_text": "N/A",
+        },
+        "cost_breakdown": breakdown,
+    }
+
+
 @router.get("/resources")
 def dashboard_resources(
     admin: CurrentAdmin,
     db: DbSession,
     range_: int = Query(default=7, alias="range"),
 ):
-    """리소스·비용 표시 계약.
+    """리소스·비용 — 원천은 Langfuse generation span 이다(위 블록 주석).
 
-    rag_runs에는 토큰·호출별 비용·동시성 컬럼이 없다. 0을 실측값처럼 채우지 않고 빈
-    시계열과 서버 완성 표시문구를 내려 화면의 0건 상태를 사용한다.
-    """
+    질의는 둘뿐이다: 기간 일별(UTC 일 경계) + 오늘(KST 자정~현재). '오늘' 을 따로 묻는
+    이유는 Langfuse 의 일 버킷이 UTC 라 KST 오늘과 최대 9시간 어긋나기 때문이다 —
+    헤드라인 숫자만이라도 화면의 다른 KST 카드와 같은 날을 가리키게 한다."""
     del admin, db
     days = _range_days(range_)
-    return {
-        "range": days,
-        "tokens": [],
-        "cost": [],
-        "cost_caption": f"최근 {days}일 · 비용 집계 원천 없음",
-        "today": {
-            "tokens_text": "집계 원천 없음",
-            "cost_text": "집계 원천 없음",
-            "concurrency_text": "N/A",
-            "gpu_text": "N/A",
-        },
-        "cost_breakdown": [],
-    }
+    now = datetime.now(timezone.utc)
+    first_day = now.date() - timedelta(days=days - 1)
+    utc_days = [(first_day + timedelta(days=i)).isoformat() for i in range(days)]
+    day_rows = llm_usage(datetime.combine(first_day, time.min, tzinfo=timezone.utc), now,
+                         daily=True)
+    if day_rows is None:
+        return _resources_unavailable(days)
+    today_rows = llm_usage(*_today_window(now)) or []
+    return build_resource_payload(days, day_rows, today_rows, utc_days)

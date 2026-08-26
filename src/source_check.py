@@ -53,6 +53,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from observability import record_openai_generation
+
 logger = logging.getLogger(__name__)
 
 SYSTEM_INSTRUCTION = """당신은 RAG 챗봇의 답변 검사기입니다. 질문에 답하지 말고 판정만 하세요.
@@ -152,6 +154,7 @@ def validate_answer(question, answer_text, evidence) -> Optional[AnswerValidatio
         client = OpenAI()
         model = os.environ["OPENAI_PLANNER_MODEL"]
         r = _parse(client, model, messages, schema=AnswerValidation)
+        record_openai_generation("validate_answer_llm", r, input=messages)
         return r.choices[0].message.parsed
     except Exception:
         logger.warning("validate_answer 실패 — 마커의 원래 판정을 유지한다(fail-open)", exc_info=True)

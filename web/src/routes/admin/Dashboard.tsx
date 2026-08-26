@@ -74,7 +74,9 @@ interface ResourceResponse {
   cost: CostPoint[]
   cost_caption: string
   today: { tokens_text: string; cost_text: string; concurrency_text: string; gpu_text: string }
-  cost_breakdown: { label: string; amount_text: string; share: number }[]
+  /** 항목별 비중. share 가 null 이면 그 단계는 단가가 등록되지 않아 비용을 못 매긴 것이다
+   *  (amount_text 가 토큰 수 + 그 사실을 적는다). 0% 로 그리면 '안 썼다'로 읽힌다. */
+  cost_breakdown: { label: string; amount_text: string; share: number | null }[]
 }
 
 /** 상태 표기 공통 — 채운 알약 대신 선행 점 + 글자. 색은 점이, 뜻은 글자가 나른다 */
@@ -352,7 +354,7 @@ export function Dashboard() {
                     <TokenStack points={resources.data.tokens} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="mb-2 text-[13px] font-medium text-foreground/80">일별 비용 추이 (₩)</h3>
+                    <h3 className="mb-2 text-[13px] font-medium text-foreground/80">일별 비용 추이 ($)</h3>
                     <CostLine points={resources.data.cost} caption={resources.data.cost_caption} />
                   </div>
                   <ul className="flex flex-col justify-between divide-y">
@@ -366,12 +368,16 @@ export function Dashboard() {
                 // 비용 분석 뷰는 목업이 없다(09 issue 5). 추이 + 항목별 비중으로 구성했다
                 <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
                   <div className="min-w-0">
-                    <h3 className="mb-2 text-[13px] font-medium text-foreground/80">일별 비용 추이 (₩)</h3>
+                    <h3 className="mb-2 text-[13px] font-medium text-foreground/80">일별 비용 추이 ($)</h3>
                     <CostLine points={resources.data.cost} caption={resources.data.cost_caption} />
                   </div>
                   <ul className="flex flex-col justify-between divide-y">
                     {resources.data.cost_breakdown.map((c) => (
-                      <Figure key={c.label} label={c.label} value={`${c.amount_text} · ${c.share}%`} />
+                      <Figure
+                        key={c.label}
+                        label={c.label}
+                        value={c.share === null ? c.amount_text : `${c.amount_text} · ${c.share}%`}
+                      />
                     ))}
                   </ul>
                 </div>

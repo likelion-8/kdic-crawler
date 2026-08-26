@@ -102,19 +102,22 @@ export const adDashActivityHandlers = [
     return HttpResponse.json({
       range,
       tokens: dates.map((date, i) => ({ date, input: seeded(i, 900_000, 250_000), output: seeded(i, 380_000, 90_000) })),
-      cost: dates.map((date, i) => ({ date, krw: seeded(i, 10_200, 2_600) })),
-      cost_caption: `최근 ${range}일 · 일 평균 ₩ 10,200`,
+      // 통화는 USD 다 — 원천(Langfuse)이 USD 로 주고 환율은 아무도 정하지 않았다.
+      cost: dates.map((date, i) => ({ date, usd: seeded(i, 102, 26) / 10_000 })),
+      cost_caption: `최근 ${range}일 · 일 평균 $0.0102 · HCX-007 단가 미등록(비용에서 제외)`,
       today: {
         tokens_text: '입력 1.2M · 출력 0.4M',
-        cost_text: '₩ 12,400',
-        concurrency_text: '0.8 / 3.2',
-        // GPU는 직접 서빙 전까지 해당 없음(AD-001 A-6 주석)
+        cost_text: '$0.0124',
+        // 동시 요청·GPU 는 백엔드에 원천이 없다(서버도 N/A 를 준다)
+        concurrency_text: 'N/A',
         gpu_text: 'N/A',
       },
       cost_breakdown: [
-        { label: '답변 생성 (HyperCLOVA X)', amount_text: '₩ 9,800', share: 79 },
-        { label: '질문 분해 호출', amount_text: '₩ 1,900', share: 15 },
-        { label: '질문 성격 분류', amount_text: '₩ 700', share: 6 },
+        // share: null = 단가 미등록. 토큰은 가장 많이 쓰지만 금액을 못 매기는 단계다
+        { label: '답변 생성 (HyperCLOVA X)', amount_text: '1.4M 토큰 · 단가 미등록', share: null },
+        { label: '출처 판정', amount_text: '$0.0051', share: 41 },
+        { label: '질문 정리·되묻기 판정', amount_text: '$0.0046', share: 37 },
+        { label: '질문 분해·의도 판단', amount_text: '$0.0027', share: 22 },
       ],
     })
   }),
