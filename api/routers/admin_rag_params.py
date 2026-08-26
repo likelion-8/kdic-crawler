@@ -54,8 +54,6 @@ from api.errors import ApiError, BadRequestError, ForbiddenError, NotFoundError
 # src/ 는 flat import(api/__init__.py 가 sys.path 에 넣는다).
 import candidate_ranking
 import pipeline
-import query_planner
-import retrieval
 import runtime_config
 from schema import documents
 from schema_admin import evaluation_runs, rag_param_versions
@@ -89,7 +87,15 @@ class ParamsConflictError(ApiError):
 
 def _param_meta() -> list:
     """화면 계약(rag/api.ts RagParam) 모양의 메타 정본. default 는 여기서만 쓰는 내부 값이라
-    응답의 params 배열에는 내보내지 않는다(현행값은 current 가 따로 든다)."""
+    응답의 params 배열에는 내보내지 않는다(현행값은 current 가 따로 든다).
+
+    ⚠️ 2026-08-26: use_type_routing · use_query_planner · use_query_decomposition 를 **뺐다.**
+    이 화면의 판단 근거는 A/B 검색 비교와 초안 평가인데, 둘 다 원문 질문으로 검색을 한 번
+    도는 _search_ranked 하나를 쓴다 — 분해·플래너는 검색 앞단의 질문 변형이라 애초에 호출되지
+    않고, 유형 라우팅은 초안이 아니라 운영값(runtime_config)을 읽는다. 즉 관리자가 토글해도
+    비교 결과가 100% 같아, 켜고 끌 수 있다는 화면의 약속 자체가 거짓이었다.
+    **파이프라인 동작은 그대로다** — pipeline.py·api/rag/answer.py 가 계속 get_param 으로 읽고,
+    DB 에 값이 없으면 코드 기본값(플래너 On · 분해 On · 유형 라우팅 Off)을 쓴다."""
     return [
         {"key": "k_candidates", "label": "1차 후보 수", "group": "retrieval",
          "control": "stepper", "apply_timing": "무중단",
@@ -108,19 +114,6 @@ def _param_meta() -> list:
          "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_RERANKER,
          "note": "CPU 문항당 96초 실측으로 기본 Off — GPU 확보 시 재검증(README 2.4)"},
-        {"key": "use_type_routing", "label": "질문 유형 라우팅(link_guide→Hybrid)",
-         "group": "retrieval", "control": "toggle", "apply_timing": "무중단",
-         "default": retrieval.USE_TYPE_ROUTING,
-         "note": "기본 Off = 전 유형 Dense 통일 — 라우팅 이론상 이득 MRR 0.003, link_guide "
-                 "이점 유의성 상실, table_lookup 오분류 시 -0.058 유의 (results/routing_value 실측)"},
-        {"key": "use_query_planner", "label": "쿼리 플래너(분해+intent 한 콜)", "group": "retrieval",
-         "control": "toggle", "apply_timing": "무중단",
-         "default": query_planner.USE_QUERY_PLANNER,
-         "note": "gpt-5.6-luna structured output (100문항 joint 89% 실측)"},
-        {"key": "use_query_decomposition", "label": "복합 질문 분해(플래너 Off 폴백)",
-         "group": "retrieval", "control": "toggle", "apply_timing": "무중단",
-         "default": pipeline.USE_QUERY_DECOMPOSITION,
-         "note": "플래너를 껐을 때만 쓰는 HCX 분해 경로"},
         {"key": "use_source_recheck", "label": "답변 사후 검증(전 답변 1콜)",
          "group": "generation", "control": "toggle", "apply_timing": "무중단",
          "default": pipeline.USE_SOURCE_RECHECK,
@@ -296,14 +289,24 @@ def _holdout_rows(db, ids=None):
 
 
 def _search_ranked(query: str, params: dict, *, for_scoring: bool = False) -> tuple:
-    """실검색 -> (게이트 전 순위, 게이트 후 순위). 검색은 한 번만 돈다."""
+    """실검색 -> (게이트 전 순위, 게이트 후 순위). 검색은 한 번만 돈다.
+
+    리랭커는 답변 경로와 **같은 순서**로 적용한다(pipeline.py:105-125): 게이트 판정은
+    rerank **전** dense 점수로 하고, 재정렬은 순위 표시에만 쓴다 — min_top1_score 는 dense
+    코사인 스케일이라 cross-encoder 로짓으로 재면 판정이 통째로 어긋난다(2026-08-26).
+    종전에는 rerank 호출 자체가 없어 A/B 비교·초안 평가가 리랭커 토글에 반응하지 않았다.
+    """
     from retrieval import route_search_chunks
     k_candidates = params.get("k_candidates", pipeline.K_CANDIDATES)
     k_final = params.get("k_final", pipeline.K_FINAL)
     threshold = params.get("min_top1_score", candidate_ranking.MIN_TOP1_SCORE)
     candidates = route_search_chunks(query, k=k_candidates)
+    # 컷은 앞에서부터 자르므로 top-1 은 후보 전체의 top-1 과 같다 — 판정 결과는 종전과 동일하다
+    gate_passed = bool(candidate_ranking.gate_low_relevance(candidates, threshold=threshold))
+    if params.get("use_reranker", pipeline.USE_RERANKER):
+        candidates = candidate_ranking.rerank(query, candidates)
     ranked = candidates if for_scoring else candidate_ranking.top_k_cut(candidates, k=k_final)
-    return ranked, candidate_ranking.gate_low_relevance(ranked, threshold=threshold)
+    return ranked, (ranked if gate_passed else [])
 
 
 def _search_pages(query: str, params: dict, *, for_scoring: bool = False) -> list:
@@ -459,10 +462,11 @@ def ab_search(body: dict, me: CurrentAdmin, db: DbSession):
     titles = dict(db.execute(select(documents.c.page_id, documents.c.page_title)).all())
 
     def _chips(p: dict) -> list:
+        # 이 비교가 실제로 반영하는 값만 적는다(2026-08-26) — 종전의 '플래너' 칩은 결과에
+        # 영향이 없는데도 A·B 에 나란히 떠서 오해의 근원이었다
         return [f"후보 {p['k_candidates']}", f"최종 {p['k_final']}",
                 f"게이트 {p['min_top1_score']}",
-                f"리랭커 {'On' if p['use_reranker'] else 'Off'}",
-                f"플래너 {'On' if p['use_query_planner'] else 'Off'}"]
+                f"리랭커 {'On' if p['use_reranker'] else 'Off'}"]
 
     def _column(label: str, p: dict, changed: list) -> dict:
         _, top = _search_ranked(query, p)
@@ -609,7 +613,11 @@ def rollback_params(version_id: str, body: dict, request: Request,
     if target is None:
         raise NotFoundError("해당 버전을 찾을 수 없습니다.")
 
-    params = dict(target.params or {})
+    # 화면에서 뺀 파라미터(use_query_planner 등)가 옛 버전에 남아 있어도 초안으로 되살리지
+    # 않는다(2026-08-26) — 화면에 안 보이는 값이 [운영 반영]으로 파이프라인에 들어가면
+    # 관리자가 바꾼 적 없는 동작 변화를 아무도 설명하지 못한다.
+    known = {m["key"] for m in _param_meta()}
+    params = {k: v for k, v in dict(target.params or {}).items() if k in known}
     signature = draft_signature(params)
     draft = _row(db, "draft")
     if draft:

@@ -166,3 +166,23 @@ def test_url_is_stripped_from_the_final_body(wire):
     assert "kdic.or.kr" not in sub.answer, "URL 이 그대로 사용자에게 나감"
     assert "1588-0037" in sub.answer, "전화번호까지 지워짐 — 연락처는 정답인 경우가 있다"
     assert used is True
+
+
+def test_source_recheck_off_skips_validation(monkeypatch):
+    """use_source_recheck Off — 검증 1콜을 아예 안 부르고 생성 본문을 그대로 쓴다(2026-08-26 확인).
+
+    AD-007 의 이 토글이 실제로 답변 경로를 바꾸는지가 이 테스트의 대상이다. 켜짐 경로는 위
+    테스트들이 이미 지키고 있어, 여기서는 '꺼지면 정말 안 부른다'만 본다 — Off 인데 여전히
+    부르면 관리자가 끈 LLM 1콜이 매 답변마다 계속 나간다(비용·지연 그대로)."""
+    calls = []
+    monkeypatch.setattr(answer_mod, "get_param",
+                        lambda k, d: False if k == "use_source_recheck" else d)
+    monkeypatch.setattr(answer_mod, "validate_answer",
+                        lambda *a: calls.append(a) or _verdict(True, "grounded", True))
+    monkeypatch.setattr(answer_mod, "_build_sources", lambda top: [])
+
+    sub, used = finalize_sub(_sp(), "생성된 본문", marker_used_source=None)
+
+    assert calls == [], "Off 인데 검증 1콜이 나갔다"
+    assert sub.answer == "생성된 본문", "검증을 안 했는데 본문이 바뀌었다"
+    assert used is True, "근거가 있으면 Off 여도 출처를 붙인다(bool(sp.top) 안전망)"

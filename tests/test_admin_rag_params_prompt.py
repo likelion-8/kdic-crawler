@@ -231,3 +231,49 @@ def test_masking_validate_passes_specific_phone_pattern():
 def test_masking_validate_requires_editor():
     with pytest.raises(ForbiddenError):
         validate_masking_rule({"pattern": r"\d+"}, _admin("VIEWER"))
+
+
+# ------------------------------------------------- 6) 리랭커 토글이 실제로 검색에 반영되는가
+def _stub_search(monkeypatch, calls):
+    """route_search_chunks·rerank 를 대역으로 — 모델·DB 없이 호출 순서만 본다."""
+    import candidate_ranking
+    import retrieval
+    candidates = [("a#1", 0.70, "A"), ("b#1", 0.60, "B"), ("c#1", 0.50, "C")]
+    monkeypatch.setattr(retrieval, "route_search_chunks", lambda q, k: candidates[:k])
+
+    def fake_rerank(_q, cands):
+        calls.append("rerank")
+        return list(reversed(cands))   # 뒤집어 놓으면 반영 여부가 순위로 드러난다
+
+    monkeypatch.setattr(candidate_ranking, "rerank", fake_rerank)
+    return candidates
+
+
+def test_reranker_toggle_changes_ab_search(monkeypatch):
+    """2026-08-26: A/B 검색 비교·초안 평가가 use_reranker 를 무시하던 회귀를 막는다.
+    종전에는 rerank 호출 자체가 없어 토글해도 순위가 100% 같았다."""
+    calls = []
+    _stub_search(monkeypatch, calls)
+    base = {"k_candidates": 3, "k_final": 3, "min_top1_score": 0.35}
+
+    off, _ = admin_rag_params._search_ranked("질문", {**base, "use_reranker": False})
+    assert calls == [] and [c for c, _s, _t in off] == ["a#1", "b#1", "c#1"]
+
+    on, _ = admin_rag_params._search_ranked("질문", {**base, "use_reranker": True})
+    assert calls == ["rerank"], "리랭커 On 인데 rerank 가 안 불렸다"
+    assert [c for c, _s, _t in on] == ["c#1", "b#1", "a#1"]
+
+
+def test_gate_is_judged_before_rerank(monkeypatch):
+    """게이트 판정은 rerank **전** dense 점수로 한다 — 임계값이 dense 코사인 스케일이라
+    cross-encoder 로짓으로 재면 판정이 통째로 어긋난다(pipeline.py Gate3 와 같은 순서)."""
+    calls = []
+    _stub_search(monkeypatch, calls)
+    # top-1 dense 0.70 > 0.5 이므로 통과여야 한다. rerank 가 점수를 0.5 로 덮어써도 마찬가지다
+    ranked, gated = admin_rag_params._search_ranked(
+        "질문", {"k_candidates": 3, "k_final": 3, "min_top1_score": 0.5, "use_reranker": True})
+    assert gated == ranked, "rerank 후 점수로 게이트를 재 근거가 통째로 비었다"
+
+    _, blocked = admin_rag_params._search_ranked(
+        "질문", {"k_candidates": 3, "k_final": 3, "min_top1_score": 0.9, "use_reranker": True})
+    assert blocked == [], "dense top-1(0.70) 이 임계값 0.9 미만인데 게이트가 안 걸렸다"
