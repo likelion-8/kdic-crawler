@@ -283,16 +283,24 @@ def dashboard_trend(
 # span 으로 남으므로(observability.SERVING_GENERATION_NAMES) 그쪽 집계를 읽는다. Langfuse 를
 # 못 읽으면 0 을 실측값처럼 채우지 않고 '집계 원천 없음'을 그대로 내려보낸다.
 
-# LLM 단가 — USD / 1M 토큰, (입력, 출력). None 이면 '단가 미등록'이라 비용 집계에서 빠진다.
+# NCP 가 요금 페이지에 함께 표기하는 당월 환율(2026-08 확인). CLOVA 공시가는 원화라 이걸로
+# 옮긴다 — 우리가 정한 환율이 아니라 청구 주체가 쓰는 환율이라는 점이 중요하다. 달이 바뀌면
+# 여기만 고친다(공시가 자체는 안 바뀐다).
+KRW_TO_USD = 0.0006939
+
+# LLM 단가 — USD / 1M 토큰, (입력, 출력). 표에 없는 모델은 '단가 미등록'이라 비용에서 빠진다
+# (0 으로 채우면 '공짜'로 읽힌다). 새 모델을 쓰기 시작하면 여기 한 줄 더한다.
 #
+# CLOVA Studio: ncloud.com 요금표 · 한국 리전 · 구분 '기본' · 요금(실시간), 1,000 토큰 기준
+#   HCX-007/005  입력 1.25원 · 출력 5원   |  HCX-DASH-002  입력 0.25원 · 출력 1원
+#   (2026-08-26 확인. 튜닝·스킬셋·익스플로러 요금은 우리가 안 쓰므로 넣지 않는다.)
 # gpt-5.6-luna: Langfuse 가 계산해 준 비용에서 역산했다(2026-08-26). 표본 3건이 소수점까지
 #   맞는다 — 1659in/38out=$0.000377 · 3064/22=$0.000639 · 1368/38=$0.000319.
-# 🔴 HCX-007: 클라비 제공 리소스(project_context 2.4)라 NCP 단가를 팀이 확인해 채워야 한다.
-#   0 으로 두면 '공짜'로 읽히므로 None 을 유지한다 — 화면은 토큰만 보여주고 캡션이 미등록
-#   사실을 말한다. 값이 생기면 여기 한 줄만 고치면 된다.
-MODEL_PRICE_USD_PER_1M: dict[str, tuple[float, float] | None] = {
+MODEL_PRICE_USD_PER_1M: dict[str, tuple[float, float]] = {
     "gpt-5.6-luna": (0.20, 1.20),
-    "HCX-007": None,
+    "HCX-007": (1.25 * 1_000 * KRW_TO_USD, 5 * 1_000 * KRW_TO_USD),
+    "HCX-005": (1.25 * 1_000 * KRW_TO_USD, 5 * 1_000 * KRW_TO_USD),
+    "HCX-DASH-002": (0.25 * 1_000 * KRW_TO_USD, 1 * 1_000 * KRW_TO_USD),
 }
 
 # generation span 이름 → 화면 라벨(비용 분석의 항목별 비중). 이름의 정본은
@@ -389,7 +397,9 @@ def build_resource_payload(days: int, day_rows: list[dict], today_rows: list[dic
          "amount_text": _usd_text(st["usd"]) if st["priced"]
          else f"{_tokens_compact(st['tokens'])} 토큰 · 단가 미등록",
          "share": round(st["usd"] / priced_total * 100) if st["priced"] and priced_total else None}
-        for name, st in sorted(by_stage.items(), key=lambda kv: -kv[1]["tokens"])
+        # 비용 큰 순. 금액을 못 매긴 단계(usd=0)는 자연히 맨 뒤로 가고 자기들끼리는 토큰
+        # 순으로 선다 — 목록에서 사라지지는 않는다(사라지면 '안 썼다'로 읽힌다).
+        for name, st in sorted(by_stage.items(), key=lambda kv: (-kv[1]["usd"], -kv[1]["tokens"]))
     ]
 
     today_in = sum(r["input"] for r in today_rows)

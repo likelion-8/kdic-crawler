@@ -104,7 +104,7 @@ export const adDashActivityHandlers = [
       tokens: dates.map((date, i) => ({ date, input: seeded(i, 900_000, 250_000), output: seeded(i, 380_000, 90_000) })),
       // 통화는 USD 다 — 원천(Langfuse)이 USD 로 주고 환율은 아무도 정하지 않았다.
       cost: dates.map((date, i) => ({ date, usd: seeded(i, 102, 26) / 10_000 })),
-      cost_caption: `최근 ${range}일 · 일 평균 $0.0102 · HCX-007 단가 미등록(비용에서 제외)`,
+      cost_caption: `최근 ${range}일 · 일 평균 $0.0102`,
       today: {
         tokens_text: '입력 1.2M · 출력 0.4M',
         cost_text: '$0.0124',
@@ -113,11 +113,13 @@ export const adDashActivityHandlers = [
         gpu_text: 'N/A',
       },
       cost_breakdown: [
-        // share: null = 단가 미등록. 토큰은 가장 많이 쓰지만 금액을 못 매기는 단계다
-        { label: '답변 생성 (HyperCLOVA X)', amount_text: '1.4M 토큰 · 단가 미등록', share: null },
-        { label: '출처 판정', amount_text: '$0.0051', share: 41 },
-        { label: '질문 정리·되묻기 판정', amount_text: '$0.0046', share: 37 },
-        { label: '질문 분해·의도 판단', amount_text: '$0.0027', share: 22 },
+        // 단계 순서는 토큰 많은 순이다(금액 순이 아니다 — 요금표에 없는 모델이 섞일 수 있다).
+        // share: null 이면 그 모델이 요금표(MODEL_PRICE_USD_PER_1M)에 없어 금액을 못 매긴
+        // 경우다. amount_text 가 토큰 수 + 그 사실을 적는다.
+        { label: '답변 생성 (HyperCLOVA X)', amount_text: '$0.0421', share: 76 },
+        { label: '출처 판정', amount_text: '$0.0051', share: 9 },
+        { label: '질문 정리·되묻기 판정', amount_text: '$0.0046', share: 8 },
+        { label: '질문 분해·의도 판단', amount_text: '$0.0027', share: 7 },
       ],
     })
   }),
