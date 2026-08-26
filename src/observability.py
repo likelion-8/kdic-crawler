@@ -47,8 +47,18 @@ load_dotenv(ROOT / ".env")  # LANGFUSE_* 키 로드 — SDK가 환경변수에�
 # tests/test_source_pipeline.py 의 모의 실행이었다. 정작 실사용 trace(web_chat 238건)가 그
 # 사이에 묻혀 목록으로는 찾을 수가 없었다. 평가 실행도 Langfuse 로 보고 싶으면 그 실행에서만
 # LANGFUSE_TRACING_ENABLED=true 를 준다(setdefault 라 명시값이 항상 이긴다).
+# ⚠ pytest 판별을 argv[0] 이름으로만 하면 안 된다. `python -m pytest` 로 돌리면 argv[0] 이
+# `.../site-packages/pytest/__main__.py` 라 이름이 "__main__.py" 다(2026-08-26 실측). 그 구멍
+# 때문에 테스트 실행 45건이 실사용 trace 사이에 섞여 올라갔다 — request_id 가 "req", 질문이
+# "복합 질문" 인 trace 들이 그것이다. 모듈 적재 여부로 보는 쪽이 확실하다: 이 파일은 테스트
+# 수집 단계에서 import 되므로 그 시점에 pytest 는 이미 sys.modules 에 있다.
+# 오프라인 실행으로 보는 디렉터리. 계측된 함수를 직접 부르는 진입점 스크립트는 이 둘뿐이고
+# (src/crawler/*, src/eval/*), 나머지는 라이브러리 모듈이거나 서빙 코드다. src/pipeline.py 를
+# 터미널로 돌리는 CLI 는 일부러 뺐다 — 그건 실제로 보고 싶은 경로다.
+_OFFLINE_DIRS = {"crawler", "eval"}
 _ARGV0 = Path(sys.argv[0] or "")
-if "crawler" in _ARGV0.parts or _ARGV0.name in ("pytest", "py.test"):
+_UNDER_PYTEST = "pytest" in sys.modules or _ARGV0.name in ("pytest", "py.test")
+if _OFFLINE_DIRS & set(_ARGV0.parts) or _UNDER_PYTEST:
     os.environ.setdefault("LANGFUSE_TRACING_ENABLED", "false")
 
 try:
