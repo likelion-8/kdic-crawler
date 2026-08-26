@@ -151,10 +151,24 @@ def _selftest():
     assert sum(1 for u in ids_f if u2p_f[u] == "dp_protlmts") == 1, "비FAQ는 통짜"
     assert len(ids_f) > 58, f"유닛 {len(ids_f)}개 (58보다 커야)"
 
-    ids_t, _, u2p_t = build_units("table_row")
+    ids_t, txt_t, u2p_t = build_units("table_row")
     # 파산재단 표(493행)는 여러 청크로, 각 청크에 헤더 반복
     bkrp = [u for u in ids_t if u2p_t[u] == "uc_bkrp_mng"]
     assert len(bkrp) > 5, f"uc_bkrp_mng 표청크 {len(bkrp)}개 (여러 개여야)"
+    # 페이지네이션 표(2026-08-26): 뒷페이지 병합분까지 한 표로 이어져 모든 청크가 진짜
+    # 컬럼명을 헤더로 가져야 한다. 1페이지의 페이징 UI("1 2 … 다음 페이지")가 corpus 에
+    # 남으면 표가 거기서 끊겨 뒷블록 첫 데이터 행("11 | 상호저축은행 | 경기저축은행 …")이
+    # 헤더로 승격되고 161개 청크에 반복된다 — parse_raw_html.drop_paging_cluster 가 막는다.
+    PAGED_TABLE_HEADERS = {
+        "uc_bkrp_mng": "번호 | 금융권역 | 파산금융 회사명 | 관재인",
+        "dp_fnst_srch": "금융권역 | 회사명 | 주소 | 연락처",
+        "ms_trgt_fnst": "금융권역 | 금융회사명 | 상태",
+        "dp_gudn_data": "번호 | 제목 | 소관부서",
+    }
+    for pid, hdr in PAGED_TABLE_HEADERS.items():
+        no_hdr = [u for u, t in zip(ids_t, txt_t)
+                  if u2p_t[u] == pid and " | " in t and hdr not in t]
+        assert not no_hdr, f"{pid} 표청크 {len(no_hdr)}개에 헤더 없음(페이징 UI로 표가 끊김?): {no_hdr[:3]}"
 
     # 다중 표 구조(2026-08-14): 각 블록은 자기 헤더·직전 제목을 갖고, 표 경계를 넘는 청크가
     # 없으며, 마지막 표 뒤 텍스트도 청크로 남는다.
