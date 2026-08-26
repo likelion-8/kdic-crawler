@@ -1,0 +1,1049 @@
+{
+  "summary": {
+    "rerank": false,
+    "n_total": 89,
+    "n_success": 89,
+    "n_failed": 0,
+    "생성_성공률": 1.0,
+    "평균_응답시간_s": 7.2,
+    "must_include_커버리지(답변형)": 0.6329,
+    "출처_정확률(답변형)": 0.7848,
+    "출처링크_포함률(답변형)": 0.8987,
+    "oos_적절거절률": 1.0,
+    "n_answerable": 79,
+    "n_oos": 10,
+    "effective_params": {
+      "k_candidates": 20,
+      "k_final": 5,
+      "use_reranker": false,
+      "use_source_recheck": true,
+      "prompt_version": 3
+    },
+    "recheck_mode": "single(pipeline·CLI경로)",
+    "retried_429": [
+      "ms_poss_dcmnt_pl2",
+      "ms_poss_dcmnt_pl2t",
+      "mtrs_vst_rcpt_pl1t"
+    ]
+  },
+  "manual_review": [
+    {
+      "test_id": "dp_syst_pl1",
+      "why": "must_include 실패",
+      "answer": "예금자보호법을 제정해서 예금보험제도를 운영하는 근본적인 목적은 금융회사가 영업정지나 파산 등으로 고객의 예금을 지급하지 못하게 될 경우 해당 예금자뿐만 아니라 전체 금융제도의 안정성도 큰 타격을 입게 되기 때문에, 이러한 사태를 방지하고자 마련된 것입니다. 이를 위해 예금자보호법은 고객들의 예금을 보호하는 제도를 갖추어 놓았으며, 이는 금융회사가 납부한 예금보험료를 기반으로 운영되는 공적보험으로서 예금자를 보호하는 역할을 합니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_syst_pl1t",
+      "why": "must_include 실패",
+      "answer": "예금자보호법을 제정해서 예금보험제도를 운영하는 근본적인 목적은 금융회사가 영업정지나 파산 등으로 고객의 예금을 지급하지 못하게 될 경우 해당 예금자뿐만 아니라 전체 금융제도의 안정성도 큰 타격을 입게 되기 때문에, 이러한 사태를 방지하기 위해 마련된 것입니다. 이를 통해 예금자의 경제적 권익을 보호하고 금융 시스템의 안정성을 유지하는 것을 목표로 하고 있습니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_expln_pl1t",
+      "why": "must_include 실패",
+      "answer": "**가지급금은 무엇인가요?**\n가지급금은 보험사고 발생 금융회사의 예금자의 장기간 금융거래 중단에 따른 경제적 불편을 최소화하기 위해 예금보험금 지급 이전에 예금보험금 지급한도 내에서 예금보험위원회가 정하는 금액(원금 기준)을 예금자의 신청에 의해 미리 지급하는 금전을 말합니다.\n\n**참고 출처**\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n\n**개삼지급금은 무엇인가요?**\n개삼지급금은 파산절차 장기화에 따른 예금자의 불편을 해소하기 위해 1억원 초과 예금자로부터 예금 등 채권을 매입하고, 파산배당으로 회수가능한 추정 금액 중 일부를 미리 지급하는 금전을 말합니다.\n\n**참고 출처**\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1",
+      "why": "must_include 실패",
+      "answer": "해외거주 유학생인 경우, 예금보험금을 수령하기 위해서는 현지 대사관의 공증을 받은 예금자 본인의 자필 위임장(원본)과 대리인의 주민등록증 등 본인증명 서류 등이 필요합니다. 또한, 인터넷뱅킹 및 본인인증이 가능하다면 공사 금융안심포털에서도 신청할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "uc_gudn_pl1t",
+      "why": "must_include 실패",
+      "answer": "2016년 10월 부터 미수령금 종류별, 부실금융회사별 구분 없이 전국 지급대행점 어디에서든 미수령금을 통합 신청할 수 있게 되었습니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)"
+    },
+    {
+      "test_id": "uc_tel_qust_pl1",
+      "why": "must_include 실패",
+      "answer": "예금보험공사 IT서비스 데스크는 오전 9시부터 오후 6시까지 운영되며, 주말 및 공휴일은 휴무입니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)\n- 소개와 방법안내 > 방문접수안내 — 방문접수안내 (https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do)\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)"
+    },
+    {
+      "test_id": "uc_tel_qust_pl1t",
+      "why": "must_include 실패",
+      "answer": "예금보험공사 IT서비스 데스크는 오전 9시부터 오후 6시까지 운영됩니다. (공휴일, 토요일, 일요일은 휴무)\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)\n- 소개와 방법안내 > 방문접수안내 — 방문접수안내 (https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do)\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)"
+    },
+    {
+      "test_id": "uc_bkrp_fndt_pl1t",
+      "why": "must_include 실패",
+      "answer": "현재 파산이 진행 중인 저축은행은 총 11곳입니다."
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1",
+      "why": "must_include 실패",
+      "answer": "파산재단관리 메뉴에서는 공적 자금이 투입된 금융회사의 파산진행 현황 정보를 검색할 수 있습니다. 각 금융권역별 금융회사의 이름과 주소 등을 검색할 수 있으며, 다음과 같이 구분됩니다.\n- 전체\n- 은행\n- 종합금융회사\n- 생명보험회사\n- 손해보험회사\n- 투자매매업자·투자중개업자\n- 상호저축은행\n- 신용협동조합\n- 보험\n- 금고\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1t",
+      "why": "must_include 실패",
+      "answer": "파산재단관리 메뉴에서는 다음과 같은 정보를 검색할 수 있습니다:\n\n- 금융권역\n- 파산재단명\n- 파산 선고일\n- 주소\n- 전화번호 및 FAX번호\n- 진행 상태\n\n이를 통해 각 금융권역별 금융회사의 이름과 주소 등을 확인할 수 있으며, 파산재단의 진행 상황을 알 수 있습니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "mtrs_vst_rcpt_pl1",
+      "why": "must_include 실패",
+      "answer": "착오송금반환지원을 방문접수하시려면 평일 오전 9시부터 오후 5시까지 운영됩니다. 점심시간은 오후 12시부터 1시까지이니 참고하시기 바랍니다.\n\n**필요 서류**\n- 신청서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    },
+    {
+      "test_id": "receiver_docs_pl1",
+      "why": "must_include 실패",
+      "answer": "착오송금 수취인이 반환 요구에 이의를 제기하려면 착오송금일로부터 1년 이내에 신청해야 합니다. 이때, 관련 서류를 준비하여 예금보험공사를 방문하거나 이체확인증 등의 증빙서류를 첨부하여 온라인으로 신청할 수 있습니다."
+    },
+    {
+      "test_id": "receiver_docs_pl1t",
+      "why": "must_include 실패",
+      "answer": "착오송금 수취인이 반환 요구에 대한 이의를 제기하려면 착오송금일로부터 1년 이내에 이의제기를 해야 합니다. 이의제기는 온라인 [착오송금 수취인 - 이의제기] 메뉴 또는 양식을 팩스(02-758-0270), 이메일(kmrs@kdic.or.kr), 직접 방문 중 택일하여 신청할 수 있습니다."
+    },
+    {
+      "test_id": "ha_center_pl2",
+      "why": "must_include 실패",
+      "answer": "은닉재산을 신고하려면 다음과 같은 절차를 따르면 됩니다.\n\n1. **신고 접수**: 인터넷, 우편, FAX, 방문, 출장 등을 통해 신고센터에 접수해야 합니다. 실명 확인을 위해 전화로는 신고를 받지 않으며, 인터넷은 예금보험공사 홈페이지의 금융부실관련자 은닉재산 신고센터 창을 이용하면 됩니다.\n \n2. **조사 및 회수**: 신고된 재산에 대해 예금보험공사 및 채권기관의 정밀 조사를 진행하며, 법적 절차를 통해 재산을 회수합니다.\n \n3. **포상금 지급**: 신고 재산에 대한 조사 및 회수 절차가 완료되면, 신고자의 회수 기여도에 따라 포상금이 차등 지급됩니다. 최대 30억 원까지 지급될 수 있으나, 익명이나 가명으로 신고할 경우 포상금이 지급되지 않을 수 있습니다.\n\n이러한 절차를 통해 은닉재산을 신고하고, 그에 따른 조치를 취할 수 있습니다.\n\n**신청 페이지**\n- 금융부실관련자 은닉재산신고 — 은닉재산 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_center_pl2t",
+      "why": "must_include 실패",
+      "answer": "은닉재산을 신고하려면 다음과 같은 절차를 따르면 됩니다.\n\n1. **신고 접수**: 인터넷, 우편, FAX, 방문, 출장 등을 통해 신고 가능합니다. 단, 실명 확인을 위해 전화로는 신고 접수를 받지 않으며, 인터넷을 이용할 때는 예금보험공사 홈페이지의 금융부실관련자 은닉재산 신고센터에서 신고할 수 있습니다.\n2. **조사 및 회수**: 신고된 재산에 대해 채권기관 등의 정밀 조사를 거친 후 법적 절차를 통해 재산을 회수합니다.\n3. **포상금 지급**: 신고 재산에 대한 조사 및 회수 절차가 완료되면, 신고자의 회수 기여도에 따라 최고 30억 원까지 포상금이 지급될 수 있습니다.\n\n은닉재산 신고 시 허위 또는 무고성 신고 등의 남발을 방지하기 위해 신고자 본인의 실명 신고를 원칙으로 하며, 부득이한 사유로 익명이나 가명에 의한 신고를 원하는 경우에는 신고는 가능하나 포상금은 지급되지 않는다는 점 유의하시기 바랍니다.\n\n**신청 페이지**\n- 금융부실관련자 은닉재산신고 — 은닉재산 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_faq_dclr_pl1",
+      "why": "must_include 실패",
+      "answer": "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+    },
+    {
+      "test_id": "dr_kruc_pl1",
+      "why": "must_include 실패",
+      "answer": "케이알앤씨가 인수한 채권의 채무조정을 위해 필요한 서류는 다음과 같습니다:\n\n1. **본인 신청 시**:\n - 채무조정 신청서 및 동의서\n - 상환약정서\n - 주민등록 등·초본 및 신분증(주민등록증, 운전면허증)\n - 소득증명서류(급여명세서, 근로소득 원천징수영수증 등)\n - 재산 증명서류(부동산 등기부등본, 자동차 등록증 등)\n\n2. **대리인 신청 시 추가 서류**:\n - 가족관계 확인 서류(주민등록등본 또는 가족관계증명서)\n - 위임장, 신청인 인감증명서, 대리인 신분증\n\n위의 서류들을 준비하여 신청하시면 됩니다. 다만, 특정 상황에 따라 추가로 요구될 수 있는 서류가 있을 수 있으니, 자세한 사항은 케이알앤씨 고객 상담 센터(1899-0057)로 문의하여 확인하시기 바랍니다."
+    },
+    {
+      "test_id": "dr_kruc_pl1t",
+      "why": "must_include 실패",
+      "answer": "케이알앤씨가 인수한 채권의 채무조정을 위해 필요한 서류는 다음과 같습니다:\n\n1. **본인 신청 시**:\n - 채무조정 신청서 및 동의서\n - 상환약정서 (접수처 양식)\n - 주민등록 등·초본 및 신분증 (주민등록증, 운전면허증)\n - 소득증명서류 (급여명세서, 근로소득원천징수영수증 등)\n - 재산증명서류 (부동산등기부등본, 자동차등록증 등)\n\n2. **대리인 신청 시 추가 서류**:\n - 가족관계 확인서류 (주민등록등본 또는 가족관계증명서)\n - 위임장, 신청인 인감증명서, 대리인 신분증\n\n위의 서류들을 준비하여 제출하시면 채무조정을 신청할 수 있습니다. 필요 서류가 준비되었는지 확인하시고, 신청 과정에서 추가적인 정보가 필요할 수 있으니 상담 시 자세한 사항을 문의하시기 바랍니다."
+    },
+    {
+      "test_id": "cx02",
+      "why": "must_include 실패",
+      "answer": "**예금자보호제도 안내자료는 어디서 다운로드하나요?**\n예금자보호제도 안내자료는 예금보험공사 홈페이지에서 다운로드 받을 수 있으며, 필요하신 경우 해당 파일을 다운로드 받아 사용하거나 영업점에 비치하실 수 있습니다. 자세한 사항은 예금보험공사 홈페이지를 참고하시기 바랍니다.\n\n**예금보호 로고는 색상을 바꿔서 써도 되나요?**\n예금보호 로고는 지정된 색상 이외의 색상으로 변경하여 사용할 수 없습니다. 또한, 로고의 모양을 변형하거나 임의로 재배열하여 사용하는 것도 금지되어 있습니다. 이러한 규정을 준수함으로써 금융소비자들이 예금자보호제도를 명확하게 인식할 수 있도록 해야 합니다.\n\n**참고 출처**\n- 예금자보호제도 > 표시·설명·확인 제도 > 예금보호 로고 사용 안내 — 예금보호 로고 사용 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 안내자료 다운로드 — 안내자료 다운로드 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ — 표시·설명·확인 제도 관련 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 저축은행변경이력 — 저축은행변경이력 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do)"
+    },
+    {
+      "test_id": "cx04",
+      "why": "must_include 실패",
+      "answer": "**우리 회사가 예금보험 대상 금융회사인지 검색하고 싶어요.**\n예금보험 대상 금융회사는 보호대상금융상품검색을 통해 확인하실 수 있습니다. 해당 사이트에서 회사명을 검색하시면 예금자보호 여부와 가입 가능한 상품 종류 등을 알 수 있으니 참고하시기 바랍니다. 추가 문의사항이 있다면 언제든지 연락주세요.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 보호대상금융상품검색 — 보호대상금융상품검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do)\n\n**저희가 파는 상품이 보호상품 목록에 있는지 검색하고 싶어요.**\n문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+    },
+    {
+      "test_id": "cx05",
+      "why": "must_include 실패",
+      "answer": "**제가 파산금융회사에 채무가 있는지 온라인으로 조회하고 싶은데 방법이 뭔가요, 모바일에서도 되나요?**\n간단한 본인 인증 절차를 통해 파산금융회사 및 ㈜케이알앤씨에 채무가 있는지 확인하실 수 있으며, 모바일 환경에서도 '휴대폰 인증' 절차를 이용하여 조회가 가능합니다. 홈페이지에 접속하신 후 '채무정보 조회하기'를 클릭하시고 본인 확인을 진행해 주세요.\n\n**필요 서류**\n- 부채증명원/금융거래정보신청 (부채증명원 발급신청서 다운로드 · 금융거래정보 발급신청서 다운로드 · 위임장 다운로드): https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)\n\n**확인되면 부채증명원은 어떻게 발급받나요?**\n부채증명원은 파산금융회사에 부채를 가지고 있는 채무자라면 신청할 수 있습니다. 신청 방법으로는 인터넷 신청이 원칙이지만, 직접 내방하여 신청할 수도 있습니다. 신청 시 구비서류로는 부채증명원 발급신청서와 본인 신분증이 필요합니다. 교부 방법으로는 인터넷 및 내방하여 신청하신 경우 신청서에 기재된 수령희망주소지로 등기 및 FAX로 발송되며, 신청일로부터 5일 이내에 수령하실 수 있습니다. 자세한 사항은 예금보험공사의 고객도우미실로 문의하시기 바랍니다.\n\n**필요 서류**\n- 부채증명원/금융거래정보신청 (부채증명원 발급신청서 다운로드 · 금융거래정보 발급신청서 다운로드 · 위임장 다운로드): https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)"
+    },
+    {
+      "test_id": "cx07",
+      "why": "must_include 실패",
+      "answer": "**착오송금 신청하기 전에 뭘 주의해야 하나요?**\n착오송금을 신청하기 전에 몇 가지 주의사항을 알려드리겠습니다.\n\n먼저, 이체 시 이용한 금융회사나 간편송금업체 등을 통해 먼저 반환을 요청해야 합니다. 만약 금융회사나 간편송금업체를 통해서도 돌려받지 못한 경우에만 예금보험공사에 신청이 가능합니다. \n\n또한, 신청 가능한 착오송금 금액 한도는 건당 5만원 이상부터 1억원 이하까지입니다. 신청은 착오송금일로부터 1년 이내에 가능합니다. \n\n마지막으로, 잘못 보낸 계좌가 범죄에 이용되었거나, 압류 등 법적 제한 계좌인 경우에는 지원이 어려울 수 있으니 참고하시기 바랍니다.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)\n\n**착오송금 신청에 준비할 서류는 무엇인가요?**\n착오송금 신청 시 필요한 서류는 다음과 같습니다:\n\n1. 본인 방문 시: \n - 본인 확인용 신분증(주민등록증, 운전면허증, 여권 등), 본인 도장(서명 가능)\n\n2. 대리인 방문 시:\n - 대리인 확인용 신분증\n - 착오송금 반환지원 신청서\n - 착오송금인의 인감 날인된 금융 거래정보제공 동의서\n - 착오송금인의 인감 날인된 착오송금 반환지원 신청 등 위임장\n - 착오송금인의 인감증명서 1통 (반환지원 신청일 기준 최근 3개월 내)\n\n각 서류는 해당되는 경우에만 준비하시면 되며, 자세한 사항은 예금보험공사의 고객센터나 홈페이지를 참고하시기 바랍니다.\n\n**필요 서류**\n- 구비서류안내 - 착오송금인 (신청서양식 다운로드 · 금융거래정보 제공 요구(동의)서 다운로드 · 본인 신청서 샘플 다운로드 · 채권양도통지 위임장 양식 다운로드 · 대리인 신청서 샘플 다운로드 · 착오송금반환지원 신청등위임장양식 양식 다운로드 · 친권합의서양식 다운로드 · 취소신청서양식 다운로드 · 매입계약해제신청서양식 다운로드 · 수령계좌변경신청서양식 다운로드 · 위임해지통지서양식 다운로드 · 착오송금반환지원 신청등위임장양식 다운로드): https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 구비서류안내 - 착오송금수취인 (착오송금액반환요구에대한 이의제기서양식 다운로드 · 착오송금액반환관련 이체수수료환급신청서양식 다운로드): https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)\n\n**착오송금 신청은 어디서 시작하면 되나요?**\n착오송금 신청은 예금보험공사의 착오송금 반환지원 홈페이지에서 시작할 수 있습니다. 먼저 홈페이지에서 신청 자격(건당 5만원 이상 ~ 1억원 이하의 착오송금으로, 착오송금일로부터 1년 이내에 신청)을 확인하신 후, 온라인으로 신청서를 작성하시면 됩니다. 만약 처음 신청하시는 경우에는 신청자격 확인부터 진행해주시기 바랍니다.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    },
+    {
+      "test_id": "cx08",
+      "why": "must_include 실패",
+      "answer": "**모르는 돈이 계좌에 들어왔는데 어디서 이의제기하면 되나요?**\n질의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요.\n\n**자진반환 기한을 넘기면 어떻게 되나요?**\n자진반환 기한을 넘긴 경우, 착오송금 수취인은 법원을 통한 지급명령 절차가 진행될 수 있습니다. 이때 이의제기를 하지 않고 착오송금을 반환하지 않거나 일부만 반환하는 경우에도 법원을 통한 지급명령 절차가 진행될 수 있으니 주의하시기 바랍니다.\n\n**참고 출처**\n- 수취인_유의사항 — 착오송금수취인 유의사항 (https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do)\n- 착오송금인 > 반환지원 신청하기 > 신청대상여부 확인 — 신청대상여부 확인 (자가진단) (https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- 절차 — 착오송금반환지원 절차 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdProc/selectScrn.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)"
+    },
+    {
+      "test_id": "cx10",
+      "why": "must_include 실패",
+      "answer": "**신탁부동산이 무엇인가요?**\n신탁부동산이란 PF대출채권의 담보신탁 또는 담보로 취득한 토지 등 부동산(PF대출채권 관련 권리 등 기타 자산 포함)을 의미합니다. 이는 부동산 개발 관련 특정 프로젝트의 사업성을 평가하여 그 사업에서 발생할 미래 현금흐름(Cash Flow)을 제공된 차입원리금의 주된 상환재원으로 하는 대출입니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산현황 — 신탁부동산현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산관리체계 — 신탁부동산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산관리체계 — 특별자산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 보호대상금융회사검색 — 보호대상금융회사검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do)\n\n**신탁부동산이 어떤 절차로 관리되고 있나요?**\n신탁부동산은 책임회수관리시스템을 통해 관리되며, 전담 본부 부서, 파산재단 담당자 및 외부 전문가 등으로 구성된 신탁부동산 별 전담 관리 그룹 운영을 통해 신속한 현황 파악 및 적정 가치 회수가 추진됩니다. 이는 신탁부동산 현황 조사부터 매각 후 사후관리까지 일련의 절차를 4단계로 구분하여 단계별로 관리됩니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산관리체계 — 신탁부동산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산현황 — 신탁부동산현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산관리체계 — 특별자산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 보호대상금융회사검색 — 보호대상금융회사검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)"
+    },
+    {
+      "test_id": "cx11",
+      "why": "must_include 실패",
+      "answer": "**은닉재산 신고는 어디로 하나요?**\n은닉재산 신고는 예금보험공사 홈페이지 내의 금융부실관련자 은닉재산 신고센터 창이나 상담전화(1588-0037, 02-758-0102∼4)를 통해 가능합니다. 실명 확인을 위해 전화 신고는 받지 않으며, 인터넷을 이용한 신고 접수가 가능합니다.\n\n**신청 페이지**\n- 금융부실관련자 은닉재산신고 — 은닉재산 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)\n\n**착오송금 반환지원은 어떻게 신청하나요?**\n착오송금 반환지원은 아래와 같은 절차로 신청하실 수 있습니다.\n\n1. **먼저 이체한 금융회사나 간편송금 업체 등을 통해 반환을 요청**합니다. 만약 여기서 해결이 되지 않는다면, 그때 예금보험공사를 통해 반환 지원을 신청할 수 있습니다.\n \n2. **예금보험공사에 신청하기 전**, 이체한 금융회사나 간편송금 업체 등에서 이미 반환 요청을 했는지 확인하시기 바랍니다.\n\n3. **위의 방법으로도 반환을 받지 못했을 경우**, 예금보험공사에 착오송금 반환지원을 신청할 수 있습니다.\n\n4. **신청 가능 기간**: 착오송금이 발생한 날부터 1년 이내까지 신청 가능합니다.\n\n이렇게 진행하시면 착오송금을 보다 원활하게 반환받으실 수 있을 것입니다. 추가적인 도움이 필요하시다면 언제든지 문의해 주세요.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)\n\n**예금자보호 한도는 얼마인가요?**\n원금과 소정의 이자를 합하여 1인당 1억원까지만 보호되며 초과금액은 보호되지 않습니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호한도(해외) — 예금자보호한도(해외) (https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)"
+    }
+  ],
+  "records": [
+    {
+      "test_id": "dp_protlmts_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 29.1279,
+      "answer": "예금자 한 명이 한 금융회사에서 보호받을 수 있는 한도는 원금과 소정의 이자를 포함하여 1억원입니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호한도(해외) — 예금자보호한도(해외) (https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do)"
+    },
+    {
+      "test_id": "dp_protlmts_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 3.6222,
+      "answer": "예금자 한 명이 한 금융회사에서 보호받을 수 있는 한도는 원금과 소정의 이자를 합쳐 **1억원**입니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호한도(해외) — 예금자보호한도(해외) (https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do)"
+    },
+    {
+      "test_id": "dp_syst_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.0882,
+      "answer": "예금자보호법을 제정해서 예금보험제도를 운영하는 근본적인 목적은 금융회사가 영업정지나 파산 등으로 고객의 예금을 지급하지 못하게 될 경우 해당 예금자뿐만 아니라 전체 금융제도의 안정성도 큰 타격을 입게 되기 때문에, 이러한 사태를 방지하고자 마련된 것입니다. 이를 위해 예금자보호법은 고객들의 예금을 보호하는 제도를 갖추어 놓았으며, 이는 금융회사가 납부한 예금보험료를 기반으로 운영되는 공적보험으로서 예금자를 보호하는 역할을 합니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_syst_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.2318,
+      "answer": "예금자보호법을 제정해서 예금보험제도를 운영하는 근본적인 목적은 금융회사가 영업정지나 파산 등으로 고객의 예금을 지급하지 못하게 될 경우 해당 예금자뿐만 아니라 전체 금융제도의 안정성도 큰 타격을 입게 되기 때문에, 이러한 사태를 방지하기 위해 마련된 것입니다. 이를 통해 예금자의 경제적 권익을 보호하고 금융 시스템의 안정성을 유지하는 것을 목표로 하고 있습니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_fnst_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.7039,
+      "answer": "**신용협동조합에 맡긴 돈도 예금보험공사가 보호해주나요?**\n아니요, 신용협동조합에 맡긴 돈은 예금보험공사가 보호해주지 않습니다. 예금보험공사는 은행, 보험회사, 투자매매·투자중개업자, 상호저축은행의 예금만 보호하며, 신용협동조합은 개별 법령에 근거하여 자체 기금으로 보호하고 있습니다. 따라서 신용협동조합에 대한 예금은 예금보험공사의 보호를 받을 수 없습니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n\n**새마을금고에 맡긴 돈도 예금보험공사가 보호해주나요?**\n아니요, 새마을금고를 포함한 신용협동조합과 상호금융업권은 예금보험공사가 아닌 각 단체의 자체 기금으로 보호하고 있습니다. 따라서 예금보험공사가 보호하지 않습니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_fnst_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.9379,
+      "answer": "**신용협동조합에 맡긴 돈도 예금보험공사가 보홓해주나요?**\n신용협동조합은 예금보험공사가 보호하는 금융회사가 아닙니다. 농·수협 지역조합, 신용협동조합, 새마을금고, 산림조합 등의 상호금융업권은 자체 기금에 의해 보호되고 있습니다. 따라서 예금보험공사가 아닌 해당 기관의 자체 보호 제도를 이용해야 합니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n\n**새마을금고에 맡긴 돈도 예금보험공사가 보홓해주나요?**\n새마을금고는 예금보험공사의 보호대상 금융회사가 아니므로, 예금보험공사가 보호하지 않습니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n- 예금자보호제도 > 예금자보호제도 — 예금자보호제도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSyst/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_prdct_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.6098,
+      "answer": "네, 은행의 정기예금은 예금보호 대상 상품입니다. 다만, 예금보험 가입 금융회사가 취급하는 '예금'만을 보호하므로, 보호대상 금융상품에 해당하는 정기예금이어야 합니다. 자세한 내용은 예금자보호제도 FAQ의 내용을 참고하시기 바랍니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 보호대상금융상품검색 — 보호대상금융상품검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do)"
+    },
+    {
+      "test_id": "dp_prdct_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.1581,
+      "answer": "네, 은행의 정기예금은 예금보호 대상 상품입니다. 원금과 이자를 합쳐 1억원까지 보호됩니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 보호대상금융상품검색 — 보호대상금융상품검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do)"
+    },
+    {
+      "test_id": "dp_gudn_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.1774,
+      "answer": "표시·설명·확인 제도 안내 · 예금자보호제도\n\n표시제도 주요 업무\n* 예금자보호 안내문 표시\n* 보호금융상품등록부 관리\n* 예금자보호제도 안내자료 관리\n* 예금보호 로고\n* 보호금융상품 로고\n* 신상품 보호여부 확인\n\n부보금융회사가 판매하는 금융상품의 홍보물과 통장 등, 계좌 조회 화면 등에 예금자보호 안내문을 표시해야 합니다. 또한, 통장 등은 통장, 증권, 증서[통장, 증권, 증서를 발행하지 않는 경우에는 거래 신청서 또는 청약서]를 말하며, 홍보물은 책자, 팜플릿, 신문·잡지 광고, TV 라디오 광고[회사 이미지 광고는 제외], 인터넷 홈페이지 금융 상품 몰 광고, 플래카드, 거치대 사용 배너 광고 등을 의미합니다.\n\n**참고 출처**\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ — 표시·설명·확인 제도 관련 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "dp_gudn_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.8109,
+      "answer": "표시제도의 주요 업무는 다음과 같습니다.\n1. 예금자보호 안내문 표시\n부보금융회사는 당해 금융회사가 판매하는 금융상품의 보험관계 성립 여부와 그 내용을 거래 고객이 쉽게 확인할 수 있도록 홍보물 및 통장 등, 계좌 조회 화면 등에 예금자보호 안내문을 표시해야 합니다.\n2. 보호 금융 상품 등록부 관리\n부보금융회사는 당해 부보금융회사가 취급하는 보호 금융 상품에 관하여 보호 상품 등록부를 작성, 제출 및 비치해야 합니다.\n3. 예금자보호제도 안내자료 관리\n공사는 예금자 보호를 위하여 예금보험 관계에 대한 안내 책자 및 팜플렛 등을 제작하여 부보금융회사에 교부할 수 있으며, 부보금융회사는 동 자료를 영업점에서 고객이 쉽게 접할 수 있는 곳에 비치 또는 게시해야 합니다.\n4. 예금 보호 로고\n공사는 예금자보호 법령 및 관련 규정에 따라 금융 소비자가 예금 보호 여부를 한눈에 쉽게 파악할 수 있도록 예금 보호 로고를 제작하였으며, 부보금융회사는 동 예금 보호 로고를 금융상품 등에 사용할 수 있습니다.\n5. 보호 금융 상품 로고 및 비보호 금융 상품 로고\n신상품 보호 여부 확인\n부보금융회사는 직접 개발하여 판매하는 모든 신상품의 보호 여부에 대하여 공사에 사전 또는 사후 확인을 요청해야 합니다.\n\n**참고 출처**\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ — 표시·설명·확인 제도 관련 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_aply_proc_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.6532,
+      "answer": "예금보험금 지급 공고는 다음과 같은 방법으로 이루어집니다.\n\n- 서울지역에서 발행하는 일간지와 주요 사무소가 소재한 지역의 일간지에 지급 기한, 구비 서류 등이 포함된 예금 보험금 지급 공고가 게재됩니다.\n- 예금보험공사 홈페이지에도 관련 내용이 게시됩니다.\n- 예금보험금 수령 대상자에게는 우편물과 휴대폰 안내 문자가 발송됩니다. 단, 우편 주소 및 휴대폰 번호 정보 등은 해당 보험 사고 발생 금융 회사에서 제공받아 최신 정보가 반영되어 있지 않을 수 있으니 참고하시기 바랍니다.\n\n**참고 출처**\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)\n- 예금보험금 안내 > 신청시 구비서류 — 신청시 구비서류 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_aply_proc_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.7477,
+      "answer": "예금보험금 지급 공고는 다음과 같은 방법으로 이루어집니다.\n\n- 서울지역에서 발행하는 일간지와 주요 사무소가 소재한 지역의 일간지에 지급 기한, 구비 서류 등이 포함된 예금 보험금 지급 공고가 게재됩니다.\n- 예금보험공사 홈페이지에도 관련 내용이 게재됩니다.\n- 예금 보험금 수령 대상자에 대한 우편물과 휴대폰 안내 문자가 발송됩니다. 우편 주소 및 휴대폰 번호 정보 등은 해당 보험 사고 금융 회사에서 제공받아 보내지며, 최신 정보가 반영되어 있지 않은 경우 정확하게 전달되지 않을 수 있습니다.\n\n**참고 출처**\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)\n- 예금보험금 안내 > 신청시 구비서류 — 신청시 구비서류 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_expln_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 9.0365,
+      "answer": "**가지급금은 무엇인가요?**\n가지급금은 보험사고 발생 금융회사의 예금자의 장기간 금융거래 중단에 따른 경제적 불편을 최소화하기 위해 예금보험금 지급 이전에 예금보험금 지급한도 내에서 예금보험위원회가 정하는 금액(원금 기준)을 예금자의 신청에 의해 미리 지급하는 금전을 말합니다.\n\n**참고 출처**\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n\n**개산지급금은 무엇인가요?**\n개산지급금이란, 장기간에 걸친 파산절차로 인한 예금자의 불편을 해소해 드리기 위해 예금자가 향후 파산배당으로 받게 될 예상배당률을 고려하여 예금자의 보호한도 초과 예금 등 채권을 예금자의 청구에 의하여 공사가 매입하고, 그 매입의 대가로 예금자에게 지급하는 금전을 의미합니다. 개산지급금을 수령하지 않은 예금자는 해당 금융회사의 파산절차에 따라 배당금을 수령하시면 됩니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 상속인 금융거래조회 — 상속인 금융거래조회 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do)\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_expln_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.9772,
+      "answer": "**가지급금은 무엇인가요?**\n가지급금은 보험사고 발생 금융회사의 예금자의 장기간 금융거래 중단에 따른 경제적 불편을 최소화하기 위해 예금보험금 지급 이전에 예금보험금 지급한도 내에서 예금보험위원회가 정하는 금액(원금 기준)을 예금자의 신청에 의해 미리 지급하는 금전을 말합니다.\n\n**참고 출처**\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n\n**개삼지급금은 무엇인가요?**\n개삼지급금은 파산절차 장기화에 따른 예금자의 불편을 해소하기 위해 1억원 초과 예금자로부터 예금 등 채권을 매입하고, 파산배당으로 회수가능한 추정 금액 중 일부를 미리 지급하는 금전을 말합니다.\n\n**참고 출처**\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.486,
+      "answer": "네, 보험금 지급대상 금융회사를 검색하셨는데 결과가 나오지 않는다면, 다음과 같은 방법으로 확인하실 수 있습니다.\n\n먼저, 예금보험공사 홈페이지에 접속하여 '파산재단 현황'이나 '보호대상 금융회사 검색' 등의 메뉴를 이용해 보시기 바랍니다. 이러한 메뉴들은 각 금융권역별 금융회사의 이름과 주소 등을 검색할 수 있게 해주며, 파산재단의 진행 상황 등도 확인하실 수 있습니다.\n\n또한, 예금보험공사 콜센터(☎ ****-****)로 전화하시어 상담을 받으시는 방법도 있습니다. 전문가와의 상담을 통해 보다 정확하고 신속한 답변을 얻으실 수 있을 것입니다.\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_trgt_fnst_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.6395,
+      "answer": "위 메뉴에서는 예금보험금 지급대상 금융회사를 검색하실 수 있습니다. 만약 검색 결과에서 원하는 정보가 나오지 않는다면, 예금보험공사 홈페이지에서 관련 내용을 찾아보시거나 고객센터(☎1588- hero)로 문의하시는 것이 좋습니다. 또한, 검색하신 금융회사가 파산상태이거나 해당 내용이 없는 경우에는 [파산재단 현황](파산재단 관리·고객 미수령금 신청 메뉴 내 검색 기능)에서 더 자세한 정보를 확인하시기 바랍니다.\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.0946,
+      "answer": "해외거주 유학생인 경우, 예금보험금을 수령하기 위해서는 현지 대사관의 공증을 받은 예금자 본인의 자필 위임장(원본)과 대리인의 주민등록증 등 본인증명 서류 등이 필요합니다. 또한, 인터넷뱅킹 및 본인인증이 가능하다면 공사 금융안심포털에서도 신청할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.1351,
+      "answer": "해외거주 유학생인 예금자가 위임장을 준비하려면 다음과 같습니다.\n \n1. 현지 대사관에 방문하여 예금자 본인의 자필 위임장*(원본)을 발급받아야 합니다. 이때, 위임장에는 예금자 본인의 서명 또는 날인이 필요하며, 현지 대사관의 공증을 받거나 해당 국가에서 발급한 아포스티유를 첨부해야 합니다.\n2. 위임장과 함께 대리인의 주민등록증 등 본인 증명 서류가 필요합니다.\n\n위와 같은 방법으로 준비한 위임장과 본인 증명 서류를 지참하여 해당 저축은행 또는 지급대행지점을 방문하면 예금보험금을 수령할 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "uc_gudn_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.7737,
+      "answer": "예금보험공사는 미수령금 종류별·부실금융회사별로 독립되어 있던 지급대행점 운영 체계를 개선하여 미수령금 종류별·부실금융회사별 구분 없이 ‘16.10월부터 전국 지급대행점 어디에서든 미수령금을 통합 신청할 수 있도록 하였습니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "uc_gudn_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.8879,
+      "answer": "2016년 10월 부터 미수령금 종류별, 부실금융회사별 구분 없이 전국 지급대행점 어디에서든 미수령금을 통합 신청할 수 있게 되었습니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)"
+    },
+    {
+      "test_id": "uc_tel_qust_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 3.6137,
+      "answer": "예금보험공사 IT서비스 데스크는 오전 9시부터 오후 6시까지 운영되며, 주말 및 공휴일은 휴무입니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)\n- 소개와 방법안내 > 방문접수안내 — 방문접수안내 (https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do)\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)"
+    },
+    {
+      "test_id": "uc_tel_qust_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.0867,
+      "answer": "예금보험공사 IT서비스 데스크는 오전 9시부터 오후 6시까지 운영됩니다. (공휴일, 토요일, 일요일은 휴무)\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)\n- 소개와 방법안내 > 방문접수안내 — 방문접수안내 (https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do)\n- 예금보험금 신청 절차 > 예금보험금 신청절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)\n- 예금보험금 안내 > 예금보험금이란? — 예금보험금이란? (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtExpln/selectScrn.do)\n- 예금보험금 안내 > 보험금 지급대상 금융회사 — 보험금 지급대상 금융회사 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystBamtGiveTrgtFnst.do)"
+    },
+    {
+      "test_id": "uc_hrpe_hist_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.6205,
+      "answer": "네, 실종자나 금치산자도 상속인 금융거래조회 서비스를 이용할 수 있습니다. 이 서비스는 피상속인(사망자, 실종자, 금치산자 또는 피성년후견인, 피산정후견인)의 금융재산 및 채무를 조회하는 서비스로, 상속인이 피상속인의 미수령금(예금보험금, 파산배당금, 개산지급금 정산금) 및 채무를 확인할 수 있도록 도와줍니다. 상속인은 금융감독원, 전 은행, 농·수협 단위조합, 우체국, 삼성생명 고객프라자, 한화생명 고객센터, KB생명 고객프라자, 교보생명 고객프라자, 삼성화재 고객프라자, 유안타증권 등에서 상속인 금융거래 조회서비스를 신청할 수 있습니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 상속인 금융거래조회 — 상속인 금융거래조회 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)"
+    },
+    {
+      "test_id": "uc_hrpe_hist_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.0224,
+      "answer": "네, 실종자나 금치산자, 피성년후견인, 피산정후견인에 대해서도 상속인 금융거래조회 서비스를 이용할 수 있습니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 상속인 금융거래조회 — 상속인 금융거래조회 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)"
+    },
+    {
+      "test_id": "uc_bkrp_fndt_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 3.0516,
+      "answer": "현재 파산이 진행 중인 저축은행은 총 30곳입니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단현황 — 파산재단현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtPsta.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "uc_bkrp_fndt_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": false,
+      "has_source": false,
+      "refused": false,
+      "elapsed": 6.3114,
+      "answer": "현재 파산이 진행 중인 저축은행은 총 11곳입니다."
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.178,
+      "answer": "파산재단관리 메뉴에서는 공적 자금이 투입된 금융회사의 파산진행 현황 정보를 검색할 수 있습니다. 각 금융권역별 금융회사의 이름과 주소 등을 검색할 수 있으며, 다음과 같이 구분됩니다.\n- 전체\n- 은행\n- 종합금융회사\n- 생명보험회사\n- 손해보험회사\n- 투자매매업자·투자중개업자\n- 상호저축은행\n- 신용협동조합\n- 보험\n- 금고\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "uc_bkrp_mng_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.7494,
+      "answer": "파산재단관리 메뉴에서는 다음과 같은 정보를 검색할 수 있습니다:\n\n- 금융권역\n- 파산재단명\n- 파산 선고일\n- 주소\n- 전화번호 및 FAX번호\n- 진행 상태\n\n이를 통해 각 금융권역별 금융회사의 이름과 주소 등을 확인할 수 있으며, 파산재단의 진행 상황을 알 수 있습니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "mtrs_vst_rcpt_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.0112,
+      "answer": "착오송금반환지원을 방문접수하시려면 평일 오전 9시부터 오후 5시까지 운영됩니다. 점심시간은 오후 12시부터 1시까지이니 참고하시기 바랍니다.\n\n**필요 서류**\n- 신청서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    },
+    {
+      "test_id": "kmrs_proc_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.2555,
+      "answer": "착오송금반환지원은 다음의 절차로 진행됩니다.\n\n1. **착오송금인은 예금보험공사에게 반환지원 신청(채권매입)**: 착오송금 발생 후, 금융회사를 통한 사전반환 신청 단계에서 착오송금 수취인이 자진반환에 불응하는 경우 착오송금인은 예금보험공사에 반환지원을 신청하고, 지원대상에 해당될 경우 예금보험공사가 착오송금인으로부터 부당이득반환채권을 매입합니다.\n2. **예금보험공사는 중앙행정기관/금융회사 등에 착오송금 수취인 정보 확인**: 매입계약 체결 후 예금보험공사는 행정안전부, 금융회사, 통신사 등을 통해 착오송금 수취인의 연락처 및 주소를 확보합니다.\n3. **예금보험공사는 착오송금 수취인에게 자진반환 권유**: 확보된 정보를 바탕으로 예금보험공사는 착오송금 수취인에게 자진반환을 권유하여 회수합니다.\n4. **예금보험공사는 법원에게 착오송금 수취인이 미반환시 지급명령 진행**: 자진반환에 응하지 않을 경우, 예금보험공사는 법원에 지급명령을 신청하여 회수를 진행합니다.\n5. **예금보험공사는 착오송금 수취인에게서 회수 시 회수액에서 비용 차감 후 착오송금인에게 잔액 반환**: 회수가 완료되면, 회수액에서 회수에 소요된 비용을 차감하고 남은 금액을 착오송금인에게 반환합니다.\n\n이러한 과정을 거쳐 착오송금반환지원이 이루어지게 됩니다.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    },
+    {
+      "test_id": "kmrs_proc_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.1301,
+      "answer": "착오송금반환지원은 다음과 같은 절차로 진행됩니다.\n\n1. **착오송금인은 예금보험공사에게 반환지원 신청(채권 매입)**\n2. **예금보험공사는 중앙행정기관/금융회사 등에 착오송금 수취인 정보 확인**\n3. **예금보험공사는 착오송금 수취인에게 자진반환 권유**\n4. **예금보험공사는 법원에게 착오송금 수취인이 미반환시 지급명령 진행**\n5. **예금보험공사는 착오송금 수취인에게서 회수 시 회수액에서 비용 차감 후 착오송금인에게 잔액 반환**\n\n위와 같은 절차로 착오송금반환지원이 이루어지며, 각 단계마다 세부적인 절차가 존재합니다.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    },
+    {
+      "test_id": "receiver_docs_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": false,
+      "has_source": false,
+      "refused": false,
+      "elapsed": 6.1896,
+      "answer": "착오송금 수취인이 반환 요구에 이의를 제기하려면 착오송금일로부터 1년 이내에 신청해야 합니다. 이때, 관련 서류를 준비하여 예금보험공사를 방문하거나 이체확인증 등의 증빙서류를 첨부하여 온라인으로 신청할 수 있습니다."
+    },
+    {
+      "test_id": "receiver_docs_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": false,
+      "has_source": false,
+      "refused": false,
+      "elapsed": 7.5114,
+      "answer": "착오송금 수취인이 반환 요구에 대한 이의를 제기하려면 착오송금일로부터 1년 이내에 이의제기를 해야 합니다. 이의제기는 온라인 [착오송금 수취인 - 이의제기] 메뉴 또는 양식을 팩스(02-758-0270), 이메일(kmrs@kdic.or.kr), 직접 방문 중 택일하여 신청할 수 있습니다."
+    },
+    {
+      "test_id": "sender_qlfc_check_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 3.925,
+      "answer": "착오송금반환지원을 신청할 수 있는 송금액 범위는 착오송금 건당 5만원 이상부터 1억원 이하까지입니다. 다만, 송금일로부터 1년 이내에 공사로 신청하셔야 합니다.\n\n**참고 출처**\n- 착오송금 반환지원제도 > 착오송금반환지원 신청대상 — 착오송금반환지원 신청대상 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)"
+    },
+    {
+      "test_id": "sender_qlfc_check_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.0029,
+      "answer": "착오송금반환지원을 신청할 수 있는 착오송금 금액 한도는 건당 5만원 이상 ~ 1억원 이하입니다.\n\n**참고 출처**\n- 착오송금 반환지원제도 > 착오송금반환지원 신청대상 — 착오송금반환지원 신청대상 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)"
+    },
+    {
+      "test_id": "mtrs_rel_law_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 11.8263,
+      "answer": "**착오송금반환지원 규정은 무엇인가요?**\n착오송금반환지원 규정은 다음과 같습니다.\n\n- 착오송금 건당 5만원 이상 ~ 1억원 이하의 착오송금이 지원 대상이며, 착오송금 발생일로부터 1년 이내에 신청해야 합니다.\n- 자금이체 금융회사 등에서 반환 신청을 했으나 반환이 되지 않은 경우에 제도 이용이 가능합니다.\n- 다음의 경우에는 착오송금 반환지원 제도를 이용할 수 없습니다.\n>- 정부 또는 지방자치단체, 한국은행, 금융감독원, 예금보험공사, 자금이체 금융회사 등에 착오송금 반환 신청을 하지 않은 자\n>- 착오송금 이후 사망한 자\n>- 부당이득반환채권과 관련된 소송 또는 채권보전 절차 등을 진행 중이거나 완료한 자 등 법적 절차가 진행 중이거나 완료된 자\n>- 공사가 과거 부당이득반환채권 회수 관련 비용의 청구를 하였음에도 불구하고 납부하지 않은 자(회수 관련 비용을 납부한 경우는 제외)\n>- 결손 처분을 한 부당이득반환채권의 채무자(결손 처분한 채권에 대한 손해를 공사에 배상한 경우는 제외)\n>- 공사에 거짓이나 부정한 방법으로 반환 지원 신청을 하여 매입 계약이 해제된 날로부터 5년이 경과되지 않은 자\n>- 공사와 매입 계약을 체결한 후 해제된 부당이득반환채권으로 다시 반환 지원 신청을 한 자\n>- 매입 계약 체결 후 관련 법령 또는 부당이득반환채권 매입 관련 계약서를 따르지 않아 매입 계약이 해제된 경우 해당 착오송금 일로부터 1년 이내 발생한 착오송금\n\n위 규정을 참고하시어 착오송금 반환 지원을 신청하시기 바랍니다.\n\n**참고 출처**\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- 착오송금인 > 반환지원 신청하기 > 신청대상여부 확인 — 신청대상여부 확인 (자가진단) (https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do)\n- 착오송금 반환지원제도 > 착오송금반환지원 신청대상 — 착오송금반환지원 신청대상 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do)\n\n**착오송금반환지원 시행세칙은 무엇인가요?**\n착오송금반환지원 등에 관한 규정에서 위임한 사항과 동 규정의 시행에 관하여 필요한 사항을 확인할 수 있습니다.\n\n**참고 출처**\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)\n- 소개와 방법안내 > 관련법령 및 규정 — 관련법령 및 규정 (https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do)\n- 절차 — 착오송금반환지원 절차 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdProc/selectScrn.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)"
+    },
+    {
+      "test_id": "mtrs_rel_law_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.3509,
+      "answer": "**챡오송금반환지원 규정은 무엇인가요?**\n착오송금반환지원 규정은 **예금자보호법** 및 **시행령**에 따라 예금보험위원회가 위임한 사항과 그 시행에 필요한 사항을 확인할 수 있는 규정입니다.\n\n**참고 출처**\n- 소개와 방법안내 > 관련법령 및 규정 — 관련법령 및 규정 (https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do)\n- 착오송금인 > 반환지원 신청하기 > 신청대상여부 확인 — 신청대상여부 확인 (자가진단) (https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do)\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n\n**챡오송금반환지원 시행세칙은 무엇인가요?**\n착오송금반환지원 시행세칙은 착오송금반환지원 등에 관한 규정에서 위임한 사항과 동 규정의 시행에 관하여 필요한 사항을 확인할 수 있습니다.\n\n**참고 출처**\n- 소개와 방법안내 > 관련법령 및 규정 — 관련법령 및 규정 (https://fins.kdic.or.kr/ir/aplygudn/MtrsRelLawoRgul/selectScrn.do)\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)\n- 착오송금인 > 반환지원 신청하기 > 신청대상여부 확인 — 신청대상여부 확인 (자가진단) (https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do)"
+    },
+    {
+      "test_id": "ha_center_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.6647,
+      "answer": "포상금은 회수기여금액에 따라 다음과 같이 산정됩니다:\n\n- **5억원 이하**: 회수기여금액의 20%\n- **5억원 초과 ∼ 20억원 이하**: 100백만원 + 5억원 초과 회수기여금액의 15%\n- **20억원 초과 ∼ 100억원 이하**: 325백만원 + 20억원 초과 회수기여금액의 10%\n- **100억원 초과**: 1125백만원 + 100억원 초과 회수기여금액의 5%\n\n포상금 지급 절차는 신고된 은닉재산 조사 및 회수, 회수금액에서 회수비용 공제, 신고자의 회수기여도 평가, 포상금 지급신청 금액 산정, 법원의 지급결정 등의 과정을 거칩니다. 포상금은 부실관련자의 은닉재산 신고를 통해 실질적으로 채권을 회수한 채권금융회사에서 지급하며, 신고재산의 회수절차가 종료된 후 신고자의 회수기여도를 감안하여 회수금액(소요비용 공제)의 5∼20% 수준에서 차등 산정되며, 최고한도는 30억원입니다. (단, 법원 등 허가, 승인에 따라 최종 금액은 변동될 수 있습니다.)\n\n**참고 출처**\n- 고객센터 > FAQ — 은닉재산신고 FAQ (https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do)\n- 금융부실관련자 은닉재산신고 — 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_center_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.2357,
+      "answer": "은닉재산 신고 포상금은 회수기여금액에 따라 다음과 같이 산정됩니다:\n\n- **5억원 이하**: 회수기여금액의 20%\n- **5억원 초과 ∼ 20억원 이하**: 100백만원 + 5억원 초과 회수기여금액의 15%\n- **20억원 초과 ∼ 100억원 이하**: 325백만원 + 20억원 초과 회수기여금액의 10%\n- **100억원 초과**: 1125백만원 + 100억원 초과 회수기여금액의 5%\n\n포상금은 부실관련자의 은닉재산 신고를 통해 실질적으로 채권을 회수한 채권금융회사에서 지급하며, 회수금액(소요 비용 공제)의 5∼20% 범위 내에서 차등 산정되며, 최고 한도는 30억원입니다. (법원의 허가, 승인에 따라 최종 금액은 변동될 수 있습니다.)\n\n**참고 출처**\n- 고객센터 > FAQ — 은닉재산신고 FAQ (https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do)\n- 금융부실관련자 은닉재산신고 — 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_center_pl2",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.4114,
+      "answer": "은닉재산을 신고하려면 다음과 같은 절차를 따르면 됩니다.\n\n1. **신고 접수**: 인터넷, 우편, FAX, 방문, 출장 등을 통해 신고센터에 접수해야 합니다. 실명 확인을 위해 전화로는 신고를 받지 않으며, 인터넷은 예금보험공사 홈페이지의 금융부실관련자 은닉재산 신고센터 창을 이용하면 됩니다.\n \n2. **조사 및 회수**: 신고된 재산에 대해 예금보험공사 및 채권기관의 정밀 조사를 진행하며, 법적 절차를 통해 재산을 회수합니다.\n \n3. **포상금 지급**: 신고 재산에 대한 조사 및 회수 절차가 완료되면, 신고자의 회수 기여도에 따라 포상금이 차등 지급됩니다. 최대 30억 원까지 지급될 수 있으나, 익명이나 가명으로 신고할 경우 포상금이 지급되지 않을 수 있습니다.\n\n이러한 절차를 통해 은닉재산을 신고하고, 그에 따른 조치를 취할 수 있습니다.\n\n**신청 페이지**\n- 금융부실관련자 은닉재산신고 — 은닉재산 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_center_pl2t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.3998,
+      "answer": "은닉재산을 신고하려면 다음과 같은 절차를 따르면 됩니다.\n\n1. **신고 접수**: 인터넷, 우편, FAX, 방문, 출장 등을 통해 신고 가능합니다. 단, 실명 확인을 위해 전화로는 신고 접수를 받지 않으며, 인터넷을 이용할 때는 예금보험공사 홈페이지의 금융부실관련자 은닉재산 신고센터에서 신고할 수 있습니다.\n2. **조사 및 회수**: 신고된 재산에 대해 채권기관 등의 정밀 조사를 거친 후 법적 절차를 통해 재산을 회수합니다.\n3. **포상금 지급**: 신고 재산에 대한 조사 및 회수 절차가 완료되면, 신고자의 회수 기여도에 따라 최고 30억 원까지 포상금이 지급될 수 있습니다.\n\n은닉재산 신고 시 허위 또는 무고성 신고 등의 남발을 방지하기 위해 신고자 본인의 실명 신고를 원칙으로 하며, 부득이한 사유로 익명이나 가명에 의한 신고를 원하는 경우에는 신고는 가능하나 포상금은 지급되지 않는다는 점 유의하시기 바랍니다.\n\n**신청 페이지**\n- 금융부실관련자 은닉재산신고 — 은닉재산 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_faq_dclr_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": false,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 5.38,
+      "answer": "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+    },
+    {
+      "test_id": "ha_faq_dclr_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.9071,
+      "answer": "아니요, 은닉재산의 신고 시 허위 또는 무고성 신고 등의 남발을 방지하기 위하여 신고자 본인의 실명 신고를 원칙으로 하고 있으며, 신고자 본인의 부득이한 사정으로 익명이나 가명에 의한 신고를 원하는 경우에는 신고는 가능하나 규정상 포상금은 지급되지 않습니다.\n\n**참고 출처**\n- 고객센터 > FAQ — 은닉재산신고 FAQ (https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do)\n- 금융부실관련자 은닉재산신고 — 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_faq_dclr_pl2",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.474,
+      "answer": "신고자의 신상정보와 신고내용은 신고자 본인의 의사에 반하여 공개되지 아니하며 철저하게 비밀이 보장됩니다. 한편, 신고재산에 대한 조사 및 회수업무 수행과 관련하여 신고정보를 알게 된 자는 그 신고정보를 타인에게 제공 또는 누설하거나 그 목적 외의 용도로 이용할 수 없도록 엄격히 규정되어 있습니다.\n\n**참고 출처**\n- 고객센터 > FAQ — 은닉재산신고 FAQ (https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do)\n- 금융부실관련자 은닉재산신고 — 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_faq_dclr_pl2t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.5648,
+      "answer": "신고자의 신상정보와 신고내용은 신고자 본인의 의사에 반하여 공개되지 아니하며 철저하게 비밀이 보장됩니다.\n\n**참고 출처**\n- 고객센터 > FAQ — 은닉재산신고 FAQ (https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do)\n- 금융부실관련자 은닉재산신고 — 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "ha_status_agree_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.0814,
+      "answer": "부실책임조사 업무에 필요한 개인정보는 「민원처리법에 근거한 민원사무 및 국민제안 업무, 공공기관의 정보공개에 관한 법률, 개인정보 보호법」에 근거하여 10년간 보유 및 이용됩니다.\n\n**참고 출처**\n- 부실책임조사 — 부실책임조사 진행현황 조회 (개인정보 동의) (https://www.kdic.or.kr/voc/userDataUsingAgree)\n- 금융부실관련자 은닉재산신고 — 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 법적근거 및 관련규정 — 부보금융회사조사 법적근거 및 관련규정 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do)\n- 금융부실관련자 불법행위신고 — 신고센터 소개 (https://www.kdic.or.kr/sp/sprtfund/SprtFndIvsfalUnrlIlglDclrGudn/selectScrn.do)\n- 고객센터 > FAQ — 은닉재산신고 FAQ (https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do)"
+    },
+    {
+      "test_id": "ha_status_agree_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.4387,
+      "answer": "부실책임조사 업무와 관련해 수집된 개인정보는 10년간 보관됩니다.\n\n**참고 출처**\n- 부실책임조사 — 부실책임조사 진행현황 조회 (개인정보 동의) (https://www.kdic.or.kr/voc/userDataUsingAgree)\n- 금융부실관련자 은닉재산신고 — 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 법적근거 및 관련규정 — 부보금융회사조사 법적근거 및 관련규정 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do)\n- 고객센터 > FAQ — 은닉재산신고 FAQ (https://fins.kdic.or.kr/cm/bbs/selectFaqCncmPrptDclr.do)"
+    },
+    {
+      "test_id": "dr_system_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.7549,
+      "answer": "파산한 저축은행 채무자가 본인 명의로 채무조정을 신청하려면 다음과 같은 서류가 필요합니다:\n\n1. **본인 신청 시**: 채무조정 신청서 및 동의서, 상환약정서 (접수처 양식), 주민등록 등·초본 및 신분증 (주민등록증, 운전면허증), 소득증명서류 (급여명세서, 근로소득 원천징수영수증 등), 재산증명서류 (부동산 등기부등본, 자동차 등록증 등).\n\n2. **대리인 신청 시 추가 서류**: 가족관계 확인서류 (주민등록등본 또는 가족관계증명서), 위임장, 신청인 인감증명서, 대리인 신분증.\n\n이와 같은 서류들을 준비하여 제출해야 채무조정을 신청할 수 있습니다. 필요 서류는 상황에 따라 다를 수 있으니, 자세한 사항은 예금보험공사의 고객상담센터(1588-0037)나 대국민포털을 통해 확인하시기 바랍니다.\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)"
+    },
+    {
+      "test_id": "dr_system_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.0414,
+      "answer": "파산한 저축은행 채무자가 본인 명의로 채무조정을 신청하려면 다음과 같은 서류가 필요합니다:\n\n1. 채무조정 신청서 및 동의서\n2. 상환약정서\n3. 주민등록 등·초본 및 신분증(주민등록증, 운전면허증)\n4. 소득증명서류(급여명세서, 근로소득 원천징수영수증 등)\n5. 재산증명서류(부동산 등기부등본, 자동차 등록증 등)\n\n대리인이 신청하는 경우 추가로 가족관계 확인 서류(주민등록등본 또는 가족관계 증명서), 위임장, 신청인 인감증명서, 대리인 신분증이 필요합니다.\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)"
+    },
+    {
+      "test_id": "dr_kruc_pl1",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": false,
+      "has_source": false,
+      "refused": false,
+      "elapsed": 12.2679,
+      "answer": "케이알앤씨가 인수한 채권의 채무조정을 위해 필요한 서류는 다음과 같습니다:\n\n1. **본인 신청 시**:\n - 채무조정 신청서 및 동의서\n - 상환약정서\n - 주민등록 등·초본 및 신분증(주민등록증, 운전면허증)\n - 소득증명서류(급여명세서, 근로소득 원천징수영수증 등)\n - 재산 증명서류(부동산 등기부등본, 자동차 등록증 등)\n\n2. **대리인 신청 시 추가 서류**:\n - 가족관계 확인 서류(주민등록등본 또는 가족관계증명서)\n - 위임장, 신청인 인감증명서, 대리인 신분증\n\n위의 서류들을 준비하여 신청하시면 됩니다. 다만, 특정 상황에 따라 추가로 요구될 수 있는 서류가 있을 수 있으니, 자세한 사항은 케이알앤씨 고객 상담 센터(1899-0057)로 문의하여 확인하시기 바랍니다."
+    },
+    {
+      "test_id": "dr_kruc_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": false,
+      "has_source": false,
+      "refused": false,
+      "elapsed": 9.723,
+      "answer": "케이알앤씨가 인수한 채권의 채무조정을 위해 필요한 서류는 다음과 같습니다:\n\n1. **본인 신청 시**:\n - 채무조정 신청서 및 동의서\n - 상환약정서 (접수처 양식)\n - 주민등록 등·초본 및 신분증 (주민등록증, 운전면허증)\n - 소득증명서류 (급여명세서, 근로소득원천징수영수증 등)\n - 재산증명서류 (부동산등기부등본, 자동차등록증 등)\n\n2. **대리인 신청 시 추가 서류**:\n - 가족관계 확인서류 (주민등록등본 또는 가족관계증명서)\n - 위임장, 신청인 인감증명서, 대리인 신분증\n\n위의 서류들을 준비하여 제출하시면 채무조정을 신청할 수 있습니다. 필요 서류가 준비되었는지 확인하시고, 신청 과정에서 추가적인 정보가 필요할 수 있으니 상담 시 자세한 사항을 문의하시기 바랍니다."
+    },
+    {
+      "test_id": "dr_credit_sprt_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.7519,
+      "answer": "무담보 채무의 경우 최장 8년(차상위 계층 이하 소득자의 경우 최장 10년)간 분할상환 가능합니다.\n\n**참고 출처**\n- 신용회복 지원 — 신용회복 지원 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do)\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)\n- KR&C 채무조정 — 채무조정 (https://www.kdic.or.kr/di/relsite/PbcrKrncLblarb/selectScrn.do)\n- 채무조정제도 — 채무조정제도 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do)\n- 파산면책 — 파산면책 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do)"
+    },
+    {
+      "test_id": "dr_credit_sprt_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.4717,
+      "answer": "무담보 채무의 경우 최장 8년(차상위 계층 이하 소득자의 경우 최장 10년)간 분할상환 가능합니다.\n\n**참고 출처**\n- 신용회복 지원 — 신용회복 지원 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do)\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)\n- 채무조정제도 — 채무조정제도 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do)\n- KR&C 채무조정 — 채무조정 (https://www.kdic.or.kr/di/relsite/PbcrKrncLblarb/selectScrn.do)\n- 파산면책 — 파산면책 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do)"
+    },
+    {
+      "test_id": "dr_psn_br_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.3571,
+      "answer": "개인파산에서 면책이란, 성실하거나 불운한 채무자에게 파산절차를 통하여 변제되지 아니한 나머지 채무에 대한 변제 책임을 파산 법원의 재판으로 면제시킴으로써 채무자의 경제적 재출발을 도모하는 것입니다. 이는 개인 채무자에게만 인정되는 제도로, 면책 결정을 받기 위해서는 파산 신청과 별개로 면책 신청을 해야 합니다. 면책이 허가되지 않은 경우에는 파산의 원인이 된 채무를 모두 변제해야 하며, 법률에 정해진 여러 제약을 받게 됩니다.\n\n**참고 출처**\n- 파산면책 — 파산면책 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do)\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)\n- 채무조정제도 — 채무조정제도 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)\n- 신용회복 지원 — 신용회복 지원 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do)"
+    },
+    {
+      "test_id": "dr_psn_br_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 6.1753,
+      "answer": "개인파산에서 면책이란, 성실하거나 불운한 채무자에게 파산절차를 통하여 변제되지 아니한 나머지 채무에 대한 변제 책임을 파산 법원의 재판으로 면제시킴으로써 채무자의 경제적 재출발을 도모하는 것입니다. 이는 개인 채무자에게만 인정되는 제도로, 면책 결정을 받기 위해서는 파산 신청과 별개로 면책 신청을 해야 합니다. 대부분의 경우, 파산 선고와 동시에 파산 관재인이 선임되어 채권자들의 의견을 참조하여 채무자의 재산을 관리·조사하고, 동시에 채무자에게 면책 불허가 사유가 있는지 심사하게 됩니다. 만약 면책 불허가 사유가 없다면 면책 결정이 내려져 채무자는 경제적으로 재출발할 기회를 얻게 됩니다.\n\n**참고 출처**\n- 파산면책 — 파산면책 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do)\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)\n- 미수령금 통합조회/신청 > 상속인 금융거래조회 — 상속인 금융거래조회 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do)\n- 신용회복 지원 — 신용회복 지원 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do)"
+    },
+    {
+      "test_id": "dr_psn_rg_pl1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.3678,
+      "answer": "개인회생을 신청할 수 있는 채무 한도는 무담보 채무의 경우 10억 원, 담보부 채무의 경우 15억 원입니다. 이 한도를 넘을 경우에는 일반회생을 신청해야 합니다.\n\n**참고 출처**\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)\n- 신용회복 지원 — 신용회복 지원 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do)\n- 파산면책 — 파산면책 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do)\n- KR&C 채무조정 — 채무조정 (https://www.kdic.or.kr/di/relsite/PbcrKrncLblarb/selectScrn.do)\n- 채무조정제도 — 채무조정제도 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do)"
+    },
+    {
+      "test_id": "dr_psn_rg_pl1t",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.8428,
+      "answer": "개인회생 신청 시 채무한도는 무담보 채무의 경우 10억 원, 담보부 채무의 경우 15억 원입니다. 이 범위를 넘는 채무는 일반회생을 신청해야 합니다.\n\n**참고 출처**\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)\n- 신용회복 지원 — 신용회복 지원 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do)\n- KR&C 채무조정 — 채무조정 (https://www.kdic.or.kr/di/relsite/PbcrKrncLblarb/selectScrn.do)\n- 파산면책 — 파산면책 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnBr/selectScrn.do)\n- 채무조정제도 — 채무조정제도 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do)"
+    },
+    {
+      "test_id": "misc_01",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 2.061,
+      "answer": "질문과 직접 관련된 예금보험공사 자료를 충분히 찾지 못해 정확한 안내가 어렵습니다. 업무명이나 제도명을 포함해 다시 질문해 주세요."
+    },
+    {
+      "test_id": "misc_02",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 2.6593,
+      "answer": "질문과 직접 관련된 예금보험공사 자료를 충분히 찾지 못해 정확한 안내가 어렵습니다. 업무명이나 제도명을 포함해 다시 질문해 주세요."
+    },
+    {
+      "test_id": "misc_03",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 1.2014,
+      "answer": "질문과 직접 관련된 예금보험공사 자료를 충분히 찾지 못해 정확한 안내가 어렵습니다. 업무명이나 제도명을 포함해 다시 질문해 주세요."
+    },
+    {
+      "test_id": "misc_04",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 1.6068,
+      "answer": "질문과 직접 관련된 예금보험공사 자료를 충분히 찾지 못해 정확한 안내가 어렵습니다. 업무명이나 제도명을 포함해 다시 질문해 주세요."
+    },
+    {
+      "test_id": "misc_05",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 2.0608,
+      "answer": "질문과 직접 관련된 예금보험공사 자료를 충분히 찾지 못해 정확한 안내가 어렵습니다. 업무명이나 제도명을 포함해 다시 질문해 주세요."
+    },
+    {
+      "test_id": "misc_06",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 3.0159,
+      "answer": "질문과 직접 관련된 예금보험공사 자료를 충분히 찾지 못해 정확한 안내가 어렵습니다. 업무명이나 제도명을 포함해 다시 질문해 주세요."
+    },
+    {
+      "test_id": "misc_07",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 5.1914,
+      "answer": "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+    },
+    {
+      "test_id": "misc_08",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 14.3084,
+      "answer": "**불법 사채업자를 어떻게 신고하나요?**\n불법 대부업체나 사채업자의 살인적인 고금리 피해를 금융감독원에 정식으로 신고하고 구제받는 절차는 다음과 같습니다.\n\n1. **신고 방식**: 전화(02-758-0102~04), 이메일(cpreport@kdic.or.kr), 인터넷을 통해 가능하며, 필요시 공사 직원이 신고자 방문 접수도 가능합니다.\n \n2. **신고서 다운로드**: 한글 양식이나 워드 양식의 신고서를 다운로드 받을 수 있으며, 팩스(02-758-0798)로도 제출 가능합니다.\n\n3. **은닉재산 신고**: 불법 사채업자의 은닉재산을 신고할 경우, 신고 내용에 따라 최대 30억 원의 포상금이 지급될 수 있습니다.\n\n위의 방법을 통해 불법 사채업자를 신고하고 구제 절차를 밟으시기 바랍니다. 자세한 사항은 금융감독원 또는 예금보험공사에 문의하시면 도움을 받으실 수 있습니다.\n\n**불법 사채업자에게 시달리고 있는데 어떻게 구제받나요?**\n문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+    },
+    {
+      "test_id": "misc_09",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 1.3221,
+      "answer": "질문과 직접 관련된 예금보험공사 자료를 충분히 찾지 못해 정확한 안내가 어렵습니다. 업무명이나 제도명을 포함해 다시 질문해 주세요."
+    },
+    {
+      "test_id": "misc_10",
+      "is_oos": true,
+      "must_hit": null,
+      "src_correct": null,
+      "has_source": false,
+      "refused": true,
+      "elapsed": 4.2249,
+      "answer": "문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+    },
+    {
+      "test_id": "cx01",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 12.8119,
+      "answer": "**예금보호한도 1억원은 언제부터 적용됐나요?**\n2025년 9월 1일부터 예금보호한도 1억원이 적용되고 있으며, 이는 예금 가입시점에 상관없이 '25.9.1. 이전에 가입한 예금에도 동일하게 1억원까지 보호됩니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호한도(해외) — 예금자보호한도(해외) (https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)\n\n**예금보호한도 1억원은 별도로 신청해야 하나요?**\n상향된 예금보호한도 적용을 위해 별도의 신청 절차는 필요하지 않으며, 예금 등을 보유하고 있는 모든 고객에게 9월 1일 이후 자동으로 상향된 한도가 적용되고 있습니다. ※ 금융회사를 사칭하여 한도 상향을 사유로 개인･신용정보를 요구하거나, 문자에 포함된 URL 접속을 유도하는 등 금융사기가 발생할 가능성이 있으니 주의하시기 바랍니다.\n\n**다른 나라들은 보호한도가 어느 정도인가요?**\n위 근거 자료를 바탕으로 보면, 다른 나라들의 예금보호한도는 다음과 같습니다:\n\n- 미국: 1인당 보호한도 50만 달러(USD)\n- 캐나다: 1인당 보호한도 100만 캐나다 달러(CAD)\n- 일본: 1인당 보호한도 100만 엔(JPY)\n- 영국: 1인당 보호한도 120만 파운드(GBP)\n- 독일: 1인당 보호한도 100만 유로(EUR)\n\n이러한 정보는 각국의 경제 상황과 금융 시스템에 따라 다를 수 있으며, 해당 국가의 예금보험기구에서 제공하는 정보를 참고하시는 것이 좋습니다."
+    },
+    {
+      "test_id": "cx02",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.2939,
+      "answer": "**예금자보호제도 안내자료는 어디서 다운로드하나요?**\n예금자보호제도 안내자료는 예금보험공사 홈페이지에서 다운로드 받을 수 있으며, 필요하신 경우 해당 파일을 다운로드 받아 사용하거나 영업점에 비치하실 수 있습니다. 자세한 사항은 예금보험공사 홈페이지를 참고하시기 바랍니다.\n\n**예금보호 로고는 색상을 바꿔서 써도 되나요?**\n예금보호 로고는 지정된 색상 이외의 색상으로 변경하여 사용할 수 없습니다. 또한, 로고의 모양을 변형하거나 임의로 재배열하여 사용하는 것도 금지되어 있습니다. 이러한 규정을 준수함으로써 금융소비자들이 예금자보호제도를 명확하게 인식할 수 있도록 해야 합니다.\n\n**참고 출처**\n- 예금자보호제도 > 표시·설명·확인 제도 > 예금보호 로고 사용 안내 — 예금보호 로고 사용 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLogoUseGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 안내자료 다운로드 — 안내자료 다운로드 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystDataDwnldList.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ — 표시·설명·확인 제도 관련 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 저축은행변경이력 — 저축은행변경이력 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do)"
+    },
+    {
+      "test_id": "cx03",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 13.9266,
+      "answer": "**부보금융회사 조사는 어떤 절차로 진행되나요?**\n부보금융회사 조사는 다음과 같은 절차로 진행됩니다.\n\n1. **조사대상 선정**: 예금자보호법 제21조 제2항에 따라 부실우려가 있다고 인정되거나, 예금자보호법 시행령 제12조의 2에 따른 기준에 부합하는 부보금융회사를 대상으로 조사를 실시합니다.\n2. **현장조사**: 선정된 부보금융회사의 업무 및 재산 상황을 직접 방문하여 조사합니다.\n3. **조사내용 심의**: 현장조사 결과를 바탕으로 조사내용을 검토하고 심의를 진행합니다.\n4. **조사결과 처리**: 조사 결과에 따라 필요한 시정조치나 금융감독원장에게 검사를 요청하는 등의 조치를 취합니다.\n\n이러한 절차는 예금자보호 및 기금손실 최소화를 위해 중요한 과정으로, 공사는 금융제도의 안정성 유지와 예금자 보호를 최우선으로 하고 있습니다.\n\n**부보금융회사 조사의 법적 근거가 뭔가요?**\n예금자보호법 제21조 제2항에 근거하여 부보금융회사 등에 대하여 업무 및 재산 상황 조사를 실시하고 있습니다.\n\n**참고 출처**\n- 예금자보호제도 > 부보금융회사조사 > 법적근거 및 관련규정 — 부보금융회사조사 법적근거 및 관련규정 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaRgul/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 조사업무 소개 — 부보금융회사조사 업무 소개 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaItrd/selectScrn.do)\n- 예금자보호제도 > 부보금융회사조사 > 소명 및 이의제기 > 소명및이의제기신청 — 부보금융회사조사 소명 및 이의제기 신청 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystJosaExplPrtsAplyGudn/selectScrn.do)\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 안내 — 표시·설명·확인 제도 안내 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtGudn/selectScrn.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 개요 — 보호대상 금융회사 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSumr.do)\n\n**조사 결과에 이견이 있으면 어떻게 이의제기하나요?**\n조사 결과에 이견이 있을 경우 증빙 자료를 첨부하여 조사 실시 부서장에게 소명 및 이의 제기를 할 수 있습니다. 소명 및 이의 제기 신청은 인터넷(VOC 고객의 소리), 우편 및 방문을 통해 가능하며, 주소는 서울특별시 중구 청계천로 30 예금 보험 공사 리스크 총괄부입니다.(우편번호: 04521)(02) 758 - 0250 팩스를 통해서도 가능합니다."
+    },
+    {
+      "test_id": "cx04",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": true,
+      "elapsed": 10.672,
+      "answer": "**우리 회사가 예금보험 대상 금융회사인지 검색하고 싶어요.**\n예금보험 대상 금융회사는 보호대상금융상품검색을 통해 확인하실 수 있습니다. 해당 사이트에서 회사명을 검색하시면 예금자보호 여부와 가입 가능한 상품 종류 등을 알 수 있으니 참고하시기 바랍니다. 추가 문의사항이 있다면 언제든지 연락주세요.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융상품 > 보호대상금융상품검색 — 보호대상금융상품검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSrchList.do)\n\n**저희가 파는 상품이 보호상품 목록에 있는지 검색하고 싶어요.**\n문의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요."
+    },
+    {
+      "test_id": "cx05",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 13.3714,
+      "answer": "**제가 파산금융회사에 채무가 있는지 온라인으로 조회하고 싶은데 방법이 뭔가요, 모바일에서도 되나요?**\n간단한 본인 인증 절차를 통해 파산금융회사 및 ㈜케이알앤씨에 채무가 있는지 확인하실 수 있으며, 모바일 환경에서도 '휴대폰 인증' 절차를 이용하여 조회가 가능합니다. 홈페이지에 접속하신 후 '채무정보 조회하기'를 클릭하시고 본인 확인을 진행해 주세요.\n\n**필요 서류**\n- 부채증명원/금융거래정보신청 (부채증명원 발급신청서 다운로드 · 금융거래정보 발급신청서 다운로드 · 위임장 다운로드): https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)\n\n**확인되면 부채증명원은 어떻게 발급받나요?**\n부채증명원은 파산금융회사에 부채를 가지고 있는 채무자라면 신청할 수 있습니다. 신청 방법으로는 인터넷 신청이 원칙이지만, 직접 내방하여 신청할 수도 있습니다. 신청 시 구비서류로는 부채증명원 발급신청서와 본인 신분증이 필요합니다. 교부 방법으로는 인터넷 및 내방하여 신청하신 경우 신청서에 기재된 수령희망주소지로 등기 및 FAX로 발송되며, 신청일로부터 5일 이내에 수령하실 수 있습니다. 자세한 사항은 예금보험공사의 고객도우미실로 문의하시기 바랍니다.\n\n**필요 서류**\n- 부채증명원/금융거래정보신청 (부채증명원 발급신청서 다운로드 · 금융거래정보 발급신청서 다운로드 · 위임장 다운로드): https://www.kdic.or.kr/sp/sprtfund/SprtFndDebtDlngAplyGudn/selectScrn.do\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)"
+    },
+    {
+      "test_id": "cx06",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 13.0038,
+      "answer": "**착오송금반환지원 제도가 무엇인가요?**\n착오송금반환지원 제도는 착오송금인이 실수로 잘못 보낸 돈을 최소한의 비용으로 빠르게 되찾을 수 있도록 도와드리는 제도입니다. 건당 5만원 이상 1억원 이하의 착오송금이 지원되며, 착오송금일로부터 1년 이내에 신청 가능합니다. 자금이체 금융회사 등을 통해 반환신청을 하였으나 반환이 안 된 경우에 신청 가능하며, 정부 또는 지방자치단체, 한국은행, 금융감독원, 예금보험공사 등은 지원 대상에서 제외됩니다.\n\n**참고 출처**\n- 제도란 — 착오송금반환지원 제도란 (https://www.kdic.or.kr/sp/kmrs/kmrsItrd/selectScrn.do)\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)\n- 소개와 방법안내 > 반환지원절차 — 반환지원절차 (https://fins.kdic.or.kr/ir/aplygudn/MtrsGvbkSprtProc/selectScrn.do)\n- 착오송금인 > 반환지원 신청하기 > 신청대상여부 확인 — 신청대상여부 확인 (자가진단) (https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do)\n- 착오송금 반환지원제도 > 착오송금반환지원 신청대상 — 착오송금반환지원 신청대상 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do)\n\n**신청 대상 조건이 어떻게 되나요?**\n신청 대상 조건은 다음과 같습니다:\n\n1. 착오송금액이 건당 5만원 이상 1억원 이하인 경우\n2. 착오송금일이 2021년 7월 6일 이후인 경우\n3. 신청일이 착오송금일로부터 1년 이내인 경우\n\n위 조건을 모두 충족해야 착오송금 반환 신청을 할 수 있습니다.\n\n**참고 출처**\n- 착오송금인 > 반환지원 신청하기 > 신청대상여부 확인 — 신청대상여부 확인 (자가진단) (https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do)\n- 신용회복 지원 — 신용회복 지원 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtCredRcvrySprt/selectScrn.do)\n- 개인회생 — 개인회생 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtPsnRg/selectScrn.do)\n- 부실책임조사 — 부실책임조사 진행현황 조회 (개인정보 동의) (https://www.kdic.or.kr/voc/userDataUsingAgree)\n\n**신청은 어떻게 하나요?**\n착오송금 반환 지원을 신청하려면 다음과 같은 방법을 이용할 수 있습니다.\n\n1. **온라인 신청**: 착오송금 반환 지원 신청은 홈페이지를 통해 가능하며, 사이트 주소는 입니다. 접속 방법은 PC 사용이 가능하며, 공동 인증서와 이체 확인증이 필요합니다.\n\n2. **방문 신청**: 서울시 중구 청계천로 30 1층에 위치한 예금보험공사 본사를 방문하여 신청할 수 있습니다. 방문 시에는 신분증과 이체 확인증이 필요하며, 점심시간은 오후 12시부터 1시까지입니다. 운영 시간은 평일 오전 9시부터 오후 5시까지입니다.\n\n**필요 서류**\n- 신청서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do\n- 구비서류안내 - 착오송금인 (신청서양식 다운로드 · 금융거래정보 제공 요구(동의)서 다운로드 · 본인 신청서 샘플 다운로드 · 채권양도통지 위임장 양식 다운로드 · 대리인 신청서 샘플 다운로드 · 착오송금반환지원 신청등위임장양식 양식 다운로드 · 친권합의서양식 다운로드 · 취소신청서양식 다운로드 · 매입계약해제신청서양식 다운로드 · 수령계좌변경신청서양식 다운로드 · 위임해지통지서양식 다운로드 · 착오송금반환지원 신청등위임장양식 다운로드): https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    },
+    {
+      "test_id": "cx07",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 19.1824,
+      "answer": "**착오송금 신청하기 전에 뭘 주의해야 하나요?**\n착오송금을 신청하기 전에 몇 가지 주의사항을 알려드리겠습니다.\n\n먼저, 이체 시 이용한 금융회사나 간편송금업체 등을 통해 먼저 반환을 요청해야 합니다. 만약 금융회사나 간편송금업체를 통해서도 돌려받지 못한 경우에만 예금보험공사에 신청이 가능합니다. \n\n또한, 신청 가능한 착오송금 금액 한도는 건당 5만원 이상부터 1억원 이하까지입니다. 신청은 착오송금일로부터 1년 이내에 가능합니다. \n\n마지막으로, 잘못 보낸 계좌가 범죄에 이용되었거나, 압류 등 법적 제한 계좌인 경우에는 지원이 어려울 수 있으니 참고하시기 바랍니다.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)\n\n**착오송금 신청에 준비할 서류는 무엇인가요?**\n착오송금 신청 시 필요한 서류는 다음과 같습니다:\n\n1. 본인 방문 시: \n - 본인 확인용 신분증(주민등록증, 운전면허증, 여권 등), 본인 도장(서명 가능)\n\n2. 대리인 방문 시:\n - 대리인 확인용 신분증\n - 착오송금 반환지원 신청서\n - 착오송금인의 인감 날인된 금융 거래정보제공 동의서\n - 착오송금인의 인감 날인된 착오송금 반환지원 신청 등 위임장\n - 착오송금인의 인감증명서 1통 (반환지원 신청일 기준 최근 3개월 내)\n\n각 서류는 해당되는 경우에만 준비하시면 되며, 자세한 사항은 예금보험공사의 고객센터나 홈페이지를 참고하시기 바랍니다.\n\n**필요 서류**\n- 구비서류안내 - 착오송금인 (신청서양식 다운로드 · 금융거래정보 제공 요구(동의)서 다운로드 · 본인 신청서 샘플 다운로드 · 채권양도통지 위임장 양식 다운로드 · 대리인 신청서 샘플 다운로드 · 착오송금반환지원 신청등위임장양식 양식 다운로드 · 친권합의서양식 다운로드 · 취소신청서양식 다운로드 · 매입계약해제신청서양식 다운로드 · 수령계좌변경신청서양식 다운로드 · 위임해지통지서양식 다운로드 · 착오송금반환지원 신청등위임장양식 다운로드): https://fins.kdic.or.kr/ir/aplygudn/MsdrprPossDcmntGudn/selectScrn.do\n- 구비서류안내 - 착오송금수취인 (착오송금액반환요구에대한 이의제기서양식 다운로드 · 착오송금액반환관련 이체수수료환급신청서양식 다운로드): https://fins.kdic.or.kr/ir/aplygudn/MsdrAddrsePossDcmntGudn/selectScrn.do\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)\n\n**착오송금 신청은 어디서 시작하면 되나요?**\n착오송금 신청은 예금보험공사의 착오송금 반환지원 홈페이지에서 시작할 수 있습니다. 먼저 홈페이지에서 신청 자격(건당 5만원 이상 ~ 1억원 이하의 착오송금으로, 착오송금일로부터 1년 이내에 신청)을 확인하신 후, 온라인으로 신청서를 작성하시면 됩니다. 만약 처음 신청하시는 경우에는 신청자격 확인부터 진행해주시기 바랍니다.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    },
+    {
+      "test_id": "cx08",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": true,
+      "elapsed": 8.6478,
+      "answer": "**모르는 돈이 계좌에 들어왔는데 어디서 이의제기하면 되나요?**\n질의하신 내용은 예금보험공사가 제공하는 정보의 범위를 벗어난 질문이라 정확한 안내가 어렵습니다. 예금자보호제도나 착오송금 반환지원 등 공사 업무에 대해 궁금하신 점을 물어봐 주세요.\n\n**자진반환 기한을 넘기면 어떻게 되나요?**\n자진반환 기한을 넘긴 경우, 착오송금 수취인은 법원을 통한 지급명령 절차가 진행될 수 있습니다. 이때 이의제기를 하지 않고 착오송금을 반환하지 않거나 일부만 반환하는 경우에도 법원을 통한 지급명령 절차가 진행될 수 있으니 주의하시기 바랍니다.\n\n**참고 출처**\n- 수취인_유의사항 — 착오송금수취인 유의사항 (https://fins.kdic.or.kr/ir/addrse/AddrseAttnMttr/selectScrn.do)\n- 착오송금인 > 반환지원 신청하기 > 신청대상여부 확인 — 신청대상여부 확인 (자가진단) (https://fins.kdic.or.kr/ir/msdrpr/selectAplyQlfcIdntyRslt.do)\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- 절차 — 착오송금반환지원 절차 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdProc/selectScrn.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)"
+    },
+    {
+      "test_id": "cx09",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 10.7499,
+      "answer": "**특별자산이 정확히 무엇인가요?**\n\"특별자산\"이란 2011년 1월 1일 이후 영업정지 된 저축은행(해당 저축은행이 파산될 경우 파산재단 포함)이 보유하고 있는 자산 중 특별한 관리가 요구되는 다음의 자산을 말합니다.\n- 특수목적법인(SPC)에 대한 채권, 이와 유사한 형태의 대출채권 및 자산(차명 주주 등을 통한 우회대출, 해외 부동산 등 포함)\n- 프로젝트파이낸싱(PF) 대출채권 중 특별한 관리가 필요한 자산\n- 저축은행 및 부실관련자가 보유하거나 피담보된 고서화, 예술품, 고가 차량 등\n- 기타 위 각 호와 유사한 자산으로써 특별한 관리가 필요하다고 인정되는 자산\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산현황 — 특별자산현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산관리체계 — 특별자산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산현황 — 신탁부동산현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do)\n\n**특별자산은 어떻게 관리되고 있나요?**\n공사는 특별자산의 가치를 유지하고 회수를 극대화하기 위해 2011년 하반기부터 전담부서를 설치하여 운영하고 있으며, 다음과 같은 절차로 관리되고 있습니다.\n1. 신속한 채권보전조치 및 관리 강화: 영업정지 저축은행 보유 SPC 및 PF 대출채권 등 특별자산의 효율적 관리를 위해 전담부서를 운영하며, SPC 주주 임원의 재산에 대한 신속한 채권보전조치를 실시하고 특별한 관리가 필요한 PF 사업장에 현장 관리자를 파견합니다.\n2. 특별자산 그룹화하여 통합 관리: 골프장, PF대출, 선박, 미술품, 외제차 등 유사 성격의 자산은 그룹화하여 통합 관리합니다.\n3. 자산별 특성을 반영한 매각 전략에 따라 매각 절차 진행: 신속한 채권보전 조치 및 관리 강화를 통해 매각 절차를 진행하고 외부 전문가 등을 활용하여 회수 극대화를 도모합니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산관리체계 — 특별자산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산현황 — 특별자산현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstPsta.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "cx10",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 8.5951,
+      "answer": "**신탁부동산이 무엇인가요?**\n신탁부동산이란 PF대출채권의 담보신탁 또는 담보로 취득한 토지 등 부동산(PF대출채권 관련 권리 등 기타 자산 포함)을 의미합니다. 이는 부동산 개발 관련 특정 프로젝트의 사업성을 평가하여 그 사업에서 발생할 미래 현금흐름(Cash Flow)을 제공된 차입원리금의 주된 상환재원으로 하는 대출입니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산현황 — 신탁부동산현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산관리체계 — 신탁부동산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산관리체계 — 특별자산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 보호대상금융회사검색 — 보호대상금융회사검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do)\n\n**신탁부동산이 어떤 절차로 관리되고 있나요?**\n신탁부동산은 책임회수관리시스템을 통해 관리되며, 전담 본부 부서, 파산재단 담당자 및 외부 전문가 등으로 구성된 신탁부동산 별 전담 관리 그룹 운영을 통해 신속한 현황 파악 및 적정 가치 회수가 추진됩니다. 이는 신탁부동산 현황 조사부터 매각 후 사후관리까지 일련의 절차를 4단계로 구분하여 단계별로 관리됩니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산관리체계 — 신탁부동산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestMngStm.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 신탁부동산현황 — 신탁부동산현황 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchTrstRlestPsta.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 특별자산관리체계 — 특별자산관리체계 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFncCoInfoSrchSpclAstMngStm.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 보호대상금융회사검색 — 보호대상금융회사검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do)\n- 예금자보호제도 > 보호대상 > 금융상품 > 개요 — 보호대상 금융상품 개요 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtTrgtPrdctSumr.do)"
+    },
+    {
+      "test_id": "cx11",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 15.0001,
+      "answer": "**은닉재산 신고는 어디로 하나요?**\n은닉재산 신고는 예금보험공사 홈페이지 내의 금융부실관련자 은닉재산 신고센터 창이나 상담전화(1588-0037, 02-758-0102∼4)를 통해 가능합니다. 실명 확인을 위해 전화 신고는 받지 않으며, 인터넷을 이용한 신고 접수가 가능합니다.\n\n**신청 페이지**\n- 금융부실관련자 은닉재산신고 — 은닉재산 신고센터 (https://www.kdic.or.kr/sp/sprtfund/SprtFndCncmDclrGudn/selectScrn.do)\n\n**착오송금 반환지원은 어떻게 신청하나요?**\n착오송금 반환지원은 아래와 같은 절차로 신청하실 수 있습니다.\n\n1. **먼저 이체한 금융회사나 간편송금 업체 등을 통해 반환을 요청**합니다. 만약 여기서 해결이 되지 않는다면, 그때 예금보험공사를 통해 반환 지원을 신청할 수 있습니다.\n \n2. **예금보험공사에 신청하기 전**, 이체한 금융회사나 간편송금 업체 등에서 이미 반환 요청을 했는지 확인하시기 바랍니다.\n\n3. **위의 방법으로도 반환을 받지 못했을 경우**, 예금보험공사에 착오송금 반환지원을 신청할 수 있습니다.\n\n4. **신청 가능 기간**: 착오송금이 발생한 날부터 1년 이내까지 신청 가능합니다.\n\n이렇게 진행하시면 착오송금을 보다 원활하게 반환받으실 수 있을 것입니다. 추가적인 도움이 필요하시다면 언제든지 문의해 주세요.\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)\n\n**예금자보호 한도는 얼마인가요?**\n원금과 소정의 이자를 합하여 1인당 1억원까지만 보호되며 초과금액은 보호되지 않습니다.\n\n**참고 출처**\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호한도(해외) — 예금자보호한도(해외) (https://www.kdic.or.kr/di/bzpblnt/selectPbcrPblntProtLmtsOvrs.do)\n- 예금자보호제도 > 보호한도 — 보호한도 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtLmts/selectScrn.do)"
+    },
+    {
+      "test_id": "pl_dp_svbk_hist_1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 2.8697,
+      "answer": "상상인저축은행은 이전에 '공평'이라는 명칭을 사용했습니다.\n\n**참고 출처**\n- 예금자보호제도 > 보호대상 > 금융회사 > 저축은행변경이력 — 저축은행변경이력 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystSvbkChgHstry.do)\n- 예금자보호제도 > 보호대상 > 금융회사 > 보호대상금융회사검색 — 보호대상금융회사검색 (https://www.kdic.or.kr/sp/dpstrprot/selectProtSystProtSrch.do)"
+    },
+    {
+      "test_id": "pl_uc_itgr_aply_1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 3.7229,
+      "answer": "미수령금 통합 확인 및 신청 시스템 이름은 \"금융안심포털\"입니다. 이곳에서 미수령금이 있는지 확인하고 통합 신청할 수 있습니다. 또한, 모바일로도 접근이 가능합니다.\n\n**참고 출처**\n- 미수령금통합신청 > 소개와 신청방법 안내 > 안내 — 안내 (https://fins.kdic.or.kr/ua/aplygudn/NramtItgrAplyItrdMthdGudn/selectScrn.do)\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 고객센터 > FAQ > 미수령금통합신청 — 미수령금통합신청 FAQ (실제 내용은 예금보호) (https://fins.kdic.or.kr/cm/bbs/selectFaqNramtAply.do)\n- 미수령금 통합조회/신청 > 상속인 금융거래조회 — 상속인 금융거래조회 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystHrpeHistInq/selectScrn.do)\n- 미수령금통합신청 > 소개와 신청방법 안내 > 예금자 대상 전화문의 안내 — 예금자 대상 전화문의 안내 (https://fins.kdic.or.kr/ua/aplygudn/DpstrTrgtTelQustGudn/selectScrn.do)"
+    },
+    {
+      "test_id": "amb_pl_faq_top10_1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 7.5802,
+      "answer": "착오송금 반환지원 대상에서 제외되는 경우는 다음과 같습니다.\n① 부당이득반환채권과 관련된 소송 또는 채권보전 절차 등을 진행·완료한 경우\n② 착오송금 수취인이 휴업·폐업한 법인이거나 착오송금 수취인에 대한 회생 또는 파산절차가 진행되는 경우\n③ 착오송금 수취인 계좌가 가압류·압류된 경우\n\n또한, 간편송금의 경우 수취인의 실지명의를 확보할 수 없는 경우에는 반환지원 대상에서 제외될 수 있습니다. 예를 들어, 송금인이 수취인의 '계좌번호'가 아닌 다른 방식(예: 연락처 송금)으로 송금한 경우에는 현행 법상 수취인의 실지명의를 확보할 수 없어 반환지원 대상에 포함되지 않습니다. 그리고 외국은행 또는 국내은행의 해외지점으로 보낸 착오송금의 경우에도 반환지원 대상에서 제외됩니다.\n\n**참고 출처**\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)"
+    },
+    {
+      "test_id": "amb_pl_dp_gudn_faq_1",
+      "is_oos": false,
+      "must_hit": null,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 9.3403,
+      "answer": "아래는 예금자보호제도와 관련한 자주 묻는 질문과 답변입니다.\n\n**질문:** 금융회사에 어떤 일이 발생했을 때 예금보험공사가 **1억원**까지 보호하나요?\n\n**답변:** 금융회사가 **2025년 9월 1일** 이후 영업정지·파산 등*으로 예금 등을 돌려줄 수 없을 때, 예금보험공사가 **1억원**까지 보호합니다.\n\n* 예금자보호법 제2조 제8호의 보험사고\n\n**질문:** 어떤 금융회사의 예금이 보호되나요?\n\n**답변:** 예금보험공사가 보호하는 금융회사는 은행*, 보험회사(생명보험, 손해보험), 투자매매·투자중개업자, 상호저축은행입니다. * 국내법에 따라 인가를 받은 외국 금융회사(은행·보험·증권) 국내지점 포함 ※ 참고로, 농·수협 지역조합, 신용협동조합, 새마을금고, 산림조합 등의 상호금융업권과 우체국은 개별 법령에 근거하여 자체 기금으로 보호하고 있어 예금보험공사가 보호하지 않습니다.\n\n**질문:** 1억원을 보호 받기 위해 별도로 신청을 해야 하나요?\n\n**답변:** 상향된 예금보호한도 적용을 위해 별도의 신청 절차는 필요하지 않으며, 예금 등을 보유하고 있는 모든 고객에게 **9월 1일** 이후 자동으로 상향된 한도가 적용되고 있습니다. ※ 금융회사를 사칭하여 한도 상향을 사유로 개인·신용정보를 요구하거나, 문자에 포함된 URL 접속을 유도하는 등 금융사기가 발생할 가능성이 있으니 주의하시기 바랍니다.\n\n**질문:** 예금보호한도 1억원은 세전인가요 아니면 세후인가요?\n\n**답변:** 예금보험금 지급은 세전 기준으로 적용됩니다. 예금보험금을 수령한 고객은 지급받은 예금보험금 가운데 이자부분에 대해서는 이자소득세와 주민세 등 관련 세금을 납부해야 합니다.\n\n**참고 출처**\n- 예금자보호제도 > 표시·설명·확인 제도 > 표시·설명·확인 제도 관련 FAQ — 표시·설명·확인 제도 관련 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystProtSystFaq/selectScrn.do)\n- 예금자보호제도 > 예금자보호제도 FAQ — 예금자보호제도 FAQ (https://www.kdic.or.kr/sp/dpstrprot/ProtSystFaq/selectScrn.do)"
+    },
+    {
+      "test_id": "pl_faq_nramt_1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": false,
+      "refused": false,
+      "elapsed": 7.59,
+      "answer": "화면 오류가 발생하는 경우에는 다음과 같은 조치를 시도해 볼 수 있습니다.\n\n1. 윈도우 방화벽 및 팝업 차단 해제: 윈도우 방화벽을 해제하거나 팝업 차단 설정을 해제해 보세요.\n2. 인터넷 브라우저 캐시 및 쿠키 삭제: 인터넷 브라우저의 캐시와 쿠키를 삭제한 후 다시 시도해 보세요.\n3. 금융안심포털 앱 설치: 모바일에서 금융안심포털 앱을 설치한 후 이용해 보세요.\n\n위의 방법으로도 문제가 해결되지 않는다면, 예금보험공사의 고객센터(1588-0037)로 문의하여 원격 지원을 받는 것이 좋습니다."
+    },
+    {
+      "test_id": "amb_pl_dr_kruc_system_1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": false,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 14.8272,
+      "answer": "**망한 저축은행 빚은 소득이 적으면 원금을 왕창 깎아준다는 게 맞아요?**\n망한 저축은행의 빚에 대해 채무조정이 이루어지는 것은 사실이지만, 이는 소득이 적다는 이유만으로 원금을 깎아주는 것이 아닙니다. 채무조정은 주로 재산상태나 소득수준 등을 감안하여 채무변제를 기대할 수 없다고 판단되는 경우에 실시되며, 원금의 최대 70% 및 이자 전액을 감면 받을 수 있습니다. 특히 기초수급자나 차상위계층 등 사회소외계층의 경우에는 원금의 80~90% 및 이자 전액을 감면 받을 수도 있습니다. 따라서 채무조정은 개인의 상황에 따라 다르게 적용되며, 단순히 소득이 적다는 이유만으로 원금을 왕창 깎아주는 것은 아닙니다.\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)\n\n**케이알앤씨가 인수한 빚은 소득이 적으면 원금을 왕창 깎아준다는 게 맞아요?**\n케이알앤씨가 인수한 빚에 대해 채무조정이 이루어지는 것은 맞지만, 이는 소득이 적다는 이유만으로 원금이 크게 감면되는 것을 의미하지는 않습니다. 채무조정은 변제의사가 있는 채무자의 재산 및 직업, 연령, 연체기간, 상환능력 등 제반 여건을 종합적으로 고려하여 실시되며, 이 과정에서 채무자의 재산 상태 및 소득 수준 등이 중요한 요소로 작용합니다.\n\n즉, 단순히 소득이 적다는 이유만으로 원금이 왕창 깎이는 것은 아니며, 개별 채무자의 상황에 맞춰 차등 적용됩니다. 예를 들어, 기초수급자나 차상위계층 등 사회 소외 계층에 대해서는 원금의 80~90% 및 이자 전액을 감면받을 수 있는 혜택이 주어지며, 고금리 대출의 경우 이자율이 조정될 수 있습니다. 또한, 단기 상환 능력이 부족한 채무자에게는 최대 10년간 분할 상환할 수 있는 길이 열려 있고, 사회 소외 계층의 경우 분할 상환 이자도 면제됩니다.\n\n**신청 페이지**\n- 채무정보 조회 및 상담신청 — 채무정보 조회·상담신청 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltInfoInqDscsnAply/selectScrn.do)"
+    },
+    {
+      "test_id": "amb_pl_uc_gudn_group_1",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.7944,
+      "answer": "파산배당금입니다. 금융회사가 파산하는 경우 남은 자산을 현금화하여 채권자들에게 그 채권액 비율대로 배당하는 금액을 말합니다.\n\n**참고 출처**\n- 미수령금 통합조회/신청 > 고객미수령금 — 고객미수령금 (https://www.kdic.or.kr/sp/dpstrprot/ProtSystNramtInqAplyNramtGudn/selectScrn.do)\n- 채무조정제도 — 채무조정제도 (https://www.kdic.or.kr/rb/lbltajmt/LbltAjmtSprtLbltAjmtSyst/selectScrn.do)\n- 미수령금 통합조회/신청 > 파산금융회사 정보 검색 > 파산재단관리 — 파산재단관리 (https://www.kdic.or.kr/sp/sprtfund/selectBkrpFndtMng.do)"
+    },
+    {
+      "test_id": "amb_pl_faq_msdr_top10_2",
+      "is_oos": false,
+      "must_hit": true,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 4.7837,
+      "answer": "자진반환 및 지급명령을 통해 회수 가능한 경우 신청 접수일로부터 **2개월 내외**로 착오송금액 반환이 가능할 것으로 예상됩니다.\n\n**참고 출처**\n- FAQ_TOP10 — 고객센터 FAQ TOP 10 (https://fins.kdic.or.kr/cm/bbs/selectFaqTop10.do)\n- FAQ_반환지원신청 — FAQ - 착오송금반환지원신청 (https://fins.kdic.or.kr/cm/bbs/selectFaqMsdrGvbkAply.do)\n- 착오송금 반환지원제도 > 착오송금반환지원 신청대상 — 착오송금반환지원 신청대상 (https://www.kdic.or.kr/sp/kmrs/kmrsItrdAplyTrgt/selectScrn.do)\n- 착오송금인 > 유의사항 — 착오송금인 유의사항 (https://fins.kdic.or.kr/ir/msdrpr/MsdrprAttnMttr/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 22.5627,
+      "answer": "친권자 중 한 명이 동행할 수 없는 경우에는 인감증명서와 동의서를 지참한 다른 친권자의 서면 동의를 받아야 합니다. 또한, 가족관계증명서와 기본증명서를 함께 준비하여 방문하시면 예금보험금을 수령하실 수 있습니다. 자세한 사항은 예금보험공사의 고객센터(☎1588-0037)로 문의하시면 친절하게 안내받으실 수 있습니다.\n\n**필요 서류**\n- 다운로드: https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyPossDcmnt/selectScrn.do\n\n**신청 페이지**\n- 예금보험금 신청 절차 — 예금보험금 신청절차 (https://www.kdic.or.kr/sp/dpstrprot/DpsmIbamtAplyProc/selectScrn.do)"
+    },
+    {
+      "test_id": "ms_poss_dcmnt_pl2t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": false,
+      "has_source": false,
+      "refused": false,
+      "elapsed": 9.0788,
+      "answer": "친권자 중 한 명이 동행할 수 없는 경우에는 인감증명서와 동의서를 추가로 준비하시면 됩니다. 구체적으로, 다음과 같은 서류를 준비하시면 됩니다:\n\n1. 상속인(미성년자)의 주민등록증 등 본인증명 서류\n2. 상속인임을 확인할 수 있는 피상속인(예금자)의 가족관계증명서(상세) 또는 제적등본(필요시)\n3. 상속인 전원이 연서한 \"(공동·상속)예금등 지분신고서 및 수령권한 위임동의서\", \"상속포기각서\"와 상속인 각각의 인감증명서(동의서 상의 도장과 인감증명서의 인감이 일치해야 함)\n4. 예금자가 사망한 경우에는 우선적으로 해당 저축은행을 방문하여 상속예금의 지급에 관한 상세한 안내를 받으시는 것이 좋습니다."
+    },
+    {
+      "test_id": "mtrs_vst_rcpt_pl1t",
+      "is_oos": false,
+      "must_hit": false,
+      "src_correct": true,
+      "has_source": true,
+      "refused": false,
+      "elapsed": 5.0376,
+      "answer": "착오송금반환지원을 방문접수하시려면 평일 오전 9시부터 오후 5시까지 방문하시면 됩니다. 점심시간은 12시부터 1시까지이니 참고하시기 바랍니다.\n\n**필요 서류**\n- 신청서 다운로드: https://fins.kdic.or.kr/ir/aplygudn/MtrsVstRcptGudn/selectScrn.do\n\n**신청 페이지**\n- 소개와 방법안내 > 상황선택 — 착오송금 반환지원 온라인 신청 (https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do)"
+    }
+  ],
+  "failed": []
+}
