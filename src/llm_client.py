@@ -31,6 +31,16 @@ def _thinking_kwargs(model_name):
     return {"thinking": {"effort": "none"}} if model_name == "HCX-007" else {}
 
 
+# CLOVA Studio 429(rate exceeded) 재시도 횟수. ChatClovaX 는 BaseChatOpenAI 상속이라 이 값이
+# openai SDK 의 max_retries 로 실려 429·5xx·연결오류에 지수 백오프(0.5s→8s, Retry-After 존중)로
+# 재시도한다. 미지정 시 SDK 기본 2회인데, 2026-08-26 held-out 89문항 순차 실행에서 HCX-007 7건·
+# DASH-002 3건이 그 2회를 넘겨 실패했다(같은 키로 생성+사후검증이 연달아 나가 한도에 닿는다).
+# 시연 중 한 번 걸리면 답변이 통째로 error 로 떨어지므로 넉넉히 잡는다 — 5회 백오프 합계
+# ≈ 15.5s+지터라 sse.TOKEN_TIMEOUT_S(30s, 첫 토큰 대기 포함) 안에 든다. 더 올리면 그 한도를
+# 넘겨 재시도 중에 스트림이 끊기므로 같이 조정할 것.
+MAX_RETRIES = 5
+
+
 def _get_eval_client(seed):
     key = f"eval:{seed}"
     if key not in _client:
@@ -43,6 +53,7 @@ def _get_eval_client(seed):
             temperature=0.0,
             seed=seed,
             max_tokens=2048,
+            max_retries=MAX_RETRIES,
             **_thinking_kwargs(model_name),
         )
     return _client[key]
@@ -74,6 +85,7 @@ def _get_client():
             api_key=os.environ["CLOVA_STUDIO_API_KEY"],
             temperature=0.2,
             max_tokens=2048,
+            max_retries=MAX_RETRIES,
             **_thinking_kwargs(model_name),
         )
     return _client["model"]
