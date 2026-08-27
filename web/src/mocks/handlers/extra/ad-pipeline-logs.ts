@@ -255,9 +255,11 @@ const rows: ConversationLogRow[] = [
     triage: 'NONE',
   },
   {
-    // Gate 1 규칙 필터가 인사로 판정해 즉답한 건 — LLM 을 안 불러 0.1초다
+    // Gate 1 규칙 필터가 인사로 판정해 즉답한 건 — LLM 을 안 불러 0.1초다.
+    // 상태는 '범위 외'다 — fixed_gate_response 가 out_of_scope=True 로 감싸 rag_runs 에
+    // OUT_OF_SCOPE 로 남는다(api/rag/answer.py:573). 캐시·되묻기는 out_of_scope=False 라 정상이다
     request_id: '9c40-1d22', occurred_at: at('09:39'), question_masked: '안녕하세요',
-    intent: null, served_from: 'gate1', status: 'NORMAL', feedback: null, source_count: null, latency_s: 0.1,
+    intent: null, served_from: 'gate1', status: 'OUT_OF_SCOPE', feedback: null, source_count: null, latency_s: 0.1,
     triage: 'NONE',
   },
   {
