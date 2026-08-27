@@ -28,6 +28,9 @@ export interface AnswerMessageProps {
   outOfScope?: boolean
   /** 스트리밍 중이면 커서 표시, 섹션은 아직 그리지 않는다 */
   streaming?: boolean
+  /** done 에서 통째로 도착한 확정 답변을 타자기로 흘린다(델타 비표시 전환, ChatPage AnswerPhase).
+   * 복원·과거 말풍선은 이 플래그 없이 즉시 전문이다 */
+  typeOut?: boolean
   /** 피드백 행 — 본문·참고 출처와 같은 말풍선 **안**에 들어간다 (CB-002 마커 3/마커 8).
    * 말풍선 바깥 아래는 AI 고지 전용이다 (CB-002 마커 96,428). */
   feedback?: ReactNode
@@ -131,11 +134,12 @@ export function AnswerMessage({
   subAnswers = [],
   outOfScope = false,
   streaming = false,
+  typeOut = false,
   feedback,
 }: AnswerMessageProps) {
   // 서버가 몇 자씩 끊어 보내든 화면에는 고른 속도로 흘린다(끊김 방지).
   // 스트리밍이 끝나도 남은 글자를 마저 흘리고, 다 흘린 뒤(typed.done)에 하단 섹션을 연다.
-  const typed = useTypewriter(stripMarker(answer), streaming)
+  const typed = useTypewriter(stripMarker(answer), streaming, typeOut)
   // 스트리밍 중에는 부착 영역을 그리지 않는다 — 나중에 걷어내면 깜빡임이 생긴다(CB-DF-004 §7 I-10)
   const showSections = typed.done && !outOfScope
   // 복합 질문은 본문을 하위 묶음으로 대체한다. 스트리밍 중에는 아직 하위 구조를 모르므로

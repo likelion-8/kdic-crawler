@@ -36,9 +36,12 @@ export interface Typed {
   done: boolean
 }
 
-export function useTypewriter(target: string, streaming: boolean): Typed {
-  // 한 번이라도 스트리밍이었으면 그 뒤로도 흘린다. 처음부터 완성본이면 흘리지 않는다
-  const everStreamed = useRef(streaming)
+export function useTypewriter(target: string, streaming: boolean, animateOnMount = false): Typed {
+  // 한 번이라도 스트리밍이었으면 그 뒤로도 흘린다. 처음부터 완성본이면 흘리지 않는다 —
+  // 단 animateOnMount 는 예외다: done 에서 통째로 도착한 확정 답변을 흘려보내는 명시 신호
+  // (2026-08-27 델타 비표시 전환). streaming:true→false 두 렌더로 흉내내면 React 커밋이
+  // setTimeout(0)보다 늦어 한 렌더로 합쳐질 수 있다(실측) — 그래서 파라미터로 받는다.
+  const everStreamed = useRef(streaming || animateOnMount)
   if (streaming) everStreamed.current = true
   const animate = everStreamed.current && !prefersReducedMotion()
 
