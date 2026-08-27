@@ -1,0 +1,98 @@
+{
+  "note": "must_include 미충족 답변을 사람이 읽고 라벨. must_include 충족(자동 정답) 건은 정답으로 간주(내용 미검수).",
+  "labels": {
+    "HCX-007": {
+      "정답": {
+        "dp_syst_pl1": "지급불능을 '지급하지 못하게 되는 사태'로 풀어씀",
+        "dp_syst_pl1t": "동일",
+        "uc_tel_qust_pl1": "09:00→'오전 9시' 표기 차이",
+        "uc_tel_qust_pl1t": "동일",
+        "mtrs_vst_rcpt_pl1": "표기 차이",
+        "mtrs_vst_rcpt_pl1t": "표기 차이",
+        "receiver_docs_pl1": "양도통지서→'양도통지문', 2주 정확",
+        "receiver_docs_pl1t": "동일",
+        "ha_center_pl2": "신고 방법·실명원칙 정확(전화번호만 생략)",
+        "cx05": "간편인증→'간단한 본인인증', 휴대폰인증·부채증명원 모두 답함",
+        "cx07": "주의사항·서류·신청 링크 3부분 모두 정확",
+        "cx10": "정의 + 4단계 절차 정확(STEP 표기만 없음)",
+        "amb_pl_dp_gudn_faq_1": "FAQ 4건 나열"
+      },
+      "부분": {
+        "ms_poss_dcmnt_pl1": "공증은 맞으나 아포스티유 누락, '공증사무소' 추가",
+        "uc_bkrp_mng_pl1t": "현황 검색은 맞으나 관재인·선고일 등 항목 열거 없음",
+        "mtrs_rel_law_pl1t": "규정 설명만, 세칙과의 차이 없음",
+        "dr_kruc_pl1": "신청서 등 맞으나 해제조건부 각서 누락",
+        "cx02": "로고 색상 정답, 안내자료 위치는 '홈페이지·영업점'으로 모호",
+        "cx04": "상품검색은 맞으나 금융회사검색 메뉴 안내 누락",
+        "cx08": "기한 초과 시 지급명령 정답, 이의제기 위치는 반환신청으로 오도",
+        "cx11": "3부분 답함, 다만 한도 설명에 '최대 3억' 자체 계산 추가"
+      },
+      "오답": {
+        "ms_poss_dcmnt_pl2": "친권자 합의서 대신 엉뚱한 '미성년자 본인 방문 동의서' 안내",
+        "mtrs_rel_law_pl1": "질문(규정 vs 세칙 차이)에 답하지 않고 신청대상 나열",
+        "pl_uc_itgr_aply_1": "'미수령금통합신청'이라 답함(정답 금융안심포털)",
+        "uc_gudn_pl1": "2021년 10월 — 근거는 '16.10, 연도 환각",
+        "uc_gudn_pl1t": "2020년 10월 — 연도 환각"
+      }
+    },
+    "HCX-DASH-002": {
+      "정답": {
+        "dp_syst_pl1": "풀어씀",
+        "dp_syst_pl1t": "풀어씀",
+        "ms_expln_pl1t": "가지급금·개산지급금 둘 다 정의(오타 '개삼' 처리)",
+        "ms_poss_dcmnt_pl1": "'현지 대사관 공증 자필위임장' — 참조답안과 동일",
+        "uc_gudn_pl1t": "2016년 10월 정확(007은 틀림)",
+        "uc_tel_qust_pl1": "표기 차이",
+        "uc_tel_qust_pl1t": "표기 차이",
+        "mtrs_vst_rcpt_pl1": "표기 차이",
+        "mtrs_vst_rcpt_pl1t": "표기 차이",
+        "ha_center_pl2": "신고 방법·포상금·실명원칙 정확",
+        "ha_center_pl2t": "동일",
+        "cx05": "3부분 모두 정확",
+        "cx07": "주의사항·서류·링크(회수비용만 생략)",
+        "cx11": "3부분 답함, 한도 1억 정확",
+        "amb_pl_dp_gudn_faq_1": "FAQ 4건",
+        "ms_poss_dcmnt_pl2": "'다른 친권자의 동의서+인감증명서' — 합의서와 실질 동일"
+      },
+      "부분": {
+        "uc_bkrp_mng_pl1": "권역 목록만, 관재인 등 항목 없음",
+        "uc_bkrp_mng_pl1t": "항목 열거했으나 관재인 누락",
+        "dr_kruc_pl1": "각서 누락",
+        "dr_kruc_pl1t": "각서 누락",
+        "cx02": "로고 정답, 안내자료 위치 모호",
+        "cx08": "기한 초과 정답, 이의제기 위치는 범위 밖 거절",
+        "cx10": "정의 정답, 절차는 불완전"
+      },
+      "오답": {
+        "uc_bkrp_fndt_pl1t": "11곳(정답 30)",
+        "receiver_docs_pl1": "'1년 이내'(정답 양도통지 후 2주)",
+        "receiver_docs_pl1t": "'1년 이내'",
+        "ha_faq_dclr_pl1": "근거 있는데 범위 밖 거절",
+        "cx04": "금융회사검색 누락 + 상품검색 부분을 범위 밖 거절",
+        "ms_poss_dcmnt_pl2t": "상속 서류를 안내(주제 이탈)"
+      }
+    }
+  },
+  "summary": {
+    "HCX-007": {
+      "answerable": 79,
+      "auto_hit": 53,
+      "manual_correct": 13,
+      "partial": 8,
+      "wrong": 5,
+      "correct_total": 66,
+      "strict_acc": 0.8354,
+      "lenient_acc": 0.9367
+    },
+    "HCX-DASH-002": {
+      "answerable": 79,
+      "auto_hit": 50,
+      "manual_correct": 16,
+      "partial": 7,
+      "wrong": 6,
+      "correct_total": 66,
+      "strict_acc": 0.8354,
+      "lenient_acc": 0.9241
+    }
+  }
+}
