@@ -71,6 +71,72 @@
         "cx04": "금융회사검색 누락 + 상품검색 부분을 범위 밖 거절",
         "ms_poss_dcmnt_pl2t": "상속 서류를 안내(주제 이탈)"
       }
+    },
+    "HCX-007 marker": {
+      "정답": {
+        "uc_tel_qust_pl1t": "표기 차이",
+        "receiver_docs_pl1": "양도통지문·2주 정확",
+        "cx02": "안내자료 메뉴·색상 불가 정확",
+        "amb_pl_dp_gudn_faq_1": "FAQ 나열"
+      },
+      "부분": {
+        "uc_bkrp_mng_pl1": "관재인 등 항목 열거 없음",
+        "uc_bkrp_mng_pl1t": "동일",
+        "ha_center_pl2": "방법은 맞으나 '익명 신고 불가'로 잘못 단정(가능하되 포상금 없음)",
+        "ha_center_pl2t": "내용 맞으나 본문에 '답변: [SOURCE_USED]' 마커 노출",
+        "cx04": "마커 노출 + 금융회사검색 누락",
+        "cx07": "3부분 정확하나 마커 노출",
+        "cx11": "3부분 답했으나 마커 노출"
+      },
+      "오답": {
+        "uc_bkrp_fndt_pl1t": "14곳(정답 30)·목록 지어냄",
+        "mtrs_rel_law_pl1": "질문 회피",
+        "cx08": "이의제기 위치 모호 + 기한 초과 답이 수수료 환급으로 이탈, 마커 노출",
+        "pl_uc_itgr_aply_1": "명칭 오답",
+        "ms_poss_dcmnt_pl2t": "범위 밖 거절 + 일반론"
+      }
+    },
+    "HCX-DASH-002 marker": {
+      "정답": {
+        "dp_syst_pl1": "풀어씀",
+        "dp_syst_pl1t": "풀어씀",
+        "ms_poss_dcmnt_pl1t": "대사관 영사확인 위임장 — 근거와 일치",
+        "ms_poss_dcmnt_pl2": "동의서+인감증명서",
+        "ms_poss_dcmnt_pl2t": "동일",
+        "uc_gudn_pl1t": "2016.10 정확",
+        "uc_tel_qust_pl1": "표기 차이",
+        "uc_tel_qust_pl1t": "표기 차이",
+        "ha_center_pl2": "정확",
+        "ha_center_pl2t": "정확",
+        "cx07": "주의·서류·링크",
+        "pl_faq_nramt_1": "방화벽·팝업"
+      },
+      "부분": {
+        "ms_expln_pl1t": "가지급금만 답하고 개산지급금 누락",
+        "uc_bkrp_mng_pl1t": "관재인 누락",
+        "dr_kruc_pl1": "각서 누락",
+        "dr_kruc_pl1t": "각서 누락",
+        "cx01": "적용일만 답함(별도신청·해외 한도 누락)",
+        "cx04": "금융회사검색 정답, 상품검색은 거절",
+        "cx05": "모바일 부분만 거절",
+        "cx11": "착오송금 부분만 거절",
+        "amb_pl_dr_kruc_system_1": "감면 가능 설명, 80~90% 수치 누락"
+      },
+      "오답": {
+        "ms_trgt_fnst_pl1": "거절",
+        "ms_trgt_fnst_pl1t": "거절",
+        "ms_poss_dcmnt_pl1": "거절",
+        "uc_bkrp_fndt_pl1t": "11곳(정답 30)",
+        "receiver_docs_pl1": "1년(정답 2주)",
+        "receiver_docs_pl1t": "1년",
+        "mtrs_rel_law_pl1": "양쪽 거절",
+        "mtrs_rel_law_pl1t": "양쪽 거절",
+        "ha_faq_dclr_pl1": "거절",
+        "ha_faq_dclr_pl1t": "거절",
+        "cx02": "양쪽 거절",
+        "cx08": "양쪽 거절",
+        "amb_pl_dp_gudn_faq_1": "'위 링크에서'만 — 내용·출처 없음"
+      }
     }
   },
   "summary": {
@@ -93,6 +159,30 @@
       "correct_total": 66,
       "strict_acc": 0.8354,
       "lenient_acc": 0.9241
+    },
+    "HCX-007 marker": {
+      "answerable": 79,
+      "auto_hit": 63,
+      "manual_correct": 4,
+      "partial": 7,
+      "wrong": 5,
+      "correct_total": 67,
+      "strict_acc": 0.8481,
+      "lenient_acc": 0.9367,
+      "refused_answerable": 3,
+      "marker_leaked_in_answer": 12
+    },
+    "HCX-DASH-002 marker": {
+      "answerable": 79,
+      "auto_hit": 45,
+      "manual_correct": 12,
+      "partial": 9,
+      "wrong": 13,
+      "correct_total": 57,
+      "strict_acc": 0.7215,
+      "lenient_acc": 0.8354,
+      "refused_answerable": 20,
+      "marker_leaked_in_answer": 0
     }
   }
 }
