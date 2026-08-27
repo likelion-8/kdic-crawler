@@ -156,7 +156,7 @@ def chat_event_stream(message: str, session_id: str, request_id: str):
     루트를 직접 여는 이유(=@observe 를 못 쓰는 이유)는 observability 모듈 docstring 2번 참고 —
     이 제너레이터는 스레드풀이 조각 단위로 소비해 contextvar 가 조각 사이에 유실된다."""
     started = time.perf_counter()
-    root = open_span("web_chat", input={"question": message},
+    root = open_span("web_chat", input={"question": message}, session_id=session_id,
                      metadata={"request_id": request_id, "session_id": session_id})
     trace = {}   # 본체가 채우는 경로 판정(output·exit_at·error 등)
     try:
