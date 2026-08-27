@@ -106,6 +106,8 @@ interface AnswerItem {
   outOfScope: boolean
   /** 스트리밍 중이면 섹션을 그리지 않고 커서만 보인다 */
   streaming: boolean
+  /** done 에서 막 도착한 확정 답변 — 타자기로 흘린다. 복원 답변은 없다(즉시 전문) */
+  typeOut?: boolean
 }
 
 type ChatItem =
@@ -129,6 +131,24 @@ interface PendingTurn {
   answerItemId: string
 }
 
+/** 답변 생성 단계 — 델타를 본문으로 그리지 않고 단계 신호로만 쓴다(2026-08-27).
+ *  done의 확정 답변이 흘러온 델타 합과 다를 수 있어(백엔드 사후검증→재생성, api/rag/sse.py 4단)
+ *  델타를 그대로 그리면 완료 순간 본문이 통째로 교체되는 점프가 났다. 대신 단계 문구를 보여주고
+ *  확정 답변을 done에서 타자기로 흘린다. 단계 전환은 프론트 추론이다:
+ *  전송→thinking · 첫 델타→writing · 델타가 끊기고 done 대기→reviewing(사후검증 구간과 일치)
+ *  · 그게 길어지면→polishing(재생성이 도는 케이스). */
+type AnswerPhase = 'thinking' | 'writing' | 'reviewing' | 'polishing'
+const PHASE_TEXT: Record<AnswerPhase, string> = {
+  thinking: '예솜24가 생각 중입니다...', // CB-DF-003 02절 원문
+  writing: '답변을 작성하고 있습니다...',
+  reviewing: '답변을 검토하고 있습니다...',
+  polishing: '답변을 다듬고 있습니다...',
+}
+/** 델타가 이만큼 끊기면 사후검증 구간으로 본다 (실측 검증 콜 ~2.5초) */
+const REVIEW_AFTER_MS = 1500
+/** 검토 표시가 이만큼 이어지면 재생성이 도는 긴 케이스다 */
+const POLISH_AFTER_MS = 4000
+
 const newId = () => crypto.randomUUID()
 
 export function ChatPage() {
@@ -140,6 +160,15 @@ export function ChatPage() {
   /** 복합 질문 진행 상태(progress 이벤트). 단일 질문에서는 계속 null 이라 아무것도 안 그린다.
    *  종전에는 하위가 셋이어도 화면이 '생각 중'만 보여, 왜 오래 걸리는지 알 수 없었다(2026-08-25 QA) */
   const [progress, setProgress] = useState<{ index: number; total: number; question: string } | null>(null)
+  /** 생성 단계 문구(위 AnswerPhase). pending일 때만 그린다 */
+  const [phase, setPhase] = useState<AnswerPhase>('thinking')
+  /** writing→reviewing→polishing 전환 타이머. 델타마다 리셋하고 턴이 끝나면 지운다 —
+   *  안 지우면 지난 턴의 타이머가 다음 턴의 문구를 엉뚱하게 바꾼다 */
+  const phaseTimers = useRef<number[]>([])
+  const clearPhaseTimers = () => {
+    phaseTimers.current.forEach(clearTimeout)
+    phaseTimers.current = []
+  }
   const [confirmNewChat, setConfirmNewChat] = useState(false)
   /** 열려 있는 피드백 사유 폼 수. 답변마다 위젯이 따로 있어 여러 개가 동시에 열릴 수 있다 */
   const [openFeedbackForms, setOpenFeedbackForms] = useState(0)
@@ -258,6 +287,8 @@ export function ChatPage() {
     setDraft('')
     setPending({ question: text, retries, userItemId, answerItemId })
     setProgress(null)
+    clearPhaseTimers()
+    setPhase('thinking')
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -273,31 +304,16 @@ export function ChatPage() {
         // 복합 질문일 때만 온다. 답변 본문이 아니라 진행 상태라 items 를 건드리지 않는다
         onProgress: setProgress,
 
-        onDelta: (chunk) =>
-          setItems((list) => {
-            const idx = list.findIndex((i) => i.id === answerItemId)
-            if (idx === -1) {
-              return [
-                ...list,
-                {
-                  kind: 'answer',
-                  at: Date.now(),
-                  id: answerItemId,
-                  text: chunk,
-                  requestId: '',
-                  sources: [],
-                  attachments: [],
-                  subAnswers: [],
-                  outOfScope: false,
-                  streaming: true,
-                },
-              ]
-            }
-            const next = [...list]
-            const cur = next[idx] as AnswerItem
-            next[idx] = { ...cur, text: cur.text + chunk }
-            return next
-          }),
+        // 델타는 본문이 아니라 '작성 중' 신호다(위 AnswerPhase) — 본문은 done의 확정 답변만 그린다.
+        // 델타가 REVIEW_AFTER_MS 끊기면 검토, 그 뒤 POLISH_AFTER_MS 지나면 다듬기로 넘어간다.
+        onDelta: () => {
+          clearPhaseTimers()
+          setPhase('writing')
+          phaseTimers.current = [
+            window.setTimeout(() => setPhase('reviewing'), REVIEW_AFTER_MS),
+            window.setTimeout(() => setPhase('polishing'), REVIEW_AFTER_MS + POLISH_AFTER_MS),
+          ]
+        },
 
         // ponytail: sources·attachments 이벤트는 따로 받지 않는다 —
         // done 페이로드가 확정 응답 전문이라(CM-DF-003 03절) 완료 시 통째로 교체하면 된다
@@ -356,6 +372,10 @@ export function ChatPage() {
                 subAnswers: res.sub_answers ?? [],
                 outOfScope: res.out_of_scope,
                 streaming: false,
+                // 확정 답변을 타자기로 흘린다 — useTypewriter(animateOnMount). 다 흘린
+                // typed.done이 하단 섹션을 연다. streaming:true→false 두 렌더로 흉내내는
+                // 방식은 React 커밋 타이밍에 밀려 한 렌더로 합쳐졌다(실측)
+                typeOut: true,
               },
             ]
           })
@@ -372,6 +392,7 @@ export function ChatPage() {
       abortRef.current = null
       setPending(null)
       setProgress(null)
+      clearPhaseTimers()
     })
   }
 
@@ -602,6 +623,7 @@ export function ChatPage() {
                       subAnswers={item.subAnswers}
                       outOfScope={item.outOfScope}
                       streaming={item.streaming}
+                      typeOut={item.typeOut}
                       // 말풍선 아래 왼쪽 — 오른쪽 시각과 한 줄로 마주 본다.
                       // 밖에 따로 그리면 말풍선보다 넓게 퍼져 폭이 어긋난다
                       feedback={
@@ -639,16 +661,16 @@ export function ChatPage() {
                 )
               })}
 
-              {/* 답변 생성 중 행 — 타이핑 인디케이터. [중단]은 별도 버튼 대신 입력창의
+              {/* 답변 생성 중 행 — 단계 문구 인디케이터(델타는 그리지 않는다, 위 AnswerPhase).
+                  done이 답변을 넣을 때까지 계속 서 있다. [중단]은 별도 버튼 대신 입력창의
                   전송 버튼이 중단 아이콘으로 바뀌는 방식이다(2026-08-10 변경, Composer.onStop) */}
               {pending && !streamingStarted && (
                 <li>
-                  <TypingIndicator />
+                  <TypingIndicator text={PHASE_TEXT[phase]} />
                 </li>
               )}
 
-              {/* 복합 질문 진행 줄 — 첫 델타가 오면 TypingIndicator 는 사라지지만 하위 질문은
-                  계속 이어지므로, 스트리밍 중에도 남겨 둔다(2026-08-25 QA) */}
+              {/* 복합 질문 진행 줄 — 하위 질문이 이어지는 동안 단계 문구와 함께 남겨 둔다(2026-08-25 QA) */}
               {pending && progress && (
                 <li>
                   <p className="px-1 text-xs text-muted-foreground" role="status">
