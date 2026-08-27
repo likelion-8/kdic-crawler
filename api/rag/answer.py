@@ -65,6 +65,14 @@ _FALLBACK_SOURCES = [SourceItem(**s) for s in DEFAULT_FALLBACK_SOURCES]
 # 2026-08-25: 정의를 prompt_builder 로 옮겼다 — 생성 단계의 거절 지시(원칙 1·few-shot·
 # NO_EVIDENCE_NOTICE)와 이 교체문이 서로 다른 문구였고, 사용자에겐 같은 상황이 세 얼굴로 보였다.
 
+# 사후 판정이 나빴는데 **민원 경로에 공식 신청 진입점(civil.links)이 있을 때** 쓰는 본문.
+# 그 링크는 LLM 이 만든 값이 아니라 검색된 업무에서 결정론적으로 나오므로(civil_petition.
+# OFFICIAL_APPLY_LINKS) LLM 이 무엇을 답했든 정답이다. 링크를 붙이면서 본문만 "범위 밖"이라고
+# 하면 서로 모순되므로 문구도 함께 바꾼다. 사실을 새로 말하지 않는다 — 안내는 첨부가 한다.
+APPLY_LINK_FALLBACK_MESSAGE = (
+    "요청하신 신청 페이지를 아래에 안내드립니다. 자세한 절차와 준비물은 링크에서 확인하실 수 있습니다."
+)
+
 # 재생성 가드의 점수 하한 변천(2026-08-10): 0.60 → 0.45 → 폐지. 처음엔 도메인 인접 범위외의
 # 재생성 채택을 점수로 막았지만, 그 역할은 다수결 판정 + 판정 입력에 질문 포함으로 대체됐다
 # ("보이스피싱" 0/6 채택 실측). 반면 하한은 정의형 질문(top-1 0.41~0.49)의 정당한 복구를
@@ -276,6 +284,9 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: Optional[bool]) -> 
     (SubAnswer, used) 를 돌려준다 — used 는 호출부가 out_of_scope 판정과 sources 이벤트 전송
     여부에 쓴다(근거를 안 쓴 답변 = 인사·범위 밖이므로 출처 섹션을 아예 그리지 않는다)."""
     used = bool(sp.top)
+    # 나쁜 판정인데 공식 신청 링크가 있어 첨부만 살린 경우. used(=LLM 이 근거를 썼나)와는
+    # 별개다 — 출처 청크는 안 붙이고 신청 링크만 붙인다.
+    link_rescue = False
     # 관측에는 **원값**을 적는다 — 마커가 없으면 None(모름)이지 True 가 아니다.
     # 이 값이 AD-005 상세의 '마커 [...]' 표기 원천이라, True 로 채우면 화면이 있지도 않은
     # 마커를 사실처럼 보여준다(2026-08-20 수정).
@@ -322,10 +333,31 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: Optional[bool]) -> 
                 # 표준 안내로 교체하고 범위외 처리한다(환각·오답 노출 차단).
                 # kind=refusal 이 구제에 실패한 경우는 여기 걸리지 않고 원래 거절문을
                 # 유지한다 — 정당한 거절문이 범위외 문구보다 정보량이 많다(종전 동작 보존).
-                body = OUT_OF_SCOPE_MESSAGE
+                #
+                # 예외: 민원 경로에 공식 신청 진입점이 있으면 범위외로 덮지 않는다. 종전에는
+                # attachments 가 used 에 묶여 있어(아래 `used and sp.civil`) 시스템이 이미
+                # 조립해 둔 신청 URL 까지 함께 버렸다 — '착오송금 반환지원 신청 링크를
+                # 알려주세요' 에 링크 없이 범위외 안내만 나갔다(2026-08-27 실측,
+                # request_id e47d14d0a21a481cbfa812ffe47bb2eb). 링크는 LLM 의 답변 품질과
+                # 무관하게 맞으므로, LLM 이 거절해도 사용자에게 간다.
+                # kind=refusal 로 좁힌다 — 여기까지 온 refusal 은 판정기가 "근거에 답이 있는데
+                # 거절했다"고 본 건이다(정당한 거절은 appropriate=true 라 이 분기에 들어오지도
+                # 않는다). 동문서답·ungrounded 는 링크를 붙일 게 아니라 가려야 할 답변이므로
+                # 종전대로 범위외로 덮는다.
+                if v.kind == "refusal" and (sp.civil or {}).get("links"):
+                    body = APPLY_LINK_FALLBACK_MESSAGE
+                    link_rescue = True
+                else:
+                    body = OUT_OF_SCOPE_MESSAGE
                 used = False
                 sp.obs_normalized = True
     sp.obs_used_source = used
+    # 링크 구제 건은 **관측상** 근거 미사용이 맞다(LLM 이 실제로 안 썼다). 다만 호출부 판정에는
+    # '답을 줬다'로 넘긴다 — used 가 false 면 to_chat_response 가 out_of_scope=true 로 매기고,
+    # 프론트가 그 값으로 첨부 섹션을 통째로 접는다(AnswerMessage.showSections). 살려 둔 신청
+    # 링크가 응답에는 있는데 화면에는 안 나오는 상태가 된다(2026-08-27 브라우저 확인).
+    if link_rescue:
+        used = True
     # 원칙 5(URL 쓰지 말 것)의 결정론적 백스톱 — 지시만으로는 4.0%가 샜고 존재하지 않는 주소도
     # 있었다(prompt_builder.strip_urls 주석). 판정이 전부 끝난 뒤에 지운다: 검증은 생성 원문을
     # 보고, 사용자·로그·대화복원에 남는 done.answer 에는 URL 이 없다. 스트리밍 델타는 이미

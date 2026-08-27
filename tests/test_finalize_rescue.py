@@ -186,3 +186,86 @@ def test_source_recheck_off_skips_validation(monkeypatch):
     assert calls == [], "Off 인데 검증 1콜이 나갔다"
     assert sub.answer == "생성된 본문", "검증을 안 했는데 본문이 바뀌었다"
     assert used is True, "근거가 있으면 Off 여도 출처를 붙인다(bool(sp.top) 안전망)"
+
+
+CIVIL = {
+    "procedure": "온라인 신청 사이트 접속 후 신청서를 작성합니다.",
+    "documents": [],
+    # civil_petition.OFFICIAL_APPLY_LINKS['착오송금 반환 신청'] 과 같은 모양
+    "links": [{"title": "착오송금 반환지원 온라인 신청",
+               "url": "https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do",
+               "breadcrumb": "소개와 방법안내 > 상황선택"}],
+}
+
+
+def test_inappropriate_refusal_keeps_official_apply_link(wire):
+    """민원 링크 요청에 LLM 이 거절해도 **시스템이 이미 조립한 공식 신청 링크는 살린다.**
+
+    실측(request_id e47d14d0a21a481cbfa812ffe47bb2eb, 2026-08-27): '착오송금 반환지원 신청
+    링크를 알려주세요' 에 HCX-DASH-002 가 거절문을 냈다. 검색·게이트는 정상이었고(top1
+    0.755) OFFICIAL_APPLY_LINKS 에 정답 URL 이 상수로 있었는데, attachments 가 used 에
+    묶여 있어(`used and sp.civil`) 그 링크까지 함께 버려졌다 — 사용자는 링크 하나 달라는
+    질문에 범위외 안내를 받았다.
+
+    링크는 LLM 이 만드는 값이 아니라 검색된 업무에서 결정론적으로 나온다. 그러므로 LLM 이
+    무엇을 답했든, 근거가 있고 신청 진입점이 있으면 첨부는 사용자에게 가야 한다."""
+    wire["verdict"] = _verdict(used_source=False, kind="refusal", appropriate=False)
+    wire["regen"] = ("여전히 거절", False)
+    sp = _sp()
+    sp.intent, sp.civil = "civil_petition", CIVIL
+
+    sub, used = finalize_sub(sp, "문의하신 내용은 …범위를 벗어난 질문이라…", marker_used_source=None)
+
+    urls = [a.url for a in sub.attachments]
+    assert "https://fins.kdic.or.kr/ir/aplygudn/MtrsStutChc/selectScrn.do" in urls, \
+        "시스템이 들고 있던 공식 신청 링크가 버려졌다"
+    assert sub.answer != OUT_OF_SCOPE_MESSAGE, \
+        "링크를 붙이면서 본문은 '범위 밖'이라고 하면 서로 모순된다"
+    assert used is True, \
+        "used=false 면 out_of_scope 로 매겨져 프론트가 첨부 섹션을 접는다 — 링크가 화면에 안 나온다"
+
+
+def test_inappropriate_refusal_without_links_stays_out_of_scope(wire):
+    """신청 진입점이 없는 업무는 종전대로 범위외 처리 — 붙일 링크가 없으면 구제할 것도 없다."""
+    wire["verdict"] = _verdict(used_source=False, kind="refusal", appropriate=False)
+    wire["regen"] = ("여전히 거절", False)
+    sp = _sp()
+    sp.intent, sp.civil = "civil_petition", {"procedure": "…", "documents": [], "links": []}
+
+    sub, used = finalize_sub(sp, "원래 본문", marker_used_source=None)
+
+    assert sub.answer == OUT_OF_SCOPE_MESSAGE
+    assert sub.attachments == []
+    assert used is False
+
+
+def test_legitimate_refusal_never_gets_the_apply_link(wire):
+    """**정말 범위 밖인 질문**에는 링크를 붙이지 않는다 — 링크 구제의 안전 경계.
+
+    민원 intent + 게이트 통과 + 업무 매핑이 되면 civil.links 는 채워진다. 그 자체로는 질문이
+    범위 안이라는 뜻이 아니다(게이트 임계 0.35 는 오차단 0 을 목표로 낮게 잡혀 있다). 경계를
+    지키는 것은 판정기다 — 정당한 거절은 appropriate=true 라 본문 교체 분기에 들어오지 않고,
+    그래서 링크도 붙지 않는다. 이 테스트가 그 성질을 고정한다."""
+    wire["verdict"] = _verdict(used_source=False, kind="refusal", appropriate=True)
+    sp = _sp()
+    sp.intent, sp.civil = "civil_petition", CIVIL
+
+    sub, used = finalize_sub(sp, "그 내용은 저희가 안내드리기 어렵습니다.", marker_used_source=None)
+
+    assert sub.attachments == [], "정당한 거절인데 신청 링크가 붙었다 — 범위 밖 질문에 오안내"
+    assert sub.answer == "그 내용은 저희가 안내드리기 어렵습니다.", "정당한 거절문은 그대로 둔다"
+    assert used is False
+
+
+def test_ungrounded_answer_is_masked_not_link_rescued(wire):
+    """근거 없는 서술은 링크를 붙일 게 아니라 가려야 할 답변이다 — 종전대로 범위외 교체."""
+    wire["verdict"] = _verdict(used_source=False, kind="ungrounded_claims", appropriate=False)
+    wire["regen"] = ("여전히 근거 이탈", False)
+    sp = _sp()
+    sp.intent, sp.civil = "civil_petition", CIVIL
+
+    sub, used = finalize_sub(sp, "지어낸 본문", marker_used_source=None)
+
+    assert sub.answer == OUT_OF_SCOPE_MESSAGE
+    assert sub.attachments == []
+    assert used is False
