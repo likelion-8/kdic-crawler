@@ -32,7 +32,7 @@ API_LANGFUSE_HOST로 완성한 링크를 붙일 수 있게 한다(api/config.py 
 """
 import os
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -62,7 +62,7 @@ if _OFFLINE_DIRS & set(_ARGV0.parts) or _UNDER_PYTEST:
     os.environ.setdefault("LANGFUSE_TRACING_ENABLED", "false")
 
 try:
-    from langfuse import get_client, observe  # noqa: F401  (observe는 재수출이 목적)
+    from langfuse import get_client, observe, propagate_attributes  # noqa: F401  (observe는 재수출이 목적)
     from opentelemetry import context as _otel_context
     from opentelemetry import trace as _otel_trace
     _AVAILABLE = True
@@ -111,7 +111,7 @@ def update_current_span(**kwargs):
 
 # ──────────────────────── span 열고·닫기 (웹 SSE 경로의 기본 도구) ────────────────────────
 
-def open_span(name, *, as_type="span", input=None, metadata=None, **kwargs):
+def open_span(name, *, as_type="span", input=None, metadata=None, session_id=None, **kwargs):
     """span 을 열고 **끝내지 않은 채** 돌려준다. 반드시 close_span 으로 닫는다.
 
     현재 컨텍스트에 부모가 있으면 그 자식이 되고, 없으면 새 trace 의 루트가 된다. 웹 SSE
@@ -119,13 +119,21 @@ def open_span(name, *, as_type="span", input=None, metadata=None, **kwargs):
 
     스트리밍 LLM 처럼 시작과 끝이 여러 next() 조각에 걸쳐 있는 구간에도 쓴다 — 컨텍스트가
     아니라 span 객체를 들고 다니므로 스레드가 바뀌어도 소요 시간이 실제 값으로 남는다.
-    관측이 꺼져 있거나 실패하면 None(close_span·as_child_of 모두 None 을 무해하게 받는다)."""
+    관측이 꺼져 있거나 실패하면 None(close_span·as_child_of 모두 None 을 무해하게 받는다).
+
+    session_id 를 주면 이 span 이 속한 **trace** 에 세션이 붙어 Langfuse Sessions 에서 대화
+    단위로 묶인다. metadata 에 같은 값을 실어도 세션으로는 안 잡힌다 — Langfuse 가 보는 것은
+    trace 의 session.id 필드다(2026-08-27 실측: web_chat trace 전량 sessionId 없음). SDK v4 는
+    propagate_attributes 컨텍스트 안에서 만들어진 span 에만 이 값을 심으므로 생성 시점을 감싼다.
+    루트에만 붙고 자식 span 에는 안 붙는다 — 웹 SSE 는 조각마다 스레드가 바뀌어 컨텍스트가
+    유실되기 때문이다(모듈 docstring 2번). trace 를 대화로 묶는 데는 루트 하나로 충분하다."""
     if not _AVAILABLE:
         return None
     try:
         # SDK v4 는 start_span 이 아니라 start_observation(as_type=...) 이다(4.14 실확인).
-        return get_client().start_observation(
-            name=name, as_type=as_type, input=input, metadata=metadata, **kwargs)
+        with (propagate_attributes(session_id=session_id) if session_id else nullcontext()):
+            return get_client().start_observation(
+                name=name, as_type=as_type, input=input, metadata=metadata, **kwargs)
     except Exception:
         return None
 
