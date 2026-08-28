@@ -126,8 +126,14 @@ def _parse(client, model, messages):
 
 def _fallback(query):
     """플래너 실패 시 안전 기본값 — 분해하지 않고 원문 1개, intent는 informational(안전 기본값,
-    intent_llm_common 규칙 5 '애매하면 informational'과 동일). 분류 실패가 검색·답변을 막지 않게."""
-    return {"should_split": False, "items": [{"question": query, "intent": "informational"}]}
+    intent_llm_common 규칙 5 '애매하면 informational'과 동일). 분류 실패가 검색·답변을 막지 않게.
+
+    fallback=True를 함께 돌려준다 — 이 값이 civil_petition 질문을 informational로 잘못
+    강등시킨 결과일 수 있어(예: "착오송금 신청 링크줘"), 호출부(api/rag/sse.py)가 이 답변을
+    질의 캐시에 적재하지 않도록 판단하는 근거가 된다(2026-08-28: 순간 API 장애로 만들어진
+    불완전한 답변이 캐시를 통해 24시간 동안 다른 사용자에게 퍼지는 것을 막기 위함)."""
+    return {"should_split": False, "items": [{"question": query, "intent": "informational"}],
+            "fallback": True}
 
 
 # 2026-08-19: 비교형 질문("미수령금 수령과 착오송금 반환신청은 뭐가 다른가요?")이 분해 없이
@@ -142,10 +148,14 @@ def _fallback(query):
 
 @observe()
 def plan_query(query):
-    """질문 하나 -> {"should_split": bool, "items": [{"question", "intent"}]}.
+    """질문 하나 -> {"should_split": bool, "items": [{"question", "intent"}], "fallback": bool}.
 
     OpenAI structured output(response_format=QueryPlan)으로 형식을 강제한다. 파싱 실패·API 실패·
-    빈 items는 모두 _fallback으로 떨어져 파이프라인이 멈추지 않는다(입출력 계약은 항상 위 형태)."""
+    빈 items는 모두 _fallback으로 떨어져 파이프라인이 멈추지 않는다(입출력 계약은 항상 위 형태).
+
+    fallback: 실제 LLM 판단이면 False, API 실패·빈 응답으로 안전 기본값을 대신 썼으면 True.
+    호출부가 "플래너가 정말 단일+informational이라고 판단했다"와 "장애라 그렇게 때웠다"를
+    구분해야 할 때(예: 질의 캐시 적재 여부) 이 값을 본다."""
     try:
         messages = [{"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": query}]
@@ -158,6 +168,7 @@ def plan_query(query):
         return {
             "should_split": bool(plan.should_split),
             "items": [{"question": it.question, "intent": it.intent} for it in plan.items],
+            "fallback": False,
         }
     except Exception:
         logger.warning("플래너 호출 실패 — 폴백(분해 없음)으로 계속. 질문: %r", query, exc_info=True)
