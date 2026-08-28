@@ -548,8 +548,16 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
     #      제한 없이 조회하는 것과 짝을 맞췄다(가드레일 → 캐시 → Gate 1 재편과 함께). 역할·개인
     #      맥락 판정기는 없으므로 intent=informational 로 갈음한다(civil_petition 은 역할축
     #      위험이 있어 캐시하지 않는다).
+    #
+    #      2026-08-28: plan_result.fallback 조건 추가. 플래너 API 호출이 실패하면
+    #      answer.plan()이 안전 기본값(단일+informational)을 돌려주는데(query_planner._fallback),
+    #      실제로는 civil_petition인 질문("착오송금 신청 링크줘")이 이 값 때문에 informational로
+    #      오분류되면 위 조건을 그대로 통과해 캐시에 들어간다. 캐시 조회(0-3)가 플래너 호출(1)보다
+    #      먼저 실행되므로, 이 오염된 답이 한 번 적재되면 플래너가 곧바로 복구되어도 이후 24시간
+    #      동안 다른 사용자들이 플래너를 다시 타지 못하고 서류·신청링크가 빠진 이 답을 그대로
+    #      받는다 — 순간 장애 하나가 캐시를 통해 증폭되는 것을 막는다.
     if (not composite and resp.error is None and resp.clarification is None
-            and not resp.out_of_scope
+            and not resp.out_of_scope and not plan_result.fallback
             and sub_plans and getattr(sub_plans[0], "intent", None) == "informational"):
         # 캐시 키는 조회(0-3)와 같은 재작성문 — 원문(파편 문장)으로 적재하면 적중이 안 된다.
         answer.cache_put(query, resp)

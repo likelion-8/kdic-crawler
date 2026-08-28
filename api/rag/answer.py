@@ -120,8 +120,14 @@ class Plan(NamedTuple):
 
     2026-08-25 에 needs_clarification 필드를 뺐다 — 업무 되묻기 판정이 게이트 앞
     (query_rewriter.triage_query)으로 옮겨가 이 콜에서 나오지 않는다(query_planner.QueryPlan
-    docstring)."""
+    docstring).
+
+    fallback: True면 플래너 API 호출이 실패해 items 가 실제 판단이 아니라 안전 기본값(단일+
+    informational)이라는 뜻(query_planner.plan_query docstring). 기본 False — decompose_query
+    폴백 경로(USE_QUERY_PLANNER=False)와 기존 호출부(테스트 등)가 이 필드 없이 Plan([...])만
+    만들어도 그대로 "장애 아님"으로 해석되게 하기 위함."""
     items: list
+    fallback: bool = False
 
 
 def plan(query: str) -> Plan:
@@ -131,16 +137,18 @@ def plan(query: str) -> Plan:
     USE_QUERY_PLANNER면 query_planner.plan_query() 한 콜(structured output)로 둘을 함께
     얻는다. 단일이면 원본 질문으로 검색하고(pipeline 과 동일: 재질문판 문구로 검색 안 함)
     intent만 플래너 결과를 쓴다. False면 기존 decompose_query 로 나누고 intent 는 prepare_sub 에서
-    분류하도록 None 을 넘긴다."""
+    분류하도록 None 을 넘긴다(이 경로는 plan_query 를 아예 안 타므로 fallback 개념이 없다 —
+    항상 False)."""
     if get_param("use_query_planner", USE_QUERY_PLANNER):
         p = plan_query(query)
         items = p["items"] or [{"question": query, "intent": "informational"}]
+        fallback = bool(p.get("fallback")) or not p["items"]
         if p["should_split"] and len(items) > 1:
-            return Plan([(it["question"], it["intent"]) for it in items])
-        return Plan([(query, items[0]["intent"])])
+            return Plan([(it["question"], it["intent"]) for it in items], fallback)
+        return Plan([(query, items[0]["intent"])], fallback)
     subs = decompose_query(query)
     subs = subs if subs and len(subs) > 1 else [query]
-    return Plan([(q, None) for q in subs])
+    return Plan([(q, None) for q in subs], False)
 
 
 def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
