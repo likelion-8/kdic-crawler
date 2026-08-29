@@ -317,7 +317,7 @@ export function Pipeline() {
               disabledReason={busyReason}
             >
               <Layers aria-hidden="true" />
-              재적재
+              재색인
             </Button>
           </div>
         )}
@@ -529,7 +529,7 @@ export function Pipeline() {
 /** 목업에 제목이 있는 건 전체 재수집·재적재 2종뿐. 나머지 4종은 같은 어투로 프론트가 썼다 */
 const MODAL_TITLE: Record<Confirming['kind'], string> = {
   FULL_RECRAWL: '전체 재수집을 실행할까요?',
-  REINDEX: '재적재를 실행할까요?',
+  REINDEX: '재색인을 실행할까요?',
   SELECTED_RECRAWL: '선택한 페이지를 재수집할까요?',
   CANCEL: '실행 중인 작업을 취소할까요?',
   RETRY: '같은 조건으로 다시 실행할까요?',
@@ -538,7 +538,7 @@ const MODAL_TITLE: Record<Confirming['kind'], string> = {
 
 const MODAL_CONFIRM: Record<Confirming['kind'], string> = {
   FULL_RECRAWL: '전체 재수집 실행',
-  REINDEX: '재적재 실행',
+  REINDEX: '재색인 실행',
   SELECTED_RECRAWL: '선택 재수집 실행',
   CANCEL: '작업 취소',
   RETRY: '재시도 실행',
@@ -556,7 +556,7 @@ const MODAL_PLACEHOLDER: Record<Confirming['kind'], string> = {
 
 const SUCCESS_TOAST: Record<Confirming['kind'], string> = {
   FULL_RECRAWL: '전체 재수집을 시작했습니다',
-  REINDEX: '재적재를 시작했습니다',
+  REINDEX: '재색인을 시작했습니다',
   SELECTED_RECRAWL: '선택 재수집을 시작했습니다',
   CANCEL: '작업을 취소했습니다',
   RETRY: '재시도를 시작했습니다',
