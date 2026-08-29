@@ -307,6 +307,7 @@ MODEL_PRICE_USD_PER_1M: dict[str, tuple[float, float]] = {
 # observability.SERVING_GENERATION_NAMES 다 — 새 호출을 계측하면 양쪽에 같이 더한다.
 STAGE_LABELS = {
     "hcx_stream": "답변 생성 (HyperCLOVA X)",
+    "hcx_regenerate": "답변 재생성 (HyperCLOVA X)",
     "plan_query_llm": "질문 분해·의도 판단",
     "triage_query_llm": "질문 정리·되묻기 판정",
     "validate_answer_llm": "출처 판정",

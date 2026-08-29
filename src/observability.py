@@ -274,8 +274,8 @@ def record_gate3_span(query, *, exited, top1_score=None, threshold=None, reason=
 # 서빙 경로가 만드는 generation span 이름 전부. 대시보드 리소스 집계(AD-001)가 이 목록으로
 # **실사용 LLM 호출만** 골라낸다 — 평가·CLI 가 만드는 call_hyperclova·rerank 는 빠진다.
 # 새 LLM 호출을 계측하면 여기 이름을 더해야 대시보드 비용에 잡힌다.
-SERVING_GENERATION_NAMES = ("hcx_stream", "plan_query_llm", "triage_query_llm",
-                            "validate_answer_llm", "classify_intent_llm")
+SERVING_GENERATION_NAMES = ("hcx_stream", "hcx_regenerate", "plan_query_llm",
+                            "triage_query_llm", "validate_answer_llm", "classify_intent_llm")
 
 
 def llm_usage(from_dt, to_dt, *, daily=False):

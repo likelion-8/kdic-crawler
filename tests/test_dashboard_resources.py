@@ -92,3 +92,33 @@ def test_answer_generation_now_has_a_price_so_it_shows_money_not_tokens():
     assert out["cost_breakdown"][0]["share"] == 100
     assert out["today"]["cost_text"] == "$4.34"      # $0.867375 + $3.4695 = $4.336875
     assert "단가 미등록" not in out["cost_caption"]
+
+
+def test_every_serving_generation_name_has_a_screen_label():
+    """집계 목록과 화면 라벨이 함께 움직이는지 고정한다.
+
+    비용 집계는 span **이름**으로 거른다. 그래서 서빙에 새 LLM 호출을 붙일 때 이름을 한쪽에만
+    더하면 조용히 누락된다 — 2026-08-14 에 재생성이 call_hyperclova 를 부르기 시작한 뒤로
+    그 몫이 대시보드에서 통째로 빠져 있었고(실측 08-25~08-28: HCX 생성 콜 583건 중 131건),
+    아무 테스트도 깨지지 않아 08-29 까지 드러나지 않았다. 이 테스트가 그 침묵을 막는다."""
+    from observability import SERVING_GENERATION_NAMES
+    from api.routers.admin_dashboard import STAGE_LABELS
+
+    assert set(SERVING_GENERATION_NAMES) == set(STAGE_LABELS), (
+        "집계 목록과 화면 라벨이 어긋났다 — 한쪽에만 더하면 그 단계의 비용이 조용히 사라진다")
+
+
+def test_regeneration_is_wired_to_the_counted_entry_point():
+    """재생성은 call_hyperclova 가 아니라 별도 진입점으로 나가야 집계에 잡힌다.
+
+    call_hyperclova 는 평가·CLI 도 쓰는 이름이라 서빙 목록에 넣을 수 없다. 그래서 재생성만
+    hcx_regenerate 로 계측한다 — 호출부가 되돌아가거나 목록에서 이름이 빠지면 비용 누락이
+    그대로 재발한다."""
+    import llm_client
+    from observability import SERVING_GENERATION_NAMES
+    from api.rag import answer
+
+    assert answer.regenerate_hyperclova is llm_client.regenerate_hyperclova, (
+        "재생성 경로가 전용 진입점을 안 쓴다")
+    assert "hcx_regenerate" in SERVING_GENERATION_NAMES, (
+        "hcx_regenerate 가 서빙 집계 목록에 없다 — 재생성 비용이 집계에서 빠진다")

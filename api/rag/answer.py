@@ -25,7 +25,7 @@ from retrieval import USE_TYPE_ROUTING, route_search_chunks
 from candidate_ranking import MIN_TOP1_SCORE, gate3_exit, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
-from llm_client import call_hyperclova
+from llm_client import regenerate_hyperclova
 from prompt_builder import (NO_RELEVANT_EVIDENCE_MESSAGE, OUT_OF_SCOPE_MESSAGE,
                             _strip_no_source_marker, build_civil_petition_prompt,
                             build_informational_prompt, strip_urls, with_retry_notice)
@@ -262,7 +262,7 @@ def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
         # 삽입 위치는 prompt_builder 가 정한다 — "질문: " 만 뒤에서 찾으면 사용자가 질문에
         # 그 문자열을 적었을 때 문구가 질문 한가운데 박힌다(with_retry_notice 주석 참고).
         pushed = with_retry_notice(sp.prompt, sp.question, RETRY_NOTICE)
-        raw = call_hyperclova(pushed)
+        raw = regenerate_hyperclova(pushed)
         body, _ = _strip_no_source_marker(raw)
         # 단일 검증 1콜(2026-08-14 팀 결정으로 다수결 폐지). 재생성본은 근거를 썼고
         # 질문에도 적절해야 채택한다 — 실패(None)는 미채택으로 원래 거절문 유지.
