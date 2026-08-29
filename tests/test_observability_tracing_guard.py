@@ -37,7 +37,7 @@ ALLOWED_TRACED_ENTRYPOINTS = {"src/pipeline.py", "src/query_decomposer.py", "src
 
 # observability 가 계측해 둔 함수들. 이 중 하나라도 부르는 실행 스크립트는 trace 를 만든다.
 _INSTRUMENTED = ("route_search_chunks", "plan_query", "_answer_one",
-                 "call_hyperclova", "classify_question_type")
+                 "call_hyperclova", "regenerate_hyperclova", "classify_question_type")
 
 
 def test_offline_entrypoints_stay_inside_the_guarded_directories():

@@ -25,7 +25,7 @@ from retrieval import USE_TYPE_ROUTING, route_search_chunks
 from candidate_ranking import MIN_TOP1_SCORE, gate3_exit, top_k_cut
 from citation import format_all_citations
 from civil_petition import build_civil_petition_answer
-from llm_client import call_hyperclova
+from llm_client import regenerate_hyperclova
 from prompt_builder import (NO_RELEVANT_EVIDENCE_MESSAGE, OUT_OF_SCOPE_MESSAGE,
                             _strip_no_source_marker, build_civil_petition_prompt,
                             build_informational_prompt, strip_urls, with_retry_notice)
@@ -262,7 +262,7 @@ def _regenerate_once(sp: SubPlan) -> tuple[str, bool]:
         # 삽입 위치는 prompt_builder 가 정한다 — "질문: " 만 뒤에서 찾으면 사용자가 질문에
         # 그 문자열을 적었을 때 문구가 질문 한가운데 박힌다(with_retry_notice 주석 참고).
         pushed = with_retry_notice(sp.prompt, sp.question, RETRY_NOTICE)
-        raw = call_hyperclova(pushed)
+        raw = regenerate_hyperclova(pushed)
         body, _ = _strip_no_source_marker(raw)
         # 단일 검증 1콜(2026-08-14 팀 결정으로 다수결 폐지). 재생성본은 근거를 썼고
         # 질문에도 적절해야 채택한다 — 실패(None)는 미채택으로 원래 거절문 유지.
@@ -321,15 +321,28 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: Optional[bool]) -> 
             sp.obs_normalized = False
             used = v.used_source and bool(sp.top)  # 근거가 게이트로 비었으면 출처 붙일 대상이 없다
             inappropriate = not v.appropriate
-            # 나쁜 판정(부적절·근거이탈·거절)인데 근거가 강하게 검색돼 있으면 딱 한 번
+            # 나쁜 판정(부적절·근거이탈)인데 근거가 강하게 검색돼 있으면 딱 한 번
             # 재생성한다. 단일 판정 1콜은 경계 문항에서 롤마다 흔들리므로(다수결이 있던 이유)
             # 한 롤 판정만으로 정답 후보를 버리지 않는다 — 재생성본도 판정을 통과해야만
             # 채택되니(2연속 실패 확정) 정당한 거절·미달은 그대로 유지된다.
+            # 거절문도 판정기가 "근거에 답이 있는데 거절했다"고 보면 appropriate=false 로
+            # 와서 앞 절에 잡힌다 — 아래 2026-08-29 항목 참고.
             # ⚠️ 종전에는 '부적절+근거사용'과 '거절'만 구제하고 used_source=false +
             # ungrounded_claims 는 재시도 없이 즉시 범위외로 교체하는 비대칭이 있었다.
             # 2026-08-14 실측(같은 질문 5연속): 4회는 거절→재생성 구제로 정상 답변,
             # 1회가 이 빠진 경로로 떨어져 동일 질문에 답변이 뒤집혔다(관측 기록으로 확인).
-            bad = inappropriate or (not used and v.kind in ("ungrounded_claims", "refusal"))
+            #
+            # 2026-08-29: refusal 을 이 조건에서 뺐다. 검증 프롬프트가 "정상 거절도
+            # appropriate=true"라고 못 박아 두므로(source_check.VALIDATE_INSTRUCTION), 제대로
+            # 거절한 답변이 kind=refusal + 근거 미사용으로 떨어져 전부 재생성 대상이 됐다.
+            # rag_runs 실측(08-25~08-28, 하위답변 433건): 그 조합으로 36건을 다시 썼고 구제는
+            # 0건이다. 판정기가 이미 정상 응대라고 본 답변이라 재생성본도 같은 거절을 낸다.
+            # 값이 있는 쪽은 남긴다 — ungrounded 분기는 같은 창에서 35건 중 17건(49%)이 실제로
+            # 구제됐다. inappropriate 로 잡히는 거절(판정기가 "근거에 답이 있는데 거절했다"고
+            # 본 건)도 앞 절이 그대로 받는다.
+            # ⚠️ 08-14~08-24 창에서는 이 조합도 62건 중 12건(19%)이 구제됐다. 발동률이 다시
+            # 오르면 되돌리거나, 검증에 "근거에 답이 있나" 축을 더해 그때만 재생성한다.
+            bad = inappropriate or (not used and v.kind == "ungrounded_claims")
             if bad and sp.top:
                 # 스트리밍엔 이미 원래 본문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
                 body2, used2 = _regenerate_once(sp)
@@ -339,8 +352,12 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: Optional[bool]) -> 
                 # 재생성으로도 구제되지 않았다(또는 근거 자체가 비어 시도조차 못 했다) —
                 # 질문에 답하지 못했거나 근거 없는 내용을 사실처럼 서술한 건이므로 본문을
                 # 표준 안내로 교체하고 범위외 처리한다(환각·오답 노출 차단).
-                # kind=refusal 이 구제에 실패한 경우는 여기 걸리지 않고 원래 거절문을
-                # 유지한다 — 정당한 거절문이 범위외 문구보다 정보량이 많다(종전 동작 보존).
+                # appropriate=true 인 정당한 거절은 여기 걸리지 않고 원래 거절문을 유지한다 —
+                # 정당한 거절문이 범위외 문구보다 정보량이 많다(종전 동작 보존). 2026-08-29
+                # 이전에는 그런 거절도 재생성을 한 번 거친 뒤 여기로 왔는데, 지금은 재생성
+                # 자체를 건너뛰고 곧장 온다. 최종 본문은 양쪽 다 원래 거절문으로 같다.
+                # appropriate=false 인 거절(판정기가 "근거에 답이 있는데 거절했다"고 본 건)은
+                # 구제에 실패하면 여기 걸린다 — 아래 링크 구제 분기가 그 경우를 나눠 받는다.
                 #
                 # 예외: 민원 경로에 공식 신청 진입점이 있으면 범위외로 덮지 않는다. 종전에는
                 # attachments 가 used 에 묶여 있어(아래 `used and sp.civil`) 시스템이 이미

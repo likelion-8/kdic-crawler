@@ -92,3 +92,49 @@ def test_answer_generation_now_has_a_price_so_it_shows_money_not_tokens():
     assert out["cost_breakdown"][0]["share"] == 100
     assert out["today"]["cost_text"] == "$4.34"      # $0.867375 + $3.4695 = $4.336875
     assert "단가 미등록" not in out["cost_caption"]
+
+
+def test_every_serving_generation_name_has_a_screen_label():
+    """집계 목록과 화면 라벨이 함께 움직이는지 고정한다.
+
+    비용 집계는 span **이름**으로 거른다. 그래서 서빙에 새 LLM 호출을 붙일 때 이름을 한쪽에만
+    더하면 조용히 누락된다 — 2026-08-14 에 재생성이 call_hyperclova 를 부르기 시작한 뒤로
+    그 몫이 대시보드에서 통째로 빠져 있었고(실측 08-25~08-28: HCX 생성 콜 583건 중 131건),
+    아무 테스트도 깨지지 않아 08-29 까지 드러나지 않았다. 이 테스트가 그 침묵을 막는다."""
+    from observability import SERVING_GENERATION_NAMES
+    from api.routers.admin_dashboard import STAGE_LABELS
+
+    assert set(SERVING_GENERATION_NAMES) == set(STAGE_LABELS), (
+        "집계 목록과 화면 라벨이 어긋났다 — 한쪽에만 더하면 그 단계의 비용이 조용히 사라진다")
+
+
+def test_regeneration_actually_calls_the_counted_entry_point(monkeypatch):
+    """재생성이 **실제로** 전용 진입점으로 나가는지 _regenerate_once 를 돌려 확인한다.
+
+    call_hyperclova 는 평가·CLI 도 쓰는 이름이라 서빙 목록에 넣을 수 없다. 그래서 재생성만
+    hcx_regenerate 로 계측한다. 임포트 바인딩만 보면 호출 한 줄이 옛 진입점으로 되돌아가도
+    통과하므로(검수에서 지적), 함수를 실제로 실행해 호출을 센다."""
+    from observability import SERVING_GENERATION_NAMES
+    from api.rag import answer
+
+    assert "hcx_regenerate" in SERVING_GENERATION_NAMES, (
+        "hcx_regenerate 가 서빙 집계 목록에 없다 — 재생성 비용이 집계에서 빠진다")
+
+    counted = {"regen": 0, "plain": 0}
+    monkeypatch.setattr(answer, "regenerate_hyperclova",
+                        lambda _m: counted.__setitem__("regen", counted["regen"] + 1) or "다시 쓴 답변")
+    # 옛 진입점으로 되돌아가면 이 쪽이 세어진다. answer 모듈에 이름이 없으면 붙여 둔다 —
+    # 되돌린 코드가 import 부터 고칠 것이므로 그때 이 대역이 받는다.
+    monkeypatch.setattr(answer, "call_hyperclova",
+                        lambda _m: counted.__setitem__("plain", counted["plain"] + 1) or "다시 쓴 답변",
+                        raising=False)
+    monkeypatch.setattr(answer, "validate_answer", lambda *_a, **_k: None)
+
+    sp = answer.SubPlan(question="착오송금 반환 신청 방법은?", intent="civil_petition",
+                        top=[("c#1", 0.9, "근거")], prompt=[("system", "지시"),
+                                                            ("human", "질문: 착오송금 반환 신청 방법은?\n답변:")],
+                        evidence="근거")
+    answer._regenerate_once(sp)
+
+    assert counted["regen"] == 1, "재생성이 전용 진입점(hcx_regenerate)으로 안 나갔다"
+    assert counted["plain"] == 0, "재생성이 집계에서 빠지는 call_hyperclova 로 나갔다"

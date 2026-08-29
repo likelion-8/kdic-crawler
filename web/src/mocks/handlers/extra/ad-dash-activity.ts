@@ -116,7 +116,9 @@ export const adDashActivityHandlers = [
         // 단계 순서는 토큰 많은 순이다(금액 순이 아니다 — 요금표에 없는 모델이 섞일 수 있다).
         // share: null 이면 그 모델이 요금표(MODEL_PRICE_USD_PER_1M)에 없어 금액을 못 매긴
         // 경우다. amount_text 가 토큰 수 + 그 사실을 적는다.
-        { label: '답변 생성 (HyperCLOVA X)', amount_text: '$0.0421', share: 76 },
+        { label: '답변 생성 (HyperCLOVA X)', amount_text: '$0.0344', share: 62 },
+        // 2026-08-29 추가 — 재생성 HCX 가 집계에 들어오면서 별도 항목이 된다(발동률 실측 30%).
+        { label: '답변 재생성 (HyperCLOVA X)', amount_text: '$0.0077', share: 14 },
         { label: '출처 판정', amount_text: '$0.0051', share: 9 },
         { label: '질문 정리·되묻기 판정', amount_text: '$0.0046', share: 8 },
         { label: '질문 분해·의도 판단', amount_text: '$0.0027', share: 7 },

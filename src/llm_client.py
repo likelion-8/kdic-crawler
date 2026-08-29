@@ -99,6 +99,28 @@ def call_hyperclova(messages, *, deterministic=False, seed=None):
     deterministic=True 는 평가·Smoke 전용 — temperature 0 + seed 고정 클라이언트를 쓴다.
     seed 를 바꿔 다시 부르면 flaky 재확인용 재생성이 된다. 운영 호출부는 인자 없이 그대로.
     (머지 노트 2026-08-14: Langfuse 계측(@observe)과 결정화 kwargs 는 직교라 둘 다 유지)"""
+    return _invoke(messages, deterministic, seed)
+
+
+@observe(as_type="generation", name="hcx_regenerate")
+def regenerate_hyperclova(messages):
+    """재생성 전용 진입점(api/rag/answer._regenerate_once). 클라이언트·설정·동작은
+    call_hyperclova 와 완전히 같고 **계측 span 이름만** hcx_regenerate 로 가른다.
+
+    이름을 가르는 이유는 비용 집계다. 서빙 비용은 span 이름 목록
+    (observability.SERVING_GENERATION_NAMES)으로 걸러 모으는데, call_hyperclova 는 평가·CLI 도
+    쓰는 이름이라 그 목록에 넣을 수 없다. 그래서 2026-08-14 에 웹 서빙 경로가 재생성으로
+    call_hyperclova 를 부르기 시작한 뒤로 그 몫이 대시보드에서 통째로 빠져 있었다
+    (실측 2026-08-25~08-28: HCX 생성 콜 583건 중 131건, 22%).
+
+    ⚠️ 목록은 이름으로 거른다 — 서빙에 새 LLM 호출을 붙일 때는 span 이름을 먼저 정하고
+    SERVING_GENERATION_NAMES 와 admin_dashboard.STAGE_LABELS 양쪽에 같이 더할 것."""
+    return _invoke(messages, False, None)
+
+
+def _invoke(messages, deterministic, seed):
+    """call_hyperclova / regenerate_hyperclova 공통 본체. 계측 span 이름만 다르고 나머지는
+    같다. @observe 가 연 span 안에서 불리므로 update_current_generation 은 그 span 을 채운다."""
     update_current_generation(model=os.environ.get("CLOVA_MODEL"))
     client = _get_eval_client(seed or EVAL_SEED) if deterministic else _get_client()
     response = client.invoke(messages)
