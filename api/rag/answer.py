@@ -329,7 +329,18 @@ def finalize_sub(sp: SubPlan, body: str, marker_used_source: Optional[bool]) -> 
             # ungrounded_claims 는 재시도 없이 즉시 범위외로 교체하는 비대칭이 있었다.
             # 2026-08-14 실측(같은 질문 5연속): 4회는 거절→재생성 구제로 정상 답변,
             # 1회가 이 빠진 경로로 떨어져 동일 질문에 답변이 뒤집혔다(관측 기록으로 확인).
-            bad = inappropriate or (not used and v.kind in ("ungrounded_claims", "refusal"))
+            #
+            # 2026-08-29: refusal 을 이 조건에서 뺐다. 검증 프롬프트가 "정상 거절도
+            # appropriate=true"라고 못 박아 두므로(source_check.VALIDATE_INSTRUCTION), 제대로
+            # 거절한 답변이 kind=refusal + 근거 미사용으로 떨어져 전부 재생성 대상이 됐다.
+            # rag_runs 실측(08-25~08-28, 하위답변 433건): 그 조합으로 36건을 다시 썼고 구제는
+            # 0건이다. 판정기가 이미 정상 응대라고 본 답변이라 재생성본도 같은 거절을 낸다.
+            # 값이 있는 쪽은 남긴다 — ungrounded 분기는 같은 창에서 35건 중 17건(49%)이 실제로
+            # 구제됐다. inappropriate 로 잡히는 거절(판정기가 "근거에 답이 있는데 거절했다"고
+            # 본 건)도 앞 절이 그대로 받는다.
+            # ⚠️ 08-14~08-24 창에서는 이 조합도 62건 중 12건(19%)이 구제됐다. 발동률이 다시
+            # 오르면 되돌리거나, 검증에 "근거에 답이 있나" 축을 더해 그때만 재생성한다.
+            bad = inappropriate or (not used and v.kind == "ungrounded_claims")
             if bad and sp.top:
                 # 스트리밍엔 이미 원래 본문이 나갔지만 프론트는 done.answer 를 최종으로 신뢰한다.
                 body2, used2 = _regenerate_once(sp)

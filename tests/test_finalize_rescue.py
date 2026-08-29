@@ -82,14 +82,18 @@ def test_no_evidence_means_no_rescue(wire):
     assert sub.answer == OUT_OF_SCOPE_MESSAGE
 
 
-def test_failed_refusal_rescue_keeps_the_refusal_text(wire):
-    """거절 구제 실패는 범위외 문구가 아니라 원래 거절문 유지 — 정당한 거절이 더 정보가 많다."""
+def test_legitimate_refusal_is_not_regenerated(wire):
+    """판정기가 정상 응대라고 본 거절문은 다시 쓰지 않고 그대로 둔다.
+
+    2026-08-29 이전에는 이 조합(kind=refusal · 근거 미사용 · appropriate=true)도 재생성을
+    한 번 돌렸다. rag_runs 실측(08-25~08-28)에서 36건 시도에 구제 0건이라 조건에서 뺐다 —
+    답변은 종전과 같고(원래 거절문 유지) HCX·검증 콜 두 번만 사라진다."""
     wire["verdict"] = _verdict(used_source=False, kind="refusal", appropriate=True)
     wire["regen"] = ("여전히 거절", False)
 
     sub, used = finalize_sub(_sp(), "원래 거절문", marker_used_source=False)
 
-    assert wire["calls"] == 1
+    assert wire["calls"] == 0, "정상 거절인데 재생성을 불렀다"
     assert used is False
     assert sub.answer == "원래 거절문"
 
