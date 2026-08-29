@@ -108,17 +108,33 @@ def test_every_serving_generation_name_has_a_screen_label():
         "집계 목록과 화면 라벨이 어긋났다 — 한쪽에만 더하면 그 단계의 비용이 조용히 사라진다")
 
 
-def test_regeneration_is_wired_to_the_counted_entry_point():
-    """재생성은 call_hyperclova 가 아니라 별도 진입점으로 나가야 집계에 잡힌다.
+def test_regeneration_actually_calls_the_counted_entry_point(monkeypatch):
+    """재생성이 **실제로** 전용 진입점으로 나가는지 _regenerate_once 를 돌려 확인한다.
 
     call_hyperclova 는 평가·CLI 도 쓰는 이름이라 서빙 목록에 넣을 수 없다. 그래서 재생성만
-    hcx_regenerate 로 계측한다 — 호출부가 되돌아가거나 목록에서 이름이 빠지면 비용 누락이
-    그대로 재발한다."""
-    import llm_client
+    hcx_regenerate 로 계측한다. 임포트 바인딩만 보면 호출 한 줄이 옛 진입점으로 되돌아가도
+    통과하므로(검수에서 지적), 함수를 실제로 실행해 호출을 센다."""
     from observability import SERVING_GENERATION_NAMES
     from api.rag import answer
 
-    assert answer.regenerate_hyperclova is llm_client.regenerate_hyperclova, (
-        "재생성 경로가 전용 진입점을 안 쓴다")
     assert "hcx_regenerate" in SERVING_GENERATION_NAMES, (
         "hcx_regenerate 가 서빙 집계 목록에 없다 — 재생성 비용이 집계에서 빠진다")
+
+    counted = {"regen": 0, "plain": 0}
+    monkeypatch.setattr(answer, "regenerate_hyperclova",
+                        lambda _m: counted.__setitem__("regen", counted["regen"] + 1) or "다시 쓴 답변")
+    # 옛 진입점으로 되돌아가면 이 쪽이 세어진다. answer 모듈에 이름이 없으면 붙여 둔다 —
+    # 되돌린 코드가 import 부터 고칠 것이므로 그때 이 대역이 받는다.
+    monkeypatch.setattr(answer, "call_hyperclova",
+                        lambda _m: counted.__setitem__("plain", counted["plain"] + 1) or "다시 쓴 답변",
+                        raising=False)
+    monkeypatch.setattr(answer, "validate_answer", lambda *_a, **_k: None)
+
+    sp = answer.SubPlan(question="착오송금 반환 신청 방법은?", intent="civil_petition",
+                        top=[("c#1", 0.9, "근거")], prompt=[("system", "지시"),
+                                                            ("human", "질문: 착오송금 반환 신청 방법은?\n답변:")],
+                        evidence="근거")
+    answer._regenerate_once(sp)
+
+    assert counted["regen"] == 1, "재생성이 전용 진입점(hcx_regenerate)으로 안 나갔다"
+    assert counted["plain"] == 0, "재생성이 집계에서 빠지는 call_hyperclova 로 나갔다"

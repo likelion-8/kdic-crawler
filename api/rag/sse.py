@@ -490,7 +490,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
         close_span(gen_span, output="".join(body_parts), usage_details=usage_details(usage))
 
         # 4) 하위 답변 확정(근거 사용 여부 → 출처/서류 구조화)
-        #    사후검증(validate_answer)·재생성(call_hyperclova)이 이 안에서 돈다 — 재생성은
+        #    사후검증(validate_answer)·재생성(regenerate_hyperclova)이 이 안에서 돈다 — 재생성은
         #    @observe 가 붙어 있어 이 하위 span 밑으로 자동으로 들어온다.
         #    점(point)이 아니라 구간으로 잡는다 — validate_answer 는 OpenAI 콜이라 실측 2.5초쯤
         #    걸리는데, 사후에 값만 남기면 그 시간이 sub_answer 안의 정체불명 공백으로 남는다.

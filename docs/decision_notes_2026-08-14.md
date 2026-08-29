@@ -12,7 +12,7 @@
 | 파일 | 내용 |
 |---|---|
 | `src/source_check.py` | `validate_answer(question, answer_text, evidence)` 신설(src/source_check.py:124) — 단일 LLM 1콜, `AnswerValidation`(= AnswerJudgement + `appropriate`, :101), 프롬프트는 기존 SYSTEM_INSTRUCTION에 적절성 축만 추가(`VALIDATE_INSTRUCTION`, :84). 실패는 `None` = fail-open(마커 유지 + appropriate 통과). `judge_answer`/`judge_answer_majority`/`recheck_source_usage` 삭제(전 사용처 교체 완료). |
-| `api/rag/answer.py` | `finalize_sub`(:185)가 스위치 On이면 **모든** 하위 답변을 `validate_answer` 1콜로 검증(:200) — `used_source`가 마커를 양방향 오버라이드, `appropriate=False`면 본문을 기존 `OUT_OF_SCOPE_MESSAGE`로 교체 + used=False(out_of_scope). ungrounded_claims 교체·refusal 1회 재생성 분기 유지. `_regenerate_once`도 다수결 → 1콜(:178, 채택 = used_source ∧ appropriate). 스위치 기본값 상수 `USE_SOURCE_RECHECK`(:51). |
+| `api/rag/answer.py` | `finalize_sub`(:185)가 스위치 On이면 **모든** 하위 답변을 `validate_answer` 1콜로 검증(:200) — `used_source`가 마커를 양방향 오버라이드, `appropriate=False`면 본문을 기존 `OUT_OF_SCOPE_MESSAGE`로 교체 + used=False(out_of_scope). ungrounded_claims 교체·refusal 1회 재생성 분기 유지. **⚠️ 2026-08-29 정정: refusal 재생성 분기는 제거됐다** — 검증 프롬프트가 정상 거절도 appropriate=true 로 두는 탓에 정당한 거절이 전부 재생성 대상이었고, rag_runs 실측(08-25~08-28) 36건 시도에 구제 0건이었다. 재생성은 이제 `inappropriate` 또는 `근거 미사용 + ungrounded_claims` 일 때만 돈다. `_regenerate_once`도 다수결 → 1콜(:178, 채택 = used_source ∧ appropriate). 스위치 기본값 상수 `USE_SOURCE_RECHECK`(:51). |
 | `src/pipeline.py` | recheck 자리를 `validate_answer` 1콜로 교체(src/pipeline.py:146-150) — 평가·운영 판정 정합. CLI는 출처 부착 판정까지(본문 교체는 웹 경로만). |
 | `src/prompt_builder.py` | `_resolve_used_source`(:209) 콜백 계약 변경 — `recheck(본문, 마커_판정)`을 모든 답변에 호출, 결과가 최종 판정(종전: NO_SOURCE만·SOURCE_USED 불가침). |
 | `api/routers/admin_prompt.py` | `_generate`의 recheck를 동일 `validate_answer`로 정렬(:282, 모든 답변·양방향 오버라이드). 결정화(deterministic) 경로는 그대로. |

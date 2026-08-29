@@ -111,7 +111,14 @@ def decompose_query(query):
     """질문 하나 -> 하위 질문 문자열 리스트. 나눌 필요가 없으면 [query]와 동일한 내용의
     한 원소 리스트가 된다. LLM 출력 파싱에 실패하거나(빈 응답 등) 명백히 잘못됐으면,
     또는 call_hyperclova 호출 자체가 실패하면(타임아웃 등) 분해하지 않은 원본 질문
-    그대로 담아 반환한다 — 분해 실패가 검색 자체를 막으면 안 된다."""
+    그대로 담아 반환한다 — 분해 실패가 검색 자체를 막으면 안 된다.
+
+    ⚠️ 비용 집계 주의(2026-08-29): 이 콜은 span 이름이 call_hyperclova 라
+    observability.SERVING_GENERATION_NAMES 에 안 잡힌다(그 이름은 평가·CLI 도 쓴다).
+    지금은 새는 게 없다 — 이 함수는 use_query_planner=False 일 때만 도는데 기본값이 True 고
+    그 파라미터는 2026-08-26 에 관리자 화면에서 빠졌다. DB 에 옛 파라미터 행이 남아 False 로
+    읽히면 이 HCX 비용이 대시보드 밖으로 나간다. 그 경로를 되살릴 때는 재생성과 같은 방식으로
+    (llm_client.regenerate_hyperclova 참고) 전용 span 이름을 만들고 두 목록에 더할 것."""
     try:
         response = call_hyperclova(_build_prompt(query))
     except Exception:
