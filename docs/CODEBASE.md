@@ -43,9 +43,8 @@ flowchart TD
 | 파일 | 역할 |
 |---|---|
 | `inventory.py` | **수집 대상 페이지 통합 목록**(팀원 5명 병합). "여기 있는 것만 크롤한다" — 시작점 |
-| `crawler_dy.py` / `crawler_yj.py` / `crawler_hw.py` | 담당자별 크롤러 + 규칙기반 HTML→텍스트 (LLM 미사용) |
+| `crawler_dy.py` / `crawler_yj.py` | 크롤러 + 규칙기반 HTML→텍스트 (LLM 미사용). 워커 재수집은 `crawler_dy.fetch` 를 쓴다 |
 | `crawl_mistaken_remittance_jh.py` | 착오송금 도메인 크롤러 (+영상·첨부 추출) |
-| `crawl_debt_adjustment_raw_html_jy.py` | 채무조정 8개 페이지 원본 HTML |
 | `fetch_dyntable.py` | **동적 조회표** 수집(검색폼+페이지네이션 결과표 전체 행) |
 | `fetch_extra.py` | 페이지네이션 뒷페이지 + 게시판 상세(첨부 URL) 수집 |
 
@@ -53,7 +52,6 @@ flowchart TD
 | 파일 | 역할 |
 |---|---|
 | `parse_raw_html.py` | `raw_html/*.html` → `text/*.txt` 일괄 변환. 표는 `\|` 구분 행으로 보존 (`crawler_dy.html_to_text` 재사용) |
-| `paser_hw.py` | hw 담당 변환 보조 |
 
 ### 3. 코퍼스 (Build) — 텍스트+메타 → 문서 코퍼스
 | 파일 | 역할 |
@@ -65,7 +63,6 @@ flowchart TD
 | 파일 | 역할 |
 |---|---|
 | `validate_testset.py` | 테스트셋 ↔ 코퍼스 정합성(정답 page_id 존재, 필드 스키마 등) |
-| `validate_dy.py` / `validate_yj.py` | 담당자별 HTML→텍스트 변환 검증 (네트워크 불필요) |
 
 ### 5. 검색·평가 (Retrieval / Eval) — ⭐ 최근 추가분
 | 파일 | 역할 |
@@ -97,7 +94,7 @@ flowchart TD
 2. **`data/corpus.jsonl` 첫 줄** — 데이터가 어떻게 생겼는지 (모든 것의 중심)
 3. **`src/crawler/inventory.py`** — 무엇을 수집하는지
 4. **`src/crawler/build_corpus.py`** docstring — 코퍼스가 어떻게 만들어지는지
-5. **`src/crawler/eval_retrieval.py`** + **`docs/retrieval_eval.md`** — 검색을 어떻게 평가/비교하는지
+5. **`experiments/eval_retrieval.py`** + **`docs/retrieval_eval.md`** — 검색을 어떻게 평가/비교하는지
 
 ## 자주 쓰는 실행 커맨드
 
@@ -112,7 +109,7 @@ python3 src/crawler/parse_raw_html.py
 python3 src/crawler/validate_testset.py
 
 # 검색기 비교 평가 (BM25/Dense/Hybrid × 색인단위) — 첫 실행 시 bge-m3 다운로드
-python3 src/crawler/eval_retrieval.py
+python3 experiments/eval_retrieval.py
 
 # 임베딩 + 제품 청크 재생성 (코퍼스 갱신 후 실행 → data/dense_cache/ 와 chunks_all.jsonl 재커밋)
 python3 src/crawler/embed_corpus.py
@@ -141,4 +138,4 @@ python3 src/crawler/hashing.py       # 해시 자체검사
 - 크롤러가 담당자별로 나뉜 건 팀원 5명이 업무 기능을 나눠 수집했기 때문 (`inventory.py` 상단 owner 매핑 참고).
 - 변환은 **전부 규칙 기반**(LLM 미사용) — 원문 보존·재현성이 원칙.
 - **크로스 플랫폼(맥·윈도우):** 모든 텍스트 파일 I/O는 `encoding="utf-8"` 명시(윈도우 기본 cp949로 한글 깨짐 방지), `.gitattributes`가 `.jsonl` 줄바꿈을 LF로 고정(CRLF면 공유 임베딩 캐시 해시가 틀어짐).
-- 파이프라인 시각 자료는 `docs/pipeline.html`, 검색 실험 결과는 `docs/retrieval_eval.md` 에 있음.
+- 파이프라인 시각 자료는 `docs/worklog/pipeline_p1.html`(P1 시점), 검색 실험 결과는 `docs/retrieval_eval.md` 에 있음.

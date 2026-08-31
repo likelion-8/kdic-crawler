@@ -67,7 +67,7 @@
 
 | 문서 | 생성 주체 | 언제 기준 |
 |---|---|---|
-| [`pipeline_latency_profile.md`](pipeline_latency_profile.md) | `src/crawler/measure_baseline.py` (`write_text`로 통째 덮어씀) | 측정 2026-07-23 · **리랭커 ON 시절 값**이라 현재 동작이 아니다 |
+| [`pipeline_latency_profile.md`](pipeline_latency_profile.md) | `experiments/measure_baseline.py` (`write_text`로 통째 덮어씀) | 측정 2026-07-23 · **리랭커 ON 시절 값**이라 현재 동작이 아니다 |
 
 ⚠️ 이 파일을 다시 생성하면 수치가 그때 환경 기준으로 바뀐다. 여러 문서가 지금 값을 인용하고
 있으므로 무심코 재실행하지 말 것.
@@ -78,16 +78,16 @@
 
 | 파일 | 무엇 |
 |---|---|
-| `pipeline.html` | 크롤러 데이터 파이프라인 시각 자료. ⚠️ "챗봇 응답 생성 계층은 비어 있습니다" 서술은 **P1 시점 기준**이며 지금은 생성 레이어·API·프론트가 다 있다 |
-| `embedding_model_comparison.json` | 임베딩 4종(bge-m3 / bge-m3-ko / Qwen3-8B / Nemotron-8B) 비교 원본 결과. 유형별 MRR 포함. 요약은 `log/P2_report.md` 3장 |
+| `worklog/pipeline_p1.html` | 크롤러 데이터 파이프라인 시각 자료(P1). ⚠️ "챗봇 응답 생성 계층은 비어 있습니다" 서술은 **P1 시점 기준**이며 지금은 생성 레이어·API·프론트가 다 있다 |
+| `embedding_model_comparison.json` | 임베딩 4종(bge-m3 / bge-m3-ko / Qwen3-8B / Nemotron-8B) 비교 원본 결과. 유형별 MRR 포함. 요약은 `worklog/P2_report.md` 3장 |
 
 ## docs/ 밖 문서
 
 | 위치 | 무엇 | 종류 |
 |---|---|---|
 | [`../README.md`](../README.md) | **P3 연구계획서**(관리자+웹 서비스화). README가 아니라 계획서다 | Current(계획) |
-| `../log/P1_plan.md` · `P1_report.md` · `P2_plan.md` · `P2_report.md` | P1·P2 계획서와 결과 보고서 | Historical |
-| `../log/0714~0806.md` | 일일 스탠드업 14개 | Historical |
+| `worklog/P1_plan.md` · `P1_report.md` · `P2_plan.md` · `P2_report.md` | P1·P2 계획서와 결과 보고서 | Historical |
+| `worklog/0714~0806.md` | 일일 스탠드업 14개 | Historical |
 | [`../web/README.md`](../web/README.md) | 프론트 실행 방법 · 목 시나리오 표 | Current |
 | [`../web/src/mocks/README.md`](../web/src/mocks/README.md) | **API 계약 정본.** SSE 계약, 관리자 API 권한, 파이썬↔API 필드 매핑 | Current |
 | `../infra/kdic-postgres-server/README.md` | 로컬 PostgreSQL+pgvector 도커 환경 | Current · ⚠️ 운영은 Supabase다. 이 로컬 환경을 지금 쓰는지는 문서만으로 판단 불가 |
@@ -96,8 +96,8 @@
 
 ## 문서 읽는 법
 
-1. **`log/`는 정본이 아니다.** 일일 스탠드업은 그날의 작업 기록이고 요구사항의 원천이 아니다.
-   실제로 코드 주석이 `log/0729.md 3항`을 근거로 인용해 버그를 만든 전례가 있다
+1. **`worklog/`는 정본이 아니다.** 일일 스탠드업은 그날의 작업 기록이고 요구사항의 원천이 아니다.
+   실제로 코드 주석이 `worklog/0729.md 3항`을 근거로 인용해 버그를 만든 전례가 있다
    (`pipeline_issue_history.md` 이슈 4). 요구사항은 기획서·계약 문서에서 확인한다.
 2. **현재 구현 상태는 코드를 우선한다.** 그다음이 `pipeline_issue_history.md` 상단 요약이고,
    산문 문서는 마지막이다. 인용하기 전에 `파일:줄`로 확인하는 습관을 들인다.

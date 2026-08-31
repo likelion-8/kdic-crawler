@@ -9,10 +9,41 @@ AI 엔지니어 심화 부트캠프 자연어처리 과정 5기 · 진짜사자 
 >
 > | | 프로젝트 | 기간 | 문서 |
 > |---|---|---|---|
-> | P1 | 데이터 파이프라인 | 07-13 ~ 07-16 | [계획](log/P1_plan.md) · [결과](log/P1_report.md) |
-> | P2 | 대외용 AI 챗봇 | 07-20 ~ 07-24 | [계획](log/P2_plan.md) · [결과](log/P2_report.md) |
+> | P1 | 데이터 파이프라인 | 07-13 ~ 07-16 | [계획](docs/worklog/P1_plan.md) · [결과](docs/worklog/P1_report.md) |
+> | P2 | 대외용 AI 챗봇 | 07-20 ~ 07-24 | [계획](docs/worklog/P2_plan.md) · [결과](docs/worklog/P2_report.md) |
 > | **P3** | **관리자 + 웹 서비스화** | **07-28 ~ 09-01** | **이 문서** |
 
+
+---
+
+## 저장소 지도 · 바로 띄우기
+
+> 아래 1장부터는 **연구계획서**다. 코드를 보러 왔다면 이 절과 [`docs/CODEBASE.md`](docs/CODEBASE.md)만 읽으면 된다.
+
+| 폴더 | 무엇 |
+|---|---|
+| `api/` | FastAPI — 챗봇 SSE(`/api/chat`)와 관리자 API(`routers/admin_*`). 기동 시 임베딩 모델을 워밍업하고 파이프라인 워커 스레드를 함께 띄운다 |
+| `src/` | RAG 파이프라인 본체(`pipeline.py` → 게이트·플래너·검색·프롬프트·HCX 호출·사후검증), 스키마, 워커(`worker.py`). `src/crawler/`는 수집→변환→코퍼스→청킹→색인, `src/eval/`은 held-out 정기 평가 |
+| `web/` | React + Vite 프론트(챗봇 + 관리자 화면). 실행법은 [`web/README.md`](web/README.md) |
+| `data/` | 크롤 원본·코퍼스(`corpus.jsonl`)·평가셋·임베딩 캐시. **git 추적** — 코퍼스 변경은 리뷰 가능한 커밋으로 남긴다 |
+| `experiments/` | 현재 설정값(리랭커 OFF, 게이트 임계값, 모델 선택…)을 정한 실험 스크립트. 운영 코드가 import 하지 않는다. [표](experiments/README.md) |
+| `results/` | 실험 산출물 원본 수치. [표](results/README.md) |
+| `docs/` | 설계·결정 기록. 시작은 [`docs/README.md`](docs/README.md). `docs/worklog/`는 일일 작업 일지(정본 아님) |
+| `tests/` | pytest (`.venv/Scripts/python.exe -m pytest tests -q`) |
+| `infra/` | 로컬 PostgreSQL+pgvector 도커 환경(운영은 Supabase) |
+
+```bash
+# 1) 파이썬 — .env 는 .env.example 을 복사해 채운다(CLOVA·OpenAI 키, DATABASE_URL)
+python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
+.venv/Scripts/python.exe -m uvicorn api.main:app --port 8000 --workers 1   # --workers 는 1 고정(모델 메모리)
+
+# 2) 프론트 — web/.env.local 에 VITE_ENABLE_MSW=false, VITE_API_BASE=http://localhost:8000
+cd web && corepack enable && pnpm install && pnpm dev                       # http://localhost:5173
+
+# 3) 검증
+.venv/Scripts/python.exe -m pytest tests -q        # 백엔드
+cd web && pnpm check                               # 프론트 tsc + selfcheck
+```
 ---
 
 ## 1. Problem Definition

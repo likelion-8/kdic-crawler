@@ -5,7 +5,7 @@
 데 초점을 둔다. 각 절 끝에 원본 근거 문서를 링크해뒀으니, 수치 재현이나 더 깊은 맥락이
 필요하면 그쪽을 보면 된다.
 
-**더 세밀한 시행착오(일자별 작업 기록)는 `log/0713.md`~`log/0730.md`에 있다. 이 문서는
+**더 세밀한 시행착오(일자별 작업 기록)는 `worklog/0713.md`~`worklog/0730.md`에 있다. 이 문서는
 그중 최종적으로 코드/결정에 반영된 것만 추린 요약이다.**
 
 ---
@@ -283,7 +283,7 @@ Lost in the Middle 문제 대응으로 검토했으나, 근거 무결성 검증(
 civil_petition, 그 외엔 "신청·접수·제출·구비서류·위임장·철회·취소·이의제기·지급명령·청구"
 같은 절차 실행 표현이 있으면 civil_petition, 없으면 informational
 (`label_intent.PROCEDURE_MARKERS`). 이 라벨을 기준으로 네 가지 분류 방법을 비교했다
-(`src/eval_intent_*.py`, 실행 결과는 `data/intent_*_result.json`에 커밋돼 있음):
+(`experiments/eval_intent_*.py`, 실행 결과는 `results/intent_eval/intent_*_result.json`에 커밋돼 있음):
 
 | 방법 | 평가 방식 | 정확도 | 비고 |
 |---|---|---|---|

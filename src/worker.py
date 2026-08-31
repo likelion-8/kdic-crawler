@@ -385,10 +385,7 @@ def _run_reindex(session, job, *, recrawl: bool = False) -> None:
         return len(uids)
 
     def _validate():
-        # load_chunk_meta 는 chunking 이 아니라 index_qdrant 에 있다(index_document_chunks 의
-        # import 와 동일 — Qdrant 시절 파일이지만 청크 메타 로더는 여기 남아 있다).
-        from index_qdrant import load_chunk_meta
-        meta = load_chunk_meta()
+        meta = idx.load_chunk_meta()
         idx.validate_business_functions(meta)
         dupes = len(state["uids"]) - len(set(state["uids"]))
         if dupes:

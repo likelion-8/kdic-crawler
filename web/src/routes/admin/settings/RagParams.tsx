@@ -10,7 +10,7 @@
  * 리랭킹·업무 필터는 관리 대상이 아니라 아예 노출하지 않는다(§1.8 각주).
  * 셸(GNB·헤더·설정 서브탭)은 app/AdminLayout.tsx가 그린다 — 여기서 다시 그리지 않는다. */
 import { useEffect, useState } from 'react'
-import { ReturnBand } from '../ReturnBand'
+import { ReturnBand } from '@/components/admin/ReturnBand'
 import type { ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { History, MessageSquareText, Search } from 'lucide-react'

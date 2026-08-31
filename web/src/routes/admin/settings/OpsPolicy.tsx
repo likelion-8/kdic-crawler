@@ -7,7 +7,7 @@
  * ADMIN 권한 + 비밀번호 재확인이 필요하다(§5 · CM-DF-004 03절).
  * 셸(GNB·헤더·설정 서브탭)은 AdminLayout이 그린다. ※ 빨간 주석은 렌더하지 않는다. */
 import { useState } from 'react'
-import { ReturnBand } from '../ReturnBand'
+import { ReturnBand } from '@/components/admin/ReturnBand'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CARD_COLUMN, CARD_COLUMNS, ConfirmModal, DraftStatusBar, InfoHint, Loading, ReadOnlyNotice, useToast,

@@ -1,7 +1,7 @@
 # FAQ 패러프레이즈 과잉 거절 — 변형 실험 전체 기록 (2026-08-19)
 
-브랜치 `exp/faq-chunk-format-ab`. 도구: `src/eval/eval_faq_chunk_format.py`(생성축),
-`src/eval/eval_summary_prefix.py`(검색축). 표적 문항 3개(추천 칩 2 + 테스트셋 패러프레이즈 1),
+브랜치 `exp/faq-chunk-format-ab`. 도구: `experiments/eval_faq_chunk_format.py`(생성축),
+`experiments/eval_summary_prefix.py`(검색축). 표적 문항 3개(추천 칩 2 + 테스트셋 패러프레이즈 1),
 지표는 greedy(최빈 응답) 거절 여부 + temp 0.2 샘플링 거절률 + 정답 포함 + 원문 유출.
 
 ## 문제 정의
@@ -27,7 +27,7 @@ FAQ 청크가 "질문 N. {원문 질문} / 열기 / 답변 / {답}" 구조로 �
 
 ## 검색축 결과 (요약 프리펜드, `eval_summary_prefix.py`)
 
-- 파일럿: 착오송금 반환 신청 업무 15페이지, luna 요약 생성(`data/page_summaries_pilot.json`,
+- 파일럿: 착오송금 반환 신청 업무 15페이지, luna 요약 생성(`results/page_summaries_pilot.json`,
   원문 해시 동봉 — 재수집 시 자동 무효화)
 - 표적(페이지 단위): kmrs_aply_trgt 6위→5위, sender_qlfc_check 3위→3위 — **사실상 불변**
 - 가드(66문항 Dense): R@5 1.0/R@20 1.0 유지, MRR 0.912→0.900(약한 희석)

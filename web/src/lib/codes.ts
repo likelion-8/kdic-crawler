@@ -81,7 +81,7 @@ export type TriageStatus = 'NONE' | 'RESOLVED'
 
 /** 누적형 — 상위 역할은 하위 권한을 포함한다 */
 export type Role = 'VIEWER' | 'OPERATOR' | 'EDITOR' | 'ADMIN'
-export const ROLE_RANK: Record<Role, number> = { VIEWER: 0, OPERATOR: 1, EDITOR: 2, ADMIN: 3 }
+const ROLE_RANK: Record<Role, number> = { VIEWER: 0, OPERATOR: 1, EDITOR: 2, ADMIN: 3 }
 export const hasRole = (mine: Role | undefined, need: Role) =>
   mine !== undefined && ROLE_RANK[mine] >= ROLE_RANK[need]
 
@@ -100,7 +100,7 @@ export const JOB_ERROR_MESSAGE: Record<JobErrorCode, string> = {
   STAGE_FAILED: '{단계} 처리 중 오류가 발생했습니다',
 }
 /** 1이면 [재시도] 노출 */
-export const JOB_ERROR_RETRY: Record<JobErrorCode, 0 | 1> = {
+const JOB_ERROR_RETRY: Record<JobErrorCode, 0 | 1> = {
   STAGE_TIMEOUT: 0,
   JOB_TIMEOUT: 0,
   SOURCE_ERROR: 1,

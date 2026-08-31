@@ -111,7 +111,7 @@ LLM 호출 자체를 거르는 방식이었고, 원하는 성능이 안 나와 2
   7. 접속어·띄어쓰기가 없거나 서술어가 이어져 있어도, 실제 요구가 여러 개면 반드시 줄을
      나눈다.
 - **few-shot 6개 구성**: 단일(정의형) 1 · 단일(절차형, 없는 하위항목 지어내기 방지) 1 ·
-  동의어 함정(안 나눔) 1 · 동일업무 복합(log/0729.md 예시) 1 · 타업무 복합(log/0729.md 예시) 1 ·
+  동의어 함정(안 나눔) 1 · 동일업무 복합(worklog/0729.md 예시) 1 · 타업무 복합(worklog/0729.md 예시) 1 ·
   붙여쓰기 복합(오타 포함, 나눔) 1.
 - **출력 파싱** (`decompose_query()`): JSON을 안 쓴다 — 응답을 줄바꿈으로 split → strip → 빈 줄
   제거만 한다. 파싱 결과가 비면(호출 실패 등) **원본 질문 1개짜리 리스트로 폴백**한다 — 분해
@@ -273,7 +273,7 @@ HyperCLOVA 호출 → 출처 결정론적 부착.
    섞여 들어갈 수 있고(이 프로젝트가 URL 할루시네이션에서 이미 겪은 실패 패턴), 무엇보다
    하위 답변별로 확정된 출처와 본문의 대응이 깨진다.
 3. **하위 답변끼리 출처는 완전히 독립이다.** 초기 구현에는 "같은 문서가 여러 하위 질문에서
-   검색되면 중복 제거"(log/0729.md 3항) 요구를 만족시키려고 요청 단위 누적 집합
+   검색되면 중복 제거"(worklog/0729.md 3항) 요구를 만족시키려고 요청 단위 누적 집합
    (`seen_pages`/`seen_urls`)이 있었으나 **삭제했고 다시 도입하지 않는다.** 이 집합은 출처를
    실제로 붙였는지가 아니라 검색됐는지 기준으로 걸러서, 앞 하위 답변이 근거 미사용으로
    거절한 경우 뒤 하위 답변의 진짜 출처까지 지웠다(`docs/pipeline_issue_history.md` 이슈 4).
@@ -319,8 +319,8 @@ HyperCLOVA 호출 → 출처 결정론적 부착.
 |---|---|
 | `src/query_decomposer.py` | 항상-LLM 분해기. `decompose_query(query) -> list[str]` |
 | `data/testset/testset_query_decomposition.jsonl` | 38건(easy 20/hard 18), `difficulty`·`case_type`·`expected_items` 라벨 |
-| `src/eval_query_decomposition.py` | 3회 반복 채점 스크립트, `data/query_decomposition_eval_result.json` 생성 |
-| `data/query_decomposition_eval_result.json` | 위 스크립트의 최신 실행 결과(5절 수치의 원본) |
+| `experiments/eval_query_decomposition.py` | 3회 반복 채점 스크립트, `results/query_decomposition_eval_result.json` 생성 |
+| `results/query_decomposition_eval_result.json` | 위 스크립트의 최신 실행 결과(5절 수치의 원본) |
 | `src/pipeline.py` | `_answer_one()` 공통화 + `USE_QUERY_DECOMPOSITION` 플래그 + 결정론적 병합 (7절) |
 | `src/performance.py` | `measure_time(..., accumulate=True)` — 복합질문 하위질문별 시간 합산 |
 | `docs/pipeline_issue_history.md` 이슈 4 | 하위 답변 출처 소실 — 7절 3항의 근거 |

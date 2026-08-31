@@ -50,7 +50,7 @@ block = (s_ood >= threshold) AND (s_ood > s_id)
   경고 로그만 남기고 이후 모든 요청에서 항상 CONTINUE로 폴백한다(Gate 2를 건너뛰고 파이프라인은
   그대로 진행).
 
-## Threshold 결정 (`src/crawler/gate2_threshold_search.py`)
+## Threshold 결정 (`experiments/gate2_threshold_search.py`)
 
 held-out 테스트셋 `data/testset/testset_gate2_domain_eval.jsonl`(143문항, 4그룹 —
 clear_in_domain 40 / boundary_in_domain 38 / clear_out_domain 35 / boundary_out_domain 30)으로
@@ -71,7 +71,7 @@ out_domain 차단율이 가장 높은 지점을 채택했다.
 "신용등급"·"대출 상담" 같은 짧은 항목이 경계선 채무조정 질문을 잘못 밀어내는 현상은 실측상
 발생하지 않았다.
 
-## Gate 1과의 A/B 비교 (`src/crawler/gate2_ab_comparison.py`)
+## Gate 1과의 A/B 비교 (`experiments/gate2_ab_comparison.py`)
 
 Gate 2는 Gate 1 뒤에 위치하므로(Gate 1이 EXIT하면 Gate 2는 평가되지 않음) 진짜 기여도는
 "전체 차단율"이 아니라 **Gate 1이 놓친 질문 중 Gate 2가 추가로 잡아내는 증분**이다.
@@ -114,5 +114,5 @@ Gate 1 룰에 없는 카테고리(세금/인접기관/개인정보 대행 요청
 | `data/testset/testset_gate2_domain_eval.jsonl` | held-out 평가셋(143문항) |
 | `src/gate2.py` | 판정 로직(`run_gate2`), 캐시 로드+안전 폴백 |
 | `src/crawler/build_gate2_reference.py` | 참조 사전 → 벡터 캐시 빌드 |
-| `src/crawler/gate2_threshold_search.py` | threshold 그리드서치 |
-| `src/crawler/gate2_ab_comparison.py` | Gate1 단독 vs Gate1+Gate2 비교 |
+| `experiments/gate2_threshold_search.py` | threshold 그리드서치 |
+| `experiments/gate2_ab_comparison.py` | Gate1 단독 vs Gate1+Gate2 비교 |

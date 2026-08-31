@@ -1,8 +1,8 @@
 """documents/document_chunks(신규 스키마, schema.py)에 실제 문서+청크+임베딩 적재.
 
 kdic_chunks_all(index_pgvector.py, 레거시 flat 테이블)을 대체하는 정식 스키마 적재 —
-documents는 data/corpus.jsonl(페이지 단위 원문), document_chunks는 index_qdrant.py와
-동일하게 build_units("all")+load_chunk_meta()로 만든 청크에 임베딩을 붙여 넣는다.
+documents는 data/corpus.jsonl(페이지 단위 원문), document_chunks는
+build_units("all")+load_chunk_meta()로 만든 청크에 임베딩을 붙여 넣는다.
 
 실행: python3 src/crawler/index_document_chunks.py   (여러 번 돌려도 안전)
 
@@ -49,7 +49,6 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from chunking import build_units, is_faq, is_table, load_records  # noqa: E402
 from db import get_engine  # noqa: E402
-from index_qdrant import load_chunk_meta, validate_business_functions  # noqa: E402
 from retrieval import DEFAULT_DENSE_MODEL, DenseRetriever  # noqa: E402
 from schema import document_chunks, documents, search_index_versions  # noqa: E402
 
@@ -57,6 +56,38 @@ from sqlalchemy import func, select, text, update  # noqa: E402
 from sqlalchemy.dialects.postgresql import insert as pg_insert  # noqa: E402
 
 CORPUS = ROOT / "data" / "corpus.jsonl"
+
+
+def load_chunk_meta():
+    """chunks_all.jsonl에서 chunk_id -> 메타데이터. (Qdrant 시절 index_qdrant.py 에서 옮겨옴 —
+    2026-08-31 정리. 색인기와 워커(검증 단계)가 같은 로더를 쓴다.)"""
+    import json
+    meta = {}
+    with open(ROOT / "data" / "chunks_all.jsonl", encoding="utf-8") as f:
+        for line in f:
+            d = json.loads(line)
+            meta[d["chunk_id"]] = d
+    return meta
+
+
+def validate_business_functions(meta):
+    """business_function이 inventory.BUSINESSES(정식 6개 값)와 정확히 일치하는지 검증.
+
+    이 필드는 검색 필터·관리자 화면 분류의 키다. 공백 차이·오타·null이 하나라도 있으면 그
+    문서가 필터에서 조용히 누락되므로 색인 직전에 걸러서 조용한 데이터 누락을 막는다.
+    """
+    from inventory import BUSINESSES
+    bad = {uid: m.get("business_function") for uid, m in meta.items()
+           if m.get("business_function") not in BUSINESSES}
+    if bad:
+        detail = "
+".join(f"  {uid}: {bf!r}" for uid, bf in bad.items())
+        raise ValueError(
+            f"business_function이 BUSINESSES 정식값과 안 맞는 청크 {len(bad)}건:
+{detail}
+"
+            f"정식값: {BUSINESSES}"
+        )
 
 _EXTRA_META_KEYS = ("required", "note", "links", "attachments", "form_attachments", "videos", "images")
 

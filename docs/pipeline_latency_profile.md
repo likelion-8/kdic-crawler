@@ -1,6 +1,6 @@
 # RAG 파이프라인 성능 baseline
 
-> ⚠️ **이 파일은 `src/crawler/measure_baseline.py`의 2026-07-23 실행분을 보존한 기록이다.**
+> ⚠️ **이 파일은 `experiments/measure_baseline.py`의 2026-07-23 실행분을 보존한 기록이다.**
 > 아래 '측정일'과 USE_RERANKER 설명은 그 실행의 맥락을 나중에 손으로 덧붙인 것이라 스크립트가
 > 그대로 재생성하지 못한다(스크립트는 실행 시점의 `date.today()`와 현재 `USE_RERANKER`를 찍는다).
 > 그래서 스크립트는 이 파일이 이미 있으면 덮어쓰지 않고 멈춘다 — 새로 측정하려면 이 파일을
