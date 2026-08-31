@@ -13,7 +13,7 @@
 ## 방법
 
 1) --generate: 파일럿 범위(착오송금 반환 신청 업무 페이지)만 luna 1콜/페이지로 요약 생성
-   → data/page_summaries_pilot.json 저장(사람 검수용 출력 포함). 요약은 현재 코퍼스
+   → results/page_summaries_pilot.json 저장(사람 검수용 출력 포함). 요약은 현재 코퍼스
    원문 기준 — 재수집으로 원문이 바뀌면 재생성해야 한다(파일에 원문 해시 동봉).
 2) 기본 실행: 메모리 Dense 인덱스 2벌(현행 vs 요약 부착) A/B — 운영 무접촉, 로컬 임베딩
    (dense_cache 적중분 제외 신규 인코딩만). 라우팅이 Dense 통일이므로 Dense 만 잰다.
@@ -38,7 +38,7 @@ from chunking import build_units, load_records  # noqa: E402
 from retrieval import DenseRetriever, PageRanked  # noqa: E402
 
 PILOT_BF = "착오송금 반환 신청"
-SUMMARIES = ROOT / "data" / "page_summaries_pilot.json"
+SUMMARIES = ROOT / "results" / "page_summaries_pilot.json"
 TESTSET = ROOT / "data" / "testset" / "testset_retrieval_eval_v1.jsonl"
 
 # 표적 질문 — 실측된 검색 구멍(17·18위) + 같은 의도의 자연 변형들

@@ -1,6 +1,6 @@
 /** 대화 아바타 소스 — 화자별 이미지와 폴백 이모지를 한곳에서 정한다.
  *
- * 챗봇은 팀 마스코트(data/icon_40_chatbot.png), 사용자는 팀에서 받은 아기 사자 사진이다.
+ * 챗봇은 팀 마스코트(원본은 src/assets/avatar-chatbot.png 하나만 둔다 — data/ 의 사본은 2026-08-31 정리로 삭제), 사용자는 팀에서 받은 아기 사자 사진이다.
  * 교체할 때는 `src/assets/`의 파일만 바꾸면 말풍선·웰컴에 한 번에 반영된다. */
 import chatbotAvatar from '@/assets/avatar-chatbot.png'
 import userAvatar from '@/assets/avatar-user.png'

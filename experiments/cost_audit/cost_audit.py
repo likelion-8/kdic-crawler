@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """예솜24 RAG 질문당 LLM 비용 감사 — Langfuse 관측 × rag_runs 결합.
 
-  python docs/cost_audit/extract_langfuse.py            # 먼저 원천 덤프 3개 생성
-  python docs/cost_audit/cost_audit.py                   # 전체 기간(덤프 범위) · 모델 무관
-  python docs/cost_audit/cost_audit.py --from 2026-08-25T15:00Z --dash-only   # 08-26~ · DASH-002 전용 (발표 수치)
+  python experiments/cost_audit/extract_langfuse.py            # 먼저 원천 덤프 3개 생성
+  python experiments/cost_audit/cost_audit.py                   # 전체 기간(덤프 범위) · 모델 무관
+  python experiments/cost_audit/cost_audit.py --from 2026-08-25T15:00Z --dash-only   # 08-26~ · DASH-002 전용 (발표 수치)
 
 정의(중요 — 결과가 여기서 갈린다):
   사용자 질문   rag_runs 웹 행(request_id IS NOT NULL). 메시지 1건 = 1행. request_id NULL 은 평가·CLI 행.

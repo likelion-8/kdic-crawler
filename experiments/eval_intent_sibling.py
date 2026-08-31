@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "src" / "crawler"))
 from retrieval import DEFAULT_DENSE_MODEL, _get_model  # noqa: E402
 
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
-OUT_RESULT = ROOT / "data" / "intent_sibling_result.json"
+OUT_RESULT = ROOT / "results" / "intent_eval" / "intent_sibling_result.json"
 INTENTS = ["informational", "civil_petition"]
 
 

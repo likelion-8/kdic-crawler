@@ -78,7 +78,7 @@
 
 | 파일 | 무엇 |
 |---|---|
-| `pipeline.html` | 크롤러 데이터 파이프라인 시각 자료. ⚠️ "챗봇 응답 생성 계층은 비어 있습니다" 서술은 **P1 시점 기준**이며 지금은 생성 레이어·API·프론트가 다 있다 |
+| `worklog/pipeline_p1.html` | 크롤러 데이터 파이프라인 시각 자료(P1). ⚠️ "챗봇 응답 생성 계층은 비어 있습니다" 서술은 **P1 시점 기준**이며 지금은 생성 레이어·API·프론트가 다 있다 |
 | `embedding_model_comparison.json` | 임베딩 4종(bge-m3 / bge-m3-ko / Qwen3-8B / Nemotron-8B) 비교 원본 결과. 유형별 MRR 포함. 요약은 `worklog/P2_report.md` 3장 |
 
 ## docs/ 밖 문서

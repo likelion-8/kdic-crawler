@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Langfuse REST 추출 — 비용 감사용 원천 덤프 3개를 만든다.
 
-  python docs/cost_audit/extract_langfuse.py [--from 2026-08-13T15:00Z] [--to 2026-08-28T15:00Z]
+  python experiments/cost_audit/extract_langfuse.py [--from 2026-08-13T15:00Z] [--to 2026-08-28T15:00Z]
 
 산출(이 파일과 같은 폴더, git 추적 안 함 — 대화 원문이 들어 있다):
   lf_obs_full.jsonl   GENERATION 관측 전부 (usageDetails · calculatedTotalCost · model · traceId · name)

@@ -138,4 +138,4 @@ python3 src/crawler/hashing.py       # 해시 자체검사
 - 크롤러가 담당자별로 나뉜 건 팀원 5명이 업무 기능을 나눠 수집했기 때문 (`inventory.py` 상단 owner 매핑 참고).
 - 변환은 **전부 규칙 기반**(LLM 미사용) — 원문 보존·재현성이 원칙.
 - **크로스 플랫폼(맥·윈도우):** 모든 텍스트 파일 I/O는 `encoding="utf-8"` 명시(윈도우 기본 cp949로 한글 깨짐 방지), `.gitattributes`가 `.jsonl` 줄바꿈을 LF로 고정(CRLF면 공유 임베딩 캐시 해시가 틀어짐).
-- 파이프라인 시각 자료는 `docs/pipeline.html`, 검색 실험 결과는 `docs/retrieval_eval.md` 에 있음.
+- 파이프라인 시각 자료는 `docs/worklog/pipeline_p1.html`(P1 시점), 검색 실험 결과는 `docs/retrieval_eval.md` 에 있음.

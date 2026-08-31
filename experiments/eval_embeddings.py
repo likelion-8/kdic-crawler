@@ -147,7 +147,7 @@ def run(only=None):
     todo = [c for c in MODELS if not only or c["key"] in only]
     print(f"코퍼스 {len(uids)}청크({INDEX_MODE}) · 평가 {len(questions)}건 · device={_device()} · 대상 {[c['key'] for c in todo]}\n", flush=True)
 
-    outdir = ROOT / "data" / "embedding_eval"
+    outdir = ROOT / "results" / "embedding_eval"
     outdir.mkdir(exist_ok=True)
     out = outdir / "dy.json"  # 팀원별 파일(dy/yj/jy/hw)로 합쳐 비교
 

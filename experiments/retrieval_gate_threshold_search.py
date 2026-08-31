@@ -53,7 +53,7 @@ from retrieval import route_search_chunks  # noqa: E402
 
 ALL_TESTSET_PATH = ROOT / "data" / "testset" / "testset_all.jsonl"
 GATE2_TESTSET_PATH = ROOT / "data" / "testset" / "testset_gate2_domain_eval.jsonl"
-REPORT_PATH = ROOT / "data" / "eval_cache" / "retrieval_gate_threshold_report.json"
+REPORT_PATH = ROOT / "results" / "retrieval_gate_threshold_report.json"
 
 # api/rag/answer.py K_CANDIDATES와 동일 — 실서비스가 1차 검색에 넘기는 k
 K_CANDIDATES = 20

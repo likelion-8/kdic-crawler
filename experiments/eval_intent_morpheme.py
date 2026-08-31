@@ -7,7 +7,7 @@ TF-IDF로 벡터화한 뒤 LogisticRegression으로 intent(정보성/민원성)�
 기존 BM25 파이프라인의 Kiwi 토크나이저 '로직'만 재사용한다(bm25_cache 파일은 안 건드림).
 페이지 단위 분리(형제 질문이 train/eval에 안 섞이게)로 형제 누수를 방지한다.
 
-읽기 전용: 기존 파일 수정/git 실행 없음. 결과는 data/intent_morpheme_result.json.
+읽기 전용: 기존 파일 수정/git 실행 없음. 결과는 results/intent_eval/intent_morpheme_result.json.
 실행: python3 experiments/eval_intent_morpheme.py
 """
 import json
@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "src" / "crawler"))
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
-OUT_RESULT = ROOT / "data" / "intent_morpheme_result.json"
+OUT_RESULT = ROOT / "results" / "intent_eval" / "intent_morpheme_result.json"
 SEED = 42
 INTENTS = ["informational", "civil_petition"]  # index 0, 1 (1=민원성=양성)
 

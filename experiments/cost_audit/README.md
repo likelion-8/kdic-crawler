@@ -6,9 +6,9 @@ Langfuse 관측 × rag_runs 를 결합해 **질문 하나에 LLM 비용이 얼�
 ## 재현
 
 ```bash
-python docs/cost_audit/extract_langfuse.py                       # Langfuse REST + DB → 덤프 3개 (약 5분, 429 백오프 포함)
-python docs/cost_audit/cost_audit.py --from 2026-08-25T15:00Z --dash-only   # 발표 수치 (08-26~ · DASH-002 전용)
-python docs/cost_audit/cost_audit.py                              # 전체 기간 · 모델 무관 (비교용)
+python experiments/cost_audit/extract_langfuse.py                       # Langfuse REST + DB → 덤프 3개 (약 5분, 429 백오프 포함)
+python experiments/cost_audit/cost_audit.py --from 2026-08-25T15:00Z --dash-only   # 발표 수치 (08-26~ · DASH-002 전용)
+python experiments/cost_audit/cost_audit.py                              # 전체 기간 · 모델 무관 (비교용)
 ```
 
 덤프(`*.jsonl`, `rag_runs.json`)는 대화 원문이 들어 있어 **.gitignore** 되어 있다. 각자 뽑는다.

@@ -20,7 +20,7 @@ hard는 오타·반말·서사형 조건문·동의어 함정·부정 함정·�
 실제 약점을 놓치므로 by_difficulty로 반드시 hard만 따로 확인할 것).
 
 REPEATS번 실제 HyperCLOVA 호출을 케이스마다 반복하므로 38문항 × 3회 = 114회 호출, 수십 분 걸림.
-결과는 data/query_decomposition_eval_result.json.
+결과는 results/query_decomposition_eval_result.json.
 실행: python3 experiments/eval_query_decomposition.py
 """
 import json
@@ -34,7 +34,7 @@ sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 from query_decomposer import decompose_query  # noqa: E402
 TESTSET = ROOT / "data" / "testset" / "testset_query_decomposition.jsonl"
-OUT_RESULT = ROOT / "data" / "query_decomposition_eval_result.json"
+OUT_RESULT = ROOT / "results" / "query_decomposition_eval_result.json"
 REPEATS = 3
 
 

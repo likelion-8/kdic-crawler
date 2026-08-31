@@ -28,6 +28,7 @@ LLM·임베딩을 부르는 것은 비용·시간이 든다 — 파일 상단 do
 | 플래너·분해 | `eval_query_decomposition.py` | HCX 복합 질문 분해 품질 | `docs/multiquery_decomposition.md` |
 | | `eval_planner_split.py` | 플래너 분해 안정성(온도 1 반복) | `docs/query_planner_model_comparison.md` |
 | 사후검증 | `eval_source_precheck_retro.py` / `eval_source_precheck_testset.py` | 프리체크(0콜 게이트) 소급·테스트셋 실험 — 채택 결정 대기(섀도 모드) | (docstring) |
+| 비용 | `cost_audit/` (`extract_langfuse.py` → `cost_audit.py`) | 질문당 LLM 비용 실측(Langfuse × rag_runs) — 발표 수치 | `cost_audit/README.md` |
 | 골든셋 | `validate_goldenset.py` / `validate_golden_labels.py` | 골든셋 자체 감사(근사중복·라벨 충돌·커버리지) | `results/goldenset_audit/`, `docs/retrospective.md` |
 
 정기 평가(held-out 89문항)는 실험이 아니라 운영 도구라 `src/eval/eval_pipeline_retrieval.py`·

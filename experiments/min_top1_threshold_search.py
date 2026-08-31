@@ -39,7 +39,7 @@ OOS 근거 제거(생존분)    Gate 1·2 를 통과한 무관 질문 중 근거
     python experiments/min_top1_threshold_search.py
     python experiments/min_top1_threshold_search.py --reuse-scores   # 임베딩 생략, 스윕만
 
-점수 수집은 data/results/min_top1_scores.json 에 캐시된다 — 임계값 스윕은 재수집 없이
+점수 수집은 results/min_top1/min_top1_scores.json 에 캐시된다 — 임계값 스윕은 재수집 없이
 몇 번이든 다시 돌릴 수 있다. 색인·청킹·검색 모델이 바뀌면 캐시를 지우고 다시 수집할 것.
 """
 from __future__ import annotations
@@ -55,7 +55,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 TESTSET_DIR = ROOT / "data" / "testset"
-RESULTS_DIR = ROOT / "data" / "results"
+RESULTS_DIR = ROOT / "results" / "min_top1"
 SCORES_PATH = RESULTS_DIR / "min_top1_scores.json"
 REPORT_PATH = RESULTS_DIR / "min_top1_threshold_search.json"
 

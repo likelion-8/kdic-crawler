@@ -228,12 +228,15 @@ data/qdrant_local/
 # 개인 작업 메모 — 팀에 전달할 결론은 docs/frontend-handoff.md·backend-structure.md에 있다
 docs/plan-doc-fixes.md
 
-# 비용 감사 원천 덤프 — 대화 원문 포함, 커밋 금지 (docs/cost_audit/extract_langfuse.py 로 재생성)
-docs/cost_audit/*.jsonl
-docs/cost_audit/rag_runs.json
+# 비용 감사 원천 덤프 — 대화 원문 포함, 커밋 금지 (experiments/cost_audit/extract_langfuse.py 로 재생성)
+experiments/cost_audit/*.jsonl
+experiments/cost_audit/rag_runs.json
 
 # 발표 자료 바이너리 — 정본은 Figma Slides. 3MB 짜리 pptx 가 커밋마다 쌓이면 clone 이 무거워진다
 *.pptx
 
 # 로컬 서버 출력(uvicorn/vite 를 파일로 리다이렉트한 것)
 *.out
+
+# FlashRank 리랭커 모델 캐시(런타임 다운로드) — 명시적으로 제외
+models/

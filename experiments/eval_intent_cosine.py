@@ -42,7 +42,7 @@ from retrieval import DEFAULT_DENSE_MODEL, DenseRetriever, _get_model  # noqa: E
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
 DENSE_CACHE = ROOT / "data" / "dense_cache"
 OUT_CENTROIDS = ROOT / "data" / "intent_eval_centroids.npy"
-OUT_RESULT = ROOT / "data" / "intent_cosine_eval_result.json"
+OUT_RESULT = ROOT / "results" / "intent_eval" / "intent_cosine_eval_result.json"
 
 SEED = 42
 INTENTS = ["informational", "civil_petition"]  # 라벨 순서 고정

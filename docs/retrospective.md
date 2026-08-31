@@ -283,7 +283,7 @@ Lost in the Middle 문제 대응으로 검토했으나, 근거 무결성 검증(
 civil_petition, 그 외엔 "신청·접수·제출·구비서류·위임장·철회·취소·이의제기·지급명령·청구"
 같은 절차 실행 표현이 있으면 civil_petition, 없으면 informational
 (`label_intent.PROCEDURE_MARKERS`). 이 라벨을 기준으로 네 가지 분류 방법을 비교했다
-(`src/eval_intent_*.py`, 실행 결과는 `data/intent_*_result.json`에 커밋돼 있음):
+(`experiments/eval_intent_*.py`, 실행 결과는 `results/intent_eval/intent_*_result.json`에 커밋돼 있음):
 
 | 방법 | 평가 방식 | 정확도 | 비고 |
 |---|---|---|---|

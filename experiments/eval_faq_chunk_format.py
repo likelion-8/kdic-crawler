@@ -89,14 +89,14 @@ def v_combo(text, cid=None):
 
 
 # ── H. 요약 프리펜드(생성축, 2026-08-19 후속) ─────────────────────────────────
-# luna 페이지 요약(data/page_summaries_pilot.json — 검색축 실험에서 생성)을 청크 앞에
+# luna 페이지 요약(results/page_summaries_pilot.json — 검색축 실험에서 생성)을 청크 앞에
 # 끼워 HCX 거절률을 잰다. 검색축은 이미 기각(순위 불변·가드 MRR -0.012)이라, 채택 여부는
 # 이 생성축 이득이 그 비용을 상회하는지로 정한다. 요약에는 답이 평서문으로 들어 있어
 # (예: "예상 소요 기간(2개월 내외)") 문답 구조의 문구 대조 함정을 우회하는 별도 통로가
 # 될 수 있다는 가설 — B(내용 없는 프레이밍)와의 차이가 그 지점이다.
 import json as _json
 
-_SUMMARIES_FILE = ROOT / "data" / "page_summaries_pilot.json"
+_SUMMARIES_FILE = ROOT / "results" / "page_summaries_pilot.json"
 _SUMMARIES = (_json.loads(_SUMMARIES_FILE.read_text(encoding="utf-8"))
               if _SUMMARIES_FILE.exists() else {})
 

@@ -319,8 +319,8 @@ HyperCLOVA 호출 → 출처 결정론적 부착.
 |---|---|
 | `src/query_decomposer.py` | 항상-LLM 분해기. `decompose_query(query) -> list[str]` |
 | `data/testset/testset_query_decomposition.jsonl` | 38건(easy 20/hard 18), `difficulty`·`case_type`·`expected_items` 라벨 |
-| `src/eval_query_decomposition.py` | 3회 반복 채점 스크립트, `data/query_decomposition_eval_result.json` 생성 |
-| `data/query_decomposition_eval_result.json` | 위 스크립트의 최신 실행 결과(5절 수치의 원본) |
+| `experiments/eval_query_decomposition.py` | 3회 반복 채점 스크립트, `results/query_decomposition_eval_result.json` 생성 |
+| `results/query_decomposition_eval_result.json` | 위 스크립트의 최신 실행 결과(5절 수치의 원본) |
 | `src/pipeline.py` | `_answer_one()` 공통화 + `USE_QUERY_DECOMPOSITION` 플래그 + 결정론적 병합 (7절) |
 | `src/performance.py` | `measure_time(..., accumulate=True)` — 복합질문 하위질문별 시간 합산 |
 | `docs/pipeline_issue_history.md` 이슈 4 | 하위 답변 출처 소실 — 7절 3항의 근거 |

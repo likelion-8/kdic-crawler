@@ -200,8 +200,8 @@ python experiments/min_top1_threshold_search.py --reuse-scores  # 스윕만 재�
 |---|---|
 | `src/candidate_ranking.py` | `MIN_TOP1_SCORE`, `gate_low_relevance()` |
 | `experiments/min_top1_threshold_search.py` | 이 문서의 측정 스크립트 |
-| `data/results/min_top1_scores.json` | 질문별 원점수 · Gate 1·2 판정 (재수집 없이 스윕 가능) |
-| `data/results/min_top1_threshold_search.json` | 임계값별 지표 + 뒤집힌 질문 목록 |
+| `results/min_top1/min_top1_scores.json` | 질문별 원점수 · Gate 1·2 판정 (재수집 없이 스윕 가능) |
+| `results/min_top1/min_top1_threshold_search.json` | 임계값별 지표 + 뒤집힌 질문 목록 |
 | `docs/gate2_domain_filter.md` | 앞단 Gate 2의 threshold(0.66) 결정 기록 |
 
 ⚠️ `min_top1_scores.json`의 `top1_score`·`top_pages`는 **게이트가 없었다면 어땠을지**를 담은
