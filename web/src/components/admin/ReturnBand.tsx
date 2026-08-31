@@ -12,8 +12,8 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
-import { Button, ConfirmModal, Notice, useToast } from '../../components/ui'
-import { setLogTriage } from './logs/api'
+import { Button, ConfirmModal, Notice, useToast } from '../ui'
+import { setLogTriage } from '@/routes/admin/logs/api'
 
 /** ?from=log:{id} 를 읽는다. 없으면 null — 띠를 그리지 않는다 */
 export function useReturnFrom(): { requestId: string } | null {

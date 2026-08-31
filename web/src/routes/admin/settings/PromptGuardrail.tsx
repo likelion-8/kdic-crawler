@@ -8,7 +8,7 @@
  * - 셸(GNB·헤더·설정 서브탭)은 AdminLayout이 그린다. 여기서 다시 그리지 않는다.
  * - ※로 시작하는 빨간 주석은 기획 주석이라 렌더하지 않는다(00-meta NOTATION). */
 import { useState } from 'react'
-import { ReturnBand } from '../ReturnBand'
+import { ReturnBand } from '@/components/admin/ReturnBand'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CARD_COLUMN, CARD_COLUMNS, ConfirmModal, DirtyDot, DraftStatusBar, Loading, Notice, ReadOnlyNotice, useToast,

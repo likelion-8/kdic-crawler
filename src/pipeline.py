@@ -67,7 +67,7 @@ USE_RERANKER = False
 # USE_QUERY_PLANNER=False면 아래 기존 분리 방식(decompose_query + classify_intent)으로 폴백한다.
 #
 # 2026-07-30(폴백 경로): query_decomposer.decompose_query()로 복합 질문(예: "신청 방법과 필요한
-# 서류, 처리 기간을 알려주세요")을 감지해 하위 질문별로 따로 검색·답변한다(log/0729.md 3항).
+# 서류, 처리 기간을 알려주세요")을 감지해 하위 질문별로 따로 검색·답변한다(docs/worklog/0729.md 3항).
 # 판단 자체가 매 질문마다 HyperCLOVA 호출 1회를 추가한다(단일 질문이어도 "쪼갤지 말지"를
 # 판단해야 하므로 피할 수 없는 비용). USE_QUERY_PLANNER가 False일 때만 이 경로를 쓰며,
 # 그때 USE_QUERY_DECOMPOSITION로 분해 자체를 켜고 끈다(둘 다 off면 원문 그대로 단일 처리).
