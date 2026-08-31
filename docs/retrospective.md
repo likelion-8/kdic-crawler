@@ -469,13 +469,16 @@ BM25 점수 임계값으로 범위 밖 질문을 거르는 건 안 된다는 걸
    안 함(2.4절 재도입 조건 참고).
 6. **웹 서비스 확장** (React+FastAPI+PostgreSQL+Qdrant 서버 모드) — `pipeline.py`의
    `rag_answer()`를 백엔드-AI 경계 인터페이스로 삼는 설계까지만 확정, 구현은 종합
-   프로젝트 범위. 현재 `index_qdrant.py`는 컬렉션명이 `kdic_chunks_all` 고정 상수다 —
+   프로젝트 범위. 당시 `index_qdrant.py`는 컬렉션명이 `kdic_chunks_all` 고정 상수였다 —
    README가 계획한 "코퍼스 해시를 컬렉션명에 넣어 코퍼스가 바뀌면 자동으로 새 컬렉션을
    쓰는" 방식(`kdic_chunks_a18f02c3` 등)은 아직 코드로 구현되지 않은 순수 계획 단계다.
    다만 인덱싱 전에 모든 청크의 `business_function`이 `inventory.BUSINESSES`에 정의된
    값과 정확히 일치하는지 하드 검증하는 가드(`validate_business_functions()`)는 이미
    있다 — Qdrant의 payload 필터가 완전 일치 문자열 매칭이라, 라벨이 하나라도 어긋나면
    그 문서가 필터링 검색에서 조용히 빠지는 사고를 막기 위함.
+   > 이 항목은 Qdrant 를 쓰던 시점 기준이다. 이후 pgvector 로 전환하면서 `index_qdrant.py`는
+   > 2026-08-31 정리에서 삭제됐고, `validate_business_functions()` 가드는
+   > `src/crawler/index_document_chunks.py` 로 옮겨져 그대로 살아 있다.
 
 ---
 

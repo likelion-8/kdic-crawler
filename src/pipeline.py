@@ -7,7 +7,7 @@
 
 rag_answer()를 부르는 곳은 이 파일의 CLI뿐이다(Streamlit 데모는 2026-08-14 은퇴 —
 docs/streamlit-retired.md, React 웹이 대체). 이 파일을
-import하는 나머지 셋(src/crawler/measure_baseline.py · src/eval/eval_pipeline_generation.py ·
+import하는 나머지 셋(experiments/measure_baseline.py · src/eval/eval_pipeline_generation.py ·
 src/eval/eval_pipeline_retrieval.py)은 rag_answer()를 건너뛰고 _rag_answer_traced()나
 상수(K_CANDIDATES 등)만 가져다 쓴다 — rag_runs 로깅을 우회하기 위한 의도된 구조다.
 

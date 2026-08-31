@@ -330,10 +330,14 @@ class RoutedRetriever:
 # api/rag/answer.prepare_sub · eval_pipeline_retrieval). bm25_search·dense_search·
 # hybrid_search·route_search 는 지금 호출부가 없다 — 검색기별 비교나 디버깅용으로 남겨 둔
 # 것이라, "이게 운영 경로다"라고 읽으면 안 된다.
-# 클래스(BM25Retriever·DenseRetriever·PageRanked·RoutedRetriever 등)는 src/crawler/의 평가·적재
-# 스크립트 8개가 직접 import하므로 이름·구조를 바꾸지 않는다 — route_eval · eval_retrieval ·
-# eval_embeddings · bf_score_fusion_eval · embed_corpus · index_qdrant · index_document_chunks ·
-# index_evaluation_sets. 여기서는 그 클래스들을 "한 번만 조립해 재사용"하는 얇은 래퍼만 둔다 —
+# 클래스(BM25Retriever·DenseRetriever·PageRanked·RoutedRetriever 등)는 experiments/ 의 실험
+# 스크립트 9개(route_eval · eval_retrieval · eval_embeddings · eval_prefix_embedding ·
+# eval_intent_cosine · eval_routing_value · eval_summary_prefix · bf_score_fusion_eval ·
+# validate_goldenset)와 src/crawler/ 의 적재 스크립트 3개(embed_corpus · index_document_chunks ·
+# index_evaluation_sets), src/index_gate.py 가 직접 import하므로 이름·구조를 바꾸지 않는다.
+# 바꿔야 한다면 `grep -rn "from retrieval import" experiments/ src/ tests/` 로 전부 확인할 것 —
+# 2026-08-31 정리로 실험 스크립트가 experiments/ 로 빠져나가면서 호출부가 두 폴더로 나뉘었다.
+# 여기서는 그 클래스들을 "한 번만 조립해 재사용"하는 얇은 래퍼만 둔다 —
 # 매 질문마다 BM25 토크나이저·DB 연결·분류기를 새로 만들면 느려지므로,
 # query_classifier.py의 _classifiers 캐시와 같은 방식으로 싱글턴을 쓴다.
 _engines = {}

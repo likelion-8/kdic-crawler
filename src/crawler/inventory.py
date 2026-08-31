@@ -9,6 +9,8 @@
   page_inventory_jh.py                   → "jh"  기능4 착오송금
   inventory_hw.py                        → "hw"  기능6 은닉재산
   crawl_debt_adjustment_raw_html_jy.py   → "jy"  기능5 채무조정 (인라인 PAGES)
+                                                 ※ 파일 자체는 2026-08-31 정리로 삭제됐다.
+                                                   owner="jy" 값의 출처를 남기려고 표에는 둔다.
 
 필드
   id            페이지 식별자 (data/raw_html/<id>.html 파일명과 일치)
