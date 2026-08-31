@@ -228,3 +228,7 @@ data/qdrant_local/
 
 # 개인 작업 메모 — 팀에 전달할 결론은 docs/frontend-handoff.md·backend-structure.md에 있다
 docs/plan-doc-fixes.md
+
+# 비용 감사 원천 덤프 — 대화 원문 포함, 커밋 금지 (docs/cost_audit/extract_langfuse.py 로 재생성)
+docs/cost_audit/*.jsonl
+docs/cost_audit/rag_runs.json
