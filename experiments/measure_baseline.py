@@ -11,7 +11,7 @@ docs/pipeline_latency_profile.md에 표로 남긴다. 어느 단계가 병목인
 대표 질문 4개(정보성/민원성/표조회/근거부족)는 새로 짓지 않고 data/testset/testset_all.jsonl에서
 실제 라벨이 확인된 문항을 test_id로 그대로 가져온다.
 
-실행: python3 src/crawler/measure_baseline.py (첫 실행 시 임베딩/재정렬 모델 로딩 포함,
+실행: python3 experiments/measure_baseline.py (첫 실행 시 임베딩/재정렬 모델 로딩 포함,
 이 로딩 시간은 "웜업" 실행으로 따로 표시하고 실제 비교는 웜업 이후 실행 기준으로 한다)
 """
 import json
@@ -19,8 +19,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 from pipeline import (  # noqa: E402
     K_CANDIDATES, K_FINAL, USE_RERANKER, _rag_answer_traced,
@@ -81,7 +82,7 @@ def main():
     lines = [
         "# RAG 파이프라인 성능 baseline",
         "",
-        "> ⚠️ **이 파일은 `src/crawler/measure_baseline.py`가 생성한다 — 직접 편집하지 마라.**",
+        "> ⚠️ **이 파일은 `experiments/measure_baseline.py`가 생성한다 — 직접 편집하지 마라.**",
         "> 스크립트를 다시 돌리면 `write_text()`가 통째로 덮어써서 손으로 넣은 내용이 사라진다.",
         "> 설명을 덧붙이려면 문서가 아니라 생성 스크립트를 고칠 것.",
         "",

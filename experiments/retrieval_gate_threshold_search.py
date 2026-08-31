@@ -37,14 +37,15 @@ Gate1→Gate2→이 게이트→source_check 사후검증으로 이어지는 '�
 
 결정 규칙(candidate_ranking.gate_low_relevance와 동일): score < threshold 면 근거를 통째로 비운다.
 
-실행: python3 src/crawler/retrieval_gate_threshold_search.py
+실행: python3 experiments/retrieval_gate_threshold_search.py
 """
 import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 import numpy as np  # noqa: E402
 

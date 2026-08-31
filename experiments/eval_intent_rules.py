@@ -10,15 +10,18 @@ civil_petition, 아니면 informational로 분류한다. 페이지 단위 분리
 가까울 수 있다. 결과 해석 시 이 순환성을 감안할 것.
 
 읽기 전용: 기존 파일 수정/‌git 실행 없음. 결과는 data/intent_rules_result.json.
-실행: python3 src/eval/eval_intent_rules.py
+실행: python3 experiments/eval_intent_rules.py
 """
 import json
 import re
 import random
 from collections import Counter
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
 OUT_RESULT = ROOT / "data" / "intent_rules_result.json"
 SEED = 42

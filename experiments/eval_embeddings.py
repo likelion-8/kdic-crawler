@@ -12,8 +12,8 @@
 들어가도록 고쳐졌다(retrieval.DenseRetriever._cache_path, 커밋 b455b83 "캐시 키 모델별 분리").
 캐시를 안 쓰는 결정 자체는 그대로 두지만, 근거로 '모델 충돌'을 인용하지는 말 것.
 
-실행(Colab GPU 권장): python3 src/crawler/eval_embeddings.py
-자가검증(모델 로드 불필요):   python3 src/crawler/eval_embeddings.py --selftest
+실행(Colab GPU 권장): python3 experiments/eval_embeddings.py
+자가검증(모델 로드 불필요):   python3 experiments/eval_embeddings.py --selftest
 """
 import json
 import os
@@ -24,9 +24,10 @@ from pathlib import Path
 # torch import(어느 함수든) 이전에 설정해야 효과 있음 — CUDA 단편화로 인한 가짜 OOM 완화.
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
-_HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(_HERE))          # crawler/ 자기 자신 (chunking 등)
-sys.path.insert(0, str(_HERE.parent))   # src/ (retrieval.py — 다른 폴더로 옮겨짐)
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
+sys.path.insert(0, str(ROOT / "experiments"))   # eval_retrieval(같은 폴더) — 스크립트 실행이 아닌 import 경로용
 from chunking import build_units
 from eval_retrieval import KS, ROOT, evaluate, load_testset
 from retrieval import PageRanked

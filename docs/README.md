@@ -67,7 +67,7 @@
 
 | 문서 | 생성 주체 | 언제 기준 |
 |---|---|---|
-| [`pipeline_latency_profile.md`](pipeline_latency_profile.md) | `src/crawler/measure_baseline.py` (`write_text`로 통째 덮어씀) | 측정 2026-07-23 · **리랭커 ON 시절 값**이라 현재 동작이 아니다 |
+| [`pipeline_latency_profile.md`](pipeline_latency_profile.md) | `experiments/measure_baseline.py` (`write_text`로 통째 덮어씀) | 측정 2026-07-23 · **리랭커 ON 시절 값**이라 현재 동작이 아니다 |
 
 ⚠️ 이 파일을 다시 생성하면 수치가 그때 환경 기준으로 바뀐다. 여러 문서가 지금 값을 인용하고
 있으므로 무심코 재실행하지 말 것.

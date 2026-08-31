@@ -10,14 +10,15 @@
 없는 질문을 섞는다 — 예시에 있는 질문만 재면 암기 확인이지 일반화 확인이 아니다.
 
 ⚠️ 문항당 OpenAI 1콜(플래너) x ROLLS. 기본 5회면 총 ~30콜.
-실행: python src/eval/eval_planner_split.py [--rolls N]
+실행: python experiments/eval_planner_split.py [--rolls N]
 """
 import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 from query_planner import plan_query  # noqa: E402
 

@@ -21,15 +21,16 @@ hard는 오타·반말·서사형 조건문·동의어 함정·부정 함정·�
 
 REPEATS번 실제 HyperCLOVA 호출을 케이스마다 반복하므로 38문항 × 3회 = 114회 호출, 수십 분 걸림.
 결과는 data/query_decomposition_eval_result.json.
-실행: python3 src/eval/eval_query_decomposition.py
+실행: python3 experiments/eval_query_decomposition.py
 """
 import json
 import sys
 from collections import defaultdict
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT / "src"))  # query_decomposer가 src/에 있어서 필요(src/eval/로 옮겨지며 자동 인식 안 됨)
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 from query_decomposer import decompose_query  # noqa: E402
 TESTSET = ROOT / "data" / "testset" / "testset_query_decomposition.jsonl"

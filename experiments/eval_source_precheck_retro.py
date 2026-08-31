@@ -26,7 +26,7 @@
      이라 생성 때 프롬프트에 든 근거와 같은 범위다)
 
 읽기 전용: rag_runs 를 SELECT 만 한다. 기존 파일 수정/git 실행 없음.
-실행: python src/eval/eval_source_precheck_retro.py [--limit N] [--csv out.csv]
+실행: python experiments/eval_source_precheck_retro.py [--limit N] [--csv out.csv]
 """
 import argparse
 import csv
@@ -35,8 +35,9 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 from sqlalchemy import select  # noqa: E402
 

@@ -8,13 +8,15 @@ Dense 모델은 retrieval.DEFAULT_DENSE_MODEL(현재 dragonkue/BGE-m3-ko)을 그
 
 판단 기준: 유형별 MRR 차이가 0.03 이상이면 "유의미"로 표시(임계값은 감이므로 논의 후 조정 가능).
 
-실행: python3 src/crawler/route_eval.py
+실행: python3 experiments/route_eval.py
 """
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
+sys.path.insert(0, str(ROOT / "experiments"))   # eval_retrieval(같은 폴더) — 스크립트 실행이 아닌 import 경로용
 
 from eval_retrieval import KS, build_retrievers, by_type_mrr, load_testset  # noqa: E402
 from query_classifier import QuestionTypeClassifier  # noqa: E402

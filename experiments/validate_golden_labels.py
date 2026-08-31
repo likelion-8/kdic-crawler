@@ -13,13 +13,16 @@
 
 정규화(_normalize)는 공백·날짜 표기차이로 인한 오탐을 걸러낸다(아래에 함께 둔다).
 
-실행: python3 src/crawler/validate_golden_labels.py
+실행: python3 experiments/validate_golden_labels.py
 """
 import json
 import re
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
 CORPUS = ROOT / "data" / "corpus.jsonl"
 

@@ -27,7 +27,7 @@ bf_classifier 를 넘기지 않아 업무 필터가 걸리지 않는다. 일치�
 "고치기 전" 상태를 재현 가능하게 재는 것이 목적이다. DB 반영 여부는 로더가 책임진다.
 
 읽기 전용: 기존 파일 수정 없음. 결과는 results/goldenset_audit/ 에 쓴다.
-실행: python3 src/eval/validate_goldenset.py
+실행: python3 experiments/validate_goldenset.py
 """
 import csv
 import json
@@ -37,8 +37,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 GOLDEN = ROOT / "data" / "testset" / "testset_all.jsonl"
 CORPUS = ROOT / "data" / "corpus.jsonl"

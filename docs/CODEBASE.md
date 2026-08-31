@@ -94,7 +94,7 @@ flowchart TD
 2. **`data/corpus.jsonl` 첫 줄** — 데이터가 어떻게 생겼는지 (모든 것의 중심)
 3. **`src/crawler/inventory.py`** — 무엇을 수집하는지
 4. **`src/crawler/build_corpus.py`** docstring — 코퍼스가 어떻게 만들어지는지
-5. **`src/crawler/eval_retrieval.py`** + **`docs/retrieval_eval.md`** — 검색을 어떻게 평가/비교하는지
+5. **`experiments/eval_retrieval.py`** + **`docs/retrieval_eval.md`** — 검색을 어떻게 평가/비교하는지
 
 ## 자주 쓰는 실행 커맨드
 
@@ -109,7 +109,7 @@ python3 src/crawler/parse_raw_html.py
 python3 src/crawler/validate_testset.py
 
 # 검색기 비교 평가 (BM25/Dense/Hybrid × 색인단위) — 첫 실행 시 bge-m3 다운로드
-python3 src/crawler/eval_retrieval.py
+python3 experiments/eval_retrieval.py
 
 # 임베딩 + 제품 청크 재생성 (코퍼스 갱신 후 실행 → data/dense_cache/ 와 chunks_all.jsonl 재커밋)
 python3 src/crawler/embed_corpus.py

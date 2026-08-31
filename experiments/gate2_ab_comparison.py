@@ -11,14 +11,15 @@ Gate 2가 추가로 잡아내는 몫**(증분)이다. 이 스크립트는 testse
 
 threshold·결정규칙은 config/gate2_reference.json에서 읽는다(하드코딩 금지).
 
-실행: python3 src/crawler/gate2_ab_comparison.py
+실행: python3 experiments/gate2_ab_comparison.py
 """
 import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 import numpy as np  # noqa: E402
 

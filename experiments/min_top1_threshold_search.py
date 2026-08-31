@@ -36,8 +36,8 @@ OOS 근거 제거(생존분)    Gate 1·2 를 통과한 무관 질문 중 근거
 잡아 관리자 슬라이더 격자(0.05, api/routers/admin_rag_params.py)에 스냅한다 — 0.35 도
 그렇게 정해진 값이다. 뒤집힌 질문 목록은 사람이 직접 보라고 리포트에 그대로 싣는다.
 
-    python src/crawler/min_top1_threshold_search.py
-    python src/crawler/min_top1_threshold_search.py --reuse-scores   # 임베딩 생략, 스윕만
+    python experiments/min_top1_threshold_search.py
+    python experiments/min_top1_threshold_search.py --reuse-scores   # 임베딩 생략, 스윕만
 
 점수 수집은 data/results/min_top1_scores.json 에 캐시된다 — 임계값 스윕은 재수집 없이
 몇 번이든 다시 돌릴 수 있다. 색인·청킹·검색 모델이 바뀌면 캐시를 지우고 다시 수집할 것.
@@ -50,8 +50,9 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 TESTSET_DIR = ROOT / "data" / "testset"
 RESULTS_DIR = ROOT / "data" / "results"

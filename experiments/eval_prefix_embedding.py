@@ -19,14 +19,14 @@ Dense) — 인덱스 내용의 효과만 분리해서 재기 위해 분류기 �
   ② 가드: 일반 서브셋(fact·link_guide·file_download)에서 새 실패 0(있으면 개별 검토)
   ③ 경보: R@20 하락 시 즉시 기각(프리픽스 희석이 심각하다는 뜻)
 
-실행: python src/eval/eval_prefix_embedding.py   (bge-m3 로딩 + 프리픽스 503청크 인코딩
+실행: python experiments/eval_prefix_embedding.py   (bge-m3 로딩 + 프리픽스 503청크 인코딩
      — 첫 실행 수 분, dense_cache 적중 시 수 초. 결과: results/prefix_embedding_eval_v1.json)
 """
 import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "src" / "crawler"))
 

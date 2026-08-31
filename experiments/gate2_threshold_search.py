@@ -20,14 +20,15 @@ Gate 2는 하드 블록 대상이므로 두 안전 지표가 0에 가까울수�
     false_block_boundary_in  = boundary_in_domain 중 잘못 차단된 비율 (핵심 안전 지표)
 그 위에서 out_of_domain 차단율(재현율)을 최대화하는 threshold를 고른다.
 
-실행: python3 src/crawler/gate2_threshold_search.py
+실행: python3 experiments/gate2_threshold_search.py
 """
 import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 import numpy as np  # noqa: E402
 

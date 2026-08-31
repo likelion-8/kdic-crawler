@@ -1,7 +1,7 @@
 # FAQ 패러프레이즈 과잉 거절 — 변형 실험 전체 기록 (2026-08-19)
 
-브랜치 `exp/faq-chunk-format-ab`. 도구: `src/eval/eval_faq_chunk_format.py`(생성축),
-`src/eval/eval_summary_prefix.py`(검색축). 표적 문항 3개(추천 칩 2 + 테스트셋 패러프레이즈 1),
+브랜치 `exp/faq-chunk-format-ab`. 도구: `experiments/eval_faq_chunk_format.py`(생성축),
+`experiments/eval_summary_prefix.py`(검색축). 표적 문항 3개(추천 칩 2 + 테스트셋 패러프레이즈 1),
 지표는 greedy(최빈 응답) 거절 여부 + temp 0.2 샘플링 거절률 + 정답 포함 + 원문 유출.
 
 ## 문제 정의

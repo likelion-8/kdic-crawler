@@ -13,7 +13,7 @@
 rag_runs 로깅 없음(파이프라인 조립부를 직접 부르므로 실사용 로그를 오염시키지 않는다 —
 eval_pipeline_generation.py 와 같은 원칙). 기존 파일 수정/git 실행 없음.
 
-실행: python src/eval/eval_source_precheck_testset.py [--limit N] [--csv out.csv]
+실행: python experiments/eval_source_precheck_testset.py [--limit N] [--csv out.csv]
       [--testset data/testset/xxx.jsonl] [--deterministic]
 """
 import argparse
@@ -24,8 +24,9 @@ import time
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 import runtime_config  # noqa: E402
 from candidate_ranking import gate_low_relevance, top_k_cut  # noqa: E402

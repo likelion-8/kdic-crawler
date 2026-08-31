@@ -21,8 +21,8 @@
    - 가드: testset_retrieval_eval_v1 66문항 페이지 단위 R@5/R@20/MRR 비악화
      (프리픽스 실험의 '희석 시 즉시 기각' 기준 재사용)
 
-실행: python src/eval/eval_summary_prefix.py --generate   (luna ~페이지 수만큼 콜)
-      python src/eval/eval_summary_prefix.py              (A/B — LLM 콜 0)
+실행: python experiments/eval_summary_prefix.py --generate   (luna ~페이지 수만큼 콜)
+      python experiments/eval_summary_prefix.py              (A/B — LLM 콜 0)
 """
 import argparse
 import hashlib
@@ -30,7 +30,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "src" / "crawler"))
 

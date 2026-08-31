@@ -21,7 +21,7 @@ DB 는 현재 503청크로 로컬과 일치한다(2026-08-19 확인). 같은 벡
 질의마다 DB 왕복을 하지 않아 819문항이 몇 초에 끝난다.
 
 읽기 전용. 결과는 results/routing_value/ 에 쓴다.
-실행: python3 src/eval/eval_routing_value.py
+실행: python3 experiments/eval_routing_value.py
 """
 import json
 import sys
@@ -30,8 +30,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 from retrieval import (BM25Retriever, DEFAULT_DENSE_MODEL, DenseRetriever,  # noqa: E402
                        HYBRID_LINEAR_ALPHA, PageRanked, linear_fuse)

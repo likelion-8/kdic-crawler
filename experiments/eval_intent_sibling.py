@@ -9,7 +9,7 @@
     형제를 못 보게 하면 정확도가 얼마나 떨어지는지 확인한다.
 
 읽기 전용: retrieval에서 모델만 빌려 씀. dense_cache/운영 로직 안 건드림.
-실행: python3 src/eval/eval_intent_sibling.py
+실행: python3 experiments/eval_intent_sibling.py
 """
 import json
 import sys
@@ -18,8 +18,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 from retrieval import DEFAULT_DENSE_MODEL, _get_model  # noqa: E402
 
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"

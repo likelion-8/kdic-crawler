@@ -3,12 +3,15 @@
 정답은 data/testset/testset_all.jsonl 의 expected_sources(page_id 집합). 코퍼스로 답할 수 없는
 out_of_scope 질문(expected_sources 빈 값)은 검색 평가 대상이 아니므로 제외한다.
 
-실행: python3 src/crawler/eval_retrieval.py   (BM25·Dense·Hybrid 비교표 출력. 첫 실행 bge-m3 다운로드)
+실행: python3 experiments/eval_retrieval.py   (BM25·Dense·Hybrid 비교표 출력. 첫 실행 bge-m3 다운로드)
 """
 import json
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 TESTSET = ROOT / "data" / "testset" / "testset_all.jsonl"
 KS = [1, 3, 5, 10]
 
@@ -121,7 +124,7 @@ def build_retrievers(mode):
         if not Path(QDRANT_PATH).exists():
             raise RuntimeError(
                 f"Qdrant 컬렉션이 없습니다: {QDRANT_PATH}\n"
-                "먼저 `python3 src/crawler/index_qdrant.py`를 실행해 색인을 만드세요.")
+                "먼저 Qdrant 색인기는 2026-08-31 정리로 삭제됐다(pgvector 로 전환). 이 경로는 더 이상 쓰지 않는다.")
         dense_inner = QdrantDenseRetriever(QDRANT_PATH, QDRANT_COLLECTION)
     else:
         dense_inner = DenseRetriever(uids, texts, unit2bf=unit2bf)

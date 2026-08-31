@@ -8,7 +8,7 @@
 > `testset_all.jsonl`이 그 뒤로 580건 → **851건**으로 늘었다. 각 절의 수치는 그 절에 적힌
 > 측정 시점 평가셋 기준이다.
 >
-> 재현: `python3 src/crawler/eval_retrieval.py` (지표 selftest 포함, 첫 실행 시 bge-m3 다운로드)
+> 재현: `python3 experiments/eval_retrieval.py` (지표 selftest 포함, 첫 실행 시 bge-m3 다운로드)
 
 ---
 
@@ -253,6 +253,6 @@ Dense 대비 우위가 아니다. 이후 유형별 라우팅 실험(청크 단�
 |---|---|
 | `src/retrieval.py` | BM25·Dense·Hybrid 검색기 + `PageRanked`(유닛→페이지 접기) |
 | `src/crawler/chunking.py` | `build_units(mode)` — page / faq_atomic / table_row / all |
-| `src/crawler/eval_retrieval.py` | Recall@k · MRR · AnswerRecall + 지표 selftest |
+| `experiments/eval_retrieval.py` | Recall@k · MRR · AnswerRecall + 지표 selftest |
 | `data/testset/testset_all.jsonl` | 통합 평가셋 — 측정 당시 169건 → 580건(557 검색평가 + 23 out_of_scope). **현재는 851건** |
 | `data/testset/testset_tail_probe.jsonl` | 잘린 표 꼬리 겨냥 프로브 4문항 |

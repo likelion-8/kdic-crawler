@@ -260,7 +260,7 @@ class HybridRetriever:
 
 
 # 2026-08-19 팀 결정: 질문 유형 라우팅 기본 Off — 전 유형 Dense 통일. 근거는 라우팅 가치
-# 실측(src/eval/eval_routing_value.py → results/routing_value, 819문항·현행 503청크):
+# 실측(experiments/eval_routing_value.py → results/routing_value, 819문항·현행 503청크):
 #   - 라우팅의 이론상 최대 이득(오라클 0.8237 vs 전부 Dense 0.8208) = MRR +0.003.
 #   - 유일한 Hybrid 대상이던 link_guide 의 이점 +0.04 MRR 이 CI [-0.033, +0.118]로 유의성
 #     상실(R@5 는 Dense 0.958 > Hybrid 0.932). 프리픽스 색인(chunking.build_units, 2026-08-19)

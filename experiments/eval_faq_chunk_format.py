@@ -29,7 +29,7 @@ FAQ 청크가 크롤링 흔적 그대로 "질문\\n1. {원문 질문}\\n열기\\
 대괄호 프리픽스가 새어 나옴 — 이번에 같이 발견된 부작용).
 
 429(HCX 속도제한)는 대기 후 재시도한다. 문항당 콜 수 = 변형 4 x (1 + samples).
-실행: python src/eval/eval_faq_chunk_format.py [--samples 2] [--sleep 3]
+실행: python experiments/eval_faq_chunk_format.py [--samples 2] [--sleep 3]
 """
 import argparse
 import re
@@ -37,8 +37,9 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent   # experiments/ -> 리포 루트
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "src" / "crawler"))
 
 from candidate_ranking import gate_low_relevance, top_k_cut  # noqa: E402
 from llm_client import call_hyperclova  # noqa: E402
