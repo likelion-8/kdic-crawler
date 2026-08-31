@@ -15,7 +15,7 @@ src/crawler/build_gate2_reference.py 참고).
     block = (s_ood >= threshold) AND (s_ood > s_id)
 
 threshold·결정규칙은 config/gate2_reference.json에서 읽는다(하드코딩 금지) —
-src/crawler/gate2_threshold_search.py 그리드서치로 값을 정했다(2026-08-19, threshold=0.66).
+experiments/gate2_threshold_search.py 그리드서치로 값을 정했다(2026-08-19, threshold=0.66).
 
 외부 노출 응답은 판정된 카테고리(일상잡담/인접도메인/개인정보상담요청/프롬프트인젝션)와
 무관하게 전부 동일한 문구를 쓴다 — Gate 1의 resp_out_of_domain을 그대로 재사용한다(단일

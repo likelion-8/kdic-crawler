@@ -11,7 +11,7 @@ source_check.py 모듈 주석)이라 이 축은 신뢰하고, 수치는 LLM 판�
 ## 지금은 섀도 전용 (2026-08-19)
 
 이 모듈은 아직 파이프라인 동작을 바꾸지 않는다. 먼저 기존 rag_runs 로그로 소급 실험
-(src/eval/eval_source_precheck_retro.py)을 돌려 두 숫자를 확인한 뒤 채택을 결정한다:
+(experiments/eval_source_precheck_retro.py)을 돌려 두 숫자를 확인한 뒤 채택을 결정한다:
   - 절감률: 전체 답변 중 clean 비율 (= 건너뛸 수 있는 LLM 콜 비율)
   - 놓침률: clean 인데 luna 가 문제로 판정한 비율 (사전 합의 기준: 사람 라벨로 실제 문제 0건)
 채택되면 api/rag/answer.py finalize_sub 의 validate_answer 호출 직전에 classify()를 끼운다.

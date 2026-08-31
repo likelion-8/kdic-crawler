@@ -80,12 +80,9 @@ def validate_business_functions(meta):
     bad = {uid: m.get("business_function") for uid, m in meta.items()
            if m.get("business_function") not in BUSINESSES}
     if bad:
-        detail = "
-".join(f"  {uid}: {bf!r}" for uid, bf in bad.items())
+        detail = "\n".join(f"  {uid}: {bf!r}" for uid, bf in bad.items())
         raise ValueError(
-            f"business_function이 BUSINESSES 정식값과 안 맞는 청크 {len(bad)}건:
-{detail}
-"
+            f"business_function이 BUSINESSES 정식값과 안 맞는 청크 {len(bad)}건:\n{detail}\n"
             f"정식값: {BUSINESSES}"
         )
 

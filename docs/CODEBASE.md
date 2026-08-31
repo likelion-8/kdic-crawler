@@ -69,7 +69,7 @@ flowchart TD
 |---|---|
 | `chunking.py` | `build_units(mode)` — 색인 단위 결정(`page`/`faq_atomic`/`table_row`/`all`). FAQ·표 탐지는 규칙 기반 |
 | `retrieval.py` ⚠️ **`src/` 루트** | **BM25 · Dense · Hybrid(RRF)** 검색기 + `PageRanked`(유닛→페이지 접기). 운영 Dense는 `PgVectorDenseRetriever`(Supabase), `QdrantDenseRetriever`는 롤백 대비 잔존 |
-| `eval_retrieval.py` | 문서찾기(Recall@k·MRR) + 답뽑기(AnswerRecall) 평가 + 지표 selftest |
+| `eval_retrieval.py` ⚠️ **`experiments/`로 이동**(2026-08-31) | 문서찾기(Recall@k·MRR) + 답뽑기(AnswerRecall) 평가 + 지표 selftest. 실험 스크립트 전체 목록은 [`experiments/README.md`](../experiments/README.md) |
 | `embed_corpus.py` | **임베딩 일괄 생성 단일 진입점.** 4개 모드 벡터를 `data/dense_cache/`에 저장 + `data/chunks_all.jsonl` 덤프. 한 사람이 실행·커밋하면 팀 공유 |
 
 ## 데이터 산출물 (`data/`)
