@@ -227,16 +227,6 @@ function write<T>(path: string, reason: string, body?: unknown): Promise<T> {
 /** 편집 시작점 — 서버는 게시본 기준값을 준다. 그 위에 얹는 편집은 로컬에만 쌓인다 */
 export const fetchPromptDraft = () => apiRequest<PromptDraft>('/api/admin/prompt/draft')
 
-/** @deprecated AD-008은 로컬 초안(localStorage)이라 호출하지 않는다 — 서버 쓰기는 게시 때뿐이다.
- *  초안 API를 쓰는 다른 화면과 백엔드 계약 문서 대조를 위해 시그니처만 남긴다. */
-export const savePromptDraft = (patch: Partial<PromptDraft>) =>
-  apiRequest<PromptDraft>('/api/admin/prompt/draft', { method: 'PUT', body: patch })
-
-/** @deprecated AD-008은 로컬 초안이라 호출하지 않는다 — 되돌리기는 [초기화](로컬 비우기)로 끝난다.
- *  초안 API를 쓰는 다른 화면과 백엔드 계약 문서 대조를 위해 시그니처만 남긴다. */
-export const discardPromptDraft = (reason: string) =>
-  write<PromptDraft>('/api/admin/prompt/draft/discard', reason)
-
 /** [전후 비교] — 초안을 실어 보내 일시 평가한다. 서버 초안을 만들지도 바꾸지도 않는다.
  *  questions 를 안 보내면 서버가 평가셋(AD-006) 기본값을 쓴다 */
 export const evaluatePrompt = ({ draft, questionIds }: { draft: PromptDraftContent; questionIds?: string[] }) =>

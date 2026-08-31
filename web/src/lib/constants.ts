@@ -10,14 +10,12 @@ export const CONVERSATION_RESTORE_WINDOW_H = 24
 export const FEEDBACK_FREETEXT_MAX = 200
 
 // --- 관리자 세션 3타이머 (PRD-01 §3) ---
-export const ADMIN_SESSION_ABSOLUTE_H = 8 // 절대 — 갱신 불가
 export const ADMIN_SESSION_IDLE_MIN = 30 // 유휴 — [연장]·인증된 API·초안 자동저장으로만 갱신(폴링 제외)
 export const ADMIN_REAUTH_WINDOW_MIN = 30 // 위험 작업 전 비밀번호 재확인 유효 시간
 
 // --- 관리자 로그인 보호 (PRD-01 §3) ---
 export const LOGIN_FAIL_LOCK_COUNT = 5
 export const LOGIN_LOCK_MIN = 10
-export const INVITE_EXPIRE_H = 72
 export const RESET_TOKEN_MIN = 30
 
 // --- 운영 (PRD-02 §1) ---

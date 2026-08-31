@@ -43,9 +43,8 @@ flowchart TD
 | 파일 | 역할 |
 |---|---|
 | `inventory.py` | **수집 대상 페이지 통합 목록**(팀원 5명 병합). "여기 있는 것만 크롤한다" — 시작점 |
-| `crawler_dy.py` / `crawler_yj.py` / `crawler_hw.py` | 담당자별 크롤러 + 규칙기반 HTML→텍스트 (LLM 미사용) |
+| `crawler_dy.py` / `crawler_yj.py` | 크롤러 + 규칙기반 HTML→텍스트 (LLM 미사용). 워커 재수집은 `crawler_dy.fetch` 를 쓴다 |
 | `crawl_mistaken_remittance_jh.py` | 착오송금 도메인 크롤러 (+영상·첨부 추출) |
-| `crawl_debt_adjustment_raw_html_jy.py` | 채무조정 8개 페이지 원본 HTML |
 | `fetch_dyntable.py` | **동적 조회표** 수집(검색폼+페이지네이션 결과표 전체 행) |
 | `fetch_extra.py` | 페이지네이션 뒷페이지 + 게시판 상세(첨부 URL) 수집 |
 
@@ -53,7 +52,6 @@ flowchart TD
 | 파일 | 역할 |
 |---|---|
 | `parse_raw_html.py` | `raw_html/*.html` → `text/*.txt` 일괄 변환. 표는 `\|` 구분 행으로 보존 (`crawler_dy.html_to_text` 재사용) |
-| `paser_hw.py` | hw 담당 변환 보조 |
 
 ### 3. 코퍼스 (Build) — 텍스트+메타 → 문서 코퍼스
 | 파일 | 역할 |
@@ -65,7 +63,6 @@ flowchart TD
 | 파일 | 역할 |
 |---|---|
 | `validate_testset.py` | 테스트셋 ↔ 코퍼스 정합성(정답 page_id 존재, 필드 스키마 등) |
-| `validate_dy.py` / `validate_yj.py` | 담당자별 HTML→텍스트 변환 검증 (네트워크 불필요) |
 
 ### 5. 검색·평가 (Retrieval / Eval) — ⭐ 최근 추가분
 | 파일 | 역할 |
