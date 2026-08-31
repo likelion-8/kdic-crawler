@@ -36,7 +36,8 @@ ap.add_argument("--to", dest="to", default="2026-08-28T15:00Z", help="UTC ISO (�
 args = ap.parse_args()
 fr, to = _parse(args.fr), _parse(args.to)
 
-host = os.environ["LANGFUSE_HOST"].rstrip("/")
+# .env 는 LANGFUSE_BASE_URL 로 적혀 있고 LANGFUSE_HOST 를 채워 주는 코드가 없다(2026-08-31).
+host = (os.environ.get("LANGFUSE_HOST") or os.environ["LANGFUSE_BASE_URL"]).rstrip("/")
 auth = (os.environ["LANGFUSE_PUBLIC_KEY"], os.environ["LANGFUSE_SECRET_KEY"])
 
 def get(path, params):

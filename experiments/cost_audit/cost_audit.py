@@ -10,7 +10,8 @@
   하위질문     observation.subs[] 길이 합. 조기 종료 질문은 subs=0.
   트레이스 결합 rag_runs.trace_id → 없으면 web_chat trace.metadata.request_id == rag_runs.request_id
   종료 지점     observation.served_from (gate1/gate2/gate3/clarify/cache/guardrail). 없고 subs 있으면 '완료'.
-  확인 불가     트레이스는 있는데 GENERATION 관측이 0개인 '완료'·FAILED 건(계측 누락) — 분모에서 제외
+  확인 불가     트레이스는 있는데 GENERATION 관측이 0개인 건 — 분모에서 제외. Gate1·가드레일은
+               LLM 0 콜이 정상이라 예외로 남긴다.
   DASH 전용     트레이스에 model=='HCX-007' 관측이 하나라도 있으면 제외
   A            (확인 가능한 질문의 비용 합) ÷ (확인 가능한 질문 수) — Gate1 등 0원 종료 포함
   B            served_from 없음 · subs 있음 · FAILED 아님 (=생성·검증까지 간 질문)
@@ -20,18 +21,24 @@
 """
 import argparse
 import json
+import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.stdout.reconfigure(encoding="utf-8")   # 윈도우 기본 cp949 는 이 파일의 em-dash 를 못 찍는다
+
 HERE = Path(__file__).resolve().parent
 KRW = {"HCX-DASH-002": (250, 1000), "gpt-5.6-luna": (277, 1662), "HCX-007": (1250, 5000)}
 FX = 1385.0
+# 2026-08-28 14:10~14:51 KST 레드팀 배터리(인젝션·허위전제 세트, 질문마다 새 세션).
+BATCH = ("2026-08-28 05:00", "2026-08-28 06:00")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--from", dest="fr", default=None, help="UTC ISO, 예: 2026-08-25T15:00Z (08-26 00:00 KST)")
 ap.add_argument("--to", dest="to", default=None)
 ap.add_argument("--dash-only", action="store_true", help="HCX-007 호출이 섞인 질문 제외")
+ap.add_argument("--no-batch", action="store_true", help="08-28 14 시대 레드팀 배터리 제외")
 args = ap.parse_args()
 
 def _iso(s):
@@ -83,10 +90,17 @@ def cost_of(r):
 def subs(r): return (r["observation"] or {}).get("subs") or []
 
 matched = [r for r in web if run_trace.get(r["id"])]
-gap = [r for r in matched if not objs_of(r) and exit_of(r) in ("완료", "FAILED")]
+# Gate1·가드레일만 LLM 0 콜이 정상이다. 나머지 종료는 Triage(0-2.5)를 반드시 지나므로
+# 관측 0 이면 계측이 빠진 것이지 0 원이 아니다(종전 조건은 완료·FAILED 만 걸러 Gate2·
+# 캐시·되묻기의 관측 0 건을 0 원으로 집계했다).
+gap = [r for r in matched if not objs_of(r) and exit_of(r) not in ("gate1", "guardrail")]
 ok = [r for r in matched if r not in gap]
 has007 = [r for r in ok if any(o.get("model") == "HCX-007" for o in objs_of(r))]
 if args.dash_only: ok = [r for r in ok if r not in has007]
+# --dash-only 는 007 관측이 붙은 질문만 뺀다. 007 은 생성 모델이라 캐시·되묻기·게이트로
+# 끝난 질문에는 관측이 안 붙고, 그래서 배터리의 비싼 완료 72 건만 빠지고 싼 종료 41 건은
+# 남는다. 그 시간대를 통째로 빼야 A 의 종료 구성이 안 뒤틀린다.
+if args.no_batch: ok = [r for r in ok if not (BATCH[0] <= r["created_at"] < BATCH[1])]
 
 print("=" * 72)
 print(f"창 {W0 or '덤프 시작'} ~ {W1 or '덤프 끝'} UTC | dash_only={args.dash_only}")
