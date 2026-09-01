@@ -16,8 +16,39 @@ AI 엔지니어 심화 부트캠프 자연어처리 과정 5기 · 진짜사자 
 > | P2 | 대외용 AI 챗봇 | 07-20 ~ 07-24 | [계획서](docs/worklog/P2_plan.md) | [결과보고서](docs/worklog/P2_report.md) |
 > | P3 | 관리자 + 웹 서비스화 | 07-28 ~ 09-01 | [계획서](docs/worklog/P3_plan.md) | [결과보고서](docs/worklog/P3_report.md) |
 >
-> 구현된 서비스의 구조·화면·실행 방법은 이 문서가 아니라 조직 저장소 README에 있습니다.
+> 서비스의 구조·화면 설명은 조직 저장소 README에, 실행 방법은 바로 아래 절에 있습니다.
 > 코드 온보딩은 [`docs/README.md`](docs/README.md)가 진입점입니다.
+
+---
+
+## 저장소 지도 · 바로 띄우기
+
+> 아래 1장부터는 연구 정리입니다. 코드를 보러 왔다면 이 절과 [`docs/CODEBASE.md`](docs/CODEBASE.md)부터 읽으면 됩니다.
+
+| 폴더 | 무엇 |
+|---|---|
+| `api/` | FastAPI — 챗봇 SSE(`/api/chat`)와 관리자 API(`routers/admin_*` 13종). 기동 시 임베딩 모델을 워밍업하고 파이프라인 워커 스레드를 함께 띄운다 |
+| `src/` | RAG 파이프라인 본체(`pipeline.py` → 게이트·플래너·검색·프롬프트·HCX 호출·사후검증), 스키마, 워커(`worker.py`). `src/crawler/`는 수집→변환→코퍼스→청킹→색인, `src/eval/`은 held-out 정기 평가 |
+| `web/` | React + Vite 프론트(챗봇 + 관리자 화면). 실행법·목 시나리오는 [`web/README.md`](web/README.md) |
+| `data/` | 크롤 원본·코퍼스(`corpus.jsonl`)·평가셋·임베딩 캐시. **git 추적** — 코퍼스 변경은 리뷰 가능한 커밋으로 남긴다 |
+| `experiments/` | 현재 설정값(리랭커 OFF, 게이트 임계값, 모델 선택…)을 정한 실험 스크립트 23종. 운영 코드가 import 하지 않는다. [표](experiments/README.md) |
+| `results/` | 실험 산출물 원본 수치. [표](results/README.md) |
+| `docs/` | 설계·결정 기록. 시작은 [`docs/README.md`](docs/README.md). `docs/worklog/`는 단계별 계획서·결과보고서와 일일 스탠드업 |
+| `tests/` | pytest (`.venv/Scripts/python.exe -m pytest tests -q`) |
+| `infra/` | 로컬 PostgreSQL+pgvector 도커 환경(운영은 Supabase) |
+
+```bash
+# 1) 파이썬 — .env 는 .env.example 을 복사해 채운다(CLOVA·OpenAI 키, DATABASE_URL)
+python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
+.venv/Scripts/python.exe -m uvicorn api.main:app --port 8000 --workers 1   # --workers 는 1 고정(임베딩 모델이 프로세스당 약 2GB)
+
+# 2) 프론트 — web/.env.local 에 VITE_ENABLE_MSW=false, VITE_API_BASE=http://localhost:8000 (web/.env.example 참고)
+cd web && corepack enable && pnpm install && pnpm dev                       # http://localhost:5173
+
+# 3) 검증
+.venv/Scripts/python.exe -m pytest tests -q        # 백엔드
+cd web && pnpm check                               # 프론트 tsc + selfcheck
+```
 
 ---
 
@@ -118,8 +149,9 @@ P3의 문제 정의를 한 문장으로 옮기면 이렇습니다 — **답변 �
 ### 3.1 검색 — 페이지가 아니라 "답이 들어 있는 단위"로 자른다
 
 페이지 전체를 하나의 검색 단위로 쓰면 정답 페이지는 찾아도 **답을 못 뽑는** 실패가 생깁니다.
-그래서 FAQ 항목·표 행 같은 구조를 규칙으로 탐지해 자르고, 검색기는 BM25 · Dense · Hybrid(RRF)를
-질문 유형에 따라 라우팅합니다.
+그래서 FAQ 항목·표 행 같은 구조를 규칙으로 탐지해 자릅니다. 검색기는 BM25 · Dense · Hybrid(RRF)를
+질문 유형별로 라우팅하는 구조로 만들었지만, 2026-08-19 실측 후 **전 유형 Dense 단일 경로**로
+통일했습니다(4.1절). Hybrid·BM25 코드는 평가와 재도입에 대비해 보존합니다.
 
 색인 텍스트에는 `[제목 · 업무]` 프리픽스를 붙입니다 — contextual retrieval의 결정론 버전입니다.
 
@@ -172,7 +204,7 @@ P3의 핵심 설계 넷입니다.
 | Parent-Child 검색 | **미채택** | 근거가 이미 단일 청크 안에 온전 |
 | 점수 직접 결합 vs RRF | **RRF 유지** | [retrospective](docs/retrospective.md) |
 | `[제목 · 업무]` 프리픽스 | **채택** | [prefix_embedding_eval](results/prefix_embedding_eval_v1.json) |
-| "link_guide만 Hybrid" 라우팅 | **유지** | [routing_value](results/routing_value/) |
+| 질문 유형별 라우팅("link_guide만 Hybrid") | **Off — 전 유형 Dense** (08-19) | 오라클 라우팅의 이론상 최대 이득 MRR +0.003, link_guide의 Hybrid 이점은 프리픽스 색인 이후 CI [-0.033, +0.118]로 유의성 상실, 오분류 시 -0.058 MRR 실손 → [routing_value](results/routing_value/) |
 | FAQ 청크 포맷 4변형 | 과잉 거절을 가르는 요인 확인 | [faq_format_experiments](docs/faq_format_experiments_2026-08-19.md) |
 
 **분류·생성 (주로 P3)**
@@ -336,7 +368,7 @@ LLM 0콜로 막는 구조**라 조기 종료 건은 비용이 0원이거나 판�
 | 백엔드 | FastAPI | 기존 RAG 코드가 Python, 스키마 명시와 문서 자동 생성 |
 | 저장소 | **Supabase Postgres + pgvector** (Qdrant에서 전환) | 관리자가 페이지를 검색에서 빼려면 메타데이터와 벡터가 한 트랜잭션에서 움직여야 함. 전환 전후 동일 질의 검증 통과 후에만 전환 |
 | 임베딩 | bge-m3-ko (1024차원) | 4종 비교 |
-| 검색 | BM25 + Dense + Hybrid(RRF), 유형별 라우팅 | 색인 단위·검색기 교차 비교 |
+| 검색 | Dense 단일 경로 (BM25·Hybrid(RRF)·유형별 라우팅은 Off, 코드 보존) | 색인 단위·검색기 교차 비교 + 라우팅 가치 실측 |
 | 생성 | HyperCLOVA X (HCX-DASH-002) | A/B에서 상위 모델 대비 품질 차 없음, 단가 약 1/5 |
 | 판단·플래너 | OpenAI structured output | 3모델 joint 벤치마크 |
 | 관측 | Langfuse + `rag_runs` | 단계별 토큰·비용·지연 추적 |
