@@ -1,0 +1,203 @@
+<title>예솜24 스택 아키텍처</title>
+<style>
+  :root { --ink:#14213D; --text:#1B2434; --muted:#5B6675; --line:#C9D2DE; --ground:#FFFFFF; --card:#FFFFFF; --zone:#F5F7FA;
+    --todo:#9A7B4F; --todo-soft:#FAF4EA; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --ink:#E8EEF7; --text:#DCE3EE; --muted:#9AA7B8; --line:#3A4656; --ground:#0F141C; --card:#182030; --zone:#151C27; --todo:#C9A66F; --todo-soft:#2A2216; } }
+  :root[data-theme="dark"] { --ink:#E8EEF7; --text:#DCE3EE; --muted:#9AA7B8; --line:#3A4656; --ground:#0F141C; --card:#182030; --zone:#151C27; --todo:#C9A66F; --todo-soft:#2A2216; }
+  body { margin:0; background:var(--ground); color:var(--text); font-family:"Noto Sans KR","IBM Plex Sans KR","Malgun Gothic",sans-serif; }
+  .wrap { overflow-x:auto; }
+  .poster { width:1400px; background:var(--ground); }
+  svg { display:block; width:1400px; height:auto; font-family:inherit; }
+  .mono { font-family:"Cascadia Mono",Consolas,ui-monospace,monospace; }
+  text { fill:var(--text); }
+  .h { font-size:17px; font-weight:800; fill:var(--ink); }
+  .sub { font-size:12.5px; font-weight:600; }
+  .t { font-size:11.5px; fill:var(--muted); }
+  .lbl { font-size:12px; font-weight:700; fill:var(--ink); }
+  .port { font-size:12px; font-weight:700; fill:var(--ink); }
+  .box { fill:var(--card); stroke:var(--ink); stroke-width:1.6; }
+  .inner { fill:var(--card); stroke:var(--line); stroke-width:1.2; }
+  .zone { fill:var(--zone); stroke:var(--ink); stroke-width:2; }
+  .arrow { fill:none; stroke:var(--ink); stroke-width:1.8; marker-end:url(#ah); }
+  .arrow2 { fill:none; stroke:var(--ink); stroke-width:1.8; marker-end:url(#ah); marker-start:url(#ah-start); }
+  .dash { stroke-dasharray:6 4; }
+  .badge text { font-weight:800; text-anchor:middle; dominant-baseline:central; fill:#fff; font-size:15px; letter-spacing:-.02em; }
+  .name { font-size:15px; font-weight:800; fill:var(--ink); }
+  .role { font-size:11.5px; fill:var(--muted); }
+</style>
+
+<div class="wrap"><div class="poster">
+<svg viewBox="0 0 1400 1010" role="img" aria-label="예솜24 스택 아키텍처 — 브라우저에서 React/Vite와 FastAPI로, FastAPI에서 Supabase·OpenAI·CLOVA·Langfuse로, 코드는 로컬에서 GitHub PR을 거쳐 수동 배포">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+    <marker id="ah-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+    <!-- monogram badges (official logos are external images; these are brand-colored marks) -->
+    <symbol id="b-react" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#20232A"/><g fill="none" stroke="#61DAFB" stroke-width="1.8"><ellipse cx="22" cy="22" rx="15" ry="6"/><ellipse cx="22" cy="22" rx="15" ry="6" transform="rotate(60 22 22)"/><ellipse cx="22" cy="22" rx="15" ry="6" transform="rotate(-60 22 22)"/></g><circle cx="22" cy="22" r="2.6" fill="#61DAFB"/></symbol>
+    <symbol id="b-vite" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#646CFF"/><path d="M24 8 L11 14 L20 25 L18 36 L33 16 L24 20 Z" fill="#FFD62E"/></symbol>
+    <symbol id="b-fastapi" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#009688"/><path d="M24 8 L13 25 L21 25 L19 36 L31 19 L23 19 Z" fill="#fff"/></symbol>
+    <symbol id="b-python" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#3776AB"/><text x="22" y="22" font-size="17" font-weight="800" fill="#FFD43B" text-anchor="middle" dominant-baseline="central">Py</text></symbol>
+    <symbol id="b-supabase" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#1C1C1C"/><path d="M24 7 L10 26 L22 26 L20 37 L34 18 L22 18 Z" fill="#3ECF8E"/></symbol>
+    <symbol id="b-postgres" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#336791"/><g fill="none" stroke="#fff" stroke-width="1.8"><ellipse cx="22" cy="14" rx="10" ry="4"/><path d="M12 14v16c0 2.2 4.5 4 10 4s10-1.8 10-4V14"/><path d="M12 22c0 2.2 4.5 4 10 4s10-1.8 10-4"/></g></symbol>
+    <symbol id="b-openai" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#111"/><text x="22" y="22" font-size="14" font-weight="800" fill="#fff" text-anchor="middle" dominant-baseline="central">AI</text></symbol>
+    <symbol id="b-naver" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#03C75A"/><path d="M13 12h7l8 12V12h6v20h-7l-8-12v12h-6z" fill="#fff"/></symbol>
+    <symbol id="b-langfuse" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#0A2540"/><path d="M10 30 L18 18 L24 26 L30 14 L34 22" fill="none" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="b-github" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#181717"/><circle cx="22" cy="20" r="9" fill="#fff"/><circle cx="18.5" cy="19" r="1.6" fill="#181717"/><circle cx="25.5" cy="19" r="1.6" fill="#181717"/><path d="M15 33c2-5 12-5 14 0" fill="#fff"/><path d="M15 12l3 3M29 12l-3 3" stroke="#fff" stroke-width="2"/></symbol>
+    <symbol id="b-docker" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#2496ED"/><g fill="#fff"><rect x="10" y="20" width="6" height="5"/><rect x="17" y="20" width="6" height="5"/><rect x="24" y="20" width="6" height="5"/><rect x="17" y="14" width="6" height="5"/><rect x="24" y="14" width="6" height="5"/><path d="M8 27h26c-2 5-7 8-14 8s-11-3-12-8z"/></g></symbol>
+    <symbol id="b-vscode" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#0078D4"/><text x="22" y="22" font-size="14" font-weight="800" fill="#fff" text-anchor="middle" dominant-baseline="central">VS</text></symbol>
+    <symbol id="b-hf" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#FFD21E"/><text x="22" y="22" font-size="13" font-weight="800" fill="#1B2434" text-anchor="middle" dominant-baseline="central">bge</text></symbol>
+    <symbol id="b-user" viewBox="0 0 44 44"><circle cx="22" cy="14" r="8" fill="var(--ink)"/><path d="M6 40c0-9 7-14 16-14s16 5 16 14z" fill="var(--ink)"/></symbol>
+    <symbol id="b-browser" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#5B6675"/><rect x="8" y="10" width="28" height="24" rx="3" fill="#fff"/><rect x="8" y="10" width="28" height="6" rx="3" fill="#C9D2DE"/></symbol>
+  </defs>
+
+  <text x="40" y="44" style="font-size:28px;font-weight:800;fill:var(--ink)">예솜24 <tspan style="fill:#009688">스택 아키텍처</tspan></text>
+  <text x="40" y="66" class="t" style="font-size:12.5px">진짜사자 8조 · 현재 구현 기준 2026-09-01 · 실행 단위·포트·호출 경로 · 마크는 브랜드 색 모노그램(공식 로고 아님)</text>
+
+  <!-- ===== user / browser ===== -->
+  <use href="#b-user" x="1210" y="52" width="44" height="44"/>
+  <text x="1266" y="70" class="h">사용자</text><text x="1266" y="88" class="t">국민 · 운영자</text>
+  <path d="M1232,98 L1232,118" class="arrow"/>
+  <g transform="translate(1060,120)"><rect width="300" height="56" rx="8" class="box"/><use href="#b-browser" x="10" y="6" width="44" height="44"/><text x="66" y="26" class="name">브라우저</text><text x="66" y="44" class="role">웹 단일 채널 · 모바일 전용 없음</text></g>
+  <path d="M1060,148 L300,148 L300,248" class="arrow"/>
+  <text x="560" y="140" class="lbl">HTTPS · 페이지 로드 <tspan class="port">:5173</tspan> <tspan class="t">(dev) / 정적 빌드</tspan></text>
+  <path d="M1210,176 L1210,248" class="arrow"/>
+  <text x="1218" y="220" class="lbl">REST + SSE <tspan class="port">:8000</tspan></text>
+  <text x="1218" y="236" class="t">브라우저가 API를 직접 호출</text>
+
+  <!-- ===== server zone ===== -->
+  <rect x="40" y="200" width="1320" height="350" rx="14" class="zone"/>
+  <rect x="40" y="188" width="330" height="24" rx="5" fill="var(--ink)"/><text x="52" y="205" style="font-size:12.5px;font-weight:700;fill:var(--ground)">서버 1대 · 개발/시연 환경 (통합 compose 없음)</text>
+
+  <!-- React / Vite -->
+  <g transform="translate(70,250)">
+    <rect width="420" height="260" rx="10" class="box"/>
+    <use href="#b-react" x="16" y="16" width="44" height="44"/><use href="#b-vite" x="66" y="16" width="44" height="44"/>
+    <text x="122" y="36" class="name">React 19 + Vite</text><text x="122" y="54" class="role">web/ · TypeScript · pnpm 10</text>
+    <text x="16" y="88" class="sub">챗봇 화면 + 관리자 콘솔 10화면</text>
+    <text x="16" y="110" class="t">SSE 파서 · 되묻기 버튼 · 출처/서류 렌더</text>
+    <text x="16" y="130" class="t">TanStack Query · Tailwind 4</text>
+    <text x="16" y="150" class="t">MSW 목 = API 계약 정본 (VITE_ENABLE_MSW)</text>
+    <text x="16" y="180" class="sub">실행</text>
+    <text x="16" y="200" class="t"><tspan class="mono">pnpm dev</tspan> → Vite dev :5173 · <tspan class="mono">pnpm build</tspan> → 정적 파일</text>
+    <text x="16" y="220" class="t"><tspan class="mono">pnpm check</tspan> = tsc + selfcheck · oxlint</text>
+    <text x="16" y="244" class="t">.env.local: VITE_API_BASE=http://localhost:8000</text>
+  </g>
+
+  <!-- FastAPI -->
+  <g transform="translate(520,250)">
+    <rect width="810" height="260" rx="10" class="box"/>
+    <use href="#b-fastapi" x="16" y="16" width="44" height="44"/><use href="#b-python" x="66" y="16" width="44" height="44"/>
+    <text x="122" y="36" class="name">FastAPI · uvicorn <tspan class="port">:8000</tspan></text>
+    <text x="122" y="54" class="role">api/ · Python venv · <tspan class="mono">--workers 1</tspan> (임베딩 모델 ~2GB) · 세션 쿠키 인증</text>
+    <text x="20" y="250" class="t">라이브러리: SQLAlchemy + psycopg · httpx · openai SDK · langfuse SDK · sentence-transformers · kiwipiepy · uvicorn</text>
+    <g transform="translate(20,80)"><rect width="250" height="150" rx="8" class="inner"/>
+      <text x="14" y="26" class="sub">RAG 서비스 <tspan class="mono t">api/rag</tspan></text>
+      <text x="14" y="50" class="t">게이트 3단 → 질의 정리 → 캐시</text>
+      <text x="14" y="68" class="t">→ 플래너 → Dense 검색 → 생성</text>
+      <text x="14" y="86" class="t">→ 사후검증 → 출처 부착</text>
+      <text x="14" y="112" class="t">SSE: event/data · 질의 1건 = 1행</text>
+      <text x="14" y="130" class="t">LLM 판정 3콜 + 생성 1콜</text>
+    </g>
+    <g transform="translate(290,80)"><rect width="250" height="150" rx="8" class="inner"/>
+      <text x="14" y="26" class="sub">파이프라인 워커 <tspan class="t">스레드</tspan></text>
+      <text x="14" y="50" class="t">jobs 테이블 폴링 → 잡 실행</text>
+      <text x="14" y="68" class="t">수집·변환·청킹·검증·게이트·</text>
+      <text x="14" y="86" class="t">색인·반영 7단계 · 롤백</text>
+      <text x="14" y="112" class="t">별도 프로세스·큐 없음</text>
+      <text x="14" y="130" class="t">관리자 트리거만 (스케줄러 없음)</text>
+    </g>
+    <g transform="translate(560,80)"><rect width="230" height="150" rx="8" class="inner"/>
+      <use href="#b-hf" x="14" y="12" width="34" height="34"/>
+      <text x="58" y="26" class="sub">bge-m3-ko 임베딩</text>
+      <text x="58" y="44" class="t">dragonkue/BGE-m3-ko</text>
+      <text x="14" y="72" class="t">인프로세스 · CPU · 1024차원</text>
+      <text x="14" y="90" class="t">질문 인코딩 · Gate 2 · 색인</text>
+      <text x="14" y="112" class="t">Gate 2 참조 사전 config/</text>
+      <text x="14" y="130" class="t">BM25(kiwi) 메모리 · 운영 Off</text>
+    </g>
+  </g>
+  <path d="M490,300 L518,300" class="arrow dash"/>
+
+  <!-- ===== data (left) ===== -->
+  <g transform="translate(70,620)">
+    <rect width="420" height="96" rx="10" class="box"/>
+    <use href="#b-supabase" x="16" y="16" width="44" height="44"/><use href="#b-postgres" x="66" y="16" width="44" height="44"/>
+    <text x="122" y="36" class="name">Supabase · Postgres + pgvector</text>
+    <text x="122" y="54" class="role">호스팅 DB 하나 · 문서 58 · 청크 502 · 평가셋 849</text>
+    <text x="122" y="80" class="t">벡터·캐시·로그·평가셋 한 곳 · exact cosine</text>
+  </g>
+  <path d="M560,510 L560,585 L280,585 L280,618" class="arrow2"/>
+  <text x="300" y="577" class="lbl">SQL · psycopg</text>
+  <g transform="translate(70,740)">
+    <rect width="420" height="56" rx="10" fill="var(--todo-soft)" stroke="var(--todo)" stroke-dasharray="6 4" stroke-width="1.4"/>
+    <use href="#b-docker" x="16" y="6" width="44" height="44"/>
+    <text x="72" y="26" class="name" style="font-size:14px">로컬 개발용 pgvector 도커</text>
+    <text x="72" y="44" class="role">infra/kdic-postgres-server · docker compose — 운영은 Supabase</text>
+  </g>
+  <path d="M280,716 L280,738" class="arrow dash"/>
+
+  <!-- ===== external APIs (under FastAPI) ===== -->
+  <g transform="translate(540,620)">
+    <rect width="240" height="96" rx="10" class="box"/>
+    <use href="#b-openai" x="14" y="14" width="44" height="44"/>
+    <text x="70" y="34" class="name">OpenAI</text>
+    <text x="70" y="52" class="role mono">gpt-5.6-luna</text>
+    <text x="14" y="80" class="t">질의 정리 · 플래너 · 사후검증 (structured)</text>
+  </g>
+  <g transform="translate(800,620)">
+    <rect width="240" height="96" rx="10" class="box"/>
+    <use href="#b-naver" x="14" y="14" width="44" height="44"/>
+    <text x="70" y="34" class="name">CLOVA Studio</text>
+    <text x="70" y="52" class="role mono">HCX-DASH-002</text>
+    <text x="14" y="80" class="t">답변 생성 · 토큰 스트리밍 · 재생성 1회</text>
+  </g>
+  <g transform="translate(1060,620)">
+    <rect width="240" height="96" rx="10" class="box"/>
+    <use href="#b-langfuse" x="14" y="14" width="44" height="44"/>
+    <text x="70" y="34" class="name">Langfuse</text>
+    <text x="70" y="52" class="role">Cloud · 트레이싱</text>
+    <text x="14" y="80" class="t">단계별 span · 토큰 · 비용 · 비동기 flush</text>
+  </g>
+  <path d="M660,510 L660,618" class="arrow"/><text x="668" y="580" class="lbl">HTTPS · 판정 3콜</text>
+  <path d="M920,510 L920,618" class="arrow"/><text x="928" y="580" class="lbl">HTTPS · 생성 1콜</text>
+  <path d="M1180,510 L1180,618" class="arrow dash"/><text x="1188" y="580" class="lbl">trace (비동기)</text>
+
+  <!-- KDIC source -->
+  <g transform="translate(540,740)">
+    <rect width="760" height="56" rx="10" class="box"/>
+    <text x="16" y="24" class="name" style="font-size:14px">KDIC 웹사이트 <tspan class="mono t">kdic.or.kr</tspan></text>
+    <text x="16" y="44" class="role">58페이지 원천 · 워커/CLI가 HTTP 재크롤 · 규칙 파서(LLM 미사용) · 공사 내부 시스템 연동 없음</text>
+    <text x="520" y="24" class="lbl">← 재크롤 HTTP</text><text x="520" y="44" class="t">관리자 트리거 시에만</text>
+  </g>
+  <path d="M920,716 L920,738" class="arrow"/>
+
+  <!-- ===== dev flow ===== -->
+  <rect x="40" y="840" width="1320" height="150" rx="14" fill="none" stroke="var(--line)" stroke-width="1.4"/>
+  <rect x="40" y="828" width="150" height="24" rx="5" fill="var(--muted)"/><text x="52" y="845" style="font-size:12.5px;font-weight:700;fill:var(--ground)">코드 흐름 · 배포</text>
+
+  <g transform="translate(70,870)">
+    <rect width="300" height="96" rx="10" class="box"/>
+    <use href="#b-vscode" x="14" y="14" width="44" height="44"/>
+    <text x="70" y="34" class="name">로컬 개발</text>
+    <text x="70" y="52" class="role">VS Code · Windows/Linux</text>
+    <text x="14" y="80" class="t">pytest 418+ · pnpm check · Playwright · .env</text>
+  </g>
+  <path d="M370,918 L438,918" class="arrow"/><text x="376" y="908" class="lbl">git push</text>
+  <g transform="translate(440,870)">
+    <rect width="380" height="96" rx="10" class="box"/>
+    <use href="#b-github" x="14" y="14" width="44" height="44"/>
+    <text x="70" y="34" class="name">GitHub</text>
+    <text x="70" y="52" class="role mono">likelion-8/kdic-rag-chatbot</text>
+    <text x="14" y="80" class="t">브랜치 → Pull Request 리뷰 → main 머지 (PR 218건+) · Actions 없음</text>
+  </g>
+  <path d="M820,918 L888,918" class="arrow dash"/><text x="826" y="908" class="lbl">수동</text>
+  <g transform="translate(890,870)">
+    <rect width="420" height="96" rx="10" fill="var(--todo-soft)" stroke="var(--todo)" stroke-dasharray="6 4" stroke-width="1.4"/>
+    <text x="16" y="34" class="name" style="fill:var(--todo)">배포 자동화 없음</text>
+    <text x="16" y="54" class="role">git pull → <tspan class="mono">uvicorn api.main:app --port 8000 --workers 1</tspan> 재기동</text>
+    <text x="16" y="74" class="role">프론트 <tspan class="mono">pnpm build</tspan> 또는 dev 서버 · Docker 이미지·CI/CD·EC2 상시 배포 미구현</text>
+  </g>
+  <path d="M1330,870 L1330,552" class="arrow dash"/>
+  <text transform="translate(1346,760) rotate(-90)" class="lbl">수동 반영</text>
+</svg>
+</div></div>

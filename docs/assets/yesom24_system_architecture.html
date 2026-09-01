@@ -1,0 +1,273 @@
+<title>예솜24 시스템 아키텍처</title>
+<style>
+  :root { --ink:#14213D; --text:#1B2434; --muted:#5B6675; --line:#C9D2DE; --ground:#F3F5F8; --card:#FFFFFF;
+    --app:#1F5FA8; --app-soft:#EDF3FB; --ext:#B8731A; --ext-soft:#FBF3E6; --data:#4B3F8F; --data-soft:#EFECF8;
+    --client:#2E7D5B; --client-soft:#E9F4EE; --off:#5B6675; --off-soft:#EEF1F5; --todo:#9A7B4F; --todo-soft:#FAF4EA;
+    --gate:#1F3A5F; --llm:#B8731A; --llm-soft:#FBF1E2; --gen:#1F5FA8; --gen-soft:#DDE8F7; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --ink:#E8EEF7; --text:#DCE3EE; --muted:#9AA7B8; --line:#3A4656; --ground:#0F141C; --card:#182030;
+    --app:#6FA3E6; --app-soft:#16223A; --ext:#E0A45A; --ext-soft:#2E2314; --data:#A99BE8; --data-soft:#221E3A;
+    --client:#62B995; --client-soft:#142A20; --off:#9AA7B8; --off-soft:#1A212C; --todo:#C9A66F; --todo-soft:#2A2216;
+    --gate:#2D4F7F; --llm:#E0A45A; --llm-soft:#3A2C16; --gen:#6FA3E6; --gen-soft:#1C2C44; } }
+  :root[data-theme="dark"] {
+    --ink:#E8EEF7; --text:#DCE3EE; --muted:#9AA7B8; --line:#3A4656; --ground:#0F141C; --card:#182030;
+    --app:#6FA3E6; --app-soft:#16223A; --ext:#E0A45A; --ext-soft:#2E2314; --data:#A99BE8; --data-soft:#221E3A;
+    --client:#62B995; --client-soft:#142A20; --off:#9AA7B8; --off-soft:#1A212C; --todo:#C9A66F; --todo-soft:#2A2216;
+    --gate:#2D4F7F; --llm:#E0A45A; --llm-soft:#3A2C16; --gen:#6FA3E6; --gen-soft:#1C2C44; }
+  body { margin:0; background:var(--ground); color:var(--text); font-family:"Noto Sans KR","IBM Plex Sans KR","Malgun Gothic",sans-serif; }
+  .wrap { overflow-x:auto; }
+  .poster { width:1720px; background:var(--ground); }
+  svg { display:block; width:1720px; height:auto; font-family:inherit; }
+  .mono { font-family:"Cascadia Mono",Consolas,ui-monospace,monospace; }
+  text { fill:var(--text); }
+  .h { font-size:17px; font-weight:700; fill:var(--ink); }
+  .hb { font-size:19px; font-weight:800; fill:var(--ink); }
+  .sub { font-size:12.5px; font-weight:600; fill:var(--text); }
+  .t { font-size:11.5px; fill:var(--muted); }
+  .lbl { font-size:11.5px; font-weight:600; fill:var(--ink); }
+  .ztitle { font-size:12.5px; font-weight:700; fill:#fff; letter-spacing:.04em; }
+  .box { fill:var(--card); stroke:var(--line); stroke-width:1; }
+  .box.key { stroke-width:2; }
+  .arrow { fill:none; stroke:var(--ink); stroke-width:1.8; marker-end:url(#ah); }
+  .arrow2 { fill:none; stroke:var(--ink); stroke-width:1.8; marker-end:url(#ah); marker-start:url(#ah-start); }
+  .dash { stroke-dasharray:6 4; }
+  .mini text { font-size:11.5px; font-weight:700; text-anchor:middle; }
+  .mini .s { font-size:10.5px; font-weight:500; }
+  .mgate rect { fill:var(--gate); stroke:var(--gate); } .mgate text { fill:#fff; }
+  .mllm rect { fill:var(--llm-soft); stroke:var(--llm); } .mllm text { fill:var(--text); }
+  .mgen rect { fill:var(--gen-soft); stroke:var(--gen); } .mgen text { fill:var(--text); }
+  .mplain rect { fill:var(--card); stroke:var(--line); } .mplain text { fill:var(--text); }
+  .marr { fill:none; stroke:var(--line); stroke-width:1.4; marker-end:url(#ah-s); }
+  .stat { fill:var(--card); stroke:var(--line); }
+  .stat-n { font-size:30px; font-weight:800; fill:var(--app); }
+  .stat-k { font-size:13.5px; font-weight:700; fill:var(--ink); }
+  .stat-s { font-size:11.5px; fill:var(--muted); }
+</style>
+
+<div class="wrap"><div class="poster">
+<svg viewBox="0 0 1720 1110" role="img" aria-label="예솜24 RAG 플랫폼 시스템 아키텍처 — 단일 프로세스 앱 서버, Supabase 한 DB, 외부 LLM 두 종, 관측, 원천 사이트">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+    <marker id="ah-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+    <marker id="ah-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--line)"/></marker>
+  </defs>
+
+  <!-- title -->
+  <text x="40" y="46" style="font-size:30px;font-weight:800;fill:var(--ink)">예솜24 RAG 플랫폼 <tspan style="fill:var(--app)">시스템 아키텍처</tspan></text>
+  <text x="40" y="68" class="t" style="font-size:12.5px">진짜사자 8조 · 현재 구현 기준 2026-09-01 · 박스 = 런타임 구성요소 · 화살표 = 호출</text>
+  <g transform="translate(1250,30)">
+    <line x1="0" y1="10" x2="40" y2="10" class="arrow"/><text x="48" y="14" class="t">동기 호출</text>
+    <line x1="120" y1="10" x2="160" y2="10" class="arrow dash"/><text x="168" y="14" class="t">폴링 · 비동기</text>
+    <rect x="0" y="28" width="12" height="12" fill="var(--gate)"/><text x="18" y="38" class="t">판정 · LLM 0</text>
+    <rect x="100" y="28" width="12" height="12" fill="var(--llm-soft)" stroke="var(--llm)"/><text x="118" y="38" class="t">LLM 호출</text>
+    <rect x="190" y="28" width="12" height="12" fill="var(--gen-soft)" stroke="var(--gen)"/><text x="208" y="38" class="t">생성</text>
+    <rect x="250" y="28" width="12" height="12" fill="var(--todo-soft)" stroke="var(--todo)" stroke-dasharray="3 2"/><text x="268" y="38" class="t">미구현</text>
+  </g>
+
+  <!-- ===== headline stats ===== -->
+  <g>
+    <rect x="40" y="86" width="395" height="70" rx="8" class="stat"/>
+    <text x="58" y="132" class="stat-n">1</text><text x="84" y="132" class="stat-n" style="font-size:18px">프로세스</text>
+    <text x="180" y="112" class="stat-k">앱 서버는 하나의 uvicorn 프로세스</text>
+    <text x="180" y="132" class="stat-s">FastAPI + RAG + 워커 스레드 + 임베딩 모델</text>
+
+    <rect x="455" y="86" width="395" height="70" rx="8" class="stat"/>
+    <text x="473" y="132" class="stat-n">1</text><text x="499" y="132" class="stat-n" style="font-size:18px">DB</text>
+    <text x="560" y="112" class="stat-k">Supabase Postgres + pgvector 하나</text>
+    <text x="560" y="132" class="stat-s">문서·벡터·캐시·로그·평가셋 — 메타와 벡터가 한 트랜잭션</text>
+
+    <rect x="870" y="86" width="395" height="70" rx="8" class="stat"/>
+    <text x="888" y="132" class="stat-n">4</text><text x="914" y="132" class="stat-n" style="font-size:18px">LLM 콜</text>
+    <text x="1010" y="112" class="stat-k">정상 경로 = 판정 3콜 + 생성 1콜</text>
+    <text x="1010" y="132" class="stat-s">게이트 2단 · 캐시 · 검색은 LLM 0콜 → 조기 종료는 0원</text>
+
+    <rect x="1285" y="86" width="395" height="70" rx="8" class="stat"/>
+    <text x="1303" y="132" class="stat-n">2.24</text><text x="1372" y="132" class="stat-n" style="font-size:18px">원 / 질문</text>
+    <text x="1475" y="112" class="stat-k">임베딩은 로컬 → 0원</text>
+    <text x="1475" y="132" class="stat-s">Recall@5 0.956 · 출처 정확률 0.785</text>
+  </g>
+
+  <!-- ===== zones ===== -->
+  <rect x="40" y="190" width="280" height="580" rx="10" fill="var(--client-soft)" stroke="var(--client)" stroke-width="1.2"/>
+  <rect x="40" y="179" width="110" height="22" rx="4" fill="var(--client)"/><text x="50" y="195" class="ztitle">클라이언트</text>
+
+  <rect x="360" y="190" width="800" height="580" rx="10" fill="var(--app-soft)" stroke="var(--app)" stroke-width="1.2"/>
+  <rect x="360" y="179" width="330" height="22" rx="4" fill="var(--app)"/><text x="370" y="195" class="ztitle">애플리케이션 서버 · 단일 프로세스 (--workers 1)</text>
+
+  <rect x="1200" y="190" width="480" height="580" rx="10" fill="var(--ext-soft)" stroke="var(--ext)" stroke-width="1.2"/>
+  <rect x="1200" y="179" width="110" height="22" rx="4" fill="var(--ext)"/><text x="1210" y="195" class="ztitle">외부 서비스</text>
+
+  <rect x="360" y="800" width="800" height="285" rx="10" fill="var(--data-soft)" stroke="var(--data)" stroke-width="1.2"/>
+  <rect x="360" y="789" width="80" height="22" rx="4" fill="var(--data)"/><text x="370" y="805" class="ztitle">데이터</text>
+
+  <rect x="40" y="800" width="280" height="285" rx="10" fill="var(--off-soft)" stroke="var(--off)" stroke-width="1.2"/>
+  <rect x="40" y="789" width="160" height="22" rx="4" fill="var(--off)"/><text x="50" y="805" class="ztitle">오프라인 · 개발 · 평가</text>
+
+  <rect x="1200" y="800" width="480" height="285" rx="10" fill="var(--todo-soft)" stroke="var(--todo)" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <rect x="1200" y="789" width="150" height="22" rx="4" fill="var(--todo)"/><text x="1210" y="805" class="ztitle">미구현 · 다음 단계</text>
+
+  <!-- ===== client ===== -->
+  <rect x="60" y="230" width="120" height="66" rx="6" class="box"/>
+  <text x="120" y="256" class="h" text-anchor="middle">국민</text><text x="120" y="278" class="t" text-anchor="middle">챗봇 이용자</text>
+  <rect x="200" y="230" width="100" height="66" rx="6" class="box"/>
+  <text x="250" y="256" class="h" text-anchor="middle">운영자</text><text x="250" y="278" class="t" text-anchor="middle">권한 4단</text>
+  <path d="M120,296 L120,338" class="arrow"/><path d="M250,296 L250,338" class="arrow"/>
+
+  <rect x="60" y="340" width="240" height="200" rx="6" class="box key"/>
+  <text x="76" y="370" class="h">React 19 SPA</text>
+  <text x="76" y="394" class="sub">챗봇 화면 + 관리자 콘솔 10화면</text>
+  <text x="76" y="420" class="t">SSE 수신 · 되묻기 버튼 · 출처·서류 렌더</text>
+  <text x="76" y="440" class="t">MSW 목 = API 계약 정본</text>
+  <text x="76" y="460" class="t">TypeScript · Vite</text>
+  <text x="76" y="488" class="t">권한은 화면에서 감추기만</text>
+  <text x="76" y="506" class="t">— 최종 판정은 서버</text>
+  <text x="60" y="580" class="t">채널: 웹 단일 (모바일 전용·외부 API 없음)</text>
+  <text x="60" y="600" class="t">인증: 로그인 → 서버 세션 토큰(쿠키)</text>
+
+  <!-- ===== app server ===== -->
+  <rect x="400" y="230" width="740" height="86" rx="6" class="box"/>
+  <text x="416" y="259" class="h">FastAPI 라우터</text>
+  <text x="560" y="259" class="sub"><tspan class="mono">POST /api/chat</tspan> → SSE  ·  관리자 API 13종  ·  public · session · feedback</text>
+  <text x="416" y="286" class="t">세션 쿠키 인증 · 권한 4단은 서버가 판정 · 위험 작업은 사유 필수 + 재인증 · 멱등키</text>
+  <text x="416" y="304" class="t">기동 시 임베딩 모델 워밍업 → 워커 스레드 시작</text>
+
+  <rect x="400" y="350" width="240" height="130" rx="6" class="box"/>
+  <text x="416" y="379" class="h">임베딩 모델</text>
+  <text x="416" y="401" class="sub">bge-m3-ko · 인프로세스 · CPU</text>
+  <text x="416" y="425" class="t">질문 인코딩 · Gate 2 유사도 · 색인</text>
+  <text x="416" y="445" class="t">~2GB/프로세스 → workers 1 고정</text>
+  <text x="416" y="465" class="t">BM25(kiwi)도 메모리 · 운영 Off</text>
+
+  <rect x="400" y="510" width="240" height="150" rx="6" class="box"/>
+  <text x="416" y="539" class="h">파이프라인 워커</text>
+  <text x="416" y="561" class="sub">스레드 · jobs 테이블 폴링</text>
+  <text x="416" y="585" class="t">7단계 수집·변환·청킹·검증·</text>
+  <text x="416" y="603" class="t">게이트(경고만)·색인·반영</text>
+  <text x="416" y="623" class="t">롤백 = 직전 스냅샷 복원</text>
+  <text x="416" y="645" class="t">주기 실행 없음 — 관리자 트리거만</text>
+
+  <rect x="670" y="350" width="470" height="310" rx="6" class="box key"/>
+  <text x="686" y="380" class="hb">RAG 서비스</text>
+  <text x="810" y="380" class="t" style="font-size:12px">api/rag — 게이트 3단 → 검색 → 생성 → 검증 → 출처 부착</text>
+  <g class="mini mgate" transform="translate(686,400)"><rect width="82" height="56" rx="4"/><text x="41" y="23">Gate 1</text><text x="41" y="42" class="s">규칙 · LLM 0</text></g>
+  <path d="M768,428 L776,428" class="marr"/>
+  <g class="mini mllm" transform="translate(776,400)"><rect width="82" height="56" rx="4"/><text x="41" y="23">질의 정리</text><text x="41" y="42" class="s">재작성·되묻기</text></g>
+  <path d="M858,428 L866,428" class="marr"/>
+  <g class="mini mgate" transform="translate(866,400)"><rect width="82" height="56" rx="4"/><text x="41" y="23">캐시</text><text x="41" y="42" class="s">24h · LLM 0</text></g>
+  <path d="M948,428 L956,428" class="marr"/>
+  <g class="mini mgate" transform="translate(956,400)"><rect width="82" height="56" rx="4"/><text x="41" y="23">Gate 2</text><text x="41" y="42" class="s">임베딩 0.66</text></g>
+  <path d="M1038,428 L1046,428" class="marr"/>
+  <g class="mini mllm" transform="translate(1046,400)"><rect width="82" height="56" rx="4"/><text x="41" y="23">플래너</text><text x="41" y="42" class="s">분해 + intent</text></g>
+  <path d="M1087,456 L1087,470 L727,470 L727,482" class="marr"/>
+  <g class="mini mplain" transform="translate(686,484)"><rect width="82" height="56" rx="4"/><text x="41" y="23">Dense 검색</text><text x="41" y="42" class="s">pgvector 20→5</text></g>
+  <path d="M768,512 L776,512" class="marr"/>
+  <g class="mini mgate" transform="translate(776,484)"><rect width="82" height="56" rx="4"/><text x="41" y="23">Gate 3</text><text x="41" y="42" class="s">top-1 ≥ 0.35</text></g>
+  <path d="M858,512 L866,512" class="marr"/>
+  <g class="mini mgen" transform="translate(866,484)"><rect width="82" height="56" rx="4"/><text x="41" y="23">생성</text><text x="41" y="42" class="s">HCX 스트리밍</text></g>
+  <path d="M948,512 L956,512" class="marr"/>
+  <g class="mini mllm" transform="translate(956,484)"><rect width="82" height="56" rx="4"/><text x="41" y="23">사후검증</text><text x="41" y="42" class="s">재생성 1회</text></g>
+  <path d="M1038,512 L1046,512" class="marr"/>
+  <g class="mini mplain" transform="translate(1046,484)"><rect width="82" height="56" rx="4"/><text x="41" y="23">출처 부착</text><text x="41" y="42" class="s">가드레일·기록</text></g>
+  <text x="686" y="572" class="sub">출처·서류·링크는 코드가 결정론 부착 — LLM에 URL을 주지 않음</text>
+  <text x="686" y="596" class="t">질의 1건 = rag_runs 1행(실패 포함) · 적격 응답만 24h 캐시 · 파라미터는 DB에서 읽음(30초 캐시)</text>
+  <text x="686" y="616" class="t">이력은 재작성에만 사용, 생성 프롬프트엔 안 넣음 · 색인 버전 5초 감시 → 엔진 재조립</text>
+  <text x="686" y="644" class="t" style="fill:var(--ext)">CLI·정기 평가는 같은 블록을 src/pipeline.py 로 따로 엮음 → 서빙 경로 2개(파라미터 동기화 필요)</text>
+
+  <!-- arrows inside app -->
+  <path d="M300,440 L340,440 L340,272 L398,272" class="arrow"/>
+  <text transform="translate(334,400) rotate(-90)" class="lbl">HTTPS · SSE</text>
+  <path d="M905,316 L905,348" class="arrow"/><text x="913" y="340" class="lbl">챗 요청</text>
+  <path d="M520,316 L520,348" class="arrow"/><text x="528" y="340" class="lbl">워밍업</text>
+  <path d="M670,420 L642,420" class="arrow"/>
+  <path d="M520,480 L520,508" class="arrow"/><text x="528" y="500" class="lbl">색인 임베딩</text>
+
+  <!-- app → external -->
+  <path d="M1140,400 L1180,400 L1180,282 L1218,282" class="arrow"/><text x="1146" y="392" class="lbl">판정 3콜</text>
+  <path d="M1140,430 L1218,430" class="arrow"/><text x="1146" y="446" class="lbl">생성 1콜</text>
+  <path d="M1140,540 L1218,540" class="arrow dash"/><text x="1160" y="532" class="lbl">trace</text>
+  <path d="M640,600 L655,600 L655,700 L1218,700" class="arrow"/>
+  <text x="700" y="692" class="lbl">재크롤 HTTP — 관리자 트리거 시에만</text>
+
+  <!-- app ↔ data -->
+  <path d="M905,660 L905,838" class="arrow2"/>
+  <text x="913" y="726" class="lbl">SQL</text>
+  <text x="913" y="744" class="t">벡터 검색 · 캐시 · rag_runs</text>
+  <text x="913" y="762" class="t">파라미터 · 프롬프트 · 금칙어</text>
+  <path d="M520,660 L520,838" class="arrow2 dash"/>
+  <text x="528" y="726" class="lbl">폴링 · UPSERT</text>
+  <text x="528" y="744" class="t">jobs 상태 · 청크 · 색인 버전</text>
+  <path d="M400,296 L380,296 L380,850 L398,850" class="arrow"/>
+  <text transform="translate(394,660) rotate(-90)" class="lbl">관리자 CRUD · 잡 등록 · 세션 · 활동 로그</text>
+
+  <!-- ===== external ===== -->
+  <rect x="1220" y="230" width="440" height="104" rx="6" class="box"/>
+  <text x="1236" y="259" class="h">OpenAI <tspan class="mono" style="font-size:15px">gpt-5.6-luna</tspan></text>
+  <text x="1236" y="283" class="sub">질의 정리 · 플래너 · 사후검증 — 판정 3콜</text>
+  <text x="1236" y="307" class="t">structured output · temperature 0 · HCX 판정(50%)을 luna(97%)로 교체</text>
+
+  <rect x="1220" y="360" width="440" height="104" rx="6" class="box"/>
+  <text x="1236" y="389" class="h">CLOVA Studio <tspan class="mono" style="font-size:15px">HCX-DASH-002</tspan></text>
+  <text x="1236" y="413" class="sub">답변 생성 · 토큰 스트리밍 — 생성 1콜 (+재생성 1)</text>
+  <text x="1236" y="437" class="t">HCX-007 대비 단가 1/5 · 89문항 A/B에서 품질 차 없음</text>
+
+  <rect x="1220" y="490" width="440" height="90" rx="6" class="box"/>
+  <text x="1236" y="519" class="h">Langfuse</text>
+  <text x="1236" y="543" class="sub">trace · 단계별 토큰 · 비용 · 지연</text>
+  <text x="1236" y="565" class="t">비동기 flush · Grafana·Prometheus·ELK는 없음</text>
+
+  <rect x="1220" y="606" width="440" height="120" rx="6" class="box"/>
+  <text x="1236" y="635" class="h">KDIC 웹사이트</text>
+  <text x="1236" y="659" class="sub">6개 업무 · 58페이지 원천 (FAQ · 안내문 · 표 · 첨부)</text>
+  <text x="1236" y="683" class="t">판본 혼재 · soft 404 · JS 링크 · 동적 표 → 규칙 파서(LLM 미사용)</text>
+  <text x="1236" y="703" class="t">공사 내부 시스템과 연동 없음 — 공개 웹만 수집</text>
+
+  <!-- ===== data ===== -->
+  <rect x="400" y="840" width="740" height="225" rx="6" class="box key"/>
+  <text x="416" y="870" class="hb">Supabase Postgres + pgvector</text>
+  <text x="416" y="892" class="sub">한 DB — 메타데이터와 벡터가 한 트랜잭션 · exact cosine · HNSW 없음</text>
+  <g class="mono" style="font-size:11.5px">
+    <text x="416" y="922" class="sub" style="fill:var(--data)">지식</text>
+    <text x="416" y="944">documents 58</text>
+    <text x="416" y="964">document_chunks 502 · 1024d</text>
+    <text x="416" y="984">search_index_versions</text>
+    <text x="612" y="922" class="sub" style="fill:var(--data)">운영</text>
+    <text x="612" y="944">query_cache 24h</text>
+    <text x="612" y="964">rag_runs · conversations</text>
+    <text x="612" y="984">jobs · feedback</text>
+    <text x="806" y="922" class="sub" style="fill:var(--data)">관리</text>
+    <text x="806" y="944">rag_params · prompts</text>
+    <text x="806" y="964">change_requests</text>
+    <text x="806" y="984">admin users · activity_log</text>
+    <text x="1000" y="922" class="sub" style="fill:var(--data)">평가</text>
+    <text x="1000" y="944">evaluation_dataset 849</text>
+    <text x="1000" y="964">held-out 89</text>
+    <text x="1000" y="984">evaluation runs</text>
+  </g>
+  <text x="416" y="1018" class="t">검색 제외 = documents.is_active → 트리거가 청크까지 내림 · 반영 게이트 기준(0.92 / 0.80 / 99.5% / 10s)은 서버 코드 정본</text>
+  <text x="416" y="1038" class="t">Qdrant → pgvector 전환(08-03) 시 494청크 전량 임베딩 대조 불일치 0건</text>
+
+  <!-- ===== offline ===== -->
+  <rect x="60" y="840" width="240" height="225" rx="6" class="box"/>
+  <text x="76" y="869" class="h">CLI · 평가 · 실험</text>
+  <text x="76" y="893" class="sub">src/pipeline.py · src/eval</text>
+  <text x="76" y="917" class="t">held-out 정기 평가 2종(검색·생성)</text>
+  <text x="76" y="937" class="t">experiments/ 23종 · results/</text>
+  <text x="76" y="957" class="t">src/crawler/ 수집·변환·청킹·색인</text>
+  <text x="76" y="981" class="t">data/ corpus · chunks · 임베딩 캐시</text>
+  <text x="76" y="1001" class="t">infra/ 로컬 pgvector 도커(개발)</text>
+  <text x="76" y="1025" class="t">pytest 418+</text>
+  <path d="M300,950 L398,950" class="arrow"/>
+  <text x="306" y="941" class="lbl">평가 읽기</text>
+
+  <!-- ===== todo ===== -->
+  <rect x="1220" y="840" width="440" height="225" rx="6" fill="none" stroke="var(--todo)" stroke-dasharray="5 3"/>
+  <text x="1236" y="869" class="h" style="fill:var(--todo)">저장소에 없는 것</text>
+  <text x="1236" y="897" class="sub">통합 Docker Compose · CI/CD · 주기 스케줄러</text>
+  <text x="1236" y="919" class="t">저장소·백엔드·프론트를 한 번에 띄우는 compose 없음 · .github/workflows 없음</text>
+  <text x="1236" y="939" class="t">변경 감지 로직은 있으나 주기적으로 도는 주체 없음</text>
+  <text x="1236" y="967" class="sub">리랭커 · 모바일 · 외부 API · JWT/OAuth2</text>
+  <text x="1236" y="989" class="t">리랭커는 GPU 실측 후 Off(Recall@5 동률) · 나머지는 만든 적 없음</text>
+  <text x="1236" y="1017" class="sub">Grafana · Prometheus · ELK · S3 · EC2 상시 배포</text>
+  <text x="1236" y="1039" class="t">실험 A1·A2·A4 미수행 → 적재 시점 파라미터는 전체 재적재로만 판단</text>
+</svg>
+</div></div>
