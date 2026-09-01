@@ -9,7 +9,7 @@
 
 | 하려는 일 | 순서 |
 |---|---|
-| **처음 왔다 / 프로젝트가 뭔지 알고 싶다** | 루트 [`README.md`](../README.md)(P3 계획서) → [`CODEBASE.md`](CODEBASE.md)(실행 방법) → [`retrieval_eval.md`](retrieval_eval.md)(왜 이 검색 구조인지) |
+| **처음 왔다 / 프로젝트가 뭔지 알고 싶다** | 루트 [`README.md`](../README.md)(P1~P3 최종 연구 정리) → [`CODEBASE.md`](CODEBASE.md)(실행 방법) → [`retrieval_eval.md`](retrieval_eval.md)(왜 이 검색 구조인지) |
 | **파이프라인 코드를 고치러 왔다** | [`pipeline_issue_history.md`](pipeline_issue_history.md) **상단 "현재 상태 요약"** → 해당 이슈 절 |
 | **API를 붙이거나 계약을 확인한다** | [`web/src/mocks/README.md`](../web/src/mocks/README.md)(계약 정본) → [`frontend-handoff.md`](frontend-handoff.md) → [`backend-structure.md`](backend-structure.md) |
 | **데이터·코퍼스를 만진다** | [`metadata_schema.md`](metadata_schema.md) → [`CODEBASE.md`](CODEBASE.md) → [`search_scope_definition.md`](search_scope_definition.md) |
@@ -39,7 +39,7 @@
 | 문서 | 무엇이 있나 | 언제 기준 |
 |---|---|---|
 | [`CODEBASE.md`](CODEBASE.md) | P1 데이터 파이프라인(`src/crawler/`) 온보딩. 단계별 파일 표, 데이터 산출물, **파이프라인 실행 커맨드 정본**(운영 절차는 `admin_account_setup.md`) | 2026-08-05 · Supabase 전환 반영됨. ⚠️ P2 RAG 코어·`api/`·`web/`은 다루지 않는다 |
-| [`metadata_schema.md`](metadata_schema.md) | `corpus.jsonl`(58) · `chunks_all.jsonl`(494) · `testset_all.jsonl`(851) 필드 정의. **필드 정본** | 2026-08-05 |
+| [`metadata_schema.md`](metadata_schema.md) | `corpus.jsonl`(58) · `chunks_all.jsonl`(502) · `testset_all.jsonl`(849) 필드 정의. **필드 정본** | 스키마 2026-08-05 · 건수 2026-09-01 |
 | [`search_scope_definition.md`](search_scope_definition.md) | 6개 업무 × 58페이지 카탈로그(브레드크럼·URL·요약) | 2026-08-05 · ⚠️ 업무 필터는 2026-07-22에 껐다(문서 상단 참고) |
 | [`pipeline_issue_history.md`](pipeline_issue_history.md) | **상단 요약 = Current**(코드 대조 11행), 본문 = Historical(이슈 1~6 + 5-A·5-B 이력) | 요약은 2026-08-07 코드 대조 · 본문은 07-23~08-04 |
 | [`backend-structure.md`](backend-structure.md) | FastAPI 구조 개선안. **§3 함정 28건**, §6 프로세스 모델(bge-m3 2GB·`--workers 1`·`async def` 금지) | 2026-08-05 작성 + 08-07 현황 주석. §1의 처방 3건은 처리됨(그 표 참고) |
@@ -85,8 +85,8 @@
 
 | 위치 | 무엇 | 종류 |
 |---|---|---|
-| [`../README.md`](../README.md) | **P3 연구계획서**(관리자+웹 서비스화). README가 아니라 계획서다 | Current(계획) |
-| `worklog/P1_plan.md` · `P1_report.md` · `P2_plan.md` · `P2_report.md` | P1·P2 계획서와 결과 보고서 | Historical |
+| [`../README.md`](../README.md) | **P1~P3 최종 연구 정리.** 연구계획서 형식(문제정의·배경·방법·실험·결과·한계). 포트폴리오 겸 정본 요약 | Current · 2026-09-01 |
+| `worklog/P1_plan.md` · `P1_report.md` · `P2_plan.md` · `P2_report.md` · `P3_plan.md` · `P3_report.md` | 단계별 계획서와 결과 보고서 3쌍. **P3_plan 은 2026-09-01 루트에서 옮겨 왔다**(원래 경로 `README.md`) | Historical |
 | `worklog/0714~0806.md` | 일일 스탠드업 14개 | Historical |
 | [`../web/README.md`](../web/README.md) | 프론트 실행 방법 · 목 시나리오 표 | Current |
 | [`../web/src/mocks/README.md`](../web/src/mocks/README.md) | **API 계약 정본.** SSE 계약, 관리자 API 권한, 파이썬↔API 필드 매핑 | Current |

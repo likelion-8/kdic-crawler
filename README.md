@@ -7,13 +7,14 @@ AI 엔지니어 심화 부트캠프 자연어처리 과정 5기 · 진짜사자 
 **전체 기간: 2026-07-13 ~ 09-01 (7주)**
 
 > 이 문서는 P1~P3 세 단계를 **연구계획서 형식으로 한 곳에 정리한 최종본**입니다. 무엇을 문제로
-> 잡았고, 무엇을 비교했고, 무엇을 근거로 채택·폐기했는지가 중심입니다.
+> 잡았고, 무엇을 비교했고, 무엇을 근거로 채택·폐기했는지가 중심입니다. 단계별 실행 기록은
+> 아래 표의 계획서·결과보고서에 있습니다.
 >
 > | | 단계 | 기간 | 계획 | 결과 |
 > |---|---|---|---|---|
 > | P1 | 데이터 파이프라인 | 07-13 ~ 07-16 | [계획서](docs/worklog/P1_plan.md) | [결과보고서](docs/worklog/P1_report.md) |
 > | P2 | 대외용 AI 챗봇 | 07-20 ~ 07-24 | [계획서](docs/worklog/P2_plan.md) | [결과보고서](docs/worklog/P2_report.md) |
-> | P3 | 관리자 + 웹 서비스화 | 07-28 ~ 09-01 | [계획서](docs/worklog/P3_plan.md) | 이 문서 |
+> | P3 | 관리자 + 웹 서비스화 | 07-28 ~ 09-01 | [계획서](docs/worklog/P3_plan.md) | [결과보고서](docs/worklog/P3_report.md) |
 >
 > 구현된 서비스의 구조·화면·실행 방법은 이 문서가 아니라 조직 저장소 README에 있습니다.
 > 코드 온보딩은 [`docs/README.md`](docs/README.md)가 진입점입니다.
@@ -28,7 +29,8 @@ AI 엔지니어 심화 부트캠프 자연어처리 과정 5기 · 진짜사자 
 만들고, 그것을 **개발자 없이 운영할 수 있는 상태**까지 끌어올리는 것이 과제입니다.
 
 대상 업무는 예금자보호제도 · 예금보험금 안내 · 고객 미수령금 신청 · 착오송금 반환 신청 ·
-채무조정 안내 · 은닉재산 신고 여섯 가지입니다.
+채무조정 안내 · 은닉재산 신고 여섯 가지입니다. 기존 룰베이스 챗봇 **예솜24**를 RAG로 다시
+만드는 과제이며, 서비스 이름은 그대로 씁니다.
 
 ### 왜 검색 품질이 이 문제의 핵심인가
 
@@ -179,7 +181,7 @@ P3의 핵심 설계 넷입니다.
 |---|---|---|
 | intent 분류 4방법 (규칙·형태소·코사인·1-NN) | **LLM structured output 채택** | 나머지 전부 열세 + 형제 질문 누수 확인 → [intent_classifier_comparison](docs/intent_classifier_comparison.md) |
 | 쿼리 플래너 3모델 (분해+intent 통합) | **통합 채택** | joint 정확도 79 → **89%**, 질문당 토큰 2,007 → **539(-73%)**, 호출 2.6 → 1, false split 0% → [query_planner_model_comparison](docs/query_planner_model_comparison.md) |
-| 복합 질문 분해 규칙 vs LLM | **항상-LLM 채택** | [multiquery_decomposition](docs/multiquery_decomposition.md) |
+| 복합 질문 분해 규칙 vs LLM | **항상-LLM 채택** (08-09 플래너로 대체, 현재는 폴백 경로) | [multiquery_decomposition](docs/multiquery_decomposition.md) |
 | Gate 2 임계값 그리드서치 | **0.66** | 143문항 + Gate1 단독 vs Gate1+2 A/B → [gate2_domain_filter](docs/gate2_domain_filter.md) |
 | Gate 3 `MIN_TOP1_SCORE` 스윕 | **0.35** | [min_top1_threshold_decision](docs/min_top1_threshold_decision.md) |
 | 사후검증 범위 (마커만 vs 전체 검증) | **전체 확대** | 자기보고 마커는 근거를 쓴 답변 61건 중 **33건(54%)** 에서 출처를 잃음. 프롬프트 개선은 **35회 통제 실험**으로 막힘 → [pipeline_issue_history](docs/pipeline_issue_history.md) 이슈 5 |
@@ -283,6 +285,11 @@ Recall@5이고, 그 값이 동률입니다. 리랭커는 top-5 **안에서의 �
 | 출처링크 포함률 | 0.380 | 0.899 |
 | must_include 커버리지 | 0.526 | 0.633 |
 | 평균 응답시간 | 5.2초 | — |
+
+> ⚠️ **두 열은 시점만 다른 것이 아닙니다.** 08-26 측정은 생성 모델을 HCX-DASH-002 로 확정한
+> 뒤의 값이고, 그 사이에 게이트 3단·쿼리 플래너·사후검증 확대가 들어갔습니다. 단일 변수 비교가
+> 아니므로 **개별 지표의 증감을 특정 변경의 효과로 읽으면 안 됩니다.** 모델만 바꾼 통제 A/B 는
+> [generation_model_ab](docs/generation_model_ab_hcx007_vs_dash002_2026-08-26.md) 쪽입니다.
 
 > 07-30 평가가 "답은 맞는데 근거 링크가 안 붙는다"를 **가장 큰 결함으로 지목했고**(답변형 79개 중
 > 39개), 그것을 고쳐 **출처 정확률 0.317 → 0.785**로 올렸습니다. 평가가 개선 대상을 지목하고 그

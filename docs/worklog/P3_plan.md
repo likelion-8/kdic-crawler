@@ -10,7 +10,8 @@ AI 엔지니어 심화 부트캠프 자연어처리 과정 5기 · 진짜사자 
 > 이 위치로 옮겼습니다(원래 경로: `README.md`). 착수 시점의 판단을 그대로 두므로 **고치지
 > 않습니다** — 지금 코드·수치와 다른 곳은 오류가 아니라 이력입니다.
 >
-> - P3 의 실제 결과와 최종 연구 정리는 저장소 루트 [`README.md`](../../README.md)
+> - P3 의 실제 결과는 [`P3_report.md`](P3_report.md), P1~P3 전체 연구 정리는 저장소 루트
+>   [`README.md`](../../README.md)
 > - 앞 단계는 [`P1_plan.md`](P1_plan.md) · [`P1_report.md`](P1_report.md) ·
 >   [`P2_plan.md`](P2_plan.md) · [`P2_report.md`](P2_report.md)
 >
