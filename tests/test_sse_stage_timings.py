@@ -8,6 +8,7 @@ route_search_chunks 는 CLI·평가 실행과 섞여 웹 경로만 골라낼 방
 그만큼 낮아져 화면이 "검색은 공짜"라고 말하게 된다.
 """
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -67,7 +68,10 @@ def _normal_path(monkeypatch):
     monkeypatch.setattr(sse.answer, "plan",
                         lambda q: SimpleNamespace(items=[(q, "informational")], fallback=False))
 
-    def _prepare(q, intent=None):
+    def _prepare(q, intent=None, timings=None):
+        # 실제 prepare_sub 은 안에서 route_search_chunks 만 잰다 — 가짜도 그 자리를 채운다
+        if timings is not None:
+            timings["retrieval"] = 0.42
         return SimpleNamespace(question=q, intent=intent, top=[], prompt="p", civil=None,
                                evidence="", fixed_response=None, exit_at=None,
                                obs_marker=None, obs_used_source=None, obs_kind=None,
@@ -96,3 +100,30 @@ def test_full_path_records_all_seven_web_stages(timings, monkeypatch):
     assert len(timings) == 1
     assert set(timings[0]) == {"rewrite", "gate", "cache", "plan",
                                "retrieval", "generation", "validation"}
+
+
+# ── prepare_sub 안에서 '검색'이 무엇을 재는가 ────────────────────────────────
+# 호출부에서 prepare_sub 통째로 재면 USE_QUERY_PLANNER 를 끈 설정에서 intent 분류
+# (OpenAI 콜)가 '검색' 막대에 얹힌다. 라벨이 거짓말하지 않게 안에서 검색만 잰다.
+
+def test_retrieval_measures_the_search_only_not_the_intent_classification(monkeypatch):
+    from api.rag import answer as answer_mod
+
+    def _slow_classify(_q):
+        time.sleep(0.05)                 # 플래너 Off 폴백에서만 도는 OpenAI 콜 자리
+        return "informational"
+
+    monkeypatch.setattr(answer_mod, "classify_intent", _slow_classify)
+    monkeypatch.setattr(answer_mod, "route_search_chunks", lambda q, k: [])
+    monkeypatch.setattr(answer_mod, "get_param", lambda key, default: False
+                        if key == "use_type_routing" else default)
+    monkeypatch.setattr(answer_mod, "gate3_exit", lambda *a: False)
+    monkeypatch.setattr(answer_mod, "top_k_cut", lambda c, k: [])
+    monkeypatch.setattr(answer_mod, "build_informational_prompt", lambda q, top: "p")
+    monkeypatch.setattr(answer_mod, "record_gate3_span", lambda *a, **kw: None)
+
+    recorded = {}
+    answer_mod.prepare_sub("착오송금 신청 방법은?", None, timings=recorded)
+
+    # 분류에 50ms 를 썼어도 검색 막대에는 안 실린다
+    assert recorded["retrieval"] < 0.02

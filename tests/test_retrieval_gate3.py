@@ -245,7 +245,7 @@ def test_single_question_gate3_exit_makes_zero_llm_calls(call_counts, monkeypatc
     빈 배열, out_of_scope=true."""
     _open_gates_no_cache(monkeypatch)
     monkeypatch.setattr(sse.answer, "plan", lambda _q: sse.answer.Plan([("아무 관련 없는 질문", "informational")]))
-    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent: _sp_gate3_exit(q))
+    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent, timings=None: _sp_gate3_exit(q))
 
     events = list(sse.chat_event_stream("아무 관련 없는 질문", "sess", "req"))
 
@@ -265,7 +265,7 @@ def test_single_question_gate3_pass_keeps_existing_generation_path(call_counts, 
     _open_gates_no_cache(monkeypatch)
     monkeypatch.setattr(sse.answer, "plan",
                         lambda _q: sse.answer.Plan([("착오송금 반환지원 신청 방법", "informational")]))
-    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent: _sp_gate3_pass(q))
+    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent, timings=None: _sp_gate3_pass(q))
 
     list(sse.chat_event_stream("착오송금 반환지원 신청 방법", "sess", "req"))
 
@@ -282,7 +282,7 @@ def test_composite_partial_gate3_only_gated_sub_is_fixed(call_counts, monkeypatc
         ("아무 관련 없는 질문", "informational"),
     ]))
 
-    def fake_prepare(q, intent):
+    def fake_prepare(q, intent, timings=None):
         return _sp_gate3_pass(q) if q == "착오송금 반환지원 신청 방법" else _sp_gate3_exit(q)
 
     monkeypatch.setattr(sse.answer, "prepare_sub", fake_prepare)
@@ -307,7 +307,7 @@ def test_composite_all_gate3_makes_zero_llm_calls(call_counts, monkeypatch):
         ("아무 관련 없는 질문 1", "informational"),
         ("아무 관련 없는 질문 2", "informational"),
     ]))
-    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent: _sp_gate3_exit(q))
+    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent, timings=None: _sp_gate3_exit(q))
 
     events = list(sse.chat_event_stream("복합 질문", "sess", "req"))
 
@@ -327,7 +327,7 @@ def test_single_gate3_exit_is_recorded_as_served_from_gate3(monkeypatch):
                         lambda *a, **kw: captured.append(kw.get("served_from")))
     monkeypatch.setattr(sse.answer, "plan",
                         lambda _q: sse.answer.Plan([("아무 관련 없는 질문", "informational")]))
-    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent: _sp_gate3_exit(q))
+    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent, timings=None: _sp_gate3_exit(q))
     monkeypatch.setattr(sse, "_stream_one", _fake_stream_one)
 
     list(sse.chat_event_stream("아무 관련 없는 질문", "sess", "req"))
@@ -347,7 +347,7 @@ def test_composite_partial_gate3_does_not_overwrite_top_level_served_from(monkey
         ("아무 관련 없는 질문", "informational"),
     ]))
 
-    def fake_prepare(q, intent):
+    def fake_prepare(q, intent, timings=None):
         return _sp_gate3_pass(q) if q == "착오송금 반환지원 신청 방법" else _sp_gate3_exit(q)
 
     monkeypatch.setattr(sse.answer, "prepare_sub", fake_prepare)

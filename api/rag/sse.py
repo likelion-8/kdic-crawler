@@ -397,15 +397,12 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
             sub_span = open_span("sub_answer", input={"question": q, "intent": intent},
                                  metadata={"index": i + 1, "total": len(plan_items)})
         try:
-            # 검색 계측을 prepare_sub **통째로** 잡는다. 안에 route_search_chunks 말고도
-            # Gate3 판정·top_k_cut·프롬프트 조립이 있지만 전부 µs 라 검색에 묻힌다.
-            # ⚠ 한계: USE_QUERY_PLANNER 를 끄면 intent 가 None 으로 와서 classify_intent
-            # (OpenAI 콜)가 이 안에서 돈다 — 그 설정에서는 '검색'이 분류 시간을 포함한다.
-            # 그때 갈라야 하면 prepare_sub 에 timings 를 넘겨 route_search_chunks 만 잰다.
-            with as_child_of(sub_span), measure_time(timings, "retrieval", accumulate=True):
+            with as_child_of(sub_span):
                 # route_search_chunks·classify_question_type(@observe)와 prepare_sub 안의
                 # record_gate3_span 이 전부 이 하위 span 밑으로 들어온다.
-                sp = answer.prepare_sub(q, intent)
+                # 검색 계측은 prepare_sub 안에서 한다 — 여기서 통째로 재면 플래너 Off 폴백의
+                # intent 분류(OpenAI 콜)가 '검색' 막대에 얹힌다.
+                sp = answer.prepare_sub(q, intent, timings=timings)
         except Exception as e:  # noqa: BLE001
             logger.exception("[%s] prepare_sub 실패: %s", request_id, q)
             close_span(sub_span, metadata={"error": f"{type(e).__name__}: {e}"})

@@ -139,7 +139,7 @@ def _open_gates_and_spy_cache(monkeypatch):
         rewritten=False, standalone_question=q, needs_clarification=False))
     monkeypatch.setattr(sse, "_stream_one", _fake_stream_one)
     monkeypatch.setattr(sse.answer, "finalize_sub", _passthrough_finalize_sub)
-    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent: _sp_pass(q))
+    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent, timings=None: _sp_pass(q))
     return calls
 
 

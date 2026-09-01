@@ -20,6 +20,7 @@ from typing import NamedTuple, Optional
 # 완전히 같은 함수들을 쓴다. src/ 는 읽기만 하고 수정하지 않는다.
 from query_decomposer import decompose_query
 from query_planner import plan_query, USE_QUERY_PLANNER
+from performance import measure_time
 from query_classifier import classify_intent
 from retrieval import USE_TYPE_ROUTING, route_search_chunks
 from candidate_ranking import MIN_TOP1_SCORE, gate3_exit, top_k_cut
@@ -151,12 +152,17 @@ def plan(query: str) -> Plan:
     return Plan([(q, None) for q in subs], False)
 
 
-def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
+def prepare_sub(q: str, intent: Optional[str] = None,
+                timings: Optional[dict] = None) -> SubPlan:
     """하위 질문 하나에 대해 intent 분류·검색·근거조립·프롬프트까지 준비(동기, LLM 생성 전).
     pipeline._answer_one 의 검색~프롬프트 단계와 동일하다(리랭커 off).
 
     intent: 쿼리 플래너(plan)가 이미 판단한 값을 넘기면 그대로 쓴다. None이면(플래너 Off 폴백)
     여기서 classify_intent 로 분류한다.
+
+    timings: AD-001 단계별 그래프용 소요 기록(초). 넘기면 route_search_chunks 만 "retrieval"
+    로 잰다. 호출부에서 이 함수를 통째로 재면 안 되는 이유는 위 intent 분기다 — 플래너 Off
+    폴백에서 classify_intent(OpenAI 콜)가 여기서 돌아 '검색' 막대에 얹힌다.
 
     실행 순서(Gate3, 2026-08-25): route_search_chunks → **원본** 후보 top-1로 Gate3 판정 →
     통과 시에만 top_k_cut → 프롬프트 조립. 이 순서를 지켜야 하는 이유는 gate3_exit 판정이
@@ -167,7 +173,8 @@ def prepare_sub(q: str, intent: Optional[str] = None) -> SubPlan:
         intent = classify_intent(q)
     # 관리자 화면(AD-007)이 바꾼 값을 쓰되, DB 가 비면 위 상수로 떨어진다. 모듈 최상단이
     # 아니라 여기서 부르는 것이 중요하다 — 위에서 읽어 두면 import 시점에 값이 굳는다.
-    candidates = route_search_chunks(q, k=get_param("k_candidates", K_CANDIDATES))
+    with measure_time(timings if timings is not None else {}, "retrieval", accumulate=True):
+        candidates = route_search_chunks(q, k=get_param("k_candidates", K_CANDIDATES))
 
     # Gate3 — 원본 dense 후보의 top-1이 임계값 이하(또는 후보 없음)면 HCX·OpenAI 를 아예
     # 타지 않고 즉시 고정응답으로 끝낸다(기존엔 여기서 근거만 비우고 LLM 에게 "거절문을
