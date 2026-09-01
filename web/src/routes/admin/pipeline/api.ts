@@ -146,7 +146,7 @@ export function reauth(password: string) {
 export const JOB_TYPE_LABEL: Record<JobType, string> = {
   FULL_RECRAWL: '전체 재수집',
   SELECTED_RECRAWL: '선택 재수집',
-  REINDEX: '재적재',
+  REINDEX: '재색인',
   RECHUNK: '재청킹',
   REEMBED: '재임베딩',
   SMOKE_EVAL: '평가셋 재측정',
