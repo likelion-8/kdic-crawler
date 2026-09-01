@@ -39,7 +39,7 @@
 | 문서 | 무엇이 있나 | 언제 기준 |
 |---|---|---|
 | [`CODEBASE.md`](CODEBASE.md) | P1 데이터 파이프라인(`src/crawler/`) 온보딩. 단계별 파일 표, 데이터 산출물, **파이프라인 실행 커맨드 정본**(운영 절차는 `admin_account_setup.md`) | 2026-08-05 · Supabase 전환 반영됨. ⚠️ P2 RAG 코어·`api/`·`web/`은 다루지 않는다 |
-| [`metadata_schema.md`](metadata_schema.md) | `corpus.jsonl`(58) · `chunks_all.jsonl`(494) · `testset_all.jsonl`(851) 필드 정의. **필드 정본** | 2026-08-05 |
+| [`metadata_schema.md`](metadata_schema.md) | `corpus.jsonl`(58) · `chunks_all.jsonl`(502) · `testset_all.jsonl`(849) 필드 정의. **필드 정본** | 스키마 2026-08-05 · 건수 2026-09-01 |
 | [`search_scope_definition.md`](search_scope_definition.md) | 6개 업무 × 58페이지 카탈로그(브레드크럼·URL·요약) | 2026-08-05 · ⚠️ 업무 필터는 2026-07-22에 껐다(문서 상단 참고) |
 | [`pipeline_issue_history.md`](pipeline_issue_history.md) | **상단 요약 = Current**(코드 대조 11행), 본문 = Historical(이슈 1~6 + 5-A·5-B 이력) | 요약은 2026-08-07 코드 대조 · 본문은 07-23~08-04 |
 | [`backend-structure.md`](backend-structure.md) | FastAPI 구조 개선안. **§3 함정 28건**, §6 프로세스 모델(bge-m3 2GB·`--workers 1`·`async def` 금지) | 2026-08-05 작성 + 08-07 현황 주석. §1의 처방 3건은 처리됨(그 표 참고) |
