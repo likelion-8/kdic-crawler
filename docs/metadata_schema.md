@@ -116,9 +116,9 @@
 
 ## 3. testset_all.jsonl
 
-검색·응답 평가셋. 1줄 = 1평가 문항이며, 현재 **849개 문항** · 11개 필드로 구성된다.
-(⚠️ Supabase `evaluation_dataset` 행 수는 이번 갱신에서 확인하지 않았다 — 종전 문서는 851행
-일치로 적고 있었으므로, 색인을 다시 돌리기 전이라면 어긋나 있을 수 있다.)
+검색·응답 평가셋. 1줄 = 1평가 문항이며, 현재 **849개 문항** · 11개 필드로 구성된다
+(Supabase `evaluation_dataset`도 849행으로 일치 — 2026-09-01 실측. 같은 날 `documents` 58 ·
+`document_chunks` 502도 파일과 일치 확인).
 자동 채점이 가능하도록 정답을 서술형 한 덩어리로만 두지 않고, 채점 가능한 필드
 (`expected_sources`·`must_include`·`must_not_include`·`expected_links`)로 나눴다.
 

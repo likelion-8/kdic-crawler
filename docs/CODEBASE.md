@@ -126,9 +126,9 @@ python3 src/crawler/hashing.py       # 해시 자체검사
 
 ## 제품(챗봇)이 실제로 쓰는 것
 
-**2026-08-03 Qdrant → Supabase Postgres(pgvector) 전환** 이후 런타임 경로가 바뀌었다(`src/retrieval.py:327`).
+**2026-08-03 Qdrant → Supabase Postgres(pgvector) 전환** 이후 런타임 경로가 바뀌었다(`_build_engines()`가 `PgVectorDenseRetriever`를 엮는 `src/retrieval.py:424`).
 
-- **Dense 검색**: Supabase `document_chunks`(502행, `embedding vector(1024)`)를 `PgVectorDenseRetriever`가 읽는다(`src/retrieval.py:148`). 질문 인코딩만 bge-m3를 쓴다.
+- **Dense 검색**: Supabase `document_chunks`(502행, `embedding vector(1024)`)를 `PgVectorDenseRetriever`가 읽는다(`src/retrieval.py:150`). 질문 인코딩만 bge-m3를 쓴다.
 - **BM25**: `corpus.jsonl`에서 `build_units("all")`로 부팅 시 재구성한다.
 - ⚠️ **`dense_cache/*.npy`·`chunks_all.jsonl`은 런타임에 쓰이지 않는다** — 임베딩·평가 스크립트 전용이라 서버 이미지에 넣을 필요가 없다. 그래서 **DB만 갱신하고 `embed_corpus.py`를 안 돌리면 평가 수치가 운영을 설명하지 못한다.**
 - 나머지 3개 청킹 모드(page/faq_atomic/table_row)는 "청킹이 왜 필요한지" 증명한 **실험 비교군**이지 제품용이 아니다. 근거는 `docs/retrieval_eval.md`.
