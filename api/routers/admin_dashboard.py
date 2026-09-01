@@ -94,8 +94,14 @@ STAGE_TOTAL_SQL = text("""
       FROM rag_runs
      WHERE true""" + _FULL_RUN_WHERE)
 
+STAGE_COUNT_SQL = text("""
+    SELECT count(*)
+      FROM rag_runs
+     WHERE true""" + _FULL_RUN_WHERE)
 
-def build_stage_latency(avg_seconds_by_stage: dict, avg_total_ms: int) -> dict:
+
+def build_stage_latency(avg_seconds_by_stage: dict, avg_total_ms: int,
+                        sample_count: int) -> dict:
     """단계별 평균 소요(초) → 화면 계약(ms). 안 잰 단계는 **빼고** 내보낸다.
 
     0 으로 채우지 않는 이유: StageBars 는 avg_ms 를 그대로 막대로 그려서, 0 이 '즉시 끝남'
@@ -104,9 +110,13 @@ def build_stage_latency(avg_seconds_by_stage: dict, avg_total_ms: int) -> dict:
 
     라벨 없는 키는 버린다 — 계측만 늘리고 라벨을 안 붙인 상태에서 영문 키가 화면에 새는 것
     보다 낫다.
+
+    sample_count 는 이 평균을 낸 실행 건수다. 없으면 화면이 3건 평균과 300건 평균을 같은
+    무게로 보여준다 — '출처 판정 45%'가 표본 셋에서 나온 값일 수 있다.
     """
     return {
         "avg_total_ms": avg_total_ms,
+        "sample_count": sample_count,
         "stages": [{"name": label, "avg_ms": round(avg_seconds_by_stage[key] * 1000)}
                    for key, label in LATENCY_STAGE_NAMES if key in avg_seconds_by_stage],
     }
@@ -194,11 +204,6 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
     avg_latency = db.execute(
         select(func.avg(rag_runs.c.total_latency_ms)).where(*valid_today)
     ).scalar_one()
-    window = {"start": today_start, "end": tomorrow_start}
-    stage_seconds = {stage: float(seconds)
-                     for stage, seconds in db.execute(STAGE_LATENCY_SQL, window).all()}
-    stage_total_ms = round(float(db.execute(STAGE_TOTAL_SQL, window).scalar_one() or 0))
-
     intent_rows = db.execute(
         select(rag_runs.c.intent, func.count())
         .where(*valid_today).group_by(rag_runs.c.intent)
@@ -298,8 +303,31 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
             # rag_runs에는 업무분류 컬럼이 없다. 질문 문구로 추측하지 않는다.
             "business": [],
         },
-        "latency": build_stage_latency(stage_seconds, stage_total_ms),
     }
+
+
+@router.get("/latency")
+def dashboard_latency(
+    admin: CurrentAdmin,
+    db: DbSession,
+    range_: int = Query(default=7, alias="range"),
+):
+    """기간 안의 단계별 평균 소요. summary(오늘 고정)에서 떼어낸 이유는 기간 선택 때문이다.
+
+    KPI '평균 응답시간'과 값이 다르다 — 저쪽은 오늘 전체 질문 평균이고 여기는 전 구간을 다 돈
+    질문만 모수다(_FULL_RUN_WHERE). 모수를 함께 내보내야 화면이 3건 평균과 300건 평균을
+    구분해 보여줄 수 있다.
+    """
+    del admin
+    days = _range_days(range_)
+    now = datetime.now(timezone.utc)
+    _, start, end = _range_window(now, days)
+    window = {"start": start, "end": end}
+    stage_seconds = {stage: float(seconds)
+                     for stage, seconds in db.execute(STAGE_LATENCY_SQL, window).all()}
+    total_ms = round(float(db.execute(STAGE_TOTAL_SQL, window).scalar_one() or 0))
+    count = int(db.execute(STAGE_COUNT_SQL, window).scalar_one() or 0)
+    return {"range": days, **build_stage_latency(stage_seconds, total_ms, count)}
 
 
 @router.get("/trend")

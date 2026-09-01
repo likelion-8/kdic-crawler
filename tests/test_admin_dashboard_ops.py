@@ -63,12 +63,14 @@ class FakeDb:
 # ---------------------------------------------------------------- Dashboard
 
 
-def test_dashboard_routes_are_exactly_the_three_contract_routes():
+def test_dashboard_routes_are_exactly_the_four_contract_routes():
     paths = {route.path for route in admin_dashboard.router.routes}
     assert paths == {
         "/api/admin/dashboard/summary",
         "/api/admin/dashboard/trend",
         "/api/admin/dashboard/resources",
+        # 단계별 응답시간은 기간 선택이 붙어 summary(오늘 고정)에서 떼어냈다
+        "/api/admin/dashboard/latency",
     }
 
 
@@ -80,10 +82,6 @@ def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
         Result(812),
         Result([("success", 3), ("FAILED", 1)]),
         Result(5400),
-        # 단계별 소요(초). 전 구간을 다 돈 실행만 모수다 — 캐시 적중처럼 검색을 안 탄 턴을
-        # 섞으면 '검색 평균'이 안 검색한 턴만큼 낮아진다.
-        Result([("retrieval", 0.9195), ("generation", 3.2499), ("reranking", 9.9)]),
-        Result(10267),   # 그 모수의 평균 총 응답시간(단계 비중의 분모)
         Result([("informational", 3), ("civil_petition", 1)]),
         Result(latest),
         Result(1),
@@ -114,12 +112,41 @@ def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
     }
     assert response["distribution"]["business"] == []
     assert "indicators" not in response
-    # 잰 단계만 나온다. 라벨 없는 키(reranking)는 화면에 영문 키를 흘리느니 뺀다.
-    assert response["latency"] == {
+    # 단계별 응답시간은 기간 선택이 붙어 별도 엔드포인트로 갔다(아래 latency 테스트)
+    assert "latency" not in response
+
+
+def test_dashboard_latency_reports_the_range_and_its_sample_size():
+    db = FakeDb([
+        # 잰 단계만. 라벨 없는 키(reranking)는 화면에 영문 키를 흘리느니 뺀다.
+        Result([("retrieval", 0.9195), ("generation", 3.2499), ("reranking", 9.9)]),
+        Result(10267),   # 모수의 평균 총 응답시간(단계 비중의 분모)
+        Result(84),      # 그 모수의 건수
+    ])
+
+    response = admin_dashboard.dashboard_latency(_admin(), db, 30)
+
+    assert response == {
+        "range": 30,
+        "sample_count": 84,
         "avg_total_ms": 10267,
         "stages": [{"name": "검색", "avg_ms": 920},
                    {"name": "답변 생성", "avg_ms": 3250}],
     }
+
+
+def test_dashboard_latency_rejects_unsupported_ranges():
+    with pytest.raises(BadRequestError):
+        admin_dashboard.dashboard_latency(_admin(), FakeDb([]), 14)
+
+
+def test_dashboard_latency_says_nothing_measured_instead_of_zero_bars():
+    """기록이 없으면 빈 배열이라 화면이 '측정된 단계 기록이 없습니다'로 떨어진다."""
+    db = FakeDb([Result([]), Result(None), Result(0)])
+
+    response = admin_dashboard.dashboard_latency(_admin(), db, 7)
+
+    assert response == {"range": 7, "sample_count": 0, "avg_total_ms": 0, "stages": []}
 
 
 def test_dashboard_trend_query_groups_by_kst_date():
@@ -431,9 +458,7 @@ def test_suggestion_limits_are_enforced():
 def test_dashboard_todos_treat_never_measured_gate_as_zero():
     """게이트 기록이 없으면 '미통과'가 아니라 '아직 잰 적 없음'이다 — false 로 접으면 거짓 경보."""
     db = FakeDb([
-        Result(58), Result(812), Result([]), Result(0),
-        Result([]), Result(None),               # 단계별 소요 기록 없음
-        Result([]),
+        Result(58), Result(812), Result([]), Result(0), Result([]),
         Result(None), Result(0), Result(0),
         Result(0), Result(0), Result(None),     # 게이트 실행 기록 없음
     ])

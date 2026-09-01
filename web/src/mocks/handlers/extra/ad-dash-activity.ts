@@ -69,23 +69,31 @@ export const adDashActivityHandlers = [
           { label: '기타', ratio: 25 },
         ],
       },
-      // 웹 요청이 도는 순서 (CM-DF-003 05절 · AD-001 A-5). 순서를 바꾸지 않는다.
-      // 길이는 고정이 아니다 — 서버는 실제로 잰 단계만 싣는다(admin_dashboard.build_stage_latency).
-      // 값은 2026-09-01 Langfuse 실측 평균에서 가져왔다.
-      latency: {
-        avg_total_ms: 11_480,
-        stages: [
-          { name: '질문 정리', avg_ms: 2_048 },
-          { name: '게이트', avg_ms: 35 },
-          { name: '캐시 조회', avg_ms: 40 },
-          { name: '질의 계획', avg_ms: 2_268 },
-          { name: '검색', avg_ms: 920 },
-          { name: '답변 생성', avg_ms: 3_250 },
-          { name: '출처 판정', avg_ms: 2_486 },
-        ],
-      },
     }),
   ),
+
+  /** 단계별 평균 응답시간 — 기간 선택 즉시 갱신.
+   * summary 에서 떼어낸 이유는 기간 때문이다(summary 는 오늘 고정).
+   * 웹 요청이 도는 순서 (CM-DF-003 05절 · AD-001 A-5). 순서를 바꾸지 않는다.
+   * 길이는 고정이 아니다 — 서버는 실제로 잰 단계만 싣는다(admin_dashboard.build_stage_latency).
+   * 값은 2026-09-01 실측 평균이며, 모수는 기간에 비례해 늘어난다. */
+  http.get('/api/admin/dashboard/latency', ({ request }) => {
+    const range = rangeOf(new URL(request.url))
+    return HttpResponse.json({
+      range,
+      sample_count: range * 73,
+      avg_total_ms: 11_480,
+      stages: [
+        { name: '질문 정리', avg_ms: 2_048 },
+        { name: '게이트', avg_ms: 35 },
+        { name: '캐시 조회', avg_ms: 40 },
+        { name: '질의 계획', avg_ms: 2_268 },
+        { name: '검색', avg_ms: 920 },
+        { name: '답변 생성', avg_ms: 3_250 },
+        { name: '출처 판정', avg_ms: 2_486 },
+      ],
+    })
+  }),
 
   /** 일별 질문 수 추이 — 기간 선택 즉시 갱신 */
   http.get('/api/admin/dashboard/trend', ({ request }) => {

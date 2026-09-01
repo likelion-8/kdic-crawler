@@ -60,7 +60,16 @@ interface DashboardSummary {
     pipeline: { status: string; last_run_at: string }
   }
   distribution: { intent: IntentRatio; business: { label: string; ratio: number }[] }
-  latency: { avg_total_ms: number; stages: LatencyStage[] }
+}
+
+/** 단계별 평균 응답시간. summary(오늘 고정)와 달리 기간을 고른다.
+ *  sample_count 는 이 평균을 낸 실행 건수 — 전 구간을 다 돈 질문만 모수라
+ *  KPI '평균 응답시간'(오늘 전체 질문)과 값이 다르다. */
+interface LatencyResponse {
+  range: number
+  sample_count: number
+  avg_total_ms: number
+  stages: LatencyStage[]
 }
 
 interface TrendResponse {
@@ -163,6 +172,7 @@ function shortStamp(iso: string): string {
 export function Dashboard() {
   const queryClient = useQueryClient()
   const [trendRange, setTrendRange] = useState<Range>(7)
+  const [latencyRange, setLatencyRange] = useState<Range>(7)
   const [resourceRange, setResourceRange] = useState<Range>(7)
   const [resourceView, setResourceView] = useState<'ops' | 'cost'>('ops')
 
@@ -173,6 +183,10 @@ export function Dashboard() {
   const trend = useQuery({
     queryKey: ['admin', 'dashboard', 'trend', trendRange],
     queryFn: () => apiRequest<TrendResponse>(`/api/admin/dashboard/trend?range=${trendRange}`),
+  })
+  const latency = useQuery({
+    queryKey: ['admin', 'dashboard', 'latency', latencyRange],
+    queryFn: () => apiRequest<LatencyResponse>(`/api/admin/dashboard/latency?range=${latencyRange}`),
   })
   const resources = useQuery({
     queryKey: ['admin', 'dashboard', 'resources', resourceRange],
@@ -325,8 +339,22 @@ export function Dashboard() {
           </div>
 
           <section className={SECTION_CARD} id="stage-latency">
-            <h2 className={SECTION_TITLE}>단계별 평균 응답시간 (ms)</h2>
-            <StageBars stages={data.latency.stages} total={data.latency.avg_total_ms} />
+            <div className="flex flex-wrap items-center gap-4">
+              <h2 className={cn(SECTION_TITLE, 'mr-auto')}>단계별 평균 응답시간 (ms)</h2>
+              <Segmented label="기간" value={latencyRange} options={rangeOptions} onChange={setLatencyRange} />
+            </div>
+            {latency.isPending && <Loading />}
+            {latency.error && <SectionError error={latency.error} onRetry={() => void latency.refetch()} />}
+            {latency.data && (
+              <>
+                {/* 모수를 적지 않으면 3건 평균과 300건 평균이 같은 무게로 읽힌다.
+                    KPI '평균 응답시간'은 오늘 전체 질문 평균이라 이 값과 다르다 */}
+                <p className="nums -mt-1 text-[11px] text-muted-foreground">
+                  전 구간 완주 {latency.data.sample_count.toLocaleString('ko-KR')}건 기준
+                </p>
+                <StageBars stages={latency.data.stages} total={latency.data.avg_total_ms} />
+              </>
+            )}
           </section>
 
           <section className={SECTION_CARD}>

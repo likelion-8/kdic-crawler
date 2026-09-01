@@ -27,27 +27,35 @@ def test_stage_labels_follow_the_web_request_order():
 
 def test_seconds_become_milliseconds_in_execution_order():
     out = build_stage_latency({"generation": 3.2499, "retrieval": 0.9195, "rewrite": 2.0484},
-                              avg_total_ms=10267)
+                              avg_total_ms=10267, sample_count=84)
     assert out == {
         "avg_total_ms": 10267,
+        "sample_count": 84,
         "stages": [{"name": "질문 정리", "avg_ms": 2048},
                    {"name": "검색", "avg_ms": 920},
                    {"name": "답변 생성", "avg_ms": 3250}],
     }
 
 
+def test_sample_count_travels_with_the_numbers():
+    """모수 없이 비중만 보면 3건 평균과 300건 평균이 같아 보인다 — 화면이 그걸 말해야 한다."""
+    assert build_stage_latency({"retrieval": 0.5}, avg_total_ms=1000,
+                               sample_count=3)["sample_count"] == 3
+
+
 def test_stages_with_no_measurement_are_absent_not_zero():
     """0 으로 채우면 '즉시 끝났다'로 읽힌다. 안 잰 단계는 막대 자체가 없어야 한다."""
-    out = build_stage_latency({"gate": 0.0004}, avg_total_ms=310)
+    out = build_stage_latency({"gate": 0.0004}, avg_total_ms=310, sample_count=1)
     assert [s["name"] for s in out["stages"]] == ["게이트"]
 
 
 def test_no_records_yields_an_empty_chart_instead_of_eight_zero_bars():
-    out = build_stage_latency({}, avg_total_ms=0)
-    assert out == {"avg_total_ms": 0, "stages": []}
+    out = build_stage_latency({}, avg_total_ms=0, sample_count=0)
+    assert out == {"avg_total_ms": 0, "sample_count": 0, "stages": []}
 
 
 def test_unknown_keys_are_dropped():
     """계측 키를 늘렸는데 라벨을 안 붙였으면 화면에 영문 키가 새는 것보다 빠지는 게 낫다."""
-    out = build_stage_latency({"retrieval": 0.5, "reranking": 9.9}, avg_total_ms=1000)
+    out = build_stage_latency({"retrieval": 0.5, "reranking": 9.9}, avg_total_ms=1000,
+                              sample_count=10)
     assert [s["name"] for s in out["stages"]] == ["검색"]
