@@ -62,11 +62,13 @@ export const adDashActivityHandlers = [
       // 임계치가 확정되면 `indicators: [{key,label,value_text,threshold_text,exceeded}]`로 되살린다.
       distribution: {
         intent: { informational: 68, civil_petition: 32 },
+        // 라벨은 서버가 documents.business_function 을 그대로 보낸다 = codes.ts
+        // BUSINESS_FUNCTIONS 값. 줄여 쓰면 목만 짧은 이름이라 화면 폭이 실제와 달라진다
         business: [
-          { label: '착오송금', ratio: 31 },
-          { label: '예금자보호', ratio: 27 },
-          { label: '미수령금', ratio: 17 },
-          { label: '기타', ratio: 25 },
+          { label: '예금자보호제도', ratio: 38 },
+          { label: '착오송금 반환 신청', ratio: 31 },
+          { label: '고객 미수령금 신청', ratio: 17 },
+          { label: '채무조정 안내', ratio: 14 },
         ],
       },
     }),

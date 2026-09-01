@@ -99,6 +99,25 @@ STAGE_COUNT_SQL = text("""
       FROM rag_runs
      WHERE true""" + _FULL_RUN_WHERE)
 
+# 업무별 분포 — rag_runs 에 업무 컬럼은 없지만, 그 답변이 **실제로 인용한 문서**는 남아 있다
+# (observation.subs[].top[0].page_id). 질문 문구로 추측하는 게 아니라 근거 문서의
+# documents.business_function 을 그대로 센다. 문서에 매칭 안 되는 page_id(삭제된 문서 등)는
+# JOIN 에서 떨어져 분모에도 안 들어간다 — 못 센 것을 '기타'로 만들지 않는다.
+# 세는 단위는 하위 질문이다. 복합 질문 하나가 착오송금과 예금자보호를 함께 물으면 두 업무에
+# 각각 한 번씩 잡혀야 비중이 맞는다(질문 단위로 세면 뒤쪽 업무가 통째로 사라진다).
+BUSINESS_MIX_SQL = text("""
+    SELECT d.business_function, count(*)
+      FROM rag_runs
+      CROSS JOIN LATERAL jsonb_array_elements(rag_runs.observation -> 'subs') AS sub
+      JOIN documents d ON d.page_id = sub -> 'top' -> 0 ->> 'page_id'
+     WHERE rag_runs.created_at >= :start
+       AND rag_runs.created_at < :end
+       AND rag_runs.request_id IS NOT NULL
+       AND rag_runs.request_id <> ''
+     GROUP BY d.business_function
+     ORDER BY count(*) DESC
+""")
+
 
 def build_stage_latency(avg_seconds_by_stage: dict, avg_total_ms: int,
                         sample_count: int) -> dict:
@@ -215,6 +234,15 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
         for key in ("informational", "civil_petition")
     }
 
+    business_rows = db.execute(
+        BUSINESS_MIX_SQL, {"start": today_start, "end": tomorrow_start}
+    ).all()
+    business_total = sum(count for _label, count in business_rows)
+    business_mix = [
+        {"label": label, "ratio": round(count * 100 / business_total)}
+        for label, count in business_rows
+    ]
+
     latest_pipeline = db.execute(
         select(pipeline_jobs.c.status, pipeline_jobs.c.created_at)
         .order_by(pipeline_jobs.c.created_at.desc()).limit(1)
@@ -300,8 +328,7 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
         },
         "distribution": {
             "intent": intent_ratio,
-            # rag_runs에는 업무분류 컬럼이 없다. 질문 문구로 추측하지 않는다.
-            "business": [],
+            "business": business_mix,
         },
     }
 

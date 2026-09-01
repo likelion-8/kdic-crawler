@@ -344,10 +344,14 @@ export function IntentDonut({ ratio }: { ratio: IntentRatio }) {
 export function RatioBars({ items }: { items: { label: string; ratio: number }[] }) {
   if (items.length === 0) return <NoData text="분류된 업무가 없습니다" />
   return (
-    <ul className="flex flex-col gap-1.5">
+    // 격자는 li 가 아니라 ul 이 만든다 — 업무명 칸은 auto 라 **가장 긴 이름에 맞춰** 정해지고,
+    // 모든 줄이 같은 폭을 공유해 막대 시작점이 맞는다. li 마다 격자를 만들면 auto 가 줄마다
+    // 따로 계산돼 층이 지고, 그렇다고 고정 폭을 주면 '고객 미수령금 신청'이 잘린다.
+    // li 는 display:contents 로 자기 상자를 비워 자식 셋을 부모 격자에 그대로 넘긴다.
+    <ul className="grid grid-cols-[auto_1fr_38px] items-center gap-x-2.5 gap-y-1.5 text-[12px]">
       {items.map((b) => (
-        <li key={b.label} className="grid grid-cols-[76px_1fr_38px] items-center gap-2.5 text-[12px]">
-          <span className="truncate text-muted-foreground">{b.label}</span>
+        <li key={b.label} className="contents">
+          <span className="whitespace-nowrap text-muted-foreground">{b.label}</span>
           <span className="block h-1.5 overflow-hidden rounded-full bg-muted">
             <span
               className={cn('block h-full rounded-full', INK_SERIES)}

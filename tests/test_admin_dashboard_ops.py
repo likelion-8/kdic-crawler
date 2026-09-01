@@ -83,6 +83,8 @@ def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
         Result([("success", 3), ("FAILED", 1)]),
         Result(5400),
         Result([("informational", 3), ("civil_petition", 1)]),
+        # 업무별 분포 — 인용 문서의 business_function 집계(하위 질문 단위)
+        Result([("예금자보호제도", 7), ("착오송금 반환 신청", 3)]),
         Result(latest),
         Result(1),
         Result(2),
@@ -110,7 +112,10 @@ def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
         "informational": 75,
         "civil_petition": 25,
     }
-    assert response["distribution"]["business"] == []
+    assert response["distribution"]["business"] == [
+        {"label": "예금자보호제도", "ratio": 70},
+        {"label": "착오송금 반환 신청", "ratio": 30},
+    ]
     assert "indicators" not in response
     # 단계별 응답시간은 기간 선택이 붙어 별도 엔드포인트로 갔다(아래 latency 테스트)
     assert "latency" not in response
@@ -458,7 +463,7 @@ def test_suggestion_limits_are_enforced():
 def test_dashboard_todos_treat_never_measured_gate_as_zero():
     """게이트 기록이 없으면 '미통과'가 아니라 '아직 잰 적 없음'이다 — false 로 접으면 거짓 경보."""
     db = FakeDb([
-        Result(58), Result(812), Result([]), Result(0), Result([]),
+        Result(58), Result(812), Result([]), Result(0), Result([]), Result([]),
         Result(None), Result(0), Result(0),
         Result(0), Result(0), Result(None),     # 게이트 실행 기록 없음
     ])
