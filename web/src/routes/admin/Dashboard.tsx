@@ -12,7 +12,7 @@
  *
  * 갱신 정책: 기획서에 폴링 주기가 없다(09 issue 7). 자동 폴링을 넣지 않고
  * [새로고침]과 마지막 갱신 시각만 둔다 — 켜 두기만 해도 호출이 나가는 화면을 만들지 않는다. */
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -27,11 +27,17 @@ import type { CostPoint, IntentRatio, LatencyStage, TokenPoint, TrendPoint } fro
 const RANGES = [7, 30, 90] as const
 type Range = (typeof RANGES)[number]
 
-/** 상태 칩 [실패 건 보기 →]의 목적지는 원인이 정한다 (AD-001 A-2).
- * 오류 급증 → 대화 로그(AD-005) 실패 필터 / 파이프라인 실패 → AD-004 */
-const FAILURE_LINK: Record<string, string> = {
-  ERROR_RATE: '/admin/logs?result=fail',
-  PIPELINE: '/admin/pipeline',
+/** 상태 칩의 실패 종류별 문구와 이동처 (AD-001 A-2).
+ * 답변 실패 → 대화 로그(AD-005) 실패 필터 / 파이프라인 실패 → AD-004.
+ *
+ * 종류를 나눠 각각 링크를 다는 이유는 둘이 같은 날 겹칠 수 있어서다. 한 숫자·한 링크였을
+ * 때는 파이프라인이 실패한 날 답변 실패가 통째로 가려졌다.
+ *
+ * 쿼리 키·값은 AD-005 가 읽는 이름이어야 한다(LogFilters·LogStatus). 종전 `?result=fail` 은
+ * 그런 필터가 없어 조용히 무시됐고, 칩이 '실패 3건'이라 해 놓고 137건 전체 목록을 열었다. */
+const FAILURE_KIND: Record<string, { label: string; to: string }> = {
+  ERROR_RATE: { label: '답변 실패', to: '/admin/logs?status=FAILED' },
+  PIPELINE: { label: '파이프라인 실패', to: '/admin/pipeline' },
 }
 
 /** 대시보드 API는 CM-DF-003 04절에 없다(09 issue D절).
@@ -51,7 +57,8 @@ interface DashboardTodo {
 interface DashboardSummary {
   generated_at: string
   todos: DashboardTodo[]
-  service: { level: 'OK' | 'ERROR'; error_count: number; cause: string | null }
+  /** errors 는 건수가 0 인 종류를 싣지 않는다 — 비면 level 이 OK 다 */
+  service: { level: 'OK' | 'ERROR'; errors: { key: string; count: number }[] }
   kpi: {
     pages: number
     chunks: number
@@ -207,14 +214,18 @@ export function Dashboard() {
               </p>
             ) : (
               <p className={cn(STATUS, 'text-danger-fg')}>
-                <span className="size-1.5 rounded-full bg-current" aria-hidden="true" /> 서비스 오류 :{' '}
-                {data.service.error_count}건
-                <Link
-                  className="ml-1 font-semibold text-primary hover:underline"
-                  to={FAILURE_LINK[data.service.cause ?? ''] ?? '/admin/logs'}
-                >
-                  실패 건 보기 →
-                </Link>
+                <span className="size-1.5 rounded-full bg-current" aria-hidden="true" /> 서비스 오류 :
+                {data.service.errors.map((e, i) => (
+                  <Fragment key={e.key}>
+                    {i > 0 && <span className="text-muted-foreground">·</span>}
+                    <Link
+                      className="font-semibold text-primary hover:underline"
+                      to={FAILURE_KIND[e.key]?.to ?? '/admin/logs'}
+                    >
+                      {FAILURE_KIND[e.key]?.label ?? e.key} {e.count}건 →
+                    </Link>
+                  </Fragment>
+                ))}
               </p>
             )}
           </>

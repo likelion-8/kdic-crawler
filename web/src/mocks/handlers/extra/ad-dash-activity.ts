@@ -48,8 +48,10 @@ export const adDashActivityHandlers = [
           target: { screen: 'evaluations', filter: {} } },
       ],
       generated_at: new Date().toISOString(),
-      // level=ERROR면 화면이 경고형 칩으로 교체한다. cause가 [실패 건 보기 →]의 목적지를 정한다
-      service: { level: 'OK', error_count: 0, cause: null },
+      // level=ERROR면 화면이 경고형 칩으로 교체하고, errors[].key 가 각 링크의 목적지를 정한다
+      // (ERROR_RATE → AD-005 실패 필터 · PIPELINE → AD-004). 종류별로 나눠 보내야 둘이 같은
+      // 날 겹쳐도 한쪽이 가려지지 않는다. 0 건인 종류는 싣지 않는다 — 전부 없으면 level 이 OK
+      service: { level: 'OK', errors: [] },
       kpi: {
         pages: MOCK_PAGES.length,
         chunks: MOCK_CHUNKS.length,

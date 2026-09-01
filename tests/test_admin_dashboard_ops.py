@@ -74,7 +74,7 @@ def test_dashboard_routes_are_exactly_the_four_contract_routes():
     }
 
 
-def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
+def test_dashboard_summary_maps_legacy_status_and_splits_service_errors():
     latest = SimpleNamespace(
         status="FAILED", created_at=datetime(2026, 8, 12, 1, tzinfo=timezone.utc))
     db = FakeDb([
@@ -87,7 +87,6 @@ def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
         Result([("예금자보호제도", 7), ("착오송금 반환 신청", 3)]),
         Result(latest),
         Result(1),
-        Result(2),
         # 할 일 3종(2026-08-14) — 나쁨 평가 / 열린 작업 / 최근 게이트
         Result(7),
         Result(0),
@@ -103,10 +102,12 @@ def test_dashboard_summary_maps_legacy_status_and_sets_service_cause():
         ("PIPELINE_OPEN", 0, "pipeline"),     # 0건이어도 항목이 사라지지 않는다
         ("GATE_FAILED", 1, "evaluations"),
     ]
+    # 답변 실패와 파이프라인 실패가 같은 날 겹쳤다 — 둘 다 자기 건수와 자기 이동처를 갖는다.
+    # 합쳐 한 숫자로 보내면 링크가 하나뿐이라 한쪽이 통째로 가려진다.
+    # 관리자 로그인 실패는 여기 안 든다(FakeDb 가 그 조회까지 받으면 결과가 모자라 터진다).
     assert response["service"] == {
         "level": "ERROR",
-        "error_count": 4,  # RAG 1 + pipeline 1 + 활동 로그 2
-        "cause": "PIPELINE",
+        "errors": [{"key": "ERROR_RATE", "count": 1}, {"key": "PIPELINE", "count": 1}],
     }
     assert response["distribution"]["intent"] == {
         "informational": 75,
@@ -464,7 +465,7 @@ def test_dashboard_todos_treat_never_measured_gate_as_zero():
     """게이트 기록이 없으면 '미통과'가 아니라 '아직 잰 적 없음'이다 — false 로 접으면 거짓 경보."""
     db = FakeDb([
         Result(58), Result(812), Result([]), Result(0), Result([]), Result([]),
-        Result(None), Result(0), Result(0),
+        Result(None), Result(0),
         Result(0), Result(0), Result(None),     # 게이트 실행 기록 없음
     ])
 

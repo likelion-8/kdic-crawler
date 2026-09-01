@@ -44,7 +44,6 @@ from api.routers.admin_logs import KST, _kst_day_start, _status_out, _to_kst_iso
 from schema import document_chunks, documents, pipeline_jobs, rag_runs
 from schema import feedback as feedback_table
 from schema_admin import evaluation_runs
-from schema_admin import admin_activity_logs
 
 router = APIRouter(
     prefix="/api/admin/dashboard",
@@ -253,16 +252,21 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
                pipeline_jobs.c.created_at < tomorrow_start,
                pipeline_jobs.c.status == "FAILED")
     ).scalar_one()
-    activity_failed = db.execute(
-        select(func.count()).select_from(admin_activity_logs)
-        .where(admin_activity_logs.c.occurred_at >= today_start,
-               admin_activity_logs.c.occurred_at < tomorrow_start,
-               admin_activity_logs.c.result == "실패")
-    ).scalar_one()
+    # ⚠️ 관리자 활동 로그의 '실패'는 여기 안 든다. 오늘 22건이 전부 **로그인 실패**였고,
+    # 그것까지 더한 25건이 '서비스 오류'로 나갔다 — 관리자가 비밀번호를 잘못 치면 서비스가
+    # 고장 난 것처럼 보였다는 뜻이다. 게다가 그 22건을 열어 볼 이동처가 칩에 없어, 25건이라
+    # 해 놓고 3건짜리 목록을 여는 상태였다. 활동 로그 실패는 AD-011 이 따로 보여준다.
 
     rag_failed = by_status.get("FAILED", 0)
-    error_count = rag_failed + pipeline_failed + activity_failed
-    cause = "PIPELINE" if pipeline_failed else "ERROR_RATE" if error_count else None
+    # 종류별로 나눠서 내보낸다. 합쳐 한 숫자로 보내면 이동처가 하나뿐이라, 답변 실패와
+    # 파이프라인 실패가 같은 날 겹쳤을 때 한쪽이 통째로 가려진다. 0 건인 종류는 싣지 않는다 —
+    # 화면이 '오류 0건'을 오류처럼 그리게 된다(전부 0 이면 level 이 OK 다).
+    # key 는 화면이 이동처·문구를 고르는 값이다(Dashboard.tsx FAILURE_LINK).
+    service_errors = [
+        {"key": key, "count": count}
+        for key, count in (("ERROR_RATE", rag_failed), ("PIPELINE", pipeline_failed))
+        if count
+    ]
     average = round(float(avg_latency or 0))
 
     # ── 할 일(todos) — 대시보드를 '지표판'이 아니라 '시작점'으로 만드는 값이다.
@@ -312,9 +316,8 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
         # FEEDBACK_DOWN 을 미처리 건수로 좁힌다.
         "todos": todos,
         "service": {
-            "level": "ERROR" if error_count else "OK",
-            "error_count": error_count,
-            "cause": cause,
+            "level": "ERROR" if service_errors else "OK",
+            "errors": service_errors,
         },
         "kpi": {
             "pages": pages,
