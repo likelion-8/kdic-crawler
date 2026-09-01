@@ -9,7 +9,7 @@
 
 | 하려는 일 | 순서 |
 |---|---|
-| **처음 왔다 / 프로젝트가 뭔지 알고 싶다** | 루트 [`README.md`](../README.md)(P3 계획서) → [`CODEBASE.md`](CODEBASE.md)(실행 방법) → [`retrieval_eval.md`](retrieval_eval.md)(왜 이 검색 구조인지) |
+| **처음 왔다 / 프로젝트가 뭔지 알고 싶다** | 루트 [`README.md`](../README.md)(P1~P3 최종 연구 정리) → [`CODEBASE.md`](CODEBASE.md)(실행 방법) → [`retrieval_eval.md`](retrieval_eval.md)(왜 이 검색 구조인지) |
 | **파이프라인 코드를 고치러 왔다** | [`pipeline_issue_history.md`](pipeline_issue_history.md) **상단 "현재 상태 요약"** → 해당 이슈 절 |
 | **API를 붙이거나 계약을 확인한다** | [`web/src/mocks/README.md`](../web/src/mocks/README.md)(계약 정본) → [`frontend-handoff.md`](frontend-handoff.md) → [`backend-structure.md`](backend-structure.md) |
 | **데이터·코퍼스를 만진다** | [`metadata_schema.md`](metadata_schema.md) → [`CODEBASE.md`](CODEBASE.md) → [`search_scope_definition.md`](search_scope_definition.md) |
@@ -85,8 +85,8 @@
 
 | 위치 | 무엇 | 종류 |
 |---|---|---|
-| [`../README.md`](../README.md) | **P3 연구계획서**(관리자+웹 서비스화). README가 아니라 계획서다 | Current(계획) |
-| `worklog/P1_plan.md` · `P1_report.md` · `P2_plan.md` · `P2_report.md` | P1·P2 계획서와 결과 보고서 | Historical |
+| [`../README.md`](../README.md) | **P1~P3 최종 연구 정리.** 연구계획서 형식(문제정의·배경·방법·실험·결과·한계). 포트폴리오 겸 정본 요약 | Current · 2026-09-01 |
+| `worklog/P1_plan.md` · `P1_report.md` · `P2_plan.md` · `P2_report.md` · `P3_plan.md` · `P3_report.md` | 단계별 계획서와 결과 보고서 3쌍. **P3_plan 은 2026-09-01 루트에서 옮겨 왔다**(원래 경로 `README.md`) | Historical |
 | `worklog/0714~0806.md` | 일일 스탠드업 14개 | Historical |
 | [`../web/README.md`](../web/README.md) | 프론트 실행 방법 · 목 시나리오 표 | Current |
 | [`../web/src/mocks/README.md`](../web/src/mocks/README.md) | **API 계약 정본.** SSE 계약, 관리자 API 권한, 파이썬↔API 필드 매핑 | Current |
