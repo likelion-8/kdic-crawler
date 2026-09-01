@@ -112,7 +112,7 @@ def _normal_path(monkeypatch):
         rewritten=False, standalone_question=q, needs_clarification=False))
     monkeypatch.setattr(sse.answer, "plan",
                         lambda _q: sse.answer.Plan([("착오송금 신청 방법은?", "informational")]))
-    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent: answer_mod.SubPlan(
+    monkeypatch.setattr(sse.answer, "prepare_sub", lambda q, intent, timings=None: answer_mod.SubPlan(
         question=q, intent=intent, top=[("page_a#1", 0.8, "본문")],
         prompt=[("system", "sys"), ("human", q)], civil=None, evidence="근거"))
     monkeypatch.setattr(sse, "_stream_one", _fake_stream_one)

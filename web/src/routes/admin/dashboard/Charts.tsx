@@ -344,10 +344,14 @@ export function IntentDonut({ ratio }: { ratio: IntentRatio }) {
 export function RatioBars({ items }: { items: { label: string; ratio: number }[] }) {
   if (items.length === 0) return <NoData text="분류된 업무가 없습니다" />
   return (
-    <ul className="flex flex-col gap-1.5">
+    // 격자는 li 가 아니라 ul 이 만든다 — 업무명 칸은 auto 라 **가장 긴 이름에 맞춰** 정해지고,
+    // 모든 줄이 같은 폭을 공유해 막대 시작점이 맞는다. li 마다 격자를 만들면 auto 가 줄마다
+    // 따로 계산돼 층이 지고, 그렇다고 고정 폭을 주면 '고객 미수령금 신청'이 잘린다.
+    // li 는 display:contents 로 자기 상자를 비워 자식 셋을 부모 격자에 그대로 넘긴다.
+    <ul className="grid grid-cols-[auto_1fr_38px] items-center gap-x-2.5 gap-y-1.5 text-[12px]">
       {items.map((b) => (
-        <li key={b.label} className="grid grid-cols-[76px_1fr_38px] items-center gap-2.5 text-[12px]">
-          <span className="truncate text-muted-foreground">{b.label}</span>
+        <li key={b.label} className="contents">
+          <span className="whitespace-nowrap text-muted-foreground">{b.label}</span>
           <span className="block h-1.5 overflow-hidden rounded-full bg-muted">
             <span
               className={cn('block h-full rounded-full', INK_SERIES)}
@@ -362,7 +366,7 @@ export function RatioBars({ items }: { items: { label: string; ratio: number }[]
   )
 }
 
-// ---------------------------------------------------------------- 단계별 평균 응답시간(8구간)
+// ---------------------------------------------------------------- 단계별 평균 응답시간(웹 요청 순서)
 
 export interface LatencyStage {
   name: string
@@ -372,7 +376,16 @@ export interface LatencyStage {
 /** `total`은 서버가 준 평균 총 응답시간(avg_total_ms)이다. 단계 합과 다를 수 있고,
  * 그 차이가 곧 '어느 단계에도 안 잡힌 시간'이라 비중을 total 기준으로 낸다 —
  * 합계로 나누면 항상 100%가 되어 그 공백이 사라진다. */
-export function StageBars({ stages, total }: { stages: LatencyStage[]; total: number }) {
+export function StageBars({
+  stages,
+  total,
+  sampleCount,
+}: {
+  stages: LatencyStage[]
+  total: number
+  /** 이 평균을 낸 실행 건수. 없으면 2건 평균과 300건 평균이 같은 무게로 읽힌다 */
+  sampleCount: number
+}) {
   const [active, setActive] = useState<string | null>(null)
   if (stages.length === 0) return <NoData text="측정된 단계 기록이 없습니다" />
 
@@ -413,9 +426,13 @@ export function StageBars({ stages, total }: { stages: LatencyStage[]; total: nu
           </li>
         ))}
       </ul>
-      {/* 서버가 준 총 응답시간. 단계 합과 벌어지면 그 차이가 미계측 구간이다 */}
+      {/* 서버가 준 총 응답시간. 단계 합과 벌어지면 그 차이가 미계측 구간이다.
+          모수를 같은 줄 앞에 세운다 — 숫자를 읽는 자리에서 몇 건짜리 평균인지 함께 보여야 한다 */}
       <p className="nums flex justify-between border-t pt-2 text-[11px] text-muted-foreground">
-        <span>평균 총 응답시간</span>
+        <span>
+          <span className="mr-2.5 text-foreground/70">{sampleCount.toLocaleString('ko-KR')}건</span>
+          평균 총 응답시간
+        </span>
         <strong className="font-semibold text-foreground">{total.toLocaleString('ko-KR')}ms</strong>
       </p>
     </div>

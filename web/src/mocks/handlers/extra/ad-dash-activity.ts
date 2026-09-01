@@ -48,8 +48,10 @@ export const adDashActivityHandlers = [
           target: { screen: 'evaluations', filter: {} } },
       ],
       generated_at: new Date().toISOString(),
-      // level=ERROR면 화면이 경고형 칩으로 교체한다. cause가 [실패 건 보기 →]의 목적지를 정한다
-      service: { level: 'OK', error_count: 0, cause: null },
+      // level=ERROR면 화면이 경고형 칩으로 교체하고, errors[].key 가 각 링크의 목적지를 정한다
+      // (ERROR_RATE → AD-005 실패 필터 · PIPELINE → AD-004). 종류별로 나눠 보내야 둘이 같은
+      // 날 겹쳐도 한쪽이 가려지지 않는다. 0 건인 종류는 싣지 않는다 — 전부 없으면 level 이 OK
+      service: { level: 'OK', errors: [] },
       kpi: {
         pages: MOCK_PAGES.length,
         chunks: MOCK_CHUNKS.length,
@@ -62,29 +64,40 @@ export const adDashActivityHandlers = [
       // 임계치가 확정되면 `indicators: [{key,label,value_text,threshold_text,exceeded}]`로 되살린다.
       distribution: {
         intent: { informational: 68, civil_petition: 32 },
+        // 라벨은 서버가 documents.business_function 을 그대로 보낸다 = codes.ts
+        // BUSINESS_FUNCTIONS 값. 줄여 쓰면 목만 짧은 이름이라 화면 폭이 실제와 달라진다
         business: [
-          { label: '착오송금', ratio: 31 },
-          { label: '예금자보호', ratio: 27 },
-          { label: '미수령금', ratio: 17 },
-          { label: '기타', ratio: 25 },
-        ],
-      },
-      // 응답 8구간 고정 (CM-DF-003 05절 · AD-001 A-5). 순서를 바꾸지 않는다
-      latency: {
-        avg_total_ms: 5_195,
-        stages: [
-          { name: '질문 분해', avg_ms: 1_500 },
-          { name: '분류', avg_ms: 120 },
-          { name: '검색', avg_ms: 860 },
-          { name: '후보 컷', avg_ms: 45 },
-          { name: '근거 조립', avg_ms: 60 },
-          { name: '프롬프트', avg_ms: 30 },
-          { name: '답변 생성', avg_ms: 2_400 },
-          { name: '출처 판정', avg_ms: 180 },
+          { label: '예금자보호제도', ratio: 38 },
+          { label: '착오송금 반환 신청', ratio: 31 },
+          { label: '고객 미수령금 신청', ratio: 17 },
+          { label: '채무조정 안내', ratio: 14 },
         ],
       },
     }),
   ),
+
+  /** 단계별 평균 응답시간 — 기간 선택 즉시 갱신.
+   * summary 에서 떼어낸 이유는 기간 때문이다(summary 는 오늘 고정).
+   * 웹 요청이 도는 순서 (CM-DF-003 05절 · AD-001 A-5). 순서를 바꾸지 않는다.
+   * 길이는 고정이 아니다 — 서버는 실제로 잰 단계만 싣는다(admin_dashboard.build_stage_latency).
+   * 값은 2026-09-01 실측 평균이며, 모수는 기간에 비례해 늘어난다. */
+  http.get('/api/admin/dashboard/latency', ({ request }) => {
+    const range = rangeOf(new URL(request.url))
+    return HttpResponse.json({
+      range,
+      sample_count: range * 73,
+      avg_total_ms: 11_480,
+      stages: [
+        { name: '질문 정리', avg_ms: 2_048 },
+        { name: '게이트', avg_ms: 35 },
+        { name: '캐시 조회', avg_ms: 40 },
+        { name: '질의 계획', avg_ms: 2_268 },
+        { name: '검색', avg_ms: 920 },
+        { name: '답변 생성', avg_ms: 3_250 },
+        { name: '출처 판정', avg_ms: 2_486 },
+      ],
+    })
+  }),
 
   /** 일별 질문 수 추이 — 기간 선택 즉시 갱신 */
   http.get('/api/admin/dashboard/trend', ({ request }) => {

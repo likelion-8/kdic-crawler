@@ -1,7 +1,7 @@
 /** AD-001 대시보드 (운영 모니터링).
  *
  * 구성(AD-001 A-1 목업 순서 고정 · 5구역): 상태 칩 → KPI 4종 →
- * 일별 질문 수 추이 · 질문 성격/업무 분포 → 단계별 평균 응답시간(8구간) → 리소스 모니터링.
+ * 일별 질문 수 추이 · 질문 성격/업무 분포 → 단계별 평균 응답시간(웹 요청 순서) → 리소스 모니터링.
  * 상시 확인 지표 5종(CM-DF-004 10절)은 **그리지 않는다**(2026-08-04 팀 결정).
  * 정책 원문이 "임계치를 넘으면 대시보드 배너로 드러냅니다" 한 줄뿐이라 임계치 값이 어디에도 없고,
  * 5종 중 '요청 제한 초과'·'링크 점검 실패'는 백엔드에 데이터 원천 자체가 없다. 기준 없이 경고를
@@ -12,7 +12,7 @@
  *
  * 갱신 정책: 기획서에 폴링 주기가 없다(09 issue 7). 자동 폴링을 넣지 않고
  * [새로고침]과 마지막 갱신 시각만 둔다 — 켜 두기만 해도 호출이 나가는 화면을 만들지 않는다. */
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -27,11 +27,17 @@ import type { CostPoint, IntentRatio, LatencyStage, TokenPoint, TrendPoint } fro
 const RANGES = [7, 30, 90] as const
 type Range = (typeof RANGES)[number]
 
-/** 상태 칩 [실패 건 보기 →]의 목적지는 원인이 정한다 (AD-001 A-2).
- * 오류 급증 → 대화 로그(AD-005) 실패 필터 / 파이프라인 실패 → AD-004 */
-const FAILURE_LINK: Record<string, string> = {
-  ERROR_RATE: '/admin/logs?result=fail',
-  PIPELINE: '/admin/pipeline',
+/** 상태 칩의 실패 종류별 문구와 이동처 (AD-001 A-2).
+ * 답변 실패 → 대화 로그(AD-005) 실패 필터 / 파이프라인 실패 → AD-004.
+ *
+ * 종류를 나눠 각각 링크를 다는 이유는 둘이 같은 날 겹칠 수 있어서다. 한 숫자·한 링크였을
+ * 때는 파이프라인이 실패한 날 답변 실패가 통째로 가려졌다.
+ *
+ * 쿼리 키·값은 AD-005 가 읽는 이름이어야 한다(LogFilters·LogStatus). 종전 `?result=fail` 은
+ * 그런 필터가 없어 조용히 무시됐고, 칩이 '실패 3건'이라 해 놓고 137건 전체 목록을 열었다. */
+const FAILURE_KIND: Record<string, { label: string; to: string }> = {
+  ERROR_RATE: { label: '답변 실패', to: '/admin/logs?status=FAILED' },
+  PIPELINE: { label: '파이프라인 실패', to: '/admin/pipeline' },
 }
 
 /** 대시보드 API는 CM-DF-003 04절에 없다(09 issue D절).
@@ -51,7 +57,8 @@ interface DashboardTodo {
 interface DashboardSummary {
   generated_at: string
   todos: DashboardTodo[]
-  service: { level: 'OK' | 'ERROR'; error_count: number; cause: string | null }
+  /** errors 는 건수가 0 인 종류를 싣지 않는다 — 비면 level 이 OK 다 */
+  service: { level: 'OK' | 'ERROR'; errors: { key: string; count: number }[] }
   kpi: {
     pages: number
     chunks: number
@@ -60,7 +67,16 @@ interface DashboardSummary {
     pipeline: { status: string; last_run_at: string }
   }
   distribution: { intent: IntentRatio; business: { label: string; ratio: number }[] }
-  latency: { avg_total_ms: number; stages: LatencyStage[] }
+}
+
+/** 단계별 평균 응답시간. summary(오늘 고정)와 달리 기간을 고른다.
+ *  sample_count 는 이 평균을 낸 실행 건수 — 전 구간을 다 돈 질문만 모수라
+ *  KPI '평균 응답시간'(오늘 전체 질문)과 값이 다르다. */
+interface LatencyResponse {
+  range: number
+  sample_count: number
+  avg_total_ms: number
+  stages: LatencyStage[]
 }
 
 interface TrendResponse {
@@ -163,6 +179,7 @@ function shortStamp(iso: string): string {
 export function Dashboard() {
   const queryClient = useQueryClient()
   const [trendRange, setTrendRange] = useState<Range>(7)
+  const [latencyRange, setLatencyRange] = useState<Range>(7)
   const [resourceRange, setResourceRange] = useState<Range>(7)
   const [resourceView, setResourceView] = useState<'ops' | 'cost'>('ops')
 
@@ -173,6 +190,10 @@ export function Dashboard() {
   const trend = useQuery({
     queryKey: ['admin', 'dashboard', 'trend', trendRange],
     queryFn: () => apiRequest<TrendResponse>(`/api/admin/dashboard/trend?range=${trendRange}`),
+  })
+  const latency = useQuery({
+    queryKey: ['admin', 'dashboard', 'latency', latencyRange],
+    queryFn: () => apiRequest<LatencyResponse>(`/api/admin/dashboard/latency?range=${latencyRange}`),
   })
   const resources = useQuery({
     queryKey: ['admin', 'dashboard', 'resources', resourceRange],
@@ -193,14 +214,18 @@ export function Dashboard() {
               </p>
             ) : (
               <p className={cn(STATUS, 'text-danger-fg')}>
-                <span className="size-1.5 rounded-full bg-current" aria-hidden="true" /> 서비스 오류 :{' '}
-                {data.service.error_count}건
-                <Link
-                  className="ml-1 font-semibold text-primary hover:underline"
-                  to={FAILURE_LINK[data.service.cause ?? ''] ?? '/admin/logs'}
-                >
-                  실패 건 보기 →
-                </Link>
+                <span className="size-1.5 rounded-full bg-current" aria-hidden="true" /> 서비스 오류 :
+                {data.service.errors.map((e, i) => (
+                  <Fragment key={e.key}>
+                    {i > 0 && <span className="text-muted-foreground">·</span>}
+                    <Link
+                      className="font-semibold text-primary hover:underline"
+                      to={FAILURE_KIND[e.key]?.to ?? '/admin/logs'}
+                    >
+                      {FAILURE_KIND[e.key]?.label ?? e.key} {e.count}건 →
+                    </Link>
+                  </Fragment>
+                ))}
               </p>
             )}
           </>
@@ -325,8 +350,21 @@ export function Dashboard() {
           </div>
 
           <section className={SECTION_CARD} id="stage-latency">
-            <h2 className={SECTION_TITLE}>단계별 평균 응답시간 (ms)</h2>
-            <StageBars stages={data.latency.stages} total={data.latency.avg_total_ms} />
+            <div className="flex flex-wrap items-center gap-4">
+              <h2 className={cn(SECTION_TITLE, 'mr-auto')}>단계별 평균 응답시간 (ms)</h2>
+              <Segmented label="기간" value={latencyRange} options={rangeOptions} onChange={setLatencyRange} />
+            </div>
+            {latency.isPending && <Loading />}
+            {latency.error && <SectionError error={latency.error} onRetry={() => void latency.refetch()} />}
+            {latency.data && (
+              // 모수(sample_count)는 총계 줄 앞에 선다 — KPI '평균 응답시간'은 오늘 전체 질문
+              // 평균이고 이 값은 전 구간을 다 돈 질문만 모수라, 몇 건짜리인지가 같이 보여야 한다
+              <StageBars
+                stages={latency.data.stages}
+                total={latency.data.avg_total_ms}
+                sampleCount={latency.data.sample_count}
+              />
+            )}
           </section>
 
           <section className={SECTION_CARD}>

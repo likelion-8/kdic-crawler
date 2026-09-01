@@ -93,6 +93,18 @@ def with_served_from(observation: Optional[dict], served_from: Optional[str],
     return {**(observation or {}), **extra}
 
 
+def with_timings(observation: Optional[dict], timings: Optional[dict]) -> Optional[dict]:
+    """관측에 단계별 소요(초)를 얹는다. AD-001 '단계별 평균 응답시간'의 원천이다.
+
+    timings 가 비면 그대로 돌려준다 — 빈 dict 를 넣으면 화면이 '전 단계 0ms'로 읽는다.
+    키는 그 턴이 **실제로 탄 단계만** 있다(sse.py). 안 탄 단계를 0 으로 채우면 캐시·게이트로
+    끝난 턴이 평균에 0 을 섞어 "검색은 공짜"라고 말하게 된다.
+    """
+    if not timings:
+        return observation
+    return {**(observation or {}), "timings": timings}
+
+
 def served_from(observation: Optional[dict]) -> Optional[str]:
     """이 답변을 낸 경로. 'cache' | 'guardrail' | 'gate1' | 'gate2', 없으면 None(=평소 경로)."""
     return (observation or {}).get("served_from")

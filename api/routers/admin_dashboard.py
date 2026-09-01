@@ -26,7 +26,8 @@ feedback(좋아요/싫어요) · pipeline_jobs(작업) · admin_activity_logs(�
   어디에도 없고 5종 중 2종은 백엔드에 원천이 아예 없다. 기준 없이 경고를 띄우지 않는다.
 - service.cause 를 서버가 정한다(D2) — 'ERROR_RATE'면 화면이 AD-005 실패 필터로,
   'PIPELINE'이면 AD-004 로 간다. 프론트는 이 값으로만 분기한다.
-- 단계별 평균 응답시간은 **응답 8구간 고정 배열**이며 서버가 준 순서 그대로 그린다(D4).
+- 단계별 평균 응답시간은 서버가 준 순서 그대로 그린다(D4). 배열 길이는 고정이 아니다 —
+  잰 단계만 실어 보낸다(build_stage_latency 참고).
 - 표시 문자열(₩·M 등)은 서버가 완성해서 준다(D3'). 프론트가 단위를 지어내지 않는다.
 - ⚠️ rag_runs.status 에는 옛 값 "success" 가 섞여 있다. admin_logs.py 의 LEGACY_STATUS
   매핑과 **같은 처리**를 할 것 — 안 하면 대시보드 숫자와 대화 로그 숫자가 어긋난다.
@@ -34,7 +35,7 @@ feedback(좋아요/싫어요) · pipeline_jobs(작업) · admin_activity_logs(�
 from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import Date, cast, func, select
+from sqlalchemy import Date, cast, func, select, text
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError
@@ -43,7 +44,6 @@ from api.routers.admin_logs import KST, _kst_day_start, _status_out, _to_kst_iso
 from schema import document_chunks, documents, pipeline_jobs, rag_runs
 from schema import feedback as feedback_table
 from schema_admin import evaluation_runs
-from schema_admin import admin_activity_logs
 
 router = APIRouter(
     prefix="/api/admin/dashboard",
@@ -53,18 +53,91 @@ router = APIRouter(
 
 RANGES = frozenset({7, 30, 90})
 
-# D4 정본. rag_runs 에는 total_latency_ms 만 있고 단계별 컬럼은 아직 없다. 배열을 빼거나
-# 순서를 바꾸면 화면 레이아웃이 달라지므로 미계측 단계도 0으로 포함한다.
+# D4 정본 — (계측 키, 화면 라벨)을 웹 요청이 도는 순서대로. 종전 8구간은 CLI 파이프라인
+# (src/pipeline.py 의 timings 키)을 그대로 옮긴 것이라 실제 서빙 경로와 달랐다: 웹은
+# api/rag/sse.py 를 돌아 게이트·질문 정리·캐시 조회를 먼저 타고 리랭커는 아예 안 부른다.
+# 계측 키는 sse.py 와 answer.prepare_sub 이 rag_runs.observation.timings 에 적는 값이다.
 LATENCY_STAGE_NAMES = (
-    "질문 분해",
-    "분류",
-    "검색",
-    "후보 컷",
-    "근거 조립",
-    "프롬프트",
-    "답변 생성",
-    "출처 판정",
+    ("rewrite", "질문 정리"),
+    ("gate", "게이트"),
+    ("cache", "캐시 조회"),
+    ("plan", "질의 계획"),
+    ("retrieval", "검색"),
+    ("generation", "답변 생성"),
+    ("validation", "출처 판정"),
 )
+
+
+# 모수는 **전 구간을 다 돈 실행**뿐이다(generation 키가 있는 행). 캐시 적중·게이트 EXIT 처럼
+# 검색·생성을 안 탄 턴을 섞으면 검색 평균이 안 검색한 턴 수만큼 낮아지고, 단계 비중의 분모인
+# 총 응답시간도 같은 모수여야 비중이 성립한다.
+_FULL_RUN_WHERE = """
+       AND rag_runs.created_at >= :start
+       AND rag_runs.created_at < :end
+       AND rag_runs.request_id IS NOT NULL
+       AND rag_runs.request_id <> ''
+       AND jsonb_exists(rag_runs.observation -> 'timings', 'generation')
+"""
+
+# jsonb_each_text 로 펴서 키별 평균을 낸다. 단계 키를 늘려도 이 쿼리는 그대로다 —
+# 화면에 나올지는 LATENCY_STAGE_NAMES 에 라벨이 있느냐로만 갈린다.
+STAGE_LATENCY_SQL = text("""
+    SELECT t.key, avg(t.value::float)
+      FROM rag_runs, jsonb_each_text(rag_runs.observation -> 'timings') AS t
+     WHERE true""" + _FULL_RUN_WHERE + """
+     GROUP BY t.key
+""")
+
+STAGE_TOTAL_SQL = text("""
+    SELECT avg(rag_runs.total_latency_ms)
+      FROM rag_runs
+     WHERE true""" + _FULL_RUN_WHERE)
+
+STAGE_COUNT_SQL = text("""
+    SELECT count(*)
+      FROM rag_runs
+     WHERE true""" + _FULL_RUN_WHERE)
+
+# 업무별 분포 — rag_runs 에 업무 컬럼은 없지만, 그 답변이 **실제로 인용한 문서**는 남아 있다
+# (observation.subs[].top[0].page_id). 질문 문구로 추측하는 게 아니라 근거 문서의
+# documents.business_function 을 그대로 센다. 문서에 매칭 안 되는 page_id(삭제된 문서 등)는
+# JOIN 에서 떨어져 분모에도 안 들어간다 — 못 센 것을 '기타'로 만들지 않는다.
+# 세는 단위는 하위 질문이다. 복합 질문 하나가 착오송금과 예금자보호를 함께 물으면 두 업무에
+# 각각 한 번씩 잡혀야 비중이 맞는다(질문 단위로 세면 뒤쪽 업무가 통째로 사라진다).
+BUSINESS_MIX_SQL = text("""
+    SELECT d.business_function, count(*)
+      FROM rag_runs
+      CROSS JOIN LATERAL jsonb_array_elements(rag_runs.observation -> 'subs') AS sub
+      JOIN documents d ON d.page_id = sub -> 'top' -> 0 ->> 'page_id'
+     WHERE rag_runs.created_at >= :start
+       AND rag_runs.created_at < :end
+       AND rag_runs.request_id IS NOT NULL
+       AND rag_runs.request_id <> ''
+     GROUP BY d.business_function
+     ORDER BY count(*) DESC
+""")
+
+
+def build_stage_latency(avg_seconds_by_stage: dict, avg_total_ms: int,
+                        sample_count: int) -> dict:
+    """단계별 평균 소요(초) → 화면 계약(ms). 안 잰 단계는 **빼고** 내보낸다.
+
+    0 으로 채우지 않는 이유: StageBars 는 avg_ms 를 그대로 막대로 그려서, 0 이 '즉시 끝남'
+    으로 읽힌다. 종전 구현이 8단계를 전부 0 으로 내보내 그래프가 통째로 비어 보였다.
+    단계가 하나도 없으면 빈 배열이라 화면이 '측정된 단계 기록이 없습니다'로 떨어진다.
+
+    라벨 없는 키는 버린다 — 계측만 늘리고 라벨을 안 붙인 상태에서 영문 키가 화면에 새는 것
+    보다 낫다.
+
+    sample_count 는 이 평균을 낸 실행 건수다. 없으면 화면이 3건 평균과 300건 평균을 같은
+    무게로 보여준다 — '출처 판정 45%'가 표본 셋에서 나온 값일 수 있다.
+    """
+    return {
+        "avg_total_ms": avg_total_ms,
+        "sample_count": sample_count,
+        "stages": [{"name": label, "avg_ms": round(avg_seconds_by_stage[key] * 1000)}
+                   for key, label in LATENCY_STAGE_NAMES if key in avg_seconds_by_stage],
+    }
 
 
 def _range_days(value: int) -> int:
@@ -160,6 +233,15 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
         for key in ("informational", "civil_petition")
     }
 
+    business_rows = db.execute(
+        BUSINESS_MIX_SQL, {"start": today_start, "end": tomorrow_start}
+    ).all()
+    business_total = sum(count for _label, count in business_rows)
+    business_mix = [
+        {"label": label, "ratio": round(count * 100 / business_total)}
+        for label, count in business_rows
+    ]
+
     latest_pipeline = db.execute(
         select(pipeline_jobs.c.status, pipeline_jobs.c.created_at)
         .order_by(pipeline_jobs.c.created_at.desc()).limit(1)
@@ -170,16 +252,21 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
                pipeline_jobs.c.created_at < tomorrow_start,
                pipeline_jobs.c.status == "FAILED")
     ).scalar_one()
-    activity_failed = db.execute(
-        select(func.count()).select_from(admin_activity_logs)
-        .where(admin_activity_logs.c.occurred_at >= today_start,
-               admin_activity_logs.c.occurred_at < tomorrow_start,
-               admin_activity_logs.c.result == "실패")
-    ).scalar_one()
+    # ⚠️ 관리자 활동 로그의 '실패'는 여기 안 든다. 오늘 22건이 전부 **로그인 실패**였고,
+    # 그것까지 더한 25건이 '서비스 오류'로 나갔다 — 관리자가 비밀번호를 잘못 치면 서비스가
+    # 고장 난 것처럼 보였다는 뜻이다. 게다가 그 22건을 열어 볼 이동처가 칩에 없어, 25건이라
+    # 해 놓고 3건짜리 목록을 여는 상태였다. 활동 로그 실패는 AD-011 이 따로 보여준다.
 
     rag_failed = by_status.get("FAILED", 0)
-    error_count = rag_failed + pipeline_failed + activity_failed
-    cause = "PIPELINE" if pipeline_failed else "ERROR_RATE" if error_count else None
+    # 종류별로 나눠서 내보낸다. 합쳐 한 숫자로 보내면 이동처가 하나뿐이라, 답변 실패와
+    # 파이프라인 실패가 같은 날 겹쳤을 때 한쪽이 통째로 가려진다. 0 건인 종류는 싣지 않는다 —
+    # 화면이 '오류 0건'을 오류처럼 그리게 된다(전부 0 이면 level 이 OK 다).
+    # key 는 화면이 이동처·문구를 고르는 값이다(Dashboard.tsx FAILURE_LINK).
+    service_errors = [
+        {"key": key, "count": count}
+        for key, count in (("ERROR_RATE", rag_failed), ("PIPELINE", pipeline_failed))
+        if count
+    ]
     average = round(float(avg_latency or 0))
 
     # ── 할 일(todos) — 대시보드를 '지표판'이 아니라 '시작점'으로 만드는 값이다.
@@ -229,9 +316,8 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
         # FEEDBACK_DOWN 을 미처리 건수로 좁힌다.
         "todos": todos,
         "service": {
-            "level": "ERROR" if error_count else "OK",
-            "error_count": error_count,
-            "cause": cause,
+            "level": "ERROR" if service_errors else "OK",
+            "errors": service_errors,
         },
         "kpi": {
             "pages": pages,
@@ -245,14 +331,33 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
         },
         "distribution": {
             "intent": intent_ratio,
-            # rag_runs에는 업무분류 컬럼이 없다. 질문 문구로 추측하지 않는다.
-            "business": [],
-        },
-        "latency": {
-            "avg_total_ms": average,
-            "stages": [{"name": name, "avg_ms": 0} for name in LATENCY_STAGE_NAMES],
+            "business": business_mix,
         },
     }
+
+
+@router.get("/latency")
+def dashboard_latency(
+    admin: CurrentAdmin,
+    db: DbSession,
+    range_: int = Query(default=7, alias="range"),
+):
+    """기간 안의 단계별 평균 소요. summary(오늘 고정)에서 떼어낸 이유는 기간 선택 때문이다.
+
+    KPI '평균 응답시간'과 값이 다르다 — 저쪽은 오늘 전체 질문 평균이고 여기는 전 구간을 다 돈
+    질문만 모수다(_FULL_RUN_WHERE). 모수를 함께 내보내야 화면이 3건 평균과 300건 평균을
+    구분해 보여줄 수 있다.
+    """
+    del admin
+    days = _range_days(range_)
+    now = datetime.now(timezone.utc)
+    _, start, end = _range_window(now, days)
+    window = {"start": start, "end": end}
+    stage_seconds = {stage: float(seconds)
+                     for stage, seconds in db.execute(STAGE_LATENCY_SQL, window).all()}
+    total_ms = round(float(db.execute(STAGE_TOTAL_SQL, window).scalar_one() or 0))
+    count = int(db.execute(STAGE_COUNT_SQL, window).scalar_one() or 0)
+    return {"range": days, **build_stage_latency(stage_seconds, total_ms, count)}
 
 
 @router.get("/trend")

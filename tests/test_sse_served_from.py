@@ -167,7 +167,7 @@ def test_no_clarification_reaches_the_answer_path(captured, monkeypatch):
 
     reached = []
 
-    def _prepare(*_a):
+    def _prepare(*_a, **_kw):
         reached.append(True)
         raise RuntimeError("답변 경로 도달을 확인하고 멈춘다 — 실제 LLM 을 부르지 않으려고")
 
@@ -189,7 +189,7 @@ def test_triage_failure_passes_through_without_clarifying(captured, monkeypatch)
     monkeypatch.setattr(sse.answer, "plan",
                         lambda _q: sse.answer.Plan([("신청 링크 알려줘", "civil_petition")]))
     monkeypatch.setattr(sse.answer, "prepare_sub",
-                        lambda *a: (_ for _ in ()).throw(RuntimeError("여기서 멈춘다")))
+                        lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("여기서 멈춘다")))
     monkeypatch.setattr(sse.answer, "log_failed_run", lambda *a, **kw: None)
     monkeypatch.setattr(sse.answer, "error_from_exception",
                         lambda *a: SimpleNamespace(model_dump=lambda: {}))
