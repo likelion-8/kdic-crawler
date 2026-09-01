@@ -60,10 +60,11 @@ function assertNoBadStyle(html: string, where: string) {
 // 4. 단계 비중은 서버가 준 총 응답시간 기준 — 단계 합으로 나누면 미계측 구간이 사라진다
 {
   const html = renderToStaticMarkup(
-    <StageBars stages={[{ name: '답변 생성', avg_ms: 2400 }]} total={5195} />,
+    <StageBars stages={[{ name: '답변 생성', avg_ms: 2400 }]} total={5195} sampleCount={17} />,
   )
   assert.ok(html.includes('46%'), '2400/5195 = 46% (단계 합 기준이면 100%가 된다)')
   assert.ok(html.includes('5,195ms'), '평균 총 응답시간을 따로 적는다')
+  assert.ok(html.includes('17건'), '몇 건짜리 평균인지 총계 줄에 함께 적는다')
 }
 
 // 5. 무트래픽 날(입력·출력 0) — flexBasis가 NaN%가 되지 않는다

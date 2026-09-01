@@ -346,14 +346,13 @@ export function Dashboard() {
             {latency.isPending && <Loading />}
             {latency.error && <SectionError error={latency.error} onRetry={() => void latency.refetch()} />}
             {latency.data && (
-              <>
-                {/* 모수를 적지 않으면 3건 평균과 300건 평균이 같은 무게로 읽힌다.
-                    KPI '평균 응답시간'은 오늘 전체 질문 평균이라 이 값과 다르다 */}
-                <p className="nums -mt-1 text-[11px] text-muted-foreground">
-                  전 구간 완주 {latency.data.sample_count.toLocaleString('ko-KR')}건 기준
-                </p>
-                <StageBars stages={latency.data.stages} total={latency.data.avg_total_ms} />
-              </>
+              // 모수(sample_count)는 총계 줄 앞에 선다 — KPI '평균 응답시간'은 오늘 전체 질문
+              // 평균이고 이 값은 전 구간을 다 돈 질문만 모수라, 몇 건짜리인지가 같이 보여야 한다
+              <StageBars
+                stages={latency.data.stages}
+                total={latency.data.avg_total_ms}
+                sampleCount={latency.data.sample_count}
+              />
             )}
           </section>
 
