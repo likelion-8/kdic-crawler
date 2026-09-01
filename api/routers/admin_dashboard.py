@@ -26,7 +26,8 @@ feedback(좋아요/싫어요) · pipeline_jobs(작업) · admin_activity_logs(�
   어디에도 없고 5종 중 2종은 백엔드에 원천이 아예 없다. 기준 없이 경고를 띄우지 않는다.
 - service.cause 를 서버가 정한다(D2) — 'ERROR_RATE'면 화면이 AD-005 실패 필터로,
   'PIPELINE'이면 AD-004 로 간다. 프론트는 이 값으로만 분기한다.
-- 단계별 평균 응답시간은 **응답 8구간 고정 배열**이며 서버가 준 순서 그대로 그린다(D4).
+- 단계별 평균 응답시간은 서버가 준 순서 그대로 그린다(D4). 배열 길이는 고정이 아니다 —
+  잰 단계만 실어 보낸다(build_stage_latency 참고).
 - 표시 문자열(₩·M 등)은 서버가 완성해서 준다(D3'). 프론트가 단위를 지어내지 않는다.
 - ⚠️ rag_runs.status 에는 옛 값 "success" 가 섞여 있다. admin_logs.py 의 LEGACY_STATUS
   매핑과 **같은 처리**를 할 것 — 안 하면 대시보드 숫자와 대화 로그 숫자가 어긋난다.
@@ -34,7 +35,7 @@ feedback(좋아요/싫어요) · pipeline_jobs(작업) · admin_activity_logs(�
 from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import Date, cast, func, select
+from sqlalchemy import Date, cast, func, select, text
 
 from api.deps import CurrentAdmin, DbSession, get_current_admin
 from api.errors import BadRequestError
@@ -53,18 +54,62 @@ router = APIRouter(
 
 RANGES = frozenset({7, 30, 90})
 
-# D4 정본. rag_runs 에는 total_latency_ms 만 있고 단계별 컬럼은 아직 없다. 배열을 빼거나
-# 순서를 바꾸면 화면 레이아웃이 달라지므로 미계측 단계도 0으로 포함한다.
+# D4 정본 — (계측 키, 화면 라벨)을 웹 요청이 도는 순서대로. 종전 8구간은 CLI 파이프라인
+# (src/pipeline.py 의 timings 키)을 그대로 옮긴 것이라 실제 서빙 경로와 달랐다: 웹은
+# api/rag/sse.py 를 돌아 게이트·질문 정리·캐시 조회를 먼저 타고 리랭커는 아예 안 부른다.
+# 계측 키는 sse.py 와 answer.prepare_sub 이 rag_runs.observation.timings 에 적는 값이다.
 LATENCY_STAGE_NAMES = (
-    "질문 분해",
-    "분류",
-    "검색",
-    "후보 컷",
-    "근거 조립",
-    "프롬프트",
-    "답변 생성",
-    "출처 판정",
+    ("rewrite", "질문 정리"),
+    ("gate", "게이트"),
+    ("cache", "캐시 조회"),
+    ("plan", "질의 계획"),
+    ("retrieval", "검색"),
+    ("generation", "답변 생성"),
+    ("validation", "출처 판정"),
 )
+
+
+# 모수는 **전 구간을 다 돈 실행**뿐이다(generation 키가 있는 행). 캐시 적중·게이트 EXIT 처럼
+# 검색·생성을 안 탄 턴을 섞으면 검색 평균이 안 검색한 턴 수만큼 낮아지고, 단계 비중의 분모인
+# 총 응답시간도 같은 모수여야 비중이 성립한다.
+_FULL_RUN_WHERE = """
+       AND rag_runs.created_at >= :start
+       AND rag_runs.created_at < :end
+       AND rag_runs.request_id IS NOT NULL
+       AND rag_runs.request_id <> ''
+       AND jsonb_exists(rag_runs.observation -> 'timings', 'generation')
+"""
+
+# jsonb_each_text 로 펴서 키별 평균을 낸다. 단계 키를 늘려도 이 쿼리는 그대로다 —
+# 화면에 나올지는 LATENCY_STAGE_NAMES 에 라벨이 있느냐로만 갈린다.
+STAGE_LATENCY_SQL = text("""
+    SELECT t.key, avg(t.value::float)
+      FROM rag_runs, jsonb_each_text(rag_runs.observation -> 'timings') AS t
+     WHERE true""" + _FULL_RUN_WHERE + """
+     GROUP BY t.key
+""")
+
+STAGE_TOTAL_SQL = text("""
+    SELECT avg(rag_runs.total_latency_ms)
+      FROM rag_runs
+     WHERE true""" + _FULL_RUN_WHERE)
+
+
+def build_stage_latency(avg_seconds_by_stage: dict, avg_total_ms: int) -> dict:
+    """단계별 평균 소요(초) → 화면 계약(ms). 안 잰 단계는 **빼고** 내보낸다.
+
+    0 으로 채우지 않는 이유: StageBars 는 avg_ms 를 그대로 막대로 그려서, 0 이 '즉시 끝남'
+    으로 읽힌다. 종전 구현이 8단계를 전부 0 으로 내보내 그래프가 통째로 비어 보였다.
+    단계가 하나도 없으면 빈 배열이라 화면이 '측정된 단계 기록이 없습니다'로 떨어진다.
+
+    라벨 없는 키는 버린다 — 계측만 늘리고 라벨을 안 붙인 상태에서 영문 키가 화면에 새는 것
+    보다 낫다.
+    """
+    return {
+        "avg_total_ms": avg_total_ms,
+        "stages": [{"name": label, "avg_ms": round(avg_seconds_by_stage[key] * 1000)}
+                   for key, label in LATENCY_STAGE_NAMES if key in avg_seconds_by_stage],
+    }
 
 
 def _range_days(value: int) -> int:
@@ -149,6 +194,11 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
     avg_latency = db.execute(
         select(func.avg(rag_runs.c.total_latency_ms)).where(*valid_today)
     ).scalar_one()
+    window = {"start": today_start, "end": tomorrow_start}
+    stage_seconds = {stage: float(seconds)
+                     for stage, seconds in db.execute(STAGE_LATENCY_SQL, window).all()}
+    stage_total_ms = round(float(db.execute(STAGE_TOTAL_SQL, window).scalar_one() or 0))
+
     intent_rows = db.execute(
         select(rag_runs.c.intent, func.count())
         .where(*valid_today).group_by(rag_runs.c.intent)
@@ -248,10 +298,7 @@ def dashboard_summary(admin: CurrentAdmin, db: DbSession):
             # rag_runs에는 업무분류 컬럼이 없다. 질문 문구로 추측하지 않는다.
             "business": [],
         },
-        "latency": {
-            "avg_total_ms": average,
-            "stages": [{"name": name, "avg_ms": 0} for name in LATENCY_STAGE_NAMES],
-        },
+        "latency": build_stage_latency(stage_seconds, stage_total_ms),
     }
 
 

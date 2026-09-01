@@ -37,6 +37,7 @@ import time
 from prompt_builder import _MARKER_RE  # [SOURCE_USED]/[NO_SOURCE] 판정 정규식(운영과 동일 기준)
 from prompt_builder import strip_answer_cue  # 되뱉은 "답변:" 큐 제거(운영과 동일 기준)
 from llm_client import stream_hyperclova
+from performance import measure_time
 from observability import (as_child_of, close_span, open_span, record_gate1_span,
                            record_gate2_span, record_span, trace_id_of, usage_details)
 
@@ -184,6 +185,10 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
     함수들(plan_query·route_search_chunks·classify_question_type·call_hyperclova)이 이 요청의
     trace 밑으로 들어온다. 밖에서 부르면 각자 별개의 고아 trace 가 된다."""
     trace_id = trace_id_of(root)   # rag_runs.trace_id → AD-005 상세의 Langfuse 링크
+    # 단계별 소요(초). Langfuse 는 게이트·캐시를 점 이벤트로만 남겨 소요가 없고, 검색 span 은
+    # CLI·평가 실행과 섞여 웹 경로만 못 고른다 — AD-001 단계별 그래프의 원천은 여기뿐이다.
+    # 탄 단계만 키가 생긴다. 안 탄 단계를 0 으로 채우면 평균이 그만큼 낮아진다.
+    timings = {}
 
     # 0) accepted — 프론트가 이 값으로 URL replaceState·피드백 키를 잡는다. done 의 값과 같아야
     #    한다(핸드오프 §6 B3). 그래서 여기서 새로 만들지 않고 라우터가 준 값을 그대로 쓴다.
@@ -209,7 +214,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
         trace.update(exit_at="guardrail",
                      output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
         answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
-                       served_from="guardrail")
+                       served_from="guardrail", timings=timings)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -230,7 +235,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
     #      위에서 저장 완료 → 고정 응답 저장 → answer_delta·done). Gate 1 판정은 CONTINUE 도
     #      gate1_rulebase span 으로 남긴다 — 오탐(EXIT 하면 안 될 질문을 막았는지) 감시용이다.
     from gate1 import run_gate1
-    with as_child_of(root):
+    with as_child_of(root), measure_time(timings, "gate", accumulate=True):
         g1 = run_gate1(message)
         record_gate1_span(g1.canonical_text, g1.rule_text, g1)   # CONTINUE 도 남긴다(오탐 모니터링)
     if g1.action == "EXIT":
@@ -240,7 +245,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
                      gate1_reason=g1.reason,
                      output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
         answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
-                       served_from="gate1", served_label=g1.label)
+                       served_from="gate1", served_label=g1.label, timings=timings)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -271,7 +276,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
                         input={"question": message, "history_turns": len(history)})
     triage = None   # triage_query 가 터져도 아래 finally 가 NameError 로 원인을 덮지 않게
     try:
-        with as_child_of(_rw):   # 안의 OpenAI generation(triage_query_llm)이 여기 붙는다
+        with as_child_of(_rw), measure_time(timings, "rewrite"):   # 안의 OpenAI generation(triage_query_llm)이 여기 붙는다
             triage = triage_query(message, history)
     finally:
         close_span(_rw, output=(None if triage is None else
@@ -300,7 +305,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
         trace.update(exit_at="clarify",
                      output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
         answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
-                       served_from="clarify")
+                       served_from="clarify", timings=timings)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("done", resp.model_dump())
         return
@@ -313,7 +318,8 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
     #      관리자 답변 매핑(curated_get, AD-009)은 이 개편과 함께 서빙 경로에서 제거했다
     #      (admin_ops.py 상단 주석 참고 — 관리자 CRUD 자체는 그대로 남아 있다).
     #      적중 시 검색·생성을 통째로 건너뛴다. 캐시 실패는 미스로 취급되어 답변을 막지 않는다.
-    cached = answer.cache_get(query)
+    with measure_time(timings, "cache"):
+        cached = answer.cache_get(query)
     with as_child_of(root):
         record_span("cache_lookup", input={"query": query}, output={"hit": cached is not None})
     if cached is not None:
@@ -325,7 +331,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
         trace.update(exit_at="cache",
                      output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
         answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
-                       served_from="cache")
+                       served_from="cache", timings=timings)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -341,7 +347,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
     #      (내부 관측)에만 남긴다 — 응답 문구는 Gate 1의 resp_out_of_domain을 그대로 재사용
     #      (fixed_gate_response)하므로 사용자 눈에는 Gate 1 EXIT와 구분되지 않는다.
     from gate2 import run_gate2
-    with as_child_of(root):
+    with as_child_of(root), measure_time(timings, "gate", accumulate=True):
         g2 = run_gate2(query)
         record_gate2_span(query, g2)   # CONTINUE 도 남긴다(임계값 조정 표본)
     if g2.action == "EXIT":
@@ -352,7 +358,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
                      gate2_nearest_category=g2.nearest_out_category,
                      output={"answer": resp.answer, "out_of_scope": resp.out_of_scope})
         answer.log_run(message, resp, [], resp.latency_ms, trace_id=trace_id,
-                       served_from="gate2")
+                       served_from="gate2", timings=timings)
         conversation.save_assistant_message(session_id, request_id, resp)
         yield _sse("answer_delta", {"text": resp.answer})
         yield _sse("done", resp.model_dump())
@@ -363,7 +369,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
     #    2026-08-25: 업무 되묻기 판정은 이 콜에서 뺐다 — Gate 2 보다 뒤라 판정 기회를 못 받는
     #    질문이 있었다(0-2.5 주석). 판정은 질문 정리(0-2.5) 한 곳뿐이다.
     try:
-        with as_child_of(root):
+        with as_child_of(root), measure_time(timings, "plan"):
             plan_result = answer.plan(query)  # .items = [(하위질문, intent|None), ...] — 재작성문 기준
     except Exception as e:  # noqa: BLE001
         logger.exception("[%s] plan 실패", request_id)
@@ -391,7 +397,12 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
             sub_span = open_span("sub_answer", input={"question": q, "intent": intent},
                                  metadata={"index": i + 1, "total": len(plan_items)})
         try:
-            with as_child_of(sub_span):
+            # 검색 계측을 prepare_sub **통째로** 잡는다. 안에 route_search_chunks 말고도
+            # Gate3 판정·top_k_cut·프롬프트 조립이 있지만 전부 µs 라 검색에 묻힌다.
+            # ⚠ 한계: USE_QUERY_PLANNER 를 끄면 intent 가 None 으로 와서 classify_intent
+            # (OpenAI 콜)가 이 안에서 돈다 — 그 설정에서는 '검색'이 분류 시간을 포함한다.
+            # 그때 갈라야 하면 prepare_sub 에 timings 를 넘겨 route_search_chunks 만 잰다.
+            with as_child_of(sub_span), measure_time(timings, "retrieval", accumulate=True):
                 # route_search_chunks·classify_question_type(@observe)와 prepare_sub 안의
                 # record_gate3_span 이 전부 이 하위 span 밑으로 들어온다.
                 sp = answer.prepare_sub(q, intent)
@@ -446,6 +457,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
                                  model=os.environ.get("CLOVA_MODEL"))
         stripper = _MarkerStripper()
         body_parts = []
+        gen_started = time.perf_counter()
         tokens = _stream_one(sp.prompt)
         err = None
         usage = None
@@ -487,6 +499,8 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
             yield _sse("error", answer.error_from_exception(err, "llm", request_id).model_dump())
             return
 
+        timings["generation"] = round(
+            timings.get("generation", 0) + (time.perf_counter() - gen_started), 4)
         close_span(gen_span, output="".join(body_parts), usage_details=usage_details(usage))
 
         # 4) 하위 답변 확정(근거 사용 여부 → 출처/서류 구조화)
@@ -497,7 +511,7 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
         with as_child_of(sub_span):
             _val = open_span("answer_validation", input={"answer": "".join(body_parts)})
         try:
-            with as_child_of(_val):
+            with as_child_of(_val), measure_time(timings, "validation", accumulate=True):
                 sub, used = answer.finalize_sub(sp, "".join(body_parts), stripper.used_source)
         finally:
             close_span(_val, output={
@@ -538,7 +552,8 @@ def _chat_event_stream(message: str, session_id: str, request_id: str,
     # 실사용 로그를 Supabase rag_runs 에 남긴다. 이 행의 request_id 가 곧 사용자가 이 답변에
     # 남길 피드백(POST /api/feedback)의 연결 열쇠다 — 없으면 피드백을 붙일 곳이 사라진다.
     # log_rag_run 은 내부에서 예외를 삼키므로(실패-안전) 답변 전달을 막지 않는다.
-    answer.log_run(message, resp, sub_plans, latency_ms, trace_id=trace_id, served_from=served_from)
+    answer.log_run(message, resp, sub_plans, latency_ms, trace_id=trace_id,
+                   served_from=served_from, timings=timings)
 
     # 답변을 저장한다(대화 복원용). 출처·범위외 판정이 확정된 뒤여야 하므로 여기가 맞다.
     conversation.save_assistant_message(session_id, request_id, resp)

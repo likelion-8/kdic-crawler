@@ -69,18 +69,19 @@ export const adDashActivityHandlers = [
           { label: '기타', ratio: 25 },
         ],
       },
-      // 응답 8구간 고정 (CM-DF-003 05절 · AD-001 A-5). 순서를 바꾸지 않는다
+      // 웹 요청이 도는 순서 (CM-DF-003 05절 · AD-001 A-5). 순서를 바꾸지 않는다.
+      // 길이는 고정이 아니다 — 서버는 실제로 잰 단계만 싣는다(admin_dashboard.build_stage_latency).
+      // 값은 2026-09-01 Langfuse 실측 평균에서 가져왔다.
       latency: {
-        avg_total_ms: 5_195,
+        avg_total_ms: 11_480,
         stages: [
-          { name: '질문 분해', avg_ms: 1_500 },
-          { name: '분류', avg_ms: 120 },
-          { name: '검색', avg_ms: 860 },
-          { name: '후보 컷', avg_ms: 45 },
-          { name: '근거 조립', avg_ms: 60 },
-          { name: '프롬프트', avg_ms: 30 },
-          { name: '답변 생성', avg_ms: 2_400 },
-          { name: '출처 판정', avg_ms: 180 },
+          { name: '질문 정리', avg_ms: 2_048 },
+          { name: '게이트', avg_ms: 35 },
+          { name: '캐시 조회', avg_ms: 40 },
+          { name: '질의 계획', avg_ms: 2_268 },
+          { name: '검색', avg_ms: 920 },
+          { name: '답변 생성', avg_ms: 3_250 },
+          { name: '출처 판정', avg_ms: 2_486 },
         ],
       },
     }),

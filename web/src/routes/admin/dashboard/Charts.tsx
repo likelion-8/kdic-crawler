@@ -362,7 +362,7 @@ export function RatioBars({ items }: { items: { label: string; ratio: number }[]
   )
 }
 
-// ---------------------------------------------------------------- 단계별 평균 응답시간(8구간)
+// ---------------------------------------------------------------- 단계별 평균 응답시간(웹 요청 순서)
 
 export interface LatencyStage {
   name: string
