@@ -37,6 +37,13 @@ AI 엔지니어 심화 부트캠프 자연어처리 과정 5기 · 진짜사자 
 | `tests/` | pytest (`.venv/Scripts/python.exe -m pytest tests -q`) |
 | `infra/` | 로컬 PostgreSQL+pgvector 도커 환경(운영은 Supabase) |
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/yesom24_stack_architecture_dark.png">
+  <img src="docs/assets/yesom24_stack_architecture.png" alt="예솜24 스택 아키텍처 — 브라우저 → React/Vite(:5173) · FastAPI(:8000) → Supabase · OpenAI · CLOVA · Langfuse, 코드는 로컬 → GitHub PR → 수동 배포" width="100%">
+</picture>
+
+<sub>스택 아키텍처(2026-09-01 기준) — 실행 단위·포트·호출 경로·코드 흐름. 원본 HTML과 재렌더 스크립트는 [`docs/assets/`](docs/assets/). 영역·구성요소 관점의 시스템 아키텍처는 [조직 프로필](https://github.com/likelion-8)에 있습니다.</sub>
+
 ```bash
 # 1) 파이썬 — .env 는 .env.example 을 복사해 채운다(CLOVA·OpenAI 키, DATABASE_URL)
 python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
